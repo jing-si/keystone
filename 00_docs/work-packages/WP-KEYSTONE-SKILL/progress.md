@@ -61,8 +61,17 @@ None
   selection UI when available, summarize the reflection and edit plan, then
   update related source documents together in Default Mode.
 - Future document paths are English. Document root resolution order is current
-  user instruction, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `agent.md`, then
-  default `00_docs/`.
+  user instruction, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, project
+  `agent.md`, then default `00_docs/`. `00_docs/` is the default root, not a
+  fixed root.
+- Initial Keystone project setup should be recorded in project `agent.md` after
+  Plan Mode setup questions.
+- 기준서 and 작업서 Git policy is a project setting with four choices: track
+  both, track 기준서 only, track neither, or ask each time. Derived agent
+  documents are ignored by Git by default.
+- Keystone output language policy applies only to Keystone artifacts and must
+  not override unrelated task language, code comments, commit messages, README
+  files, external tools, or non-Keystone skills.
 - Future 기준서 live under `standards/`; future 작업서 live under `works/`.
   Both trees use unlimited-depth folder nodes with `00_index.md`.
 - Final 기준서 files use `standard-{slug}.md`; final 작업서 files use

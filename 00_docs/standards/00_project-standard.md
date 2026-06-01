@@ -11,6 +11,7 @@ authoring, reading, and main-agent to subagent work system.
 
 - Standards and work packages under `00_docs/`
 - The future Keystone skill source files
+- Keystone project setup and project `agent.md` settings
 - Policy, scope, document, and skill-contract clarification behavior
 - Standards/work-order authoring behavior
 - Standards/work-order reading and work-preparation behavior
@@ -121,10 +122,11 @@ truth after acceptance.
 
 ### STD-KEYSTONE-015: Document root resolution is explicit and ordered
 
-Document paths must be English. The default root is `00_docs/`. If multiple
-instructions mention a document root, resolve it in this order: current user
-instruction, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `agent.md`, then default
-`00_docs/`.
+Document paths must be English. `00_docs/` is the default root, not a fixed
+root. If multiple instructions mention a document root, resolve it in this
+order: current user instruction, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
+project `agent.md`, then default `00_docs/`. When a configured root exists,
+Keystone uses that root even if `00_docs/` does not exist.
 
 ### STD-KEYSTONE-016: Standards and works use index-based trees
 
@@ -202,12 +204,55 @@ it summarizes the reflection and document update plan. In Default Mode, related
 source documents are updated together, including affected standards, works,
 progress, decisions, and optional derived agent documents.
 
+### STD-KEYSTONE-026: Initial project setup is recorded in project agent.md
+
+On first Keystone use in a project, Keystone checks for existing project
+settings before asking setup questions. If settings are missing or the document
+root decision is unclear, `keystone-clarify` should ask setup questions in Plan
+Mode with `request_user_input` or an equivalent selection UI when available.
+The accepted settings are recorded in the project's `agent.md` so future
+Keystone runs do not repeat the same setup questions. Current user instruction
+and higher-priority instruction files may override `agent.md` for the current
+run, but persistent setting changes require user acceptance.
+
+Initial setup should cover at least:
+
+- document root: default `00_docs/`, an existing project document folder, or a
+  newly specified folder
+- source document Git policy for 기준서 and 작업서
+- derived agent document Git policy
+- Keystone output language policy
+
+### STD-KEYSTONE-027: Source document Git policy is explicit
+
+Keystone treats 기준서 and 작업서 as source documents, but their Git publication
+policy is a project setting rather than an assumption. During initial setup,
+`keystone-clarify` should explain the tradeoff and offer choices equivalent to:
+track 기준서 and 작업서, track 기준서 only, track neither, or ask for each document
+change. Derived agent documents are ignored by Git by default unless explicitly
+approved. Documents containing secrets, credentials, private user data,
+customer data, or sensitive environment details must remain local/private
+unless the user explicitly approves tracking or publication.
+
+### STD-KEYSTONE-028: Output language policy applies only to Keystone artifacts
+
+Keystone output language is a project setting for Keystone-generated artifacts
+only: clarification prompts, 기준서, 작업서, Keystone summaries, handoffs, and
+reports. It must not override the user's requested language for unrelated
+tasks, code comments, commit messages, README files, external tools, or
+non-Keystone skills. If the user explicitly requests a language for a specific
+task, that task-specific instruction wins. Initial setup should offer choices
+equivalent to dominant current conversation language, existing project document
+language, English, or ask each time.
+
 ## Expected Behavior
 
 - A main agent can inspect `00_docs/context-map.md` to find active standards and
   work packages.
 - A clarification skill can gather topic-scoped high-impact decisions before
   source documents are changed.
+- Keystone can record initial project settings in project `agent.md` and reuse
+  them on later runs.
 - A main agent can inspect a work package and identify the current step from
   `progress.md`.
 - A document-reading skill can locate only the relevant 기준서 and 작업서 needed
@@ -225,6 +270,10 @@ progress, decisions, and optional derived agent documents.
   Keystone source documents.
 - Derived agent documents can be created when useful without becoming source
   documents.
+- 기준서 and 작업서 Git policy can be chosen per project without making derived
+  agent documents tracked by default.
+- Keystone artifact language can be configured without changing unrelated task
+  language.
 - High-risk work is documented as requiring main or user decision before
   implementation.
 
@@ -242,6 +291,11 @@ progress, decisions, and optional derived agent documents.
 - Collapsing the four planned Keystone skills into one skill without approval
 - Treating the prototype skills as final dependencies
 - Editing source documents from an incomplete high-impact clarification topic
+- Creating a new document root before checking current instruction files and
+  project `agent.md`
+- Tracking or publishing sensitive source documents without explicit approval
+- Letting Keystone output language override unrelated user requests, code,
+  commits, README files, external tools, or non-Keystone skills
 - Automatically invoking Superpowers or any external workflow skill without user
   instruction or accepted document authorization
 - Replacing reusable 기준서 with repeated dated task documents
@@ -260,6 +314,8 @@ progress, decisions, and optional derived agent documents.
 - The source documents conflict with the current user direction
 - The boundary between the four planned Keystone skills is unclear
 - A high-impact clarification topic cannot be resolved confidently
+- Initial project settings are missing and document root, Git policy, or
+  Keystone output language cannot be inferred safely
 - A requested workflow would make Superpowers output more authoritative than
   accepted Keystone 기준서 or 작업서
 - A work unit cannot be assigned as a clear goal with reviewable output

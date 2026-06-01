@@ -33,6 +33,9 @@ Included:
 - Define the `keystone-clarify` Plan Mode decision collection and Default Mode
   document update workflow
 - Define document root resolution and English path rules
+- Define initial project setup behavior and project `agent.md` settings
+- Define 기준서 and 작업서 Git policy choices
+- Define Keystone output language policy boundaries
 - Define the future `standards/` and `works/` tree policies
 - Define how reusable 기준서 and current 작업서 reduce repeated context
 - Define how Superpowers can be used as an explicit supporting workflow without
@@ -87,6 +90,8 @@ verification path, and next action.
   subordinate to accepted Keystone source documents.
 - [ ] The foundation records the accepted document root, tree, and file naming
   policies.
+- [ ] The foundation records initial project setup, project `agent.md`, source
+  document Git policy, and Keystone output language policy.
 - [ ] The foundation records the reader modes, derived document policy,
   progress/report statuses, and standards-led verification policy.
 - [ ] `00_docs/work-packages/WP-KEYSTONE-SKILL/progress.md` records the current
@@ -102,7 +107,8 @@ verification path, and next action.
   `STD-KEYSTONE-015`, `STD-KEYSTONE-016`, `STD-KEYSTONE-017`,
   `STD-KEYSTONE-018`, `STD-KEYSTONE-019`, `STD-KEYSTONE-020`,
   `STD-KEYSTONE-021`, `STD-KEYSTONE-022`, `STD-KEYSTONE-023`,
-  `STD-KEYSTONE-024`, `STD-KEYSTONE-025`
+  `STD-KEYSTONE-024`, `STD-KEYSTONE-025`, `STD-KEYSTONE-026`,
+  `STD-KEYSTONE-027`, `STD-KEYSTONE-028`
 
 ### Work Scope
 
@@ -149,6 +155,8 @@ When preparing a later subagent handoff, main should include:
   `00_project-standard.md`
 - Document tree, file naming, derived document, progress/report, and
   verification rules from `00_project-standard.md`
+- Initial project setup, Git policy, and Keystone output language rules from
+  `00_project-standard.md`
 - Project rules from `00_project-standard.md`
 - Current step and status from `progress.md`
 - The included and excluded scope above
@@ -223,6 +231,9 @@ escalation behavior.
 - [ ] `standards/` and `works/` tree rules are clear.
 - [ ] `00_index.md`, `standard-{slug}.md`, `work-{slug}.md`, and
   `progress.md` file naming rules are clear.
+- [ ] Initial project setup and project `agent.md` setting behavior are clear.
+- [ ] 기준서 and 작업서 Git policy choices are clear.
+- [ ] Keystone output language policy is scoped to Keystone artifacts only.
 - [ ] Reusable 기준서 vs dated/repeated task document behavior is clear.
 - [ ] Derived agent document types and creation/update conditions are clear.
 - [ ] `keystone-reader` Orientation, Navigator, and Work Prep modes are clear.
@@ -242,7 +253,8 @@ escalation behavior.
 - Related rules: `STD-KEYSTONE-001`, `STD-KEYSTONE-002`, `STD-KEYSTONE-003`,
   `STD-KEYSTONE-004`, `STD-KEYSTONE-005`, `STD-KEYSTONE-006`,
   `STD-KEYSTONE-007`, `STD-KEYSTONE-009`, `STD-KEYSTONE-021`,
-  `STD-KEYSTONE-025`
+  `STD-KEYSTONE-025`, `STD-KEYSTONE-026`, `STD-KEYSTONE-027`,
+  `STD-KEYSTONE-028`
 
 ### Work Scope
 
@@ -255,6 +267,9 @@ Included:
 - Superpowers integration rules as an optional supporting workflow
 - Goal assignment and role-based subagent boundaries
 - Clarify mode contract for topic-scoped decision collection and reflection
+- Initial setup contract for project `agent.md`
+- 기준서 and 작업서 Git publication policy choices
+- Keystone output language policy boundaries
 - Reader mode contracts
 - Document tree and filename contracts
 - Progress/report status contracts
@@ -299,6 +314,8 @@ When preparing a subagent handoff, main should include:
 - Current Keystone skill-system goal and non-goals
 - The four planned skill roles and their boundaries
 - The `keystone-clarify` topic decision workflow and accepted decisions
+- Initial project setup and project `agent.md` setting rules
+- Source document Git policy and Keystone output language policy
 - Accepted document tree and file naming policies
 - Reader modes and expected outputs
 - Superpowers as optional supporting input, not source of truth
@@ -323,6 +340,9 @@ When preparing a subagent handoff, main should include:
 - The contract would prevent work from being sliced into role-based goals
 - The contract would make derived agent documents mandatory by default
 - The contract would weaken 기준서-led verification
+- The contract would make source document Git tracking implicit rather than a
+  project setting
+- The contract would let Keystone output language override unrelated tasks
 - A required behavior conflicts with external skill constraints
 - The correct design needs implementation or packaging decisions first
 - The step needs changes outside `00_docs/` without approval
@@ -346,6 +366,7 @@ Reviewer should check:
 
 - Contract is specific enough to guide implementation of four skills
 - `keystone-clarify` topic decision behavior is explicit
+- Initial setup, Git policy, and Keystone output language behavior are explicit
 - 기준서 and 작업서 responsibilities are explicit
 - Superpowers integration is explicit and bounded
 - Work units can become role-based subagent goals
