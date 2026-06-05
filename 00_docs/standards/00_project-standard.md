@@ -11,7 +11,7 @@ authoring, reading, and main-agent to subagent work system.
 
 - Standards and work packages under `00_docs/`
 - The future Keystone skill source files
-- Keystone project setup and project `agent.md` settings
+- Keystone project setup and project-local Keystone settings
 - Policy, scope, document, and skill-contract clarification behavior
 - Standards/work-order authoring behavior
 - Standards/work-order reading and work-preparation behavior
@@ -123,10 +123,15 @@ truth after acceptance.
 ### STD-KEYSTONE-015: Document root resolution is explicit and ordered
 
 Document paths must be English. `00_docs/` is the default root, not a fixed
-root. If multiple instructions mention a document root, resolve it in this
-order: current user instruction, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
-project `agent.md`, then default `00_docs/`. When a configured root exists,
-Keystone uses that root even if `00_docs/` does not exist.
+root. Current user instruction may override the document root for the current
+run. Persistent project-local settings are resolved in this order:
+`.keystone/config.local.yaml`, `.keystone/config.yaml`, then an explicit
+Keystone settings block in a project-local agent instruction file. Common or
+globally injected instruction files such as `AGENTS.md`, `CLAUDE.md`,
+`GEMINI.md`, or `agent.md` may provide setup suggestions, but they do not
+become persistent Keystone settings until accepted into project-local settings.
+When a configured project-local root exists, Keystone uses that root even if
+`00_docs/` does not exist.
 
 ### STD-KEYSTONE-016: Standards and works use index-based trees
 
@@ -145,14 +150,31 @@ shortest local name that clearly distinguishes the file inside its folder.
 
 작업서 steps should be written as assignable Goal units. Each step should be
 small enough for one role-based subagent assignment and clear enough for main
-to judge the report as accept, repair, verify, or escalate.
+to judge the report as accept, repair, verify, or escalate. Every work step
+must include `Goal`, `Scope`, `Source Context`, `Completion Criteria`,
+`Stop Conditions`, `Verification`, and `Expected Output`. These fields are
+required for recoverability and coordinator compatibility, but their content
+may be short for simple or low-risk steps. `Scope` should include
+Include/Exclude boundaries when useful. `Suggested Role` is optional and
+recommended when delegation is likely; main may choose or override the role.
 
 ### STD-KEYSTONE-019: Reader has three modes
 
 `keystone-reader` supports Orientation Mode, Navigator Mode, and Work Prep Mode.
-Orientation Mode creates a compact project map from instructions, document
-root, standards/works structure, active work, major code areas, and documents
-to read. Navigator Mode finds relevant documents. Work Prep Mode prepares Goal,
+Orientation Mode is document-led, repository-aware, and read-only. It creates a
+compact project orientation from instructions, document root, standards/works
+structure, active work, and a shallow repository snapshot. Its output should
+include `document_root`, `project_summary`, `repository_snapshot`,
+`active_document_map`, `current_work_status`, `recommended_read_order`,
+`operational_boundaries`, `risks_and_gaps`, `recommended_next_action`,
+`sources_read`, and `assumptions`. The repository snapshot is limited to the
+repository root, top-level directories, key config/build files, expected
+skill/source directories, Git status summary, and obvious document-to-repository
+mismatch signals. If source documents and repository state conflict,
+Orientation Mode must report the mismatch and ask the user or main agent to
+choose whether to update documents, prepare code work, or investigate further.
+It must not modify documents, code, config, progress, decisions, or generated
+files. Navigator Mode finds relevant documents. Work Prep Mode prepares Goal,
 context, verification, and role suggestions without finalizing subagent
 handoffs.
 
@@ -204,16 +226,20 @@ it summarizes the reflection and document update plan. In Default Mode, related
 source documents are updated together, including affected standards, works,
 progress, decisions, and optional derived agent documents.
 
-### STD-KEYSTONE-026: Initial project setup is recorded in project agent.md
+### STD-KEYSTONE-026: Initial project setup is recorded in Keystone config
 
 On first Keystone use in a project, Keystone checks for existing project
 settings before asking setup questions. If settings are missing or the document
 root decision is unclear, `keystone-clarify` should ask setup questions in Plan
 Mode with `request_user_input` or an equivalent selection UI when available.
-The accepted settings are recorded in the project's `agent.md` so future
-Keystone runs do not repeat the same setup questions. Current user instruction
-and higher-priority instruction files may override `agent.md` for the current
-run, but persistent setting changes require user acceptance.
+Common or globally injected settings may be shown as recommended choices, but
+they must not be accepted silently. The accepted shared project settings are
+recorded in `.keystone/config.yaml` by default so future Keystone runs do not
+repeat the same setup questions. Personal, local-only, or sensitive overrides
+belong in `.keystone/config.local.yaml`. If the user explicitly prefers an
+existing project-local agent instruction file, Keystone may record a Keystone
+settings block there instead. Keystone must never write to common or globally
+injected instruction files.
 
 Initial setup should cover at least:
 
@@ -222,6 +248,18 @@ Initial setup should cover at least:
 - source document Git policy for 기준서 and 작업서
 - derived agent document Git policy
 - Keystone output language policy
+- setup storage location: `.keystone/config.yaml` by default, or an explicit
+  project-local agent instruction file if the user chooses it
+
+The default shared config schema is:
+
+```yaml
+version: 1
+document_root: 00_docs
+source_docs_git_policy: track_standards_and_works
+derived_agent_docs_git_policy: ignore
+output_language_policy: dominant_conversation_language
+```
 
 ### STD-KEYSTONE-027: Source document Git policy is explicit
 
@@ -230,9 +268,13 @@ policy is a project setting rather than an assumption. During initial setup,
 `keystone-clarify` should explain the tradeoff and offer choices equivalent to:
 track 기준서 and 작업서, track 기준서 only, track neither, or ask for each document
 change. Derived agent documents are ignored by Git by default unless explicitly
-approved. Documents containing secrets, credentials, private user data,
-customer data, or sensitive environment details must remain local/private
-unless the user explicitly approves tracking or publication.
+approved. `.keystone/config.yaml` is shared project policy and is tracked by
+Git by default. `.keystone/config.local.yaml` is a local/private override and is
+ignored by Git by default. Documents or settings containing secrets,
+credentials, private user data, customer data, local-only paths, sensitive
+environment details, or unpublished business information require user
+confirmation before writing, tracking, publishing, or deriving documents from
+that content.
 
 ### STD-KEYSTONE-028: Output language policy applies only to Keystone artifacts
 
@@ -251,8 +293,8 @@ language, English, or ask each time.
   work packages.
 - A clarification skill can gather topic-scoped high-impact decisions before
   source documents are changed.
-- Keystone can record initial project settings in project `agent.md` and reuse
-  them on later runs.
+- Keystone can record initial project settings in `.keystone/config.yaml` and
+  reuse them on later runs.
 - A main agent can inspect a work package and identify the current step from
   `progress.md`.
 - A document-reading skill can locate only the relevant 기준서 and 작업서 needed
@@ -272,6 +314,8 @@ language, English, or ask each time.
   documents.
 - 기준서 and 작업서 Git policy can be chosen per project without making derived
   agent documents tracked by default.
+- Shared Keystone config can be tracked while local/private overrides remain
+  ignored by default.
 - Keystone artifact language can be configured without changing unrelated task
   language.
 - High-risk work is documented as requiring main or user decision before
@@ -292,7 +336,11 @@ language, English, or ask each time.
 - Treating the prototype skills as final dependencies
 - Editing source documents from an incomplete high-impact clarification topic
 - Creating a new document root before checking current instruction files and
-  project `agent.md`
+  project-local Keystone settings
+- Writing Keystone setup results to common or globally injected instruction
+  files
+- Treating common/global instruction settings as persistent project settings
+  without project-local acceptance
 - Tracking or publishing sensitive source documents without explicit approval
 - Letting Keystone output language override unrelated user requests, code,
   commits, README files, external tools, or non-Keystone skills

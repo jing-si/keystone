@@ -26,8 +26,8 @@ are expected to be replaced by new Keystone skills.
 ## Default Document Tree Policy
 
 Future Keystone documents should use English paths and the configured document
-root. If no project instruction or project `agent.md` setting overrides it, the
-root is `00_docs/`.
+root. If no current user instruction or project-local Keystone setting
+overrides it, the root is `00_docs/`.
 
 ```text
 00_docs/
@@ -45,8 +45,9 @@ nodes have no child nodes and may include detail files such as
 
 Keystone project setup choices such as document root, source document Git
 policy, derived agent document Git policy, and Keystone output language policy
-should be recorded in the project's `agent.md` after the initial setup
-conversation.
+should be recorded in `.keystone/config.yaml` after the initial setup
+conversation. Personal, local-only, or sensitive overrides belong in
+`.keystone/config.local.yaml`.
 
 ## Work Packages
 

@@ -60,15 +60,23 @@ None
   related questions in Plan Mode, prefer `request_user_input` or an equivalent
   selection UI when available, summarize the reflection and edit plan, then
   update related source documents together in Default Mode.
-- Future document paths are English. Document root resolution order is current
-  user instruction, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, project
-  `agent.md`, then default `00_docs/`. `00_docs/` is the default root, not a
-  fixed root.
-- Initial Keystone project setup should be recorded in project `agent.md` after
-  Plan Mode setup questions.
+- Future document paths are English. `00_docs/` is the default root, not a
+  fixed root. Current user instruction may override the current run.
+  Persistent project-local settings resolve through
+  `.keystone/config.local.yaml`, `.keystone/config.yaml`, then explicit
+  Keystone settings in a project-local agent instruction file. Common/global
+  instruction files are setup suggestions only.
+- Initial shared Keystone project setup should be recorded in
+  `.keystone/config.yaml` after Plan Mode setup questions. Personal, local-only,
+  or sensitive overrides belong in `.keystone/config.local.yaml`.
 - 기준서 and 작업서 Git policy is a project setting with four choices: track
   both, track 기준서 only, track neither, or ask each time. Derived agent
   documents are ignored by Git by default.
+- `.keystone/config.yaml` is tracked by Git by default as shared project policy;
+  `.keystone/config.local.yaml` is ignored by Git by default as a local/private
+  override.
+- Sensitive settings or documents require user confirmation before writing,
+  tracking, publishing, or deriving documents.
 - Keystone output language policy applies only to Keystone artifacts and must
   not override unrelated task language, code comments, commit messages, README
   files, external tools, or non-Keystone skills.
@@ -76,7 +84,17 @@ None
   Both trees use unlimited-depth folder nodes with `00_index.md`.
 - Final 기준서 files use `standard-{slug}.md`; final 작업서 files use
   `work-{slug}.md`; progress files use `progress.md`.
+- 작업서 steps require `Goal`, `Scope`, `Source Context`,
+  `Completion Criteria`, `Stop Conditions`, `Verification`, and
+  `Expected Output`. `Suggested Role` is optional and recommended when
+  delegation is likely.
 - `keystone-reader` has Orientation, Navigator, and Work Prep modes.
+- Orientation Mode is document-led, repository-aware, and read-only. It should
+  include document root, project summary, shallow repository snapshot, active
+  document map, current work status, recommended read order, operational
+  boundaries, risks/gaps, next action, sources read, and assumptions. If
+  documents and repository state conflict, it reports the mismatch and asks for
+  user/main decision instead of modifying documents or code.
 - Derived agent document types are kept as optional 4 types and are created
   only when needed.
 - Progress status and subagent report status are separate.

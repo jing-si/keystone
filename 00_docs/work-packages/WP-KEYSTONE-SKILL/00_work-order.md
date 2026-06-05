@@ -33,7 +33,7 @@ Included:
 - Define the `keystone-clarify` Plan Mode decision collection and Default Mode
   document update workflow
 - Define document root resolution and English path rules
-- Define initial project setup behavior and project `agent.md` settings
+- Define initial project setup behavior and Keystone config files
 - Define 기준서 and 작업서 Git policy choices
 - Define Keystone output language policy boundaries
 - Define the future `standards/` and `works/` tree policies
@@ -90,8 +90,8 @@ verification path, and next action.
   subordinate to accepted Keystone source documents.
 - [ ] The foundation records the accepted document root, tree, and file naming
   policies.
-- [ ] The foundation records initial project setup, project `agent.md`, source
-  document Git policy, and Keystone output language policy.
+- [ ] The foundation records initial project setup, Keystone config files,
+  source document Git policy, and Keystone output language policy.
 - [ ] The foundation records the reader modes, derived document policy,
   progress/report statuses, and standards-led verification policy.
 - [ ] `00_docs/work-packages/WP-KEYSTONE-SKILL/progress.md` records the current
@@ -155,8 +155,8 @@ When preparing a later subagent handoff, main should include:
   `00_project-standard.md`
 - Document tree, file naming, derived document, progress/report, and
   verification rules from `00_project-standard.md`
-- Initial project setup, Git policy, and Keystone output language rules from
-  `00_project-standard.md`
+- Initial project setup, Keystone config, Git policy, and Keystone output
+  language rules from `00_project-standard.md`
 - Project rules from `00_project-standard.md`
 - Current step and status from `progress.md`
 - The included and excluded scope above
@@ -231,16 +231,21 @@ escalation behavior.
 - [ ] `standards/` and `works/` tree rules are clear.
 - [ ] `00_index.md`, `standard-{slug}.md`, `work-{slug}.md`, and
   `progress.md` file naming rules are clear.
-- [ ] Initial project setup and project `agent.md` setting behavior are clear.
+- [ ] Initial project setup and Keystone config behavior are clear.
 - [ ] 기준서 and 작업서 Git policy choices are clear.
 - [ ] Keystone output language policy is scoped to Keystone artifacts only.
 - [ ] Reusable 기준서 vs dated/repeated task document behavior is clear.
 - [ ] Derived agent document types and creation/update conditions are clear.
 - [ ] `keystone-reader` Orientation, Navigator, and Work Prep modes are clear.
+- [ ] Orientation Mode output is document-led, repository-aware, read-only, and
+  includes mismatch reporting without automatic fixes.
 - [ ] Explicit Superpowers integration conditions are clear.
 - [ ] Main-agent supervisor responsibilities are clear.
 - [ ] Role-based subagent responsibilities are clear.
 - [ ] Goal assignment behavior for subagent-sized work units is clear.
+- [ ] Work step fields are clear: `Goal`, `Scope`, `Source Context`,
+  `Completion Criteria`, `Stop Conditions`, `Verification`, and
+  `Expected Output` are required; `Suggested Role` is optional.
 - [ ] Progress status and subagent report status are separate and defined.
 - [ ] Standards-led verification and handoff checklist behavior are clear.
 - [ ] Main-agent responsibilities and subagent limits are clear.
@@ -252,7 +257,8 @@ escalation behavior.
 - Standard: `00_docs/standards/00_project-standard.md`
 - Related rules: `STD-KEYSTONE-001`, `STD-KEYSTONE-002`, `STD-KEYSTONE-003`,
   `STD-KEYSTONE-004`, `STD-KEYSTONE-005`, `STD-KEYSTONE-006`,
-  `STD-KEYSTONE-007`, `STD-KEYSTONE-009`, `STD-KEYSTONE-021`,
+  `STD-KEYSTONE-007`, `STD-KEYSTONE-009`, `STD-KEYSTONE-019`,
+  `STD-KEYSTONE-021`,
   `STD-KEYSTONE-025`, `STD-KEYSTONE-026`, `STD-KEYSTONE-027`,
   `STD-KEYSTONE-028`
 
@@ -266,11 +272,14 @@ Included:
   `subagent-work-coordinator` as prototype references
 - Superpowers integration rules as an optional supporting workflow
 - Goal assignment and role-based subagent boundaries
+- Work step field contract for coordinator-compatible 작업서 steps
 - Clarify mode contract for topic-scoped decision collection and reflection
-- Initial setup contract for project `agent.md`
+- Initial setup contract for `.keystone/config.yaml` and
+  `.keystone/config.local.yaml`
 - 기준서 and 작업서 Git publication policy choices
 - Keystone output language policy boundaries
 - Reader mode contracts
+- Orientation Mode output contract and document-to-repository mismatch policy
 - Document tree and filename contracts
 - Progress/report status contracts
 - Derived document and impact update contracts
@@ -314,13 +323,15 @@ When preparing a subagent handoff, main should include:
 - Current Keystone skill-system goal and non-goals
 - The four planned skill roles and their boundaries
 - The `keystone-clarify` topic decision workflow and accepted decisions
-- Initial project setup and project `agent.md` setting rules
+- Initial project setup and Keystone config rules
 - Source document Git policy and Keystone output language policy
 - Accepted document tree and file naming policies
 - Reader modes and expected outputs
+- Orientation Mode repository snapshot and read-only mismatch handling
 - Superpowers as optional supporting input, not source of truth
 - 기준서 as reusable long-lived policy and 작업서 as goal-oriented execution
   document
+- Work step field contract and optional `Suggested Role` rule
 - Main-agent supervisor model and role-based subagent model
 - Progress/report statuses
 - Standards-led verification checklist rules
@@ -342,7 +353,13 @@ When preparing a subagent handoff, main should include:
 - The contract would weaken 기준서-led verification
 - The contract would make source document Git tracking implicit rather than a
   project setting
+- The contract would write Keystone setup results to common/global instruction
+  files
 - The contract would let Keystone output language override unrelated tasks
+- The contract would allow Orientation Mode to modify documents, code, config,
+  progress, decisions, or generated files
+- The contract would let document-to-repository mismatches be fixed without
+  user or main-agent decision
 - A required behavior conflicts with external skill constraints
 - The correct design needs implementation or packaging decisions first
 - The step needs changes outside `00_docs/` without approval
@@ -370,7 +387,11 @@ Reviewer should check:
 - 기준서 and 작업서 responsibilities are explicit
 - Superpowers integration is explicit and bounded
 - Work units can become role-based subagent goals
+- Work step fields are sufficient for recoverability and coordinator
+  compatibility without forcing long templates for simple steps
 - Reader modes and derived document policies are explicit
+- Orientation Mode is document-led, repository-aware, read-only, and reports
+  document-to-repository mismatches for decision
 - Progress/report statuses and verification source are explicit
 - Main/subagent boundaries are explicit
 - Stop conditions are present
