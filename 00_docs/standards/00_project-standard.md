@@ -68,9 +68,12 @@ verification from `00_docs/`.
 
 ### STD-KEYSTONE-007: Source document changes require explicit approval
 
-Meaningful changes to standards, work orders, scope, acceptance criteria, or
-progress state require explicit approval. Related but unapproved changes should
-be reported instead of silently applied.
+Meaningful changes to accepted standards, work orders, scope, acceptance
+criteria, or progress state require explicit approval. While a work step is
+`in_progress`, edits inside that step's approved work scope may be made by
+main. Changes that alter the approved goal, scope, acceptance criteria, status
+semantics, or source-document authority still require explicit approval.
+Related but unapproved changes should be reported instead of silently applied.
 
 ### STD-KEYSTONE-008: Minimal structure comes before expansion
 
@@ -195,9 +198,11 @@ user before editing uncertain documents.
 
 ### STD-KEYSTONE-022: Progress and report status are separate
 
-Progress status describes workflow state: `planned`, `ready`, `assigned`,
-`reported`, `reviewing`, `verifying`, `accepted`, or `blocked`. Subagent report
-status describes a returned report: `DONE`, `DONE_WITH_CONCERNS`,
+Progress status describes workflow state: `planned`, `ready`, `in_progress`,
+`assigned`, `reported`, `reviewing`, `verifying`, `accepted`, or `blocked`.
+`in_progress` means main is actively working inside the approved work scope.
+`assigned` means a subagent or separate worker owns the current unit. Subagent
+report status describes a returned report: `DONE`, `DONE_WITH_CONCERNS`,
 `NEEDS_CONTEXT`, `NEEDS_SCOPE_CHANGE`, or `BLOCKED`.
 
 ### STD-KEYSTONE-023: Verification is standards-led
@@ -221,10 +226,11 @@ distribution shape is a skills repo, with room to add plugin metadata later.
 documents, work scope, skill contracts, or cross-document consistency. It should
 not turn every minor edit into a question. In Plan Mode, it gathers the
 questions and decisions needed for one topic, using `request_user_input` or an
-equivalent selection UI when available. After the topic is sufficiently decided,
-it summarizes the reflection and document update plan. In Default Mode, related
-source documents are updated together, including affected standards, works,
-progress, decisions, and optional derived agent documents.
+equivalent selection UI when available. After the topic is sufficiently decided
+and the user or main session accepts the decision summary and edit plan, it
+summarizes the reflection and document update plan. In Default Mode, accepted
+related source-document updates are applied together, including affected
+standards, works, progress, decisions, and optional derived agent documents.
 
 ### STD-KEYSTONE-026: Initial project setup is recorded in Keystone config
 

@@ -21,9 +21,14 @@ are expected to be replaced by new Keystone skills.
 
 | Area | Path | When to Read |
 |---|---|---|
+| Index | `00_docs/standards/00_index.md` | First for navigating available 기준서 |
 | Project | `00_docs/standards/00_project-standard.md` | Always for project-wide rules, document-source policy, skill-family roles, and coordinator compatibility |
 
-## Default Document Tree Policy
+## Future Document Tree Policy
+
+This policy applies to new Keystone standards and works after acceptance. The
+current S01 work package remains under `work-packages/` until migration is
+explicitly approved.
 
 Future Keystone documents should use English paths and the configured document
 root. If no current user instruction or project-local Keystone setting

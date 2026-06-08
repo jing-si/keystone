@@ -34,8 +34,8 @@ None
 
 - At project start, this repository had no existing `00_docs/` directory.
 - No `docs/convention.md` file was found.
-- Git is not initialized in this directory, so verification cannot rely on Git
-  diff or status.
+- Initial local verification could not rely on Git diff/status. This is
+  historical context and may not describe the current repository state.
 - Keystone is a skill-system project, not a single skill project.
 - The final output is four new independent skills: policy/scope/document
   clarification, standards/work-order authoring, standards/work-order reading
@@ -97,7 +97,9 @@ None
   user/main decision instead of modifying documents or code.
 - Derived agent document types are kept as optional 4 types and are created
   only when needed.
-- Progress status and subagent report status are separate.
+- Progress status and subagent report status are separate. Progress uses
+  `planned`, `ready`, `in_progress`, `assigned`, `reported`, `reviewing`,
+  `verifying`, `accepted`, or `blocked`.
 - Verification is standards-led; main extracts criteria into a Verification
   Checklist and may assign a verifier Goal.
 - Repository-local `skills/` is the source of truth for initial Keystone skill

@@ -77,6 +77,7 @@ verification path, and next action.
 
 - [ ] `00_docs/context-map.md` exists and links active standards and work
   packages.
+- [ ] `00_docs/standards/00_index.md` exists and indexes active standards.
 - [ ] `00_docs/standards/00_project-standard.md` defines project-wide rules for
   document authority, the four planned skill roles, and coordinator
   compatibility.
@@ -115,6 +116,7 @@ verification path, and next action.
 Included:
 
 - `00_docs/context-map.md`
+- `00_docs/standards/00_index.md`
 - `00_docs/standards/00_project-standard.md`
 - `00_docs/work-packages/WP-KEYSTONE-SKILL/00_index.md`
 - `00_docs/work-packages/WP-KEYSTONE-SKILL/00_work-order.md`
