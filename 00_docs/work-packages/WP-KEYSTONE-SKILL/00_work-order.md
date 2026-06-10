@@ -29,8 +29,8 @@ Include:
 - 구현 전에 네 개의 의도된 Keystone 스킬 역할을 정의한다.
 - 최종 스킬 이름을 정의한다: `keystone-clarify`, `keystone-author`,
   `keystone-reader`, `keystone-coordinator`.
-- `keystone-clarify`의 Plan Mode 결정(6) collection과 Default Mode document update
-  workflow를 정의한다.
+- `keystone-clarify`의 Plan Mode 결정(6) collection, Author handoff, 단순 오탈자 직접
+  수정 boundary를 정의한다.
 - document root resolution과 영어 path 규칙을 정의한다.
 - Keystone을 사용하는 target project의 initial project setup 동작과 Keystone config
   file을 정의한다.
@@ -304,8 +304,8 @@ Supporting references:
 - [ ] 최종 skill name은 `keystone-clarify`, `keystone-author`, `keystone-reader`,
   `keystone-coordinator`다.
 - [ ] 각 skill의 trigger와 non-trigger condition이 명확하다.
-- [ ] `keystone-clarify` trigger boundary, Plan Mode topic collection, Default Mode
-  document update behavior가 명확하다.
+- [ ] `keystone-clarify` trigger boundary, Plan Mode topic collection, Author handoff,
+  단순 오탈자 직접 수정 boundary가 명확하다.
 - [ ] 기준서(3)와 작업서(4)의 책임이 명확하다.
 - [ ] Parent-child 기준서 navigation behavior가 명확하다.
 - [ ] `standards/`와 `works/` tree rule이 명확하다.
@@ -339,9 +339,10 @@ Supporting references:
 Main은 현재 문서와 사용자 방향을 바탕으로 contract를 draft해야 한다. 모호성이 behavior에
 실질적으로 영향을 주면 향후 `keystone-clarify` contract를 사용한다. 즉 Plan Mode에서
 한 topic의 질문과 결정(6)을 수집하고, 사용 가능한 경우 `request_user_input` 또는 동등한
-selection UI를 사용하며, reflection과 edit plan을 요약한 뒤 Default Mode에서 관련
-원천 문서(2) update를 함께 적용한다. 이 step은 기존 skill example 또는 local skill
-convention을 조사하기 위해 read-only explorer를 사용할 수 있다. Superpowers는 명시적
+selection UI를 사용하며, reflection과 edit plan을 요약한다. 관련 원천 문서(2) update는
+기본적으로 `keystone-author`가 적용하고, `keystone-clarify`가 직접 수정할 수 있는 경우는
+다른 문서에 영향이 없는 현재 문서의 단순 오탈자로 제한한다. 이 step은 기존 skill example
+또는 local skill convention을 조사하기 위해 read-only explorer를 사용할 수 있다. Superpowers는 명시적
 호출이 있거나 수락된 Keystone 기준서(3) 또는 작업서(4)가 특정 quality-assist use를 허용한 경우에만
 supporting workflow로 사용할 수 있다. 예를 들어 Keystone authoring이 infra setup 기준서
 또는 작업서의 document format, location, required section을 정의하고, Superpowers
@@ -439,7 +440,8 @@ Reviewer는 다음을 확인해야 한다:
 
 ### 진행 기록
 
-진행 상태는 main acceptance 이후에만 `progress.md`에 기록한다.
+진행 기록(5)은 작업 복구에 의미 있는 진행을 남길 수 있다. 다만 S02를 complete 또는
+accepted로 표시하는 것은 main acceptance 이후에만 한다.
 
 ## Step S03. 초기 Keystone 스킬 세트 구현
 
@@ -559,4 +561,5 @@ Reviewer는 다음을 확인해야 한다:
 
 ### 진행 기록
 
-진행 상태는 main acceptance 이후에만 `progress.md`에 기록한다.
+진행 기록(5)은 작업 복구에 의미 있는 진행을 남길 수 있다. 다만 S03을 complete 또는
+accepted로 표시하는 것은 main acceptance 이후에만 한다.

@@ -97,8 +97,11 @@ implementation plan을 사용하기 전에 원천 문서(2) 간 충돌을 먼저
 - 수락 단계: S01
 - 영향 단계: S02
 - 상태: accepted
-- 결정: 원천 문서(2) 변경은 명확히 영향받는 관련 원천 문서와 파생 에이전트 문서(8)를
-  함께 업데이트해야 한다. 영향이 불확실하면 멈추고 묻는다.
+- 결정: 원천 문서(2) 변경은 명확히 영향받는 관련 원천 문서를 함께 업데이트해야 한다.
+  파생 에이전트 문서(8)는 기본 생성하지 않으며, 이미 존재하고 명확히 영향받는 경우에만
+  함께 업데이트한다. 새로 생성하는 경우는 사용자 명시 요청, 복잡한 handoff 사전 검토,
+  같은 step rerun, audit record 필요처럼 명시적 필요가 있을 때로 제한한다. 영향이
+  불확실하면 멈추고 묻는다.
 - 이유: 불확실한 의미 변경을 추측하지 않으면서 문서 일관성을 보존한다.
 
 ### DEC-011
@@ -129,7 +132,10 @@ implementation plan을 사용하기 전에 원천 문서(2) 간 충돌을 먼저
 - 결정: Progress status와 report status는 분리한다. Progress는 `planned`, `ready`,
   `in_progress`, `assigned`, `reported`, `reviewing`, `verifying`, `accepted`,
   `blocked`를 사용한다. Report는 `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`,
-  `NEEDS_SCOPE_CHANGE`, `BLOCKED`를 사용한다.
+  `NEEDS_SCOPE_CHANGE`, `BLOCKED`를 사용한다. 문서 작성/수정도 작업 복구에 의미 있는
+  문서 단위 변화라면 진행 기록(5)에 남긴다. 단순 오탈자, 미세 표현 수정, 의미 변화 없는
+  formatting은 진행 기록(5)에 남기지 않는다. `keystone-author`는 문서 작업 진행 기록을
+  담당하고, `keystone-coordinator`는 subagent workflow 상태 기록을 담당한다.
 - 이유: Workflow state와 subagent report outcome을 분리하기 위해서다.
 
 ### DEC-014
@@ -176,8 +182,9 @@ implementation plan을 사용하기 전에 원천 문서(2) 간 충돌을 먼저
 - 상태: accepted
 - 결정: `keystone-clarify`는 high-impact topic 결정(6)을 위한 별도 스킬이다.
   Plan Mode에서 topic question을 수집하고, 사용 가능한 경우 `request_user_input` 또는
-  동등한 selection UI를 사용하며, 수락된 reflection과 edit plan을 요약한 뒤 Default
-  Mode에서 관련 원천 문서(2) update를 지원한다.
+  동등한 selection UI를 사용하며, 수락된 reflection과 edit plan을 요약한다. 관련 원천
+  문서(2) update는 기본적으로 `keystone-author`가 담당한다. `keystone-clarify`가 직접
+  수정할 수 있는 경우는 다른 문서에 영향이 없는 현재 문서의 단순 오탈자로 제한한다.
 - 이유: 모든 사소한 수정을 질문으로 만들지 않으면서 결정이 여러 문서에 영향을 미칠 때
   일관성을 보존한다.
 
@@ -290,7 +297,8 @@ implementation plan을 사용하기 전에 원천 문서(2) 간 충돌을 먼저
 - Initial Keystone setup config는 Keystone을 사용하는 target project에 속한다. 이
   implementation repository는 S01 또는 S02 동안 `.keystone/config.yaml`을 요구하지
   않는다.
-- `keystone-author`는 기준서와 작업서의 creation/revision을 담당한다.
+- `keystone-author`는 기준서와 작업서의 creation/revision, 수락된 Clarify result의
+  원천 문서(2) 적용을 담당한다.
 - `keystone-reader`는 project orientation, document navigation, work preparation을
   담당한다.
 - `keystone-coordinator`는 Goal assignment, subagent routing, report, review,

@@ -29,7 +29,8 @@
 2. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-003`, `STD-KEYSTONE-006`,
    `STD-KEYSTONE-015`, `STD-KEYSTONE-016`, `STD-KEYSTONE-019`,
    `STD-KEYSTONE-021`, `STD-KEYSTONE-022`, `STD-KEYSTONE-023`
-3. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 parent 기준서가 우선한다.
+3. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
+   결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.
 4. 상세화 범위: 이 기준서는 `STD-KEYSTONE-019`의 Reader mode를 구현 가능한 수준으로
    상세화한다.
 

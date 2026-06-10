@@ -7,9 +7,18 @@
      호환성, 설정, Git 정책, 언어 정책, 검증에 대한 프로젝트 공통 규칙을 담는다.
 2. 스킬별 기준서 색인: `skills/00_index.md`
    - Keystone 스킬별 child 기준서로 이동하기 위한 색인이다.
-3. Reader 기준서: `skills/reader/standard-reader.md`
+3. Clarify 기준서: `skills/clarify/standard-clarify.md`
+   - `keystone-clarify`의 trigger, Plan Mode, Default Mode, reflection, edit plan,
+     impact update를 정의한다.
+4. Author 기준서: `skills/author/standard-author.md`
+   - `keystone-author`의 기준서(3)와 작업서(4) creation/revision, clarify result 적용,
+     progress update boundary를 정의한다.
+5. Reader 기준서: `skills/reader/standard-reader.md`
    - `keystone-reader`의 trigger, mode, read-only boundary, output contract,
      mismatch handling을 정의한다.
+6. Coordinator 기준서: `skills/coordinator/standard-coordinator.md`
+   - `keystone-coordinator`의 Goal assignment, subagent routing, report, review,
+     verification, acceptance flow를 정의한다.
 
 ## 향후 계층 방향
 
@@ -17,8 +26,8 @@
    요약한다.
 2. 스킬별 기준서는 `keystone-clarify`, `keystone-author`, `keystone-reader`,
    `keystone-coordinator`의 상세 계약을 담는다.
-3. `keystone-reader` 기준서는 첫 번째 child 기준서로 작성되었고, 나머지 스킬별 기준서는
-   S02에서 이어서 작성한다.
+3. `keystone-clarify`, `keystone-author`, `keystone-reader`, `keystone-coordinator`
+   기준서는 child 기준서로 작성되었다.
 
 ## 읽기 규칙
 

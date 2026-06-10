@@ -6,25 +6,25 @@
 
 ## 현재 스킬별 기준서
 
-1. `reader/00_index.md`
+1. `clarify/00_index.md`
+   - `keystone-clarify`의 topic-scoped decision collection과 document update flow를
+     정의한다.
+2. `author/00_index.md`
+   - `keystone-author`의 기준서(3)와 작업서(4) creation/revision contract를 정의한다.
+3. `reader/00_index.md`
    - `keystone-reader`의 trigger, mode, read-only boundary, output contract,
      mismatch handling을 정의한다.
+4. `coordinator/00_index.md`
+   - `keystone-coordinator`의 Goal assignment, subagent routing, report, review,
+     verification, acceptance flow를 정의한다.
 
 ## 계획된 스킬별 기준서
 
-1. `clarify/00_index.md`
-   - `keystone-clarify`의 topic-scoped decision collection과 document update flow를
-     정의할 예정이다.
-2. `author/00_index.md`
-   - `keystone-author`의 기준서(3)와 작업서(4) creation/revision contract를 정의할
-     예정이다.
-3. `coordinator/00_index.md`
-   - `keystone-coordinator`의 Goal assignment, subagent routing, report, review,
-     verification, acceptance flow를 정의할 예정이다.
+현재 추가로 계획된 스킬별 기준서는 없다.
 
 ## 읽기 규칙
 
 1. 전체 정책과 공통 용어는 `../00_project-standard.md`를 먼저 따른다.
 2. 스킬별 기준서는 전체 공통 기준서를 반복하지 않고 개별 스킬의 상세 계약만 보강한다.
-3. 전체 공통 기준서와 스킬별 기준서가 충돌하면 먼저 충돌을 보고하고 사용자 또는 main의
-   결정(6)을 받는다.
+3. 전체 공통 기준서와 스킬별 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
+   결정(6)을 받는다. 결정 전까지는 전체 공통 기준서를 임시 우선 기준으로 삼는다.

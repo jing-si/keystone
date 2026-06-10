@@ -97,8 +97,9 @@ None
   `keystone-coordinator`다.
 - `keystone-clarify`는 high-impact topic 결정(6)을 위한 스킬이다. Plan Mode에서
   관련 질문을 수집하고, 사용 가능한 경우 `request_user_input` 또는 동등한 selection
-  UI를 선호하며, reflection과 edit plan을 요약한 뒤 Default Mode에서 관련 원천
-  문서(2)를 함께 업데이트해야 한다.
+  UI를 선호하며, reflection과 edit plan을 요약한다. 관련 원천 문서(2) update는 기본적으로
+  `keystone-author`가 담당하며, `keystone-clarify`가 직접 수정할 수 있는 경우는 다른
+  문서에 영향이 없는 현재 문서의 단순 오탈자로 제한한다.
 - 작업서 step은 `Goal`, `Scope`, `Source Context`, `Completion Criteria`,
   `Stop Conditions`, `Verification`, `Expected Output`을 요구한다. `Suggested Role`은
   선택 사항이며 delegation 가능성이 클 때 권장한다.
@@ -150,8 +151,59 @@ None
 - 이 작업은 skill implementation을 시작하지 않으며, S01 또는 S02 acceptance 상태를
   변경하지 않는다.
 
+### S02 Clarify child 기준서 초안
+
+- `keystone-reader` child 기준서는 현재 S02 초안으로 수용 가능한 상태로 검토했다.
+- `keystone-clarify` child 기준서 초안을 `00_docs/standards/skills/clarify/standard-clarify.md`
+  에 작성했다.
+- 이 초안은 `STD-KEYSTONE-025`를 상세화하며, Clarify의 trigger, non-trigger,
+  topic boundary, Plan Mode, Default Mode, reflection/edit plan, impact update,
+  initial setup question, stop condition, verification을 정의한다.
+- 이 작업은 skill implementation을 시작하지 않으며, S01 또는 S02 acceptance 상태를
+  변경하지 않는다.
+
+### S02 Author child 기준서 초안
+
+- `keystone-author` child 기준서 초안을 `00_docs/standards/skills/author/standard-author.md`
+  에 작성했다.
+- 이 초안은 `STD-KEYSTONE-029`를 추가해 parent 기준서에는 Author의 짧은 역할과 child
+  link만 두고, 상세 계약은 child 기준서로 분리한다.
+- 이 초안은 Author의 trigger, non-trigger, required input, create/revise/clarify-apply,
+  normalize/progress update mode, 기준서(3) 작성 규칙, 작업서(4) 작성 규칙, stop condition,
+  verification을 정의한다.
+- 이 작업은 skill implementation을 시작하지 않으며, S01 또는 S02 acceptance 상태를
+  변경하지 않는다.
+
+### S02 Coordinator child 기준서 초안
+
+- `keystone-coordinator` child 기준서 초안을
+  `00_docs/standards/skills/coordinator/standard-coordinator.md`에 작성했다.
+- 이 초안은 `STD-KEYSTONE-030`을 추가해 parent 기준서에는 Coordinator의 짧은 역할과 child
+  link만 두고, 상세 계약은 child 기준서로 분리한다.
+- 이 초안은 Coordinator의 trigger, non-trigger, required input, common workflow, runtime
+  output, role routing, report handling, review/verification flow, acceptance,
+  progress update boundary, 파생 에이전트 문서(8) 생성 조건, stop condition,
+  verification을 정의한다.
+- 이 작업은 skill implementation을 시작하지 않으며, S01 또는 S02 acceptance 상태를
+  변경하지 않는다.
+
+### S02 acceptance gap 보정
+
+- Parent/child 기준서 충돌은 충돌을 보고하고 결정(6)을 받되, 결정 전까지 parent 기준서를
+  임시 우선 기준으로 삼도록 네 child 기준서와 index를 맞췄다.
+- 파생 에이전트 문서(8)는 기본 생성하지 않고, 이미 존재하며 명확히 영향받는 경우만
+  갱신하며, 새 생성은 명시적 필요 조건으로 제한하도록 parent/child 기준서와 결정(6)
+  기록을 맞췄다.
+- `keystone-clarify`는 수락된 decision summary와 edit plan을 정리하고, 관련 원천 문서(2)
+  반영은 기본적으로 `keystone-author`가 담당하도록 기준을 정리했다. Clarify 직접 수정은
+  다른 문서에 영향이 없는 현재 문서의 단순 오탈자로 제한했다.
+- 문서 작성/수정도 작업 복구에 의미 있는 문서 단위 변화라면 진행 기록(5)에 남기고,
+  단순 오탈자, 미세 표현 수정, 의미 변화 없는 formatting은 남기지 않도록 기준을 정리했다.
+- 이 작업은 skill implementation을 시작하지 않으며, S01 또는 S02 acceptance 상태를
+  변경하지 않는다.
+
 ## 다음 권장 작업
 
-Step S01 amend와 `keystone-reader` child 기준서 초안을 검토해 accept한 뒤 S02를 이어서
-진행한다. 다음 S02 작업은 `keystone-clarify`, `keystone-author`, `keystone-coordinator`의
-스킬별 child 기준서 계약을 정의하는 것이다.
+Step S01 amend와 작성된 Reader/Clarify/Author/Coordinator child 기준서 초안을 검토해
+accept한 뒤 S02 acceptance gap을 확인한다. 그 다음 S03에서 네 개 Keystone skill source
+file 구현을 시작할 수 있다.
