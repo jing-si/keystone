@@ -10,7 +10,7 @@
 
 1. `keystone-author`의 trigger와 non-trigger condition
 2. 기준서(3) creation/revision contract
-3. 작업서(4)와 작업 패키지 문서 creation/revision contract
+3. 작업서(4) creation/revision contract와 `works/` tree 작성 boundary
 4. 수락된 Clarify result를 원천 문서(2)에 적용
 5. Parent-child 기준서 구조화와 index update
 6. Progress update boundary
@@ -33,9 +33,9 @@
    `STD-KEYSTONE-006`, `STD-KEYSTONE-007`, `STD-KEYSTONE-008`,
    `STD-KEYSTONE-010`, `STD-KEYSTONE-011`, `STD-KEYSTONE-015`,
    `STD-KEYSTONE-016`, `STD-KEYSTONE-017`, `STD-KEYSTONE-018`,
-   `STD-KEYSTONE-021`, `STD-KEYSTONE-022`, `STD-KEYSTONE-023`,
-   `STD-KEYSTONE-028`, `STD-KEYSTONE-029`
-3. 관련 결정(6): `DEC-001`, `DEC-025`, `DEC-026`
+   `STD-KEYSTONE-020`, `STD-KEYSTONE-021`, `STD-KEYSTONE-022`, `STD-KEYSTONE-023`,
+   `STD-KEYSTONE-028`, `STD-KEYSTONE-029`, `STD-KEYSTONE-031`
+3. 관련 결정(6): `00_docs/works/decisions.md`
 4. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.
 5. 상세화 범위: 이 기준서는 `STD-KEYSTONE-029`의 Author behavior를 구현 가능한 수준으로
@@ -89,7 +89,7 @@ Author는 다음 input을 사용할 수 있어야 한다.
 7. 현재 repository state와 Git worktree risk
 
 Input이 부족하고 잘못된 문서 변경으로 이어질 위험이 있으면 Author는 수정하지 않고
-질문하거나 `keystone-clarify`로 넘겨야 한다.
+main/user에게 결정(6)을 요청하거나 `keystone-clarify`가 다룰 topic으로 보고해야 한다.
 
 ## Common workflow
 
@@ -100,12 +100,14 @@ Author는 작업 mode와 무관하게 다음 순서를 따른다.
 3. 요청이 create, revise, clarify-apply, normalize, progress update 중 무엇인지 정한다.
 4. 변경 대상 원천 문서(2)와 section을 식별한다.
 5. 승인 범위와 impact update 대상이 명확한지 확인한다.
-6. High-impact 결정(6)이 부족하면 문서 수정을 멈추고 `keystone-clarify`를 요청한다.
+6. High-impact 결정(6)이 부족하면 문서 수정을 멈추고 main/user에게 결정(6)을 요청하거나
+   `keystone-clarify`가 다룰 topic으로 보고한다.
 7. 변경 전 목표, 변경 파일, 가정, risk를 짧게 알린다.
 8. 승인된 범위 안에서만 원천 문서(2)를 수정한다.
 9. 필요한 index, context map, progress, 결정(6) 기록을 함께 검토한다.
-10. 문서 link, 용어, 구조, Markdown 형식을 검증한다.
-11. 변경 파일, 적용한 결정(6), 검증 결과, 남은 risk를 보고한다.
+10. 태그(9)가 있는 경우 같은 태그를 가진 문서를 impact candidate로 검토한다.
+11. 문서 link, 용어, 구조, Markdown 형식을 검증한다.
+12. 변경 파일, 적용한 결정(6), 검증 결과, 남은 risk를 보고한다.
 
 ## Mode contract
 
@@ -116,9 +118,8 @@ Create Mode는 새 원천 문서(2)를 만든다.
 1. 기준서(3)는 `standards/` tree와 `STD-KEYSTONE-016`, `STD-KEYSTONE-017`을 따른다.
 2. 작업서(4)는 `works/` tree와 `STD-KEYSTONE-016`, `STD-KEYSTONE-017`,
    `STD-KEYSTONE-018`을 따른다.
-3. 현재 `WP-KEYSTONE-SKILL`처럼 migration이 수락되지 않은 기존 작업 패키지는 기존 위치를
-   유지한다.
-4. 새 package node를 만들면 `00_index.md`를 함께 만든다.
+3. 새 작업 문서는 `works/` tree에만 만든다.
+4. 새 work node를 만들면 `00_index.md`를 함께 만든다.
 5. Minimal document set을 먼저 만들고, scope, decisions, coordination 문서는 필요할 때만
    추가한다.
 6. 파생 에이전트 문서(8)는 `STD-KEYSTONE-020`의 생성 및 업데이트 조건을 만족할 때만
@@ -149,6 +150,8 @@ Clarify-Apply Mode는 수락된 Clarify result를 문서에 반영한다.
 4. 적용 중 충돌이 발견되면 중단하고 main/user 결정(6)을 요청한다.
 5. 적용 후 필요한 경우 결정(6) 기록과 진행 기록(5)을 갱신한다.
 6. 다른 문서와 함께 맞춰야 하는 원천 문서(2) 수정은 Clarify가 아니라 Author가 담당한다.
+7. `keystone-clarify`가 명시 승인된 현재 대상 문서의 단순 오탈자만 직접 수정할 수 있다는
+   예외는 `standard-clarify.md`의 Default Mode contract를 따른다.
 
 ### Normalize Mode
 
@@ -190,7 +193,7 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
 5. 용어는 `## 표준 용어`의 첨자 규칙을 따른다.
 6. 긴 문단보다 번호 목록과 `이름: 설명` 구조를 우선한다.
 7. 기계적으로 참조되는 ID, path, status, field name은 기존 literal 값을 유지한다.
-8. 관련 작업 패키지가 있으면 기준서 끝이나 index에서 link한다.
+8. 관련 active work가 있으면 기준서 끝이나 index에서 link한다.
 
 ## 작업서 작성 규칙
 
@@ -205,6 +208,38 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
 6. Verification은 기준서가 요구하는 검증을 약화하지 않는다.
 7. Context Pack Seed는 main이 필요한 문서만 추출할 수 있게 작성한다.
 8. Review points는 reviewer focus로 변환할 수 있어야 한다.
+
+## 작업서 생성 표준
+
+새 작업서(4)를 만들 때는 다음 표준을 따른다.
+
+1. 작업서는 기준서 tree에 종속되지 않는다.
+2. 기준서별, 기능별, 구현 단계별, 검증 단계별로 독립 work를 만들 수 있다.
+3. 각 work는 하나의 reviewable goal을 가져야 한다.
+4. 작업서는 관련 기준서(3)를 참조하지만, 기준서 안에 실행 순서를 박지 않는다.
+5. 실행 순서는 `00_docs/works/00_index.md` 또는 별도 상위 work plan이 관리한다.
+6. 너무 작은 작업은 별도 work로 만들지 않고 관련 work의 step으로 흡수한다.
+7. Work node는 기본적으로 `00_index.md`, `work-{slug}.md`, `progress.md`를 가진다.
+8. 결정(6) 기록은 여러 work에 영향을 주면 `works/decisions.md`에, 특정 work에만 영향을
+   주면 해당 work node의 `decisions.md`에 둔다.
+9. 작업서 생성 후 `context-map.md`와 `works/00_index.md`의 link와 status drift를 확인한다.
+
+## 태그 작성과 impact 검토
+
+Author는 태그(9)를 다음처럼 다룬다.
+
+1. 새 기준서(3)나 작업서(4)를 만들 때 태그가 관련 문서 탐색에 실제 도움이 되는 경우에만
+   태그를 부여한다.
+2. 태그는 필수가 아니며 2-5개 정도의 의미 있는 태그를 선호한다.
+3. 태그를 붙일 때는 먼저 같은 의미의 기존 태그가 있는지 확인하고, 가능하면 재사용한다.
+4. 문서 전체에 적용되는 태그는 YAML frontmatter에 둔다.
+5. 특정 section에만 적용되는 태그는 heading 바로 위 Markdown comment에 둔다.
+6. 태그는 주제 태그와 속성 태그를 함께 가질 수 있다.
+   - 예: `이메일발송`, `에러`
+7. 기준서나 작업서를 수정할 때 같은 태그를 가진 문서는 impact candidate로 검토한다.
+8. 같은 태그가 있어도 자동 수정하지 않는다.
+9. 태그가 없어도 관련 없음으로 단정하지 않고 link, path, heading, keyword도 함께 확인한다.
+10. 실제 수정은 승인 범위와 의미 영향이 명확할 때만 수행한다.
 
 ## Output contract
 
@@ -244,7 +279,9 @@ Author 기준은 다음 방법으로 검증한다.
 4. 작업서(4) step은 `STD-KEYSTONE-018`의 Goal unit field를 복구할 수 있어야 한다.
 5. Parent-child 기준서 구조는 `STD-KEYSTONE-003`과 일관되어야 한다.
 6. 문서 변경 후 관련 index와 context map link가 현재 상태와 맞아야 한다.
-7. Verification command:
+7. 태그가 있는 문서를 수정할 때 같은 태그의 impact candidate를 검토했는지 확인할 수 있어야
+   한다.
+8. Verification command:
    - `rg --files 00_docs`
    - Author 관련 기준서를 읽어 link와 scope consistency 확인
    - `git diff --check`

@@ -12,14 +12,14 @@
 2. Topic-scoped question collection
 3. Plan Mode selection UI 또는 동등한 질문 흐름
 4. Reflection과 decision summary
-5. Default Mode author handoff와 단순 오탈자 수정 boundary
+5. Default Mode author handoff와 명시 승인된 현재 대상 문서의 단순 오탈자 수정 boundary
 6. Impact update 대상과 stop condition
 7. Initial project setup question contract
 
 ## 적용하지 않는 범위
 
-1. 사소한 typo, wording, formatting 질문을 매번 생성하기. 단, 현재 문서 안의 단순
-   오탈자는 Default Mode 직접 수정 예외로 처리할 수 있다.
+1. 사소한 typo, wording, formatting 질문을 매번 생성하기. 단, 명시 승인된 현재 대상 문서
+   안의 단순 오탈자는 Default Mode 직접 수정 예외로 처리할 수 있다.
 2. 사용자 수락 없이 원천 문서(2), code, config, generated file 수정
 3. 스킬 구현 파일 작성
 4. 기준서(3)나 작업서(4)를 직접 생성하거나 넓은 범위에서 재작성하기
@@ -30,10 +30,9 @@
 
 1. Parent 기준서: `../../00_project-standard.md`
 2. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-007`, `STD-KEYSTONE-009`,
-   `STD-KEYSTONE-021`, `STD-KEYSTONE-025`, `STD-KEYSTONE-026`,
-   `STD-KEYSTONE-027`, `STD-KEYSTONE-028`
-3. 관련 결정(6): `DEC-018`, `DEC-019`, `DEC-020`, `DEC-021`, `DEC-023`,
-   `DEC-025`
+   `STD-KEYSTONE-020`, `STD-KEYSTONE-021`, `STD-KEYSTONE-025`, `STD-KEYSTONE-026`,
+   `STD-KEYSTONE-027`, `STD-KEYSTONE-028`, `STD-KEYSTONE-031`
+3. 관련 결정(6): `00_docs/works/decisions.md`
 4. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.
 5. 상세화 범위: 이 기준서는 `STD-KEYSTONE-025`의 Clarify behavior를 구현 가능한 수준으로
@@ -66,8 +65,8 @@
 
 `keystone-clarify`는 다음 경우에 사용하지 않는다.
 
-1. 사소한 수정마다 high-impact 질문을 만들기. 단, 현재 문서 안의 단순 오탈자는
-   Default Mode 직접 수정 예외로 처리할 수 있다.
+1. 사소한 수정마다 high-impact 질문을 만들기. 단, 명시 승인된 현재 대상 문서 안의 단순
+   오탈자는 Default Mode 직접 수정 예외로 처리할 수 있다.
 2. 이미 수락된 결정(6)과 대상 문서가 명확해 Author가 처리해야 하는 단일 문서 update
 3. Reader가 수행해야 하는 read-only orientation 또는 document navigation
 4. Author가 수행해야 하는 기준서(3) 또는 작업서(4) 작성 자체
@@ -101,25 +100,30 @@ Plan Mode는 질문과 결정을 수집하는 mode다.
 ## Default Mode contract
 
 Default Mode는 수락된 clarify result를 바탕으로 Author가 문서 update를 적용할 수 있게
-정리한다. Clarify가 직접 수정할 수 있는 경우는 다른 문서에 영향을 주지 않는 현재 문서의
-단순 오탈자로 제한한다.
+정리한다. Clarify가 직접 수정할 수 있는 경우는 명시 승인된 현재 대상 문서 안에서 다른
+문서에 영향을 주지 않는 단순 오탈자로 제한한다.
 
 1. 적용 전 조건:
    - topic이 충분히 결정되어 있다.
    - 사용자 또는 main session이 decision summary와 edit plan을 수락했다.
    - 변경 대상 원천 문서(2)와 section이 식별되어 있다.
 2. Author handoff 대상:
+   - Handoff는 자동 실행이 아니며, main 또는 사용자가 `keystone-author` 호출 여부와 적용
+     범위를 결정한다.
    - 관련 기준서(3)
    - 관련 작업서(4)
    - 진행 기록(5)
    - 결정(6) 기록
    - `STD-KEYSTONE-020`의 조건을 만족하는 파생 에이전트 문서(8)
 3. Clarify 직접 수정 허용:
-   - 현재 문서 안의 단순 오탈자
-   - 다른 문서, scope, acceptance criteria, status semantics에 영향이 없는 단순 오탈자 수정
+   - 명시 승인된 현재 대상 문서 안의 단순 오탈자
+   - 다른 문서, 기준서(3), 작업서(4), scope, acceptance criteria, status semantics에 영향이
+     없는 단순 오탈자 수정
 4. 금지:
    - 수락되지 않은 topic을 근거로 문서 수정
    - 다른 문서와 함께 맞춰야 하는 원천 문서(2) 수정
+   - 기준, 정책, scope, acceptance criteria, status semantics처럼 다른 문서와 함께 맞춰야
+     하는 변경 직접 수정
    - implementation code 수정
    - 승인되지 않은 scope 또는 acceptance criteria 변경
    - common/global instruction file에 setup result 기록
@@ -149,7 +153,11 @@ Clarify result는 다음을 포함해야 한다.
 4. 결정(6)은 장기 정책이나 여러 문서에 영향을 주는 경우에 기록한다.
 5. 파생 에이전트 문서(8)는 이미 존재하고 명확히 영향받을 때만 edit plan에 포함한다. 새로
    생성하는 경우는 `STD-KEYSTONE-020`의 명시적 필요 조건을 따른다.
-6. 영향 범위가 불확실하면 문서 수정을 멈추고 사용자 또는 main 결정(6)을 요청한다.
+6. 태그(9)가 있는 topic이나 문서가 관련되면 같은 태그를 가진 문서를 affected document
+   후보로 검토한다.
+7. 같은 태그가 있어도 자동으로 edit plan에 포함하지 않는다.
+8. 태그가 없어도 관련 없음으로 단정하지 않는다.
+9. 영향 범위가 불확실하면 문서 수정을 멈추고 사용자 또는 main 결정(6)을 요청한다.
 
 ## Initial setup question contract
 
@@ -193,6 +201,8 @@ Clarify 기준은 다음 방법으로 검증한다.
 4. Reflection과 edit plan만 보고 Author가 문서 update 범위를 판단할 수 있어야 한다.
 5. Initial setup question이 `STD-KEYSTONE-026`, `STD-KEYSTONE-027`,
    `STD-KEYSTONE-028`과 일관되어야 한다.
-6. Verification command:
+6. 태그 기반 affected document 후보가 있으면 edit plan에서 후보와 실제 반영 여부를 구분할 수
+   있어야 한다.
+7. Verification command:
    - `rg --files 00_docs`
    - Clarify 관련 기준서를 읽어 link와 scope consistency 확인

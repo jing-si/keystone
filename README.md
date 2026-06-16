@@ -67,7 +67,7 @@ Start with:
 
 - [`00_docs/context-map.md`](00_docs/context-map.md)
 - [`00_docs/standards/00_project-standard.md`](00_docs/standards/00_project-standard.md)
-- [`00_docs/work-packages/WP-KEYSTONE-SKILL/00_index.md`](00_docs/work-packages/WP-KEYSTONE-SKILL/00_index.md)
+- [`00_docs/works/00_index.md`](00_docs/works/00_index.md)
 
 ## Relationship To Prototype Skills
 
