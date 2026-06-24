@@ -1,19 +1,31 @@
+---
+doc_type: standard_index
+tags:
+  - reader
+  - 문서탐색
+  - 작업준비
+  - 기준서
+---
+
 # keystone-reader 기준서 색인
 
 이 색인은 `keystone-reader` child 기준서로 이동하기 위한 기준이다.
 
+<!-- tags: reader, 문서탐색, 작업준비, 기준서 -->
 ## 기준서
 
 1. `KEY-standard-reader.md`
    - `keystone-reader`의 목적, trigger/non-trigger, required input, mode별 workflow,
      output contract, stop condition, verification을 정의한다.
 
+<!-- tags: reader, 기준서, 문서체계 -->
 ## 상위 기준서
 
 1. `../../00_KEY-project-standard.md`
    - Keystone 공통 정책, 표준 용어, 문서 tree, source authority, Reader mode의 상위
      규칙을 정의한다.
 
+<!-- tags: reader, 문서탐색, 기준서 -->
 ## 읽기 규칙
 
 1. Reader 관련 작업을 준비할 때는 `../../00_KEY-project-standard.md`의 `STD-KEYSTONE-019`를

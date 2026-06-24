@@ -1,19 +1,31 @@
+---
+doc_type: standard_index
+tags:
+  - coordinator
+  - subagent
+  - verification
+  - acceptance
+---
+
 # keystone-coordinator 기준서 색인
 
 이 색인은 `keystone-coordinator` child 기준서로 이동하기 위한 기준이다.
 
+<!-- tags: coordinator, subagent, verification, acceptance -->
 ## 문서
 
 1. `KEY-standard-coordinator.md`
    - `keystone-coordinator`의 목적, trigger/non-trigger, Goal assignment, Context Pack,
      subagent routing, report handling, review, verification, acceptance flow를 정의한다.
 
+<!-- tags: coordinator, 기준서, 스킬계약 -->
 ## Parent 기준서
 
 1. `../../00_KEY-project-standard.md`
    - Keystone 공통 용어, main/subagent 책임, 작업서(4) Goal unit, 진행 상태와 report
      status, 기준서-led verification, 파생 에이전트 문서(8) 정책을 정의한다.
 
+<!-- tags: coordinator, 기준서, 작업실행 -->
 ## 읽기 규칙
 
 1. Coordinator의 공통 orchestration 정책은 `../../00_KEY-project-standard.md`의

@@ -1,9 +1,18 @@
+---
+doc_type: standard_index
+tags:
+  - 스킬계약
+  - 기준서
+  - 문서체계
+---
+
 # Keystone 스킬별 기준서 색인
 
 이 색인은 Keystone 스킬별 child 기준서로 이동하기 위한 기준이다. 전체 공통 규칙은 먼저
 `../00_KEY-project-standard.md`를 읽고, 개별 스킬의 상세 계약이 필요할 때 이 색인에서
 해당 스킬 기준서로 내려간다.
 
+<!-- tags: 스킬계약, 기준서, 문서체계 -->
 ## 현재 스킬별 기준서
 
 1. `clarify/00_KEY-index.md`
@@ -18,10 +27,12 @@
    - `keystone-coordinator`의 Goal assignment, subagent routing, report, review,
      verification, acceptance flow를 정의한다.
 
+<!-- tags: 스킬계약, 기준서 -->
 ## 계획된 스킬별 기준서
 
 현재 추가로 계획된 스킬별 기준서는 없다.
 
+<!-- tags: 기준서, 문서체계, 스킬계약 -->
 ## 읽기 규칙
 
 1. 전체 정책과 공통 용어는 `../00_KEY-project-standard.md`를 먼저 따른다.

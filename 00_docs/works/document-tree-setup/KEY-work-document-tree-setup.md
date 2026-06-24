@@ -1,10 +1,21 @@
+---
+doc_type: work_order
+tags:
+  - 작업서
+  - 문서체계
+  - 작업순서
+  - author
+---
+
 # Document Tree Setup 작업서(4)
 
+<!-- tags: 작업서, 문서체계, 작업순서 -->
 ## Goal
 
 `00_docs/works/` 아래에 기준서/기능별 work node를 만들고, 실행 순서를
 `00_docs/works/00_KEY-index.md`에서 관리하도록 정리한다.
 
+<!-- tags: 작업서, 문서체계, 범위 -->
 ## Scope
 
 Include:
@@ -26,6 +37,7 @@ Conditionally allowed:
 
 - 링크 일관성을 위한 좁은 기준서 문구 보정
 
+<!-- tags: 원천문서, 기준서, author -->
 ## Source Context
 
 - `00_docs/KEY-context-map.md`
@@ -33,6 +45,7 @@ Conditionally allowed:
 - `00_docs/standards/skills/author/KEY-standard-author.md`
 - `00_docs/works/KEY-decisions.md`
 
+<!-- tags: 작업서, 검증, 작업순서 -->
 ## Completion Criteria
 
 - [ ] S00-S07 work node가 각각 존재한다.
@@ -41,23 +54,27 @@ Conditionally allowed:
 - [ ] umbrella work node가 active work로 남아 있지 않다.
 - [ ] stale `work-packages/` 링크가 남아 있지 않다.
 
+<!-- tags: 작업서, 문서체계 -->
 ## Recommended Approach
 
 Main session이 직접 처리한다. 작업 구조와 progress 기준을 바꾸는 작업이므로 변경 후 링크와
 상태를 전체적으로 검증한다.
 
+<!-- tags: 작업서, 문서체계, author -->
 ## Context Pack Seed
 
 - 사용자 승인: work를 step별/기준서별 node로 분리
 - `works/00_KEY-index.md`가 순서를 관리한다는 결정
 - Author 기준서에 반영할 작업서 생성 표준
 
+<!-- tags: 작업서, 범위 -->
 ## Stop Conditions
 
 - 삭제하려는 umbrella work에 보존해야 할 unique 정보가 있다.
 - 실행 순서와 work identity를 분리할 수 없다.
 - `00_docs/`와 README 밖 변경이 필요하다.
 
+<!-- tags: 검증, 작업서 -->
 ## Verification
 
 Allowed:
@@ -67,18 +84,21 @@ Allowed:
 - `git diff --check`
 - `rg -n "[ \t]+$" 00_docs README.md`
 
+<!-- tags: 작업서, 문서체계, 작업순서 -->
 ## Expected Output
 
 - 기준서/기능별 work node
 - 순서를 관리하는 `works/00_KEY-index.md`
 - S00부터 시작하는 개별 progress
 
+<!-- tags: review, 작업서, 문서체계 -->
 ## Review Points
 
 - 기준서 구조와 작업 순서가 분리되었는지 확인한다.
 - S01-S07이 아직 accepted로 표시되지 않았는지 확인한다.
 - 각 work가 하나의 reviewable goal을 가지는지 확인한다.
 
+<!-- tags: progress-update, 작업서 -->
 ## Progress Record
 
 진행 상태는 `KEY-progress.md`에 기록한다. S00은 main acceptance 후에만 accepted로 표시한다.

@@ -1,19 +1,31 @@
+---
+doc_type: standard_index
+tags:
+  - author
+  - 문서작성
+  - 작업서생성
+  - 기준서
+---
+
 # keystone-author 기준서 색인
 
 이 색인은 `keystone-author` child 기준서로 이동하기 위한 기준이다.
 
+<!-- tags: author, 문서작성, 작업서생성, 기준서 -->
 ## 문서
 
 1. `KEY-standard-author.md`
    - `keystone-author`의 목적, trigger/non-trigger, 기준서(3)와 작업서(4)
      creation/revision, clarify result 적용, progress update boundary를 정의한다.
 
+<!-- tags: author, 기준서, 문서체계 -->
 ## Parent 기준서
 
 1. `../../00_KEY-project-standard.md`
    - Keystone 공통 용어, 원천 문서(2) 권위, 기준서(3)/작업서(4) 책임, parent-child
      기준서 tree, work step field, document root, naming rule을 정의한다.
 
+<!-- tags: author, 문서작성, 기준서 -->
 ## 읽기 규칙
 
 1. Author의 공통 문서 작성 정책은 `../../00_KEY-project-standard.md`의
