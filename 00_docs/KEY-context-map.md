@@ -1,11 +1,13 @@
 ---
 doc_type: context_map
-tags:
-  - 문서체계
-  - 원천문서
-  - 작업순서
-  - 스킬계약
-  - 부트스트랩
+key:
+  id: key.context-map
+  refs:
+    - key.topic.document-system
+    - key.doc.source
+    - key.topic.work-sequence
+    - key.topic.skill-contract
+    - key.topic.bootstrap
 ---
 
 # 프로젝트 컨텍스트 맵
@@ -13,7 +15,7 @@ tags:
 활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 active work tree는
 `00_docs/works/`다.
 
-<!-- tags: 원천문서, 스킬계약, 부트스트랩 -->
+<!-- key: id=key.context-map.project refs=key.doc.source key.topic.skill-contract key.topic.bootstrap -->
 ## 프로젝트
 
 이 저장소는 `keystone` 스킬 시스템을 정의하고 구현하기 위한 저장소다. 최종 산출물은
@@ -27,7 +29,7 @@ tags:
 기존 `work-package-doc-architect`와 `subagent-work-coordinator` 스킬은 참고용 prototype이다.
 이들은 최종 runtime dependency가 아니며 새 Keystone 스킬로 대체될 예정이다.
 
-<!-- tags: 문서체계, 원천문서, 스킬계약 -->
+<!-- key: id=key.context-map.standards refs=key.topic.document-system key.doc.source key.topic.skill-contract -->
 ## 기준서
 
 | 영역 | 경로 | 읽는 시점 |
@@ -40,7 +42,7 @@ tags:
 | Clarify | `00_docs/standards/skills/clarify/KEY-standard-clarify.md` | `keystone-clarify`의 decision collection, reflection, Author handoff를 확인할 때 읽는다 |
 | Coordinator | `00_docs/standards/skills/coordinator/KEY-standard-coordinator.md` | `keystone-coordinator`의 Goal assignment, routing, report, review, verification, acceptance flow를 확인할 때 읽는다 |
 
-<!-- tags: 문서체계, 원천문서, 작업순서 -->
+<!-- key: id=key.context-map.work-order refs=key.topic.document-system key.doc.source key.topic.work-sequence -->
 ## 작업서
 
 | 작업 | 경로 | 상태 | 담당 영역 |
@@ -55,7 +57,7 @@ tags:
 | Skill Creation | `00_docs/works/skill-creation/00_KEY-index.md` | planned | Keystone skill source 생성 |
 | Integration Verification | `00_docs/works/integration-verification/00_KEY-index.md` | planned | 통합 검증 |
 
-<!-- tags: 문서체계, 원천문서 -->
+<!-- key: id=key.context-map.document-tree-policy refs=key.topic.document-system key.doc.source -->
 ## 문서 트리 정책
 
 Keystone 문서는 영어 경로와 설정된 document root(1)를 사용한다. 현재 사용자 지시나
@@ -99,7 +101,7 @@ Keystone 문서는 영어 경로와 설정된 document root(1)를 사용한다. 
 기준서 구조에 종속되지 않고 reviewable goal 단위로 만든다. 실행 순서는
 `00_docs/works/00_KEY-index.md`가 관리하며, 최종 작업서는 `KEY-work-{slug}.md` 형식을 사용한다.
 
-<!-- tags: 작업순서, 문서체계 -->
+<!-- key: id=key.context-map.section refs=key.topic.work-sequence key.topic.document-system -->
 ## 현재 작업 단계
 
 현재 active work는 S01이다. S00 문서 트리 재정비는 accepted 상태다.
@@ -115,7 +117,7 @@ Keystone 문서는 영어 경로와 설정된 document root(1)를 사용한다. 
 | S06 | Skill 생성 | 네 개 Keystone skill source를 만든다 |
 | S07 | 통합 검증 | 문서와 skill source의 end-to-end 흐름을 검증한다 |
 
-<!-- tags: 스킬계약, 부트스트랩 -->
+<!-- key: id=key.context-map.planned-keystone-skills refs=key.topic.skill-contract key.topic.bootstrap -->
 ## 계획된 Keystone 스킬
 
 | 스킬 | 상태 | 목적 |
@@ -125,14 +127,14 @@ Keystone 문서는 영어 경로와 설정된 document root(1)를 사용한다. 
 | `keystone-clarify` | planned | 영향도 높은 결정(6)을 topic 단위로 수집하고 Author가 적용할 edit plan을 만든다 |
 | `keystone-coordinator` | planned | role 기반 Goal assignment, report, review, verification, acceptance flow를 조율한다 |
 
-<!-- tags: 스킬계약 -->
+<!-- key: id=key.context-map.optional-workflow-reference refs=key.topic.skill-contract -->
 ## 선택적 워크플로 참고
 
 | 참고 | 사용 경계 |
 |---|---|
 | Superpowers | 사용자가 명시적으로 호출하거나 수락된 Keystone 문서가 허용한 경우에만 quality-assist 참고로 사용한다 |
 
-<!-- tags: 부트스트랩, 스킬계약 -->
+<!-- key: id=key.context-map.prototype-skill-reference refs=key.topic.bootstrap key.topic.skill-contract -->
 ## Prototype 스킬 참고
 
 | 스킬 | 이 프로젝트에서의 목적 |

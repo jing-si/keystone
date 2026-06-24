@@ -1,11 +1,13 @@
 ---
 doc_type: work
-tags:
-  - 작업서
-  - skill-source
-  - 스킬계약
-  - 구현
-  - repo-local
+key:
+  id: key.work.skill-creation.index
+  refs:
+    - key.doc.work
+    - key.topic.skill-source
+    - key.topic.skill-contract
+    - key.topic.implementation
+    - key.topic.repo-local
 work_id: skill-creation
 title: Skill Creation
 status: planned
@@ -18,34 +20,34 @@ risk_level: medium
 
 # Skill Creation
 
-<!-- tags: skill-source, repo-local, SKILL.md, 요약 -->
+<!-- key: id=key.work.skill-creation.index.summary refs=key.topic.skill-source key.topic.repo-local key.artifact.skill-md key.section.summary -->
 
 ## 요약
 
 수락된 기준서에 맞춰 네 개 Keystone skill source를 repo-local `skills/` 아래에 생성한다.
 
-<!-- tags: keystone-reader, keystone-author, keystone-clarify, keystone-coordinator, SKILL.md -->
+<!-- key: id=key.work.skill-creation.index.goal refs=key.skill.reader key.skill.author key.skill.clarify key.skill.coordinator key.artifact.skill-md -->
 
 ## 목표
 
 `keystone-reader`, `keystone-author`, `keystone-clarify`, `keystone-coordinator`의 초기
 `SKILL.md`를 작성한다.
 
-<!-- tags: 원천기준서, 스킬기준서, 기준서 -->
+<!-- key: id=key.work.skill-creation.index.source-standards refs=key.topic.source-standard key.topic.skill-standard key.doc.standard -->
 
 ## 원천 기준서
 
 - `00_docs/standards/00_KEY-project-standard.md`
 - `00_docs/standards/skills/00_KEY-index.md`
 
-<!-- tags: 작업서, progress-update, 문서목록 -->
+<!-- key: id=key.work.skill-creation.index.documents refs=key.doc.work key.topic.progress-update key.topic.document-list -->
 
 ## 문서
 
 - 작업서(4): `KEY-work-skill-creation.md`
 - 진행 기록(5): `KEY-progress.md`
 
-<!-- tags: 작업순서, 상태, S06 -->
+<!-- key: id=key.work.skill-creation.index.current-status refs=key.topic.work-sequence key.topic.status key.step.s06 -->
 
 ## 현재 상태
 

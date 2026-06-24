@@ -1,27 +1,29 @@
 ---
 doc_type: progress
-tags:
-  - progress-update
-  - 작업순서
-  - author
-  - 기준서
+key:
+  id: key.work.author-standard.progress
+  refs:
+    - key.topic.progress-update
+    - key.topic.work-sequence
+    - key.role.author
+    - key.doc.standard
 ---
 
 # Author Standard 진행 기록(5)
 
-<!-- tags: 현재단계, 작업순서, S03 -->
+<!-- key: id=key.work.author-standard.progress.current-step refs=key.topic.current-step key.topic.work-sequence key.step.s03 -->
 
 ## 현재 Step
 
 S03
 
-<!-- tags: main-acceptance, 수락상태 -->
+<!-- key: id=key.work.author-standard.progress.last-accepted-step refs=key.topic.main-acceptance key.topic.acceptance-status -->
 
 ## 마지막 수락 Step
 
 None
 
-<!-- tags: step-status, 작업순서, main-acceptance -->
+<!-- key: id=key.work.author-standard.progress.step-status refs=key.topic.step-status key.topic.work-sequence key.topic.main-acceptance -->
 
 ## Step 상태
 
@@ -29,31 +31,31 @@ None
 |---|---|---|---|
 | S03 | planned | pending | S02 수락 후 시작한다 |
 
-<!-- tags: worker-report, 최근결과 -->
+<!-- key: id=key.work.author-standard.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 
 ## 최근 Worker 결과
 
 - None
 
-<!-- tags: reviewer-report, 최근결과 -->
+<!-- key: id=key.work.author-standard.progress.recent-reviewer-result refs=key.topic.reviewer-report key.topic.recent-result -->
 
 ## 최근 Reviewer 결과
 
 - None
 
-<!-- tags: decision-pending, 보류결정 -->
+<!-- key: id=key.work.author-standard.progress.pending-decisions refs=key.topic.pending-decision -->
 
 ## 보류 결정
 
 - None
 
-<!-- tags: 발견사항, 작업서생성, 기준서구조 -->
+<!-- key: id=key.work.author-standard.progress.findings refs=key.topic.findings key.topic.work-creation key.topic.standard-structure -->
 
 ## 누적 발견사항
 
 - 작업서는 기준서 tree와 별도로 reviewable goal 단위로 만들 수 있어야 한다.
 
-<!-- tags: 다음작업, S02, author -->
+<!-- key: id=key.work.author-standard.progress.next-step refs=key.topic.next-step key.step.s02 key.role.author -->
 
 ## 다음 권장 작업
 

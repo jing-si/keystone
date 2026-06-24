@@ -1,22 +1,24 @@
 ---
 doc_type: work_order
-tags:
-  - 작업서
-  - skill-source
-  - 스킬계약
-  - 구현
-  - repo-local
+key:
+  id: key.work.skill-creation.order
+  refs:
+    - key.doc.work
+    - key.topic.skill-source
+    - key.topic.skill-contract
+    - key.topic.implementation
+    - key.topic.repo-local
 ---
 
 # Skill Creation 작업서(4)
 
-<!-- tags: skill-source, repo-local, SKILL.md, 목표 -->
+<!-- key: id=key.work.skill-creation.order.goal refs=key.topic.skill-source key.topic.repo-local key.artifact.skill-md key.section.goal -->
 
 ## Goal
 
 수락된 기준서에 맞춰 네 개 Keystone skill source를 repo-local `skills/` 아래에 생성한다.
 
-<!-- tags: skill-source, 범위, SKILL.md, repo-local, publish-forbidden, install-forbidden -->
+<!-- key: id=key.work.skill-creation.order.scope refs=key.topic.skill-source key.section.scope key.artifact.skill-md key.topic.repo-local key.boundary.publish-forbidden key.boundary.install-forbidden -->
 
 ## Scope
 
@@ -40,7 +42,7 @@ Conditionally allowed:
 
 - skill file이 기준서로 돌아갈 수 있게 하는 link 또는 reference
 
-<!-- tags: source-context, accepted-standard, child-standard, 스킬기준서 -->
+<!-- key: id=key.work.skill-creation.order.source-context refs=key.section.source-context key.topic.accepted-standard key.topic.child-standard key.topic.skill-standard -->
 
 ## Source Context
 
@@ -48,7 +50,7 @@ Conditionally allowed:
 - `00_docs/standards/00_KEY-project-standard.md`
 - 각 skill별 child 기준서
 
-<!-- tags: acceptance, skill-directory, SKILL.md, trigger-boundary, prototype-dependency -->
+<!-- key: id=key.work.skill-creation.order.completion-criteria refs=key.topic.acceptance key.topic.skill-directory key.artifact.skill-md key.boundary.trigger key.topic.prototype-dependency -->
 
 ## Completion Criteria
 
@@ -57,14 +59,14 @@ Conditionally allowed:
 - [ ] Skill description은 trigger/non-trigger 경계를 드러낸다.
 - [ ] Prototype skill을 runtime dependency로 삼지 않는다.
 
-<!-- tags: 접근방식, accepted-standard, context-pack, bounded-worker -->
+<!-- key: id=key.work.skill-creation.order.recommended-approach refs=key.section.recommended-approach key.topic.accepted-standard key.output.context-pack key.topic.bounded-worker -->
 
 ## Recommended Approach
 
 S01-S05가 accepted된 뒤 진행한다. Main이 직접 작은 skill files를 만들거나, 명확한
 Context Pack을 준비한 뒤 bounded worker에게 위임할 수 있다.
 
-<!-- tags: context-pack, accepted-standard, target-path, external-skill-forbidden, read-check -->
+<!-- key: id=key.work.skill-creation.order.context-pack-seed refs=key.output.context-pack key.topic.accepted-standard key.topic.target-path key.boundary.external-skill-forbidden key.topic.read-check -->
 
 ## Context Pack Seed
 
@@ -73,7 +75,7 @@ Context Pack을 준비한 뒤 bounded worker에게 위임할 수 있다.
 - external installed skill 수정 금지
 - verification file read check
 
-<!-- tags: stop-condition, accepted-standard, skill-source-location, publish-forbidden, install-forbidden -->
+<!-- key: id=key.work.skill-creation.order.stop-conditions refs=key.section.stop-conditions key.topic.accepted-standard key.topic.skill-source-location key.boundary.publish-forbidden key.boundary.install-forbidden -->
 
 ## Stop Conditions
 
@@ -81,7 +83,7 @@ Context Pack을 준비한 뒤 bounded worker에게 위임할 수 있다.
 - skill source 위치가 불명확하다.
 - publish/install 요구가 생긴다.
 
-<!-- tags: verification, skill-source, read-check, install-forbidden, publish-forbidden -->
+<!-- key: id=key.work.skill-creation.order.verification refs=key.topic.verification key.topic.skill-source key.topic.read-check key.boundary.install-forbidden key.boundary.publish-forbidden -->
 
 ## Verification
 
@@ -95,20 +97,20 @@ Forbidden until explicitly allowed:
 - global skill install
 - marketplace publish
 
-<!-- tags: output-contract, skill-source, repo-local, SKILL.md -->
+<!-- key: id=key.work.skill-creation.order.expected-output refs=key.contract.output key.topic.skill-source key.topic.repo-local key.artifact.skill-md -->
 
 ## Expected Output
 
 - repo-local `skills/` 아래 네 개 Keystone skill source
 
-<!-- tags: review-point, 책임경계, reader, author, clarify, coordinator -->
+<!-- key: id=key.work.skill-creation.order.review-points refs=key.section.review-points key.topic.responsibility-boundary key.role.reader key.role.author key.role.clarify key.role.coordinator -->
 
 ## Review Points
 
 - 각 skill이 자신의 기준서 책임만 포함하는지 확인한다.
 - Reader, Author, Clarify, Coordinator 사이 책임이 섞이지 않는지 확인한다.
 
-<!-- tags: progress-update, main-acceptance, S06 -->
+<!-- key: id=key.work.skill-creation.order.progress-record refs=key.topic.progress-update key.topic.main-acceptance key.step.s06 -->
 
 ## Progress Record
 

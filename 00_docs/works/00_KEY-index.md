@@ -1,10 +1,12 @@
 ---
 doc_type: work_index
-tags:
-  - 작업서
-  - 작업순서
-  - 문서체계
-  - 원천문서
+key:
+  id: key.work.index
+  refs:
+    - key.doc.work
+    - key.topic.work-sequence
+    - key.topic.document-system
+    - key.doc.source
 ---
 
 # 작업서(4) 색인
@@ -13,7 +15,7 @@ tags:
 종속되지 않는다. 각 work node는 하나의 reviewable goal을 가지며, 실행 순서는 이 색인에서
 관리한다.
 
-<!-- tags: 작업순서, 작업서, 문서체계 -->
+<!-- key: id=key.work.index.execution-order refs=key.topic.work-sequence key.doc.work key.topic.document-system -->
 ## 실행 순서
 
 | 순서 | Work | 경로 | 상태 | 목적 |
@@ -27,12 +29,12 @@ tags:
 | S06 | Skill Creation | `skill-creation/00_KEY-index.md` | planned | 네 개 Keystone skill source를 만든다 |
 | S07 | Integration Verification | `integration-verification/00_KEY-index.md` | planned | 문서와 skill source의 end-to-end 흐름을 검증한다 |
 
-<!-- tags: 결정, 작업서 -->
+<!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work -->
 ## 공통 결정
 
 - 결정 기록(6): `KEY-decisions.md`
 
-<!-- tags: 작업서, 원천문서, 문서체계 -->
+<!-- key: id=key.work.index.reading-rules refs=key.doc.work key.doc.source key.topic.document-system -->
 ## 읽기 규칙
 
 1. 프로젝트 전체 방향은 `00_docs/KEY-context-map.md`를 먼저 읽는다.
@@ -41,7 +43,7 @@ tags:
 4. 각 work의 세부 목표와 검증은 해당 work node의 `KEY-work-{slug}.md`에서 확인한다.
 5. 각 work의 진행 상태는 해당 work node의 `KEY-progress.md`에서 확인한다.
 
-<!-- tags: 작업서, 문서체계 -->
+<!-- key: id=key.work.index.work-creation-rules refs=key.doc.work key.topic.document-system -->
 ## 작업서 생성 규칙
 
 1. 작업서는 기준서 파일 구조에 종속되지 않는다.

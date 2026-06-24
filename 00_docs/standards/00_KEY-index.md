@@ -1,15 +1,17 @@
 ---
 doc_type: standard_index
-tags:
-  - 문서체계
-  - 기준서
-  - 스킬계약
-  - 원천문서
+key:
+  id: key.standard.index
+  refs:
+    - key.topic.document-system
+    - key.doc.standard
+    - key.topic.skill-contract
+    - key.doc.source
 ---
 
 # 기준서(3) 색인
 
-<!-- tags: 문서체계, 기준서, 스킬계약 -->
+<!-- key: id=key.standard.index.current-standard refs=key.topic.document-system key.doc.standard key.topic.skill-contract -->
 ## 현재 기준서
 
 1. 전체 공통 기준서: `00_KEY-project-standard.md`
@@ -31,7 +33,7 @@ tags:
    - `keystone-coordinator`의 Goal assignment, subagent routing, report, review,
      verification, acceptance flow를 정의한다.
 
-<!-- tags: 원천문서, 기준서, 문서체계 -->
+<!-- key: id=key.standard.index.reading-rules refs=key.doc.source key.doc.standard key.topic.document-system -->
 ## 읽기 규칙
 
 1. Keystone 원천 문서(2)를 변경하거나 Keystone 작업을 준비하기 전에

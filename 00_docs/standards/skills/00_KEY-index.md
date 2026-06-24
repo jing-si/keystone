@@ -1,9 +1,11 @@
 ---
 doc_type: standard_index
-tags:
-  - 스킬계약
-  - 기준서
-  - 문서체계
+key:
+  id: key.standard.skills.index
+  refs:
+    - key.topic.skill-contract
+    - key.doc.standard
+    - key.topic.document-system
 ---
 
 # Keystone 스킬별 기준서 색인
@@ -12,7 +14,7 @@ tags:
 `../00_KEY-project-standard.md`를 읽고, 개별 스킬의 상세 계약이 필요할 때 이 색인에서
 해당 스킬 기준서로 내려간다.
 
-<!-- tags: 스킬계약, 기준서, 문서체계 -->
+<!-- key: id=key.standard.skills.index.current-skill-standards refs=key.topic.skill-contract key.doc.standard key.topic.document-system -->
 ## 현재 스킬별 기준서
 
 1. `clarify/00_KEY-index.md`
@@ -27,12 +29,12 @@ tags:
    - `keystone-coordinator`의 Goal assignment, subagent routing, report, review,
      verification, acceptance flow를 정의한다.
 
-<!-- tags: 스킬계약, 기준서 -->
+<!-- key: id=key.standard.skills.index.planned-skill-standards refs=key.topic.skill-contract key.doc.standard -->
 ## 계획된 스킬별 기준서
 
 현재 추가로 계획된 스킬별 기준서는 없다.
 
-<!-- tags: 기준서, 문서체계, 스킬계약 -->
+<!-- key: id=key.standard.skills.index.reading-rules refs=key.doc.standard key.topic.document-system key.topic.skill-contract -->
 ## 읽기 규칙
 
 1. 전체 정책과 공통 용어는 `../00_KEY-project-standard.md`를 먼저 따른다.

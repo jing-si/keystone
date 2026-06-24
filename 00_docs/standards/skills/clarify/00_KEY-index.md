@@ -1,31 +1,33 @@
 ---
 doc_type: standard_index
-tags:
-  - clarify
-  - 결정
-  - 질문흐름
-  - 기준서
+key:
+  id: key.standard.skill.clarify.index
+  refs:
+    - key.role.clarify
+    - key.doc.decision
+    - key.topic.question-flow
+    - key.doc.standard
 ---
 
 # keystone-clarify 기준서 색인
 
 이 색인은 `keystone-clarify` child 기준서로 이동하기 위한 기준이다.
 
-<!-- tags: clarify, 결정, 질문흐름, 기준서 -->
+<!-- key: id=key.standard.skill.clarify.index.standards refs=key.role.clarify key.doc.decision key.topic.question-flow key.doc.standard -->
 ## 기준서
 
 1. `KEY-standard-clarify.md`
    - `keystone-clarify`의 목적, trigger/non-trigger, Plan Mode, Default Mode,
      reflection, edit plan, impact update, stop condition을 정의한다.
 
-<!-- tags: clarify, 기준서, 문서체계 -->
+<!-- key: id=key.standard.skill.clarify.index.parent-standard refs=key.role.clarify key.doc.standard key.topic.document-system -->
 ## 상위 기준서
 
 1. `../../00_KEY-project-standard.md`
    - Keystone 공통 정책, 표준 용어, source authority, explicit skill invocation,
      impact update, output language policy의 상위 규칙을 정의한다.
 
-<!-- tags: clarify, 결정, 기준서 -->
+<!-- key: id=key.standard.skill.clarify.index.reading-rules refs=key.role.clarify key.doc.decision key.doc.standard -->
 ## 읽기 규칙
 
 1. Clarify 관련 작업을 준비할 때는 `../../00_KEY-project-standard.md`의

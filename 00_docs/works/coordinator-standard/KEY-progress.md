@@ -1,27 +1,29 @@
 ---
 doc_type: progress
-tags:
-  - progress-update
-  - 작업순서
-  - coordinator
-  - 기준서
+key:
+  id: key.work.coordinator-standard.progress
+  refs:
+    - key.topic.progress-update
+    - key.topic.work-sequence
+    - key.role.coordinator
+    - key.doc.standard
 ---
 
 # Coordinator Standard 진행 기록(5)
 
-<!-- tags: 현재단계, 작업순서, S05 -->
+<!-- key: id=key.work.coordinator-standard.progress.current-step refs=key.topic.current-step key.topic.work-sequence key.step.s05 -->
 
 ## 현재 Step
 
 S05
 
-<!-- tags: main-acceptance, 수락상태 -->
+<!-- key: id=key.work.coordinator-standard.progress.last-accepted-step refs=key.topic.main-acceptance key.topic.acceptance-status -->
 
 ## 마지막 수락 Step
 
 None
 
-<!-- tags: step-status, 작업순서, main-acceptance -->
+<!-- key: id=key.work.coordinator-standard.progress.step-status refs=key.topic.step-status key.topic.work-sequence key.topic.main-acceptance -->
 
 ## Step 상태
 
@@ -29,31 +31,31 @@ None
 |---|---|---|---|
 | S05 | planned | pending | S04 수락 후 시작한다 |
 
-<!-- tags: worker-report, 최근결과 -->
+<!-- key: id=key.work.coordinator-standard.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 
 ## 최근 Worker 결과
 
 - None
 
-<!-- tags: reviewer-report, 최근결과 -->
+<!-- key: id=key.work.coordinator-standard.progress.recent-reviewer-result refs=key.topic.reviewer-report key.topic.recent-result -->
 
 ## 최근 Reviewer 결과
 
 - None
 
-<!-- tags: decision-pending, 보류결정 -->
+<!-- key: id=key.work.coordinator-standard.progress.pending-decisions refs=key.topic.pending-decision -->
 
 ## 보류 결정
 
 - None
 
-<!-- tags: 발견사항, coordinator -->
+<!-- key: id=key.work.coordinator-standard.progress.findings refs=key.topic.findings key.role.coordinator -->
 
 ## 누적 발견사항
 
 - None
 
-<!-- tags: 다음작업, S04, coordinator -->
+<!-- key: id=key.work.coordinator-standard.progress.next-step refs=key.topic.next-step key.step.s04 key.role.coordinator -->
 
 ## 다음 권장 작업
 

@@ -1,17 +1,19 @@
 ---
 doc_type: decisions
-tags:
-  - 결정
-  - 작업서
-  - 문서체계
-  - KEY-prefix
+key:
+  id: key.work.decisions
+  refs:
+    - key.doc.decision
+    - key.doc.work
+    - key.topic.document-system
+    - key.topic.key-prefix
 ---
 
 # 작업서 결정 기록(6)
 
 이 문서는 `00_docs/works/` tree에 적용되는 공통 결정(6)을 기록한다.
 
-<!-- tags: 결정, 작업서, 문서체계 -->
+<!-- key: id=key.work.decisions.dec-works-001 refs=key.doc.decision key.doc.work key.topic.document-system -->
 ## DEC-WORKS-001: Active work tree는 `works/`를 사용한다
 
 - 관련 work: Document Tree Setup
@@ -21,7 +23,7 @@ tags:
 - 이유: 현재 기준서의 `standards/`와 `works/` tree 정책에 맞추고 legacy 경로와 현재 진행
   상태의 충돌을 제거하기 위해서다.
 
-<!-- tags: 결정, 작업서, 문서체계 -->
+<!-- key: id=key.work.decisions.dec-works-002 refs=key.doc.decision key.doc.work key.topic.document-system -->
 ## DEC-WORKS-002: 작업서는 기준서 구조에 종속되지 않는다
 
 - 관련 work: Author Standard
@@ -32,7 +34,7 @@ tags:
 - 이유: 기준서는 장기 규칙이고 작업서는 현재 실행 순서와 범위를 담기 때문에 두 구조가 항상
   같을 필요가 없다.
 
-<!-- tags: 결정, 작업순서, 작업서 -->
+<!-- key: id=key.work.decisions.dec-works-003 refs=key.doc.decision key.topic.work-sequence key.doc.work -->
 ## DEC-WORKS-003: 현재 작업 순서는 S00-S07로 둔다
 
 - 관련 work: Document Tree Setup
@@ -42,7 +44,7 @@ tags:
 - 이유: 문서 구조를 먼저 안정화하고, 공통 기준서와 스킬별 기준서를 분리한 뒤 구현과 통합
   검증으로 넘어가기 위해서다.
 
-<!-- tags: 결정, KEY-prefix, 문서체계 -->
+<!-- key: id=key.work.decisions.dec-works-004 refs=key.doc.decision key.topic.key-prefix key.topic.document-system -->
 ## DEC-WORKS-004: Keystone-managed 문서는 KEY prefix를 사용한다
 
 - 관련 work: Project Standard

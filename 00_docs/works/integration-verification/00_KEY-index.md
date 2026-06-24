@@ -1,11 +1,13 @@
 ---
 doc_type: work
-tags:
-  - 작업서
-  - 통합검증
-  - verification
-  - workflow
-  - source-document-model
+key:
+  id: key.work.integration-verification.index
+  refs:
+    - key.doc.work
+    - key.topic.integration-verification
+    - key.topic.verification
+    - key.topic.workflow
+    - key.topic.source-document-model
 work_id: integration-verification
 title: Integration Verification
 status: planned
@@ -18,34 +20,34 @@ risk_level: medium
 
 # Integration Verification
 
-<!-- tags: 통합검증, workflow, skill-source, 요약 -->
+<!-- key: id=key.work.integration-verification.index.summary refs=key.topic.integration-verification key.topic.workflow key.topic.skill-source key.section.summary -->
 
 ## 요약
 
 문서와 네 개 Keystone skill source가 하나의 workflow로 이어지는지 검증한다.
 
-<!-- tags: reader, author, clarify, coordinator, source-document-model, input-output -->
+<!-- key: id=key.work.integration-verification.index.goal refs=key.role.reader key.role.author key.role.clarify key.role.coordinator key.topic.source-document-model key.topic.input-output -->
 
 ## 목표
 
 Reader, Author, Clarify, Coordinator가 같은 source document model을 공유하고 서로의 output을
 다음 단계 input으로 사용할 수 있는지 확인한다.
 
-<!-- tags: 원천기준서, 스킬기준서, 기준서 -->
+<!-- key: id=key.work.integration-verification.index.source-standards refs=key.topic.source-standard key.topic.skill-standard key.doc.standard -->
 
 ## 원천 기준서
 
 - `00_docs/standards/00_KEY-project-standard.md`
 - `00_docs/standards/skills/00_KEY-index.md`
 
-<!-- tags: 작업서, progress-update, 문서목록 -->
+<!-- key: id=key.work.integration-verification.index.documents refs=key.doc.work key.topic.progress-update key.topic.document-list -->
 
 ## 문서
 
 - 작업서(4): `KEY-work-integration-verification.md`
 - 진행 기록(5): `KEY-progress.md`
 
-<!-- tags: 작업순서, 상태, S07 -->
+<!-- key: id=key.work.integration-verification.index.current-status refs=key.topic.work-sequence key.topic.status key.step.s07 -->
 
 ## 현재 상태
 

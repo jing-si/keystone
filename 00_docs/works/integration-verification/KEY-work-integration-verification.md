@@ -1,22 +1,24 @@
 ---
 doc_type: work_order
-tags:
-  - 작업서
-  - 통합검증
-  - verification
-  - workflow
-  - simulation
+key:
+  id: key.work.integration-verification.order
+  refs:
+    - key.doc.work
+    - key.topic.integration-verification
+    - key.topic.verification
+    - key.topic.workflow
+    - key.topic.simulation
 ---
 
 # Integration Verification 작업서(4)
 
-<!-- tags: 통합검증, Keystone-workflow, skill-source, 목표 -->
+<!-- key: id=key.work.integration-verification.order.goal refs=key.topic.integration-verification key.topic.keystone-workflow key.topic.skill-source key.section.goal -->
 
 ## Goal
 
 문서와 네 개 skill source가 하나의 Keystone workflow로 이어지는지 검증한다.
 
-<!-- tags: 범위, reader, author, clarify, coordinator, current-step-brief, browser-forbidden -->
+<!-- key: id=key.work.integration-verification.order.scope refs=key.section.scope key.role.reader key.role.author key.role.clarify key.role.coordinator key.output.current-step-brief key.boundary.browser-forbidden -->
 
 ## Scope
 
@@ -40,7 +42,7 @@ Conditionally allowed:
 - 문서 기반 simulation
 - 필요성이 확인된 작은 fixture. 생성 전 위치와 범위를 보고한다.
 
-<!-- tags: source-context, context-map, works-index, skill-source -->
+<!-- key: id=key.work.integration-verification.order.source-context refs=key.section.source-context key.context-map key.work.index key.topic.skill-source -->
 
 ## Source Context
 
@@ -50,7 +52,7 @@ Conditionally allowed:
 - `00_docs/works/00_KEY-index.md`
 - repo-local `skills/` source
 
-<!-- tags: acceptance, source-document-model, input-output, current-step, risk-record -->
+<!-- key: id=key.work.integration-verification.order.completion-criteria refs=key.topic.acceptance key.topic.source-document-model key.topic.input-output key.topic.current-step key.topic.risk-record -->
 
 ## Completion Criteria
 
@@ -59,14 +61,14 @@ Conditionally allowed:
 - [ ] Coordinator가 현재 work step을 복구할 수 있다.
 - [ ] 검증 결과와 남은 risk가 기록된다.
 
-<!-- tags: 접근방식, simulation, fixture, approval-boundary -->
+<!-- key: id=key.work.integration-verification.order.recommended-approach refs=key.section.recommended-approach key.topic.simulation key.topic.fixture key.boundary.approval -->
 
 ## Recommended Approach
 
 처음에는 문서 기반 simulation으로 시작한다. 실제 fixture나 install 검증은 필요성이 확인되고
 scope가 승인된 뒤 추가한다.
 
-<!-- tags: context-pack, skill-source, S01-S05, work-order, progress, workflow-sequence -->
+<!-- key: id=key.work.integration-verification.order.context-pack-seed refs=key.output.context-pack key.topic.skill-source key.step.s01-s05 key.doc.work-order key.doc.progress key.topic.workflow-sequence -->
 
 ## Context Pack Seed
 
@@ -75,7 +77,7 @@ scope가 승인된 뒤 추가한다.
 - 현재 work order와 progress
 - 검증할 workflow sequence
 
-<!-- tags: stop-condition, skill-source-missing, output-contract, fixture-approval -->
+<!-- key: id=key.work.integration-verification.order.stop-conditions refs=key.section.stop-conditions key.topic.skill-source-missing key.contract.output key.boundary.fixture-approval -->
 
 ## Stop Conditions
 
@@ -83,7 +85,7 @@ scope가 승인된 뒤 추가한다.
 - 문서와 skill source가 서로 다른 trigger 또는 output contract를 가진다.
 - fixture나 install 검증이 필요하지만 승인되지 않았다.
 
-<!-- tags: verification, cross-read, simulation, install-forbidden, publish-forbidden, browser-forbidden -->
+<!-- key: id=key.work.integration-verification.order.verification refs=key.topic.verification key.topic.cross-read key.topic.simulation key.boundary.install-forbidden key.boundary.publish-forbidden key.boundary.browser-forbidden -->
 
 ## Verification
 
@@ -99,7 +101,7 @@ Forbidden until explicitly allowed:
 - package publish
 - Playwright/browser verification
 
-<!-- tags: output-contract, 통합검증, risk-record, S08-candidate -->
+<!-- key: id=key.work.integration-verification.order.expected-output refs=key.contract.output key.topic.integration-verification key.topic.risk-record key.step.s08-candidate -->
 
 ## Expected Output
 
@@ -107,14 +109,14 @@ Forbidden until explicitly allowed:
 - 수정이 필요한 기준서 또는 skill source 목록
 - 다음 단계가 필요하면 S08 후보 제안
 
-<!-- tags: review-point, 책임경계, current-step, verification-path -->
+<!-- key: id=key.work.integration-verification.order.review-points refs=key.section.review-points key.topic.responsibility-boundary key.topic.current-step key.topic.verification-path -->
 
 ## Review Points
 
 - 네 skill이 서로 책임을 침범하지 않는지 확인한다.
 - 문서에서 current step과 verification path를 복구할 수 있는지 확인한다.
 
-<!-- tags: progress-update, main-acceptance, S07 -->
+<!-- key: id=key.work.integration-verification.order.progress-record refs=key.topic.progress-update key.topic.main-acceptance key.step.s07 -->
 
 ## Progress Record
 
