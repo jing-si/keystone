@@ -30,7 +30,7 @@ key:
 6. Progress update boundary
 7. 문서 작성 후 verification과 report contract
 
-<!-- key: id=key.standard.skill.author.out-of-scope refs=key.role.author key.topic.document-authoring key.topic.skill-contract key.topic.formal-workflow -->
+<!-- key: id=key.standard.skill.author.out-of-scope refs=key.role.author key.topic.document-authoring key.topic.skill-contract key.topic.formal-workflow key.topic.external-assist -->
 ## 적용하지 않는 범위
 
 1. High-impact topic을 질문으로 수집하고 결정(6)을 확정하기
@@ -39,7 +39,7 @@ key:
 4. Implementation code, schema, generated file, runtime config 수정
 5. 승인되지 않은 scope, acceptance criteria, status semantics 변경
 6. 명시적 필요 없이 persistent 파생 에이전트 문서(8) 생성
-7. Superpowers나 외부 workflow를 자동 실행 대상으로 만들기
+7. 외부 보조 스킬(12)을 자동 실행 대상으로 만들기
 
 <!-- key: id=key.standard.skill.author.standard-relations refs=key.role.author key.doc.standard key.topic.skill-contract -->
 ## 기준 관계
@@ -48,7 +48,7 @@ key:
 2. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-002`, `STD-KEYSTONE-003`,
    `STD-KEYSTONE-005`, `STD-KEYSTONE-006`, `STD-KEYSTONE-007`,
    `STD-KEYSTONE-008`, `STD-KEYSTONE-010`, `STD-KEYSTONE-011`,
-   `STD-KEYSTONE-013`, `STD-KEYSTONE-015`, `STD-KEYSTONE-016`,
+   `STD-KEYSTONE-013`, `STD-KEYSTONE-014`, `STD-KEYSTONE-015`, `STD-KEYSTONE-016`,
    `STD-KEYSTONE-017`, `STD-KEYSTONE-018`,
    `STD-KEYSTONE-020`, `STD-KEYSTONE-021`, `STD-KEYSTONE-022`, `STD-KEYSTONE-023`,
    `STD-KEYSTONE-028`, `STD-KEYSTONE-029`, `STD-KEYSTONE-030`, `STD-KEYSTONE-031`

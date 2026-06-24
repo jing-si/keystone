@@ -33,7 +33,7 @@ formal workflow가 필요하면 Coordinator가 조율할 수 있다.
 7. 진행 상태와 report status update boundary
 8. 파생 에이전트 문서(8) 생성 조건
 
-<!-- key: id=key.standard.skill.coordinator.out-of-scope refs=key.role.coordinator key.topic.skill-contract -->
+<!-- key: id=key.standard.skill.coordinator.out-of-scope refs=key.role.coordinator key.topic.skill-contract key.topic.external-assist -->
 ## 적용하지 않는 범위
 
 1. 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록의 작성 기준과 수정 범위 설계 자체
@@ -44,7 +44,7 @@ formal workflow가 필요하면 Coordinator가 조율할 수 있다.
 6. 명시적 필요 없이 persistent worker handoff나 reviewer brief 생성
 7. Implementation, schema, auth/security, generated/codegen, shared architecture 변경을
    main/user decision 없이 자동 worker task로 보내기
-8. 외부 workflow를 automatic 또는 mandatory로 만들기
+8. 외부 보조 스킬(12)을 automatic 또는 mandatory로 만들기
 
 <!-- key: id=key.standard.skill.coordinator.standard-relations refs=key.role.coordinator key.doc.standard key.topic.skill-contract -->
 ## 기준 관계
@@ -52,7 +52,7 @@ formal workflow가 필요하면 Coordinator가 조율할 수 있다.
 1. Parent 기준서: `../../00_KEY-project-standard.md`
 2. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-004`, `STD-KEYSTONE-005`,
    `STD-KEYSTONE-006`, `STD-KEYSTONE-007`, `STD-KEYSTONE-012`,
-   `STD-KEYSTONE-013`, `STD-KEYSTONE-018`, `STD-KEYSTONE-020`,
+   `STD-KEYSTONE-013`, `STD-KEYSTONE-014`, `STD-KEYSTONE-018`, `STD-KEYSTONE-020`,
    `STD-KEYSTONE-021`, `STD-KEYSTONE-022`, `STD-KEYSTONE-023`,
    `STD-KEYSTONE-030`, `STD-KEYSTONE-031`
 3. 관련 결정(6): `00_docs/works/KEY-decisions.md`
