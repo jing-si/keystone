@@ -84,12 +84,14 @@ key:
 
 `keystone-clarify`는 다음 경우에 사용하지 않는다.
 
-1. 사소한 수정마다 high-impact 질문을 만들기. 단, 명시 승인된 현재 대상 문서 안의 단순
-   오탈자는 Default Mode 직접 수정 예외로 처리할 수 있다.
+1. 사소한 수정마다 high-impact 질문을 만들기. 단, 명시 승인된 현재 대상 문서 안에서 의미
+   변화와 외부 영향이 객관적으로 없는 단순 오탈자는 Default Mode 직접 수정 예외로 처리할 수
+   있다.
 2. 이미 수락된 결정(6)과 대상 문서가 명확해 Author가 처리해야 하는 단일 문서 update
 3. Reader가 수행해야 하는 read-only orientation 또는 document navigation
 4. Author가 수행해야 하는 기준서(3) 또는 작업서(4) 작성 자체
-5. Coordinator가 수행해야 하는 subagent assignment, report handling, acceptance flow
+5. Coordinator가 수행해야 하는 formal workflow orchestration, report handling,
+   acceptance flow
 6. 구현 코드 수정이나 테스트 실행 자체
 
 <!-- key: id=key.standard.skill.clarify.topic-boundary refs=key.role.clarify key.doc.decision key.topic.question-flow -->
@@ -122,8 +124,8 @@ Plan Mode는 질문과 결정을 수집하는 mode다.
 ## Default Mode contract
 
 Default Mode는 수락된 clarify result를 바탕으로 Author가 문서 update를 적용할 수 있게
-정리한다. Clarify가 직접 수정할 수 있는 경우는 명시 승인된 현재 대상 문서 안에서 다른
-문서에 영향을 주지 않는 단순 오탈자로 제한한다.
+정리한다. Clarify가 직접 수정할 수 있는 경우는 명시 승인된 현재 대상 문서 안에서 의미 변화와
+다른 문서 영향이 객관적으로 없는 단순 오탈자로 제한한다.
 
 1. 적용 전 조건:
    - topic이 충분히 결정되어 있다.
