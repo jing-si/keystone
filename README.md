@@ -53,6 +53,9 @@ Future Keystone documents should use English paths and index-based trees:
   standards/
     00_key-index.md
     01_key-project-standard.md
+    subagents/
+      00_key-index.md
+      key-standard-subagents.md
     ...
   works/
     00_key-index.md

@@ -7,6 +7,7 @@ key:
     - key.doc.source
     - key.topic.work-sequence
     - key.topic.skill-contract
+    - key.standard.subagent
     - key.topic.bootstrap
 ---
 
@@ -29,13 +30,14 @@ key:
 기존 `work-package-doc-architect`와 `subagent-work-coordinator` 스킬은 참고용 prototype이다.
 이들은 최종 runtime dependency가 아니며 새 Keystone 스킬로 대체될 예정이다.
 
-<!-- key: id=key.context-map.standards refs=key.topic.document-system key.doc.source key.topic.skill-contract -->
+<!-- key: id=key.context-map.standards refs=key.topic.document-system key.doc.source key.topic.skill-contract key.standard.subagent -->
 ## 기준서
 
 | 영역 | 경로 | 읽는 시점 |
 |---|---|---|
 | 색인 | `00_docs/standards/00_key-index.md` | 사용 가능한 기준서를 탐색할 때 먼저 읽는다 |
 | 프로젝트 | `00_docs/standards/01_key-project-standard.md` | 프로젝트 공통 규칙, 원천 문서(2) 정책, 스킬군 역할, coordinator 호환성을 확인할 때 읽는다 |
+| Subagent | `00_docs/standards/subagents/key-standard-subagents.md` | helper/subagent의 lane, role, authority, report status를 확인할 때 읽는다 |
 | 스킬별 | `00_docs/standards/skills/00_key-index.md` | 개별 Keystone 스킬의 상세 기준서를 찾을 때 읽는다 |
 | Reader | `00_docs/standards/skills/reader/key-standard-reader.md` | `keystone-reader`의 trigger, mode, output, read-only boundary를 확인할 때 읽는다 |
 | Author | `00_docs/standards/skills/author/key-standard-author.md` | `keystone-author`의 기준서(3), 작업서(4), progress update boundary를 확인할 때 읽는다 |
@@ -69,6 +71,9 @@ Keystone 문서는 영어 경로와 설정된 document root(1)를 사용한다. 
   standards/
     00_key-index.md
     01_key-project-standard.md
+    subagents/
+      00_key-index.md
+      key-standard-subagents.md
     skills/
       00_key-index.md
       reader/

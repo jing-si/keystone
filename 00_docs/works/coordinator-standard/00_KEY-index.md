@@ -6,6 +6,7 @@ key:
     - key.doc.work
     - key.role.coordinator
     - key.role.subagent
+    - key.standard.subagent
     - key.topic.orchestration
     - key.topic.acceptance
 work_id: coordinator-standard
@@ -34,10 +35,11 @@ Coordinator가 current work step을 복구하고 role-based subagent workflow를
 Current Step Brief, Context Pack, report handling, review, verification, acceptance 기준을
 명확히 한다.
 
-<!-- key: id=key.work.coordinator-standard.index.source-standards refs=key.role.coordinator key.topic.source-standard key.doc.standard -->
+<!-- key: id=key.work.coordinator-standard.index.source-standards refs=key.role.coordinator key.topic.source-standard key.doc.standard key.standard.subagent -->
 
 ## 원천 기준서
 
+- `00_docs/standards/subagents/key-standard-subagents.md`
 - `00_docs/standards/skills/coordinator/key-standard-coordinator.md`
 
 <!-- key: id=key.work.coordinator-standard.index.documents refs=key.doc.work key.topic.progress-update key.topic.document-list -->

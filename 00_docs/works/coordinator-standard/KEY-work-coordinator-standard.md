@@ -18,14 +18,14 @@ key:
 
 `keystone-coordinator`의 main-supervised subagent workflow 계약을 정리한다.
 
-<!-- key: id=key.work.coordinator-standard.order.scope refs=key.role.coordinator key.section.scope key.output.current-step-brief key.output.context-pack key.topic.report-handling key.doc.derived-agent -->
+<!-- key: id=key.work.coordinator-standard.order.scope refs=key.role.coordinator key.section.scope key.output.current-step-brief key.output.context-pack key.topic.report-handling key.doc.derived-agent key.standard.subagent -->
 
 ## Scope
 
 Include:
 
 - Current Step Brief와 Context Pack 구성
-- role-based subagent routing
+- subagent 기준서 기반 role routing
 - report handling
 - review, verification, acceptance flow
 - progress/report status 분리
@@ -41,20 +41,22 @@ Conditionally allowed:
 
 - current work step field와 Coordinator runtime output 사이의 link 보정
 
-<!-- key: id=key.work.coordinator-standard.order.source-context refs=key.section.source-context key.role.coordinator key.doc.standard key.work.index -->
+<!-- key: id=key.work.coordinator-standard.order.source-context refs=key.section.source-context key.role.coordinator key.doc.standard key.work.index key.standard.subagent -->
 
 ## Source Context
 
 - `00_docs/standards/01_key-project-standard.md`
+- `00_docs/standards/subagents/key-standard-subagents.md`
 - `00_docs/standards/skills/coordinator/00_key-index.md`
 - `00_docs/standards/skills/coordinator/key-standard-coordinator.md`
 - `00_docs/works/00_key-index.md`
 
-<!-- key: id=key.work.coordinator-standard.order.completion-criteria refs=key.topic.acceptance key.role.coordinator key.topic.current-step key.topic.worker-handoff key.topic.reviewer-focus -->
+<!-- key: id=key.work.coordinator-standard.order.completion-criteria refs=key.topic.acceptance key.role.coordinator key.topic.current-step key.topic.worker-handoff key.topic.reviewer-focus key.standard.subagent -->
 
 ## Completion Criteria
 
 - [ ] Coordinator가 current step과 completion criteria를 복구할 수 있다.
+- [ ] Subagent lane, role, authority는 subagent 기준서를 따른다.
 - [ ] Scope가 worker handoff boundary로 변환된다.
 - [ ] Review points가 reviewer focus로 변환된다.
 - [ ] Main acceptance 전에는 accepted로 표시하지 않는다.
@@ -66,11 +68,12 @@ Conditionally allowed:
 Coordinator 기준서는 runtime orchestration에 집중한다. 문서 수정이나 결정 수집은 Author와
 Clarify로 남긴다.
 
-<!-- key: id=key.work.coordinator-standard.order.context-pack-seed refs=key.output.context-pack key.standard.project.std-keystone-043 key.topic.progress-status key.boundary.high-risk-work -->
+<!-- key: id=key.work.coordinator-standard.order.context-pack-seed refs=key.output.context-pack key.standard.project.std-keystone-043 key.topic.progress-status key.boundary.high-risk-work key.standard.subagent -->
 
 ## Context Pack Seed
 
 - `STD-KEYSTONE-043`
+- `00_docs/standards/subagents/key-standard-subagents.md`
 - progress/report status rule
 - high-risk work stop condition
 
