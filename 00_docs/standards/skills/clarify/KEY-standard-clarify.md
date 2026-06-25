@@ -45,13 +45,14 @@ key:
 ## 기준 관계
 
 1. Parent 기준서: `../../00_KEY-project-standard.md`
-2. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-007`, `STD-KEYSTONE-009`,
-   `STD-KEYSTONE-014`, `STD-KEYSTONE-020`, `STD-KEYSTONE-021`, `STD-KEYSTONE-025`,
-   `STD-KEYSTONE-026`, `STD-KEYSTONE-027`, `STD-KEYSTONE-028`, `STD-KEYSTONE-031`
+2. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-006`, `STD-KEYSTONE-007`,
+   `STD-KEYSTONE-014`, `STD-KEYSTONE-015`, `STD-KEYSTONE-016`,
+   `STD-KEYSTONE-023`, `STD-KEYSTONE-041`, `STD-KEYSTONE-050`,
+   `STD-KEYSTONE-051`, `STD-KEYSTONE-052`
 3. 관련 결정(6): `00_docs/works/KEY-decisions.md`
 4. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.
-5. 상세화 범위: 이 기준서는 `STD-KEYSTONE-025`의 Clarify behavior를 구현 가능한 수준으로
+5. 상세화 범위: 이 기준서는 `STD-KEYSTONE-041`의 Clarify behavior를 구현 가능한 수준으로
    상세화한다.
 
 <!-- key: id=key.standard.skill.clarify.skill-identity refs=key.role.clarify key.topic.skill-contract -->
@@ -138,7 +139,7 @@ Default Mode는 수락된 clarify result를 바탕으로 Author가 문서 update
    - 관련 작업서(4)
    - 진행 기록(5)
    - 결정(6) 기록
-   - `STD-KEYSTONE-020`의 조건을 만족하는 파생 에이전트 문서(8)
+   - `STD-KEYSTONE-016`의 조건을 만족하는 파생 에이전트 문서(8)
 3. Clarify 직접 수정 허용:
    - 명시 승인된 현재 대상 문서 안의 단순 오탈자
    - 다른 문서, 기준서(3), 작업서(4), scope, acceptance criteria, status semantics에 영향이
@@ -178,7 +179,7 @@ Clarify result는 다음을 포함해야 한다.
 3. 진행 기록(5)은 main acceptance 없이 완료 상태로 바꾸지 않는다.
 4. 결정(6)은 장기 정책이나 여러 문서에 영향을 주는 경우에 기록한다.
 5. 파생 에이전트 문서(8)는 이미 존재하고 명확히 영향받을 때만 edit plan에 포함한다. 새로
-   생성하는 경우는 `STD-KEYSTONE-020`의 명시적 필요 조건을 따른다.
+   생성하는 경우는 `STD-KEYSTONE-016`의 명시적 필요 조건을 따른다.
 6. 키스톤 메타데이터(9)가 있는 topic이나 문서가 관련되면 같은 `key.id`를 참조하는 문서를
    affected document 후보로 검토한다.
 7. 같은 `key.refs`가 있어도 자동으로 edit plan에 포함하지 않는다.
@@ -228,8 +229,8 @@ Clarify 기준은 다음 방법으로 검증한다.
 2. Plan Mode와 Default Mode의 책임 차이가 명확해야 한다.
 3. 수락 전에는 원천 문서(2)를 수정하지 않는다는 경계가 명확해야 한다.
 4. Reflection과 edit plan만 보고 Author가 문서 update 범위를 판단할 수 있어야 한다.
-5. Initial setup question이 `STD-KEYSTONE-026`, `STD-KEYSTONE-027`,
-   `STD-KEYSTONE-028`과 일관되어야 한다.
+5. Initial setup question이 `STD-KEYSTONE-050`, `STD-KEYSTONE-051`,
+   `STD-KEYSTONE-052`과 일관되어야 한다.
 6. Metadata 기반 affected document 후보가 있으면 edit plan에서 후보와 실제 반영 여부를
    구분할 수 있어야 한다.
 7. Verification command:

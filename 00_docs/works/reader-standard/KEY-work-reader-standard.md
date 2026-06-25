@@ -63,7 +63,7 @@ Conditionally allowed:
 <!-- key: id=key.work.reader-standard.order.context-pack-seed refs=key.role.reader key.topic.work-preparation key.topic.document-navigation -->
 ## Context Pack Seed
 
-- `STD-KEYSTONE-019`
+- `STD-KEYSTONE-040`
 - Reader child 기준서
 - active work index
 

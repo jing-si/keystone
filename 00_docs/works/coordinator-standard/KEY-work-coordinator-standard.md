@@ -66,11 +66,11 @@ Conditionally allowed:
 Coordinator 기준서는 runtime orchestration에 집중한다. 문서 수정이나 결정 수집은 Author와
 Clarify로 남긴다.
 
-<!-- key: id=key.work.coordinator-standard.order.context-pack-seed refs=key.output.context-pack key.standard.project.std-keystone-030 key.topic.progress-status key.boundary.high-risk-work -->
+<!-- key: id=key.work.coordinator-standard.order.context-pack-seed refs=key.output.context-pack key.standard.project.std-keystone-043 key.topic.progress-status key.boundary.high-risk-work -->
 
 ## Context Pack Seed
 
-- `STD-KEYSTONE-030`
+- `STD-KEYSTONE-043`
 - progress/report status rule
 - high-risk work stop condition
 

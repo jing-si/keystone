@@ -24,13 +24,13 @@ key:
 ## 상위 기준서
 
 1. `../../00_KEY-project-standard.md`
-   - Keystone 공통 정책, 표준 용어, 문서 tree, source authority, Reader mode의 상위
+   - Keystone 공통 정책, 표준 용어, 문서 tree, source authority, Reader 책임의 상위
      규칙을 정의한다.
 
 <!-- key: id=key.standard.skill.reader.index.reading-rules refs=key.role.reader key.topic.document-navigation key.doc.standard -->
 ## 읽기 규칙
 
-1. Reader 관련 작업을 준비할 때는 `../../00_KEY-project-standard.md`의 `STD-KEYSTONE-019`를
+1. Reader 관련 작업을 준비할 때는 `../../00_KEY-project-standard.md`의 `STD-KEYSTONE-040`을
    먼저 확인한다.
 2. Reader 구현 또는 상세 계약 검토가 필요하면 `KEY-standard-reader.md`를 읽는다.
 3. Reader 기준서가 전체 공통 기준서와 충돌하면 충돌을 보고하고 사용자 또는 main의

@@ -31,7 +31,7 @@ key:
 ## 읽기 규칙
 
 1. Clarify 관련 작업을 준비할 때는 `../../00_KEY-project-standard.md`의
-   `STD-KEYSTONE-025`를 먼저 확인한다.
+   `STD-KEYSTONE-041`을 먼저 확인한다.
 2. Clarify 구현 또는 상세 계약 검토가 필요하면 `KEY-standard-clarify.md`를 읽는다.
 3. Clarify 기준서가 전체 공통 기준서와 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 전체 공통 기준서를 임시 우선 기준으로 삼는다.

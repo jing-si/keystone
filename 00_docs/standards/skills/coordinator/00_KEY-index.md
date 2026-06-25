@@ -31,9 +31,9 @@ key:
 ## 읽기 규칙
 
 1. Coordinator의 공통 orchestration 정책은 `../../00_KEY-project-standard.md`의
-   `STD-KEYSTONE-004`, `STD-KEYSTONE-005`, `STD-KEYSTONE-012`,
-   `STD-KEYSTONE-013`, `STD-KEYSTONE-018`, `STD-KEYSTONE-020`,
-   `STD-KEYSTONE-022`, `STD-KEYSTONE-023`, `STD-KEYSTONE-030`을 먼저 확인한다.
+   `STD-KEYSTONE-016`, `STD-KEYSTONE-022`, `STD-KEYSTONE-024`,
+   `STD-KEYSTONE-025`, `STD-KEYSTONE-030`, `STD-KEYSTONE-031`,
+   `STD-KEYSTONE-032`, `STD-KEYSTONE-033`, `STD-KEYSTONE-043`을 먼저 확인한다.
 2. Coordinator 구현 또는 상세 계약 검토가 필요하면 `KEY-standard-coordinator.md`를 읽는다.
 3. Parent 기준서와 이 child 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.

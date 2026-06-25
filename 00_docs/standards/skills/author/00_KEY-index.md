@@ -31,9 +31,9 @@ key:
 ## 읽기 규칙
 
 1. Author의 공통 문서 작성 정책은 `../../00_KEY-project-standard.md`의
-   `STD-KEYSTONE-002`, `STD-KEYSTONE-003`, `STD-KEYSTONE-007`,
-   `STD-KEYSTONE-015`, `STD-KEYSTONE-016`, `STD-KEYSTONE-017`,
-   `STD-KEYSTONE-018`, `STD-KEYSTONE-021`, `STD-KEYSTONE-029`를 먼저 확인한다.
+   `STD-KEYSTONE-003`, `STD-KEYSTONE-007`, `STD-KEYSTONE-010`,
+   `STD-KEYSTONE-011`, `STD-KEYSTONE-012`, `STD-KEYSTONE-013`,
+   `STD-KEYSTONE-022`, `STD-KEYSTONE-023`, `STD-KEYSTONE-042`를 먼저 확인한다.
 2. Author 구현 또는 상세 계약 검토가 필요하면 `KEY-standard-author.md`를 읽는다.
 3. Parent 기준서와 이 child 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.

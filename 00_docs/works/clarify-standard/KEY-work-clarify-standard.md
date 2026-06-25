@@ -64,11 +64,11 @@ Conditionally allowed:
 
 Clarify는 결정 수집과 적용 계획에 집중한다. 문서 반영은 Author 책임으로 남긴다.
 
-<!-- key: id=key.work.clarify-standard.order.context-pack-seed refs=key.output.context-pack key.standard.project.std-keystone-025 key.topic.source-authority key.topic.author-handoff -->
+<!-- key: id=key.work.clarify-standard.order.context-pack-seed refs=key.output.context-pack key.standard.project.std-keystone-041 key.topic.source-authority key.topic.author-handoff -->
 
 ## Context Pack Seed
 
-- `STD-KEYSTONE-025`
+- `STD-KEYSTONE-041`
 - Source authority rule
 - Author handoff boundary
 

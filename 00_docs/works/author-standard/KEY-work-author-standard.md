@@ -66,11 +66,11 @@ Conditionally allowed:
 Author 기준서는 문서 작성 책임에 집중한다. Clarify 질문 수집이나 Coordinator runtime flow는
 가져오지 않는다.
 
-<!-- key: id=key.work.author-standard.order.context-pack-seed refs=key.output.context-pack key.standard.project.std-keystone-029 key.work.decisions.dec-works-002 key.boundary.source-edit-gate -->
+<!-- key: id=key.work.author-standard.order.context-pack-seed refs=key.output.context-pack key.standard.project.std-keystone-042 key.work.decisions.dec-works-002 key.boundary.source-edit-gate -->
 
 ## Context Pack Seed
 
-- `STD-KEYSTONE-029`
+- `STD-KEYSTONE-042`
 - `DEC-WORKS-002`
 - Source edit gate와 approval boundary
 
