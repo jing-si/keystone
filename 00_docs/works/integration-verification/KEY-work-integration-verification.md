@@ -46,10 +46,10 @@ Conditionally allowed:
 
 ## Source Context
 
-- `00_docs/KEY-context-map.md`
-- `00_docs/standards/00_KEY-project-standard.md`
-- `00_docs/standards/skills/00_KEY-index.md`
-- `00_docs/works/00_KEY-index.md`
+- `00_docs/key-context-map.md`
+- `00_docs/standards/01_key-project-standard.md`
+- `00_docs/standards/skills/00_key-index.md`
+- `00_docs/works/00_key-index.md`
 - repo-local `skills/` source
 
 <!-- key: id=key.work.integration-verification.order.completion-criteria refs=key.topic.acceptance key.topic.source-document-model key.topic.input-output key.topic.current-step key.topic.risk-record -->
@@ -120,4 +120,4 @@ Forbidden until explicitly allowed:
 
 ## Progress Record
 
-S07 완료는 main acceptance 후에만 `KEY-progress.md`에 기록한다.
+S07 완료는 main acceptance 후에만 `key-progress.md`에 기록한다.

@@ -45,10 +45,10 @@ Conditionally allowed:
 
 ## Source Context
 
-- `00_docs/standards/00_KEY-project-standard.md`
-- `00_docs/standards/skills/coordinator/00_KEY-index.md`
-- `00_docs/standards/skills/coordinator/KEY-standard-coordinator.md`
-- `00_docs/works/00_KEY-index.md`
+- `00_docs/standards/01_key-project-standard.md`
+- `00_docs/standards/skills/coordinator/00_key-index.md`
+- `00_docs/standards/skills/coordinator/key-standard-coordinator.md`
+- `00_docs/works/00_key-index.md`
 
 <!-- key: id=key.work.coordinator-standard.order.completion-criteria refs=key.topic.acceptance key.role.coordinator key.topic.current-step key.topic.worker-handoff key.topic.reviewer-focus -->
 
@@ -88,7 +88,7 @@ Clarify로 남긴다.
 
 Allowed:
 
-- `rg -n "Current Step Brief|Context Pack|accepted" 00_docs/standards/skills/coordinator/KEY-standard-coordinator.md`
+- `rg -n "Current Step Brief|Context Pack|accepted" 00_docs/standards/skills/coordinator/key-standard-coordinator.md`
 - `git diff --check`
 
 <!-- key: id=key.work.coordinator-standard.order.expected-output refs=key.contract.output key.role.coordinator key.topic.runtime-handoff key.doc.work-order -->
@@ -108,4 +108,4 @@ Allowed:
 
 ## Progress Record
 
-S05 완료는 main acceptance 후에만 `KEY-progress.md`에 기록한다.
+S05 완료는 main acceptance 후에만 `key-progress.md`에 기록한다.

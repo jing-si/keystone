@@ -37,15 +37,15 @@ risk_level: medium
 
 ## 원천 기준서
 
-- `00_docs/standards/00_KEY-project-standard.md`
-- `00_docs/standards/skills/00_KEY-index.md`
+- `00_docs/standards/01_key-project-standard.md`
+- `00_docs/standards/skills/00_key-index.md`
 
 <!-- key: id=key.work.skill-creation.index.documents refs=key.doc.work key.topic.progress-update key.topic.document-list -->
 
 ## 문서
 
-- 작업서(4): `KEY-work-skill-creation.md`
-- 진행 기록(5): `KEY-progress.md`
+- 작업서(4): `key-work-skill-creation.md`
+- 진행 기록(5): `key-progress.md`
 
 <!-- key: id=key.work.skill-creation.index.current-status refs=key.topic.work-sequence key.topic.status key.step.s06 -->
 

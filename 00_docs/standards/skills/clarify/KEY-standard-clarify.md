@@ -44,12 +44,12 @@ key:
 <!-- key: id=key.standard.skill.clarify.standard-relations refs=key.role.clarify key.doc.standard key.topic.skill-contract -->
 ## 기준 관계
 
-1. Parent 기준서: `../../00_KEY-project-standard.md`
+1. Parent 기준서: `../../01_key-project-standard.md`
 2. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-006`, `STD-KEYSTONE-007`,
    `STD-KEYSTONE-014`, `STD-KEYSTONE-015`, `STD-KEYSTONE-016`,
    `STD-KEYSTONE-023`, `STD-KEYSTONE-041`, `STD-KEYSTONE-050`,
    `STD-KEYSTONE-051`, `STD-KEYSTONE-052`
-3. 관련 결정(6): `00_docs/works/KEY-decisions.md`
+3. 관련 결정(6): `00_docs/works/key-decisions.md`
 4. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.
 5. 상세화 범위: 이 기준서는 `STD-KEYSTONE-041`의 Clarify behavior를 구현 가능한 수준으로

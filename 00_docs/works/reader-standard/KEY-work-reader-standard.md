@@ -42,10 +42,10 @@ Conditionally allowed:
 <!-- key: id=key.work.reader-standard.order.source-context refs=key.doc.source key.doc.standard key.role.reader -->
 ## Source Context
 
-- `00_docs/standards/00_KEY-project-standard.md`
-- `00_docs/standards/skills/reader/00_KEY-index.md`
-- `00_docs/standards/skills/reader/KEY-standard-reader.md`
-- `00_docs/works/00_KEY-index.md`
+- `00_docs/standards/01_key-project-standard.md`
+- `00_docs/standards/skills/reader/00_key-index.md`
+- `00_docs/standards/skills/reader/key-standard-reader.md`
+- `00_docs/works/00_key-index.md`
 
 <!-- key: id=key.work.reader-standard.order.completion-criteria refs=key.topic.verification key.role.reader key.contract.output -->
 ## Completion Criteria
@@ -95,4 +95,4 @@ Allowed:
 <!-- key: id=key.work.reader-standard.order.progress-record refs=key.topic.progress-update key.doc.work -->
 ## Progress Record
 
-S02 완료는 main acceptance 후에만 `KEY-progress.md`에 기록한다.
+S02 완료는 main acceptance 후에만 `key-progress.md`에 기록한다.

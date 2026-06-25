@@ -47,7 +47,7 @@ Conditionally allowed:
 ## Source Context
 
 - S01-S05에서 수락된 기준서
-- `00_docs/standards/00_KEY-project-standard.md`
+- `00_docs/standards/01_key-project-standard.md`
 - 각 skill별 child 기준서
 
 <!-- key: id=key.work.skill-creation.order.completion-criteria refs=key.topic.acceptance key.topic.skill-directory key.artifact.skill-md key.boundary.trigger key.topic.prototype-dependency -->
@@ -114,4 +114,4 @@ Forbidden until explicitly allowed:
 
 ## Progress Record
 
-S06 완료는 main acceptance 후에만 `KEY-progress.md`에 기록한다.
+S06 완료는 main acceptance 후에만 `key-progress.md`에 기록한다.

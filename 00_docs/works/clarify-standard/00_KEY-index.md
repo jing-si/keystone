@@ -37,14 +37,14 @@ edit plan을 만들도록 경계를 명확히 한다.
 
 ## 원천 기준서
 
-- `00_docs/standards/skills/clarify/KEY-standard-clarify.md`
+- `00_docs/standards/skills/clarify/key-standard-clarify.md`
 
 <!-- key: id=key.work.clarify-standard.index.documents refs=key.doc.work key.topic.progress-update key.topic.document-list -->
 
 ## 문서
 
-- 작업서(4): `KEY-work-clarify-standard.md`
-- 진행 기록(5): `KEY-progress.md`
+- 작업서(4): `key-work-clarify-standard.md`
+- 진행 기록(5): `key-progress.md`
 
 <!-- key: id=key.work.clarify-standard.index.current-status refs=key.topic.work-sequence key.topic.status key.step.s04 -->
 

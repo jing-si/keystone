@@ -45,9 +45,9 @@ Conditionally allowed:
 
 ## Source Context
 
-- `00_docs/standards/00_KEY-project-standard.md`
-- `00_docs/standards/skills/clarify/00_KEY-index.md`
-- `00_docs/standards/skills/clarify/KEY-standard-clarify.md`
+- `00_docs/standards/01_key-project-standard.md`
+- `00_docs/standards/skills/clarify/00_key-index.md`
+- `00_docs/standards/skills/clarify/key-standard-clarify.md`
 
 <!-- key: id=key.work.clarify-standard.order.completion-criteria refs=key.topic.acceptance key.role.clarify key.topic.topic-scope key.output.edit-plan key.topic.author-handoff -->
 
@@ -86,7 +86,7 @@ Clarify는 결정 수집과 적용 계획에 집중한다. 문서 반영은 Auth
 
 Allowed:
 
-- `rg -n "Plan Mode|Default Mode|Author handoff" 00_docs/standards/skills/clarify/KEY-standard-clarify.md`
+- `rg -n "Plan Mode|Default Mode|Author handoff" 00_docs/standards/skills/clarify/key-standard-clarify.md`
 - `git diff --check`
 
 <!-- key: id=key.work.clarify-standard.order.expected-output refs=key.contract.output key.role.clarify key.doc.standard -->
@@ -106,4 +106,4 @@ Allowed:
 
 ## Progress Record
 
-S04 완료는 main acceptance 후에만 `KEY-progress.md`에 기록한다.
+S04 완료는 main acceptance 후에만 `key-progress.md`에 기록한다.

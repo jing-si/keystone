@@ -16,22 +16,22 @@ key:
 <!-- key: id=key.standard.skill.clarify.index.standards refs=key.role.clarify key.doc.decision key.topic.question-flow key.doc.standard -->
 ## 기준서
 
-1. `KEY-standard-clarify.md`
+1. `key-standard-clarify.md`
    - `keystone-clarify`의 목적, trigger/non-trigger, Plan Mode, Default Mode,
      reflection, edit plan, impact update, stop condition을 정의한다.
 
 <!-- key: id=key.standard.skill.clarify.index.parent-standard refs=key.role.clarify key.doc.standard key.topic.document-system -->
 ## 상위 기준서
 
-1. `../../00_KEY-project-standard.md`
+1. `../../01_key-project-standard.md`
    - Keystone 공통 정책, 표준 용어, source authority, explicit skill invocation,
      impact update, output language policy의 상위 규칙을 정의한다.
 
 <!-- key: id=key.standard.skill.clarify.index.reading-rules refs=key.role.clarify key.doc.decision key.doc.standard -->
 ## 읽기 규칙
 
-1. Clarify 관련 작업을 준비할 때는 `../../00_KEY-project-standard.md`의
+1. Clarify 관련 작업을 준비할 때는 `../../01_key-project-standard.md`의
    `STD-KEYSTONE-041`을 먼저 확인한다.
-2. Clarify 구현 또는 상세 계약 검토가 필요하면 `KEY-standard-clarify.md`를 읽는다.
+2. Clarify 구현 또는 상세 계약 검토가 필요하면 `key-standard-clarify.md`를 읽는다.
 3. Clarify 기준서가 전체 공통 기준서와 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 전체 공통 기준서를 임시 우선 기준으로 삼는다.

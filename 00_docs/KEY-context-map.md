@@ -34,28 +34,28 @@ key:
 
 | 영역 | 경로 | 읽는 시점 |
 |---|---|---|
-| 색인 | `00_docs/standards/00_KEY-index.md` | 사용 가능한 기준서를 탐색할 때 먼저 읽는다 |
-| 프로젝트 | `00_docs/standards/00_KEY-project-standard.md` | 프로젝트 공통 규칙, 원천 문서(2) 정책, 스킬군 역할, coordinator 호환성을 확인할 때 읽는다 |
-| 스킬별 | `00_docs/standards/skills/00_KEY-index.md` | 개별 Keystone 스킬의 상세 기준서를 찾을 때 읽는다 |
-| Reader | `00_docs/standards/skills/reader/KEY-standard-reader.md` | `keystone-reader`의 trigger, mode, output, read-only boundary를 확인할 때 읽는다 |
-| Author | `00_docs/standards/skills/author/KEY-standard-author.md` | `keystone-author`의 기준서(3), 작업서(4), progress update boundary를 확인할 때 읽는다 |
-| Clarify | `00_docs/standards/skills/clarify/KEY-standard-clarify.md` | `keystone-clarify`의 decision collection, reflection, Author handoff를 확인할 때 읽는다 |
-| Coordinator | `00_docs/standards/skills/coordinator/KEY-standard-coordinator.md` | `keystone-coordinator`의 Goal assignment, routing, report, review, verification, acceptance flow를 확인할 때 읽는다 |
+| 색인 | `00_docs/standards/00_key-index.md` | 사용 가능한 기준서를 탐색할 때 먼저 읽는다 |
+| 프로젝트 | `00_docs/standards/01_key-project-standard.md` | 프로젝트 공통 규칙, 원천 문서(2) 정책, 스킬군 역할, coordinator 호환성을 확인할 때 읽는다 |
+| 스킬별 | `00_docs/standards/skills/00_key-index.md` | 개별 Keystone 스킬의 상세 기준서를 찾을 때 읽는다 |
+| Reader | `00_docs/standards/skills/reader/key-standard-reader.md` | `keystone-reader`의 trigger, mode, output, read-only boundary를 확인할 때 읽는다 |
+| Author | `00_docs/standards/skills/author/key-standard-author.md` | `keystone-author`의 기준서(3), 작업서(4), progress update boundary를 확인할 때 읽는다 |
+| Clarify | `00_docs/standards/skills/clarify/key-standard-clarify.md` | `keystone-clarify`의 decision collection, reflection, Author handoff를 확인할 때 읽는다 |
+| Coordinator | `00_docs/standards/skills/coordinator/key-standard-coordinator.md` | `keystone-coordinator`의 Goal assignment, routing, report, review, verification, acceptance flow를 확인할 때 읽는다 |
 
 <!-- key: id=key.context-map.work-order refs=key.topic.document-system key.doc.source key.topic.work-sequence -->
 ## 작업서
 
 | 작업 | 경로 | 상태 | 담당 영역 |
 |---|---|---|---|
-| 작업서 색인 | `00_docs/works/00_KEY-index.md` | active | 실행 순서와 active work 탐색 |
-| Document Tree Setup | `00_docs/works/document-tree-setup/00_KEY-index.md` | accepted | `works/` tree 재정비 |
-| Project Standard | `00_docs/works/project-standard/00_KEY-index.md` | ready | 전체 공통 기준서 |
-| Reader Standard | `00_docs/works/reader-standard/00_KEY-index.md` | planned | `keystone-reader` 기준서 |
-| Author Standard | `00_docs/works/author-standard/00_KEY-index.md` | planned | `keystone-author` 기준서와 작업서 생성 표준 |
-| Clarify Standard | `00_docs/works/clarify-standard/00_KEY-index.md` | planned | `keystone-clarify` 기준서 |
-| Coordinator Standard | `00_docs/works/coordinator-standard/00_KEY-index.md` | planned | `keystone-coordinator` 기준서 |
-| Skill Creation | `00_docs/works/skill-creation/00_KEY-index.md` | planned | Keystone skill source 생성 |
-| Integration Verification | `00_docs/works/integration-verification/00_KEY-index.md` | planned | 통합 검증 |
+| 작업서 색인 | `00_docs/works/00_key-index.md` | active | 실행 순서와 active work 탐색 |
+| Document Tree Setup | `00_docs/works/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
+| Project Standard | `00_docs/works/project-standard/00_key-index.md` | ready | 전체 공통 기준서 |
+| Reader Standard | `00_docs/works/reader-standard/00_key-index.md` | planned | `keystone-reader` 기준서 |
+| Author Standard | `00_docs/works/author-standard/00_key-index.md` | planned | `keystone-author` 기준서와 작업서 생성 표준 |
+| Clarify Standard | `00_docs/works/clarify-standard/00_key-index.md` | planned | `keystone-clarify` 기준서 |
+| Coordinator Standard | `00_docs/works/coordinator-standard/00_key-index.md` | planned | `keystone-coordinator` 기준서 |
+| Skill Creation | `00_docs/works/skill-creation/00_key-index.md` | planned | Keystone skill source 생성 |
+| Integration Verification | `00_docs/works/integration-verification/00_key-index.md` | planned | 통합 검증 |
 
 <!-- key: id=key.context-map.document-tree-policy refs=key.topic.document-system key.doc.source -->
 ## 문서 트리 정책
@@ -65,41 +65,41 @@ Keystone 문서는 영어 경로와 설정된 document root(1)를 사용한다. 
 
 ```text
 00_docs/
-  KEY-context-map.md
+  key-context-map.md
   standards/
-    00_KEY-index.md
-    00_KEY-project-standard.md
+    00_key-index.md
+    01_key-project-standard.md
     skills/
-      00_KEY-index.md
+      00_key-index.md
       reader/
-        00_KEY-index.md
-        KEY-standard-reader.md
+        00_key-index.md
+        key-standard-reader.md
       author/
-        00_KEY-index.md
-        KEY-standard-author.md
+        00_key-index.md
+        key-standard-author.md
       clarify/
-        00_KEY-index.md
-        KEY-standard-clarify.md
+        00_key-index.md
+        key-standard-clarify.md
       coordinator/
-        00_KEY-index.md
-        KEY-standard-coordinator.md
+        00_key-index.md
+        key-standard-coordinator.md
   works/
-    00_KEY-index.md
-    KEY-decisions.md
+    00_key-index.md
+    key-decisions.md
     document-tree-setup/
-      00_KEY-index.md
-      KEY-work-document-tree-setup.md
-      KEY-progress.md
+      00_key-index.md
+      key-work-document-tree-setup.md
+      key-progress.md
     project-standard/
-      00_KEY-index.md
-      KEY-work-project-standard.md
-      KEY-progress.md
+      00_key-index.md
+      key-work-project-standard.md
+      key-progress.md
     ...
 ```
 
 기준서는 전체 공통 기준서에서 시작해 필요한 경우 스킬별 child 기준서로 내려간다. 작업서는
 기준서 구조에 종속되지 않고 reviewable goal 단위로 만든다. 실행 순서는
-`00_docs/works/00_KEY-index.md`가 관리하며, 최종 작업서는 `KEY-work-{slug}.md` 형식을 사용한다.
+`00_docs/works/00_key-index.md`가 관리하며, 최종 작업서는 `key-work-{slug}.md` 형식을 사용한다.
 
 <!-- key: id=key.context-map.section refs=key.topic.work-sequence key.topic.document-system -->
 ## 현재 작업 단계

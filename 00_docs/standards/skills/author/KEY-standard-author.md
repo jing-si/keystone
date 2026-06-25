@@ -44,7 +44,7 @@ key:
 <!-- key: id=key.standard.skill.author.standard-relations refs=key.role.author key.doc.standard key.topic.skill-contract -->
 ## 기준 관계
 
-1. Parent 기준서: `../../00_KEY-project-standard.md`
+1. Parent 기준서: `../../01_key-project-standard.md`
 2. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-003`, `STD-KEYSTONE-004`,
    `STD-KEYSTONE-006`, `STD-KEYSTONE-007`, `STD-KEYSTONE-008`,
    `STD-KEYSTONE-010`, `STD-KEYSTONE-011`, `STD-KEYSTONE-012`,
@@ -53,7 +53,7 @@ key:
    `STD-KEYSTONE-023`, `STD-KEYSTONE-024`, `STD-KEYSTONE-025`,
    `STD-KEYSTONE-030`, `STD-KEYSTONE-032`, `STD-KEYSTONE-042`,
    `STD-KEYSTONE-043`, `STD-KEYSTONE-052`
-3. 관련 결정(6): `00_docs/works/KEY-decisions.md`
+3. 관련 결정(6): `00_docs/works/key-decisions.md`
 4. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.
 5. 상세화 범위: 이 기준서는 `STD-KEYSTONE-042`의 Author behavior를 구현 가능한 수준으로
@@ -155,7 +155,7 @@ Create Mode는 새 원천 문서(2)를 만든다.
 2. 작업서(4)는 `works/` tree와 `STD-KEYSTONE-011`, `STD-KEYSTONE-013`,
    `STD-KEYSTONE-022`을 따른다.
 3. 새 작업 문서는 `works/` tree에만 만든다.
-4. 새 work node를 만들면 `00_KEY-index.md`를 함께 만든다.
+4. 새 work node를 만들면 `00_key-index.md`를 함께 만든다.
 5. Minimal document set을 먼저 만들고, scope, decisions, coordination 문서는 필요할 때만
    추가한다.
 6. 파생 에이전트 문서(8)는 `STD-KEYSTONE-016`의 생성 및 업데이트 조건을 만족할 때만
@@ -189,7 +189,7 @@ Clarify-Apply Mode는 수락된 Clarify result를 문서에 반영한다.
 5. 적용 후 필요한 경우 결정(6) 기록과 진행 기록(5)을 갱신한다.
 6. 다른 문서와 함께 맞춰야 하는 원천 문서(2) 수정은 Clarify가 아니라 Author가 담당한다.
 7. `keystone-clarify`가 명시 승인된 현재 대상 문서의 단순 오탈자만 직접 수정할 수 있다는
-   예외는 `KEY-standard-clarify.md`의 Default Mode contract를 따른다.
+   예외는 `key-standard-clarify.md`의 Default Mode contract를 따른다.
 
 <!-- key: id=key.standard.skill.author.normalize-mode refs=key.role.author key.topic.document-system -->
 ### Normalize Mode
@@ -260,12 +260,12 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
 2. 기준서별, 기능별, 구현 단계별, 검증 단계별로 독립 work를 만들 수 있다.
 3. 각 work는 하나의 reviewable goal을 가져야 한다.
 4. 작업서는 관련 기준서(3)를 참조하지만, 기준서 안에 실행 순서를 박지 않는다.
-5. 실행 순서는 `00_docs/works/00_KEY-index.md` 또는 별도 상위 work plan이 관리한다.
+5. 실행 순서는 works index 또는 별도 상위 work plan이 관리한다.
 6. 너무 작은 작업은 별도 work로 만들지 않고 관련 work의 step으로 흡수한다.
-7. Work node는 기본적으로 `00_KEY-index.md`, `KEY-work-{slug}.md`, `KEY-progress.md`를 가진다.
-8. 결정(6) 기록은 여러 work에 영향을 주면 `works/KEY-decisions.md`에, 특정 work에만 영향을
-   주면 해당 work node의 `KEY-decisions.md`에 둔다.
-9. 작업서 생성 후 `KEY-context-map.md`와 `works/00_KEY-index.md`의 link와 status drift를 확인한다.
+7. Work node는 기본적으로 `00_key-index.md`, `key-work-{slug}.md`, `key-progress.md`를 가진다.
+8. 결정(6) 기록은 여러 work에 영향을 주면 `works/key-decisions.md`에, 특정 work에만 영향을
+   주면 해당 work node의 `key-decisions.md`에 둔다.
+9. 작업서 생성 후 context map과 works index의 link와 status drift를 확인한다.
 
 <!-- key: id=key.standard.skill.author.metadata-writing-impact-review refs=key.role.author key.topic.keystone-metadata key.topic.impact-review -->
 ## Keystone metadata 작성과 impact 검토

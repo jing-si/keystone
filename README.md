@@ -49,17 +49,17 @@ Future Keystone documents should use English paths and index-based trees:
 
 ```text
 00_docs/
-  KEY-context-map.md
+  key-context-map.md
   standards/
-    00_KEY-index.md
-    00_KEY-project-standard.md
+    00_key-index.md
+    01_key-project-standard.md
     ...
   works/
-    00_KEY-index.md
+    00_key-index.md
     ...
 ```
 
-Keystone-managed Markdown files use the `KEY` filename prefix so they can be
+Keystone-managed Markdown files use the `key` filename prefix so they can be
 routed to Keystone skills.
 
 ## Current Status
@@ -70,9 +70,9 @@ yet.
 
 Start with:
 
-- [`00_docs/KEY-context-map.md`](00_docs/KEY-context-map.md)
-- [`00_docs/standards/00_KEY-project-standard.md`](00_docs/standards/00_KEY-project-standard.md)
-- [`00_docs/works/00_KEY-index.md`](00_docs/works/00_KEY-index.md)
+- [`00_docs/key-context-map.md`](00_docs/key-context-map.md)
+- [`00_docs/standards/01_key-project-standard.md`](00_docs/standards/01_key-project-standard.md)
+- [`00_docs/works/00_key-index.md`](00_docs/works/00_key-index.md)
 
 ## Relationship To Prototype Skills
 

@@ -32,14 +32,14 @@ risk_level: medium
 <!-- key: id=key.work.document-tree-setup.index.source-standards refs=key.doc.source key.doc.standard key.role.author -->
 ## 원천 기준서
 
-- `00_docs/standards/00_KEY-project-standard.md`
-- `00_docs/standards/skills/author/KEY-standard-author.md`
+- `00_docs/standards/01_key-project-standard.md`
+- `00_docs/standards/skills/author/key-standard-author.md`
 
 <!-- key: id=key.work.document-tree-setup.index.documents refs=key.doc.work key.topic.progress-update -->
 ## 문서
 
-- 작업서(4): `KEY-work-document-tree-setup.md`
-- 진행 기록(5): `KEY-progress.md`
+- 작업서(4): `key-work-document-tree-setup.md`
+- 진행 기록(5): `key-progress.md`
 
 <!-- key: id=key.work.document-tree-setup.index.current-status refs=key.topic.work-sequence key.topic.progress-update -->
 ## 현재 상태

@@ -20,28 +20,28 @@ key:
 
 | 순서 | Work | 경로 | 상태 | 목적 |
 |---|---|---|---|---|
-| S00 | Document Tree Setup | `document-tree-setup/00_KEY-index.md` | accepted | `work-packages/`를 폐기하고 `works/` 기준 작업 트리를 만든다 |
-| S01 | Project Standard | `project-standard/00_KEY-index.md` | ready | 전체 공통 기준서를 정리한다 |
-| S02 | Reader Standard | `reader-standard/00_KEY-index.md` | planned | `keystone-reader` 기준서를 정리한다 |
-| S03 | Author Standard | `author-standard/00_KEY-index.md` | planned | `keystone-author` 기준서와 작업서 생성 표준을 정리한다 |
-| S04 | Clarify Standard | `clarify-standard/00_KEY-index.md` | planned | `keystone-clarify` 기준서를 정리한다 |
-| S05 | Coordinator Standard | `coordinator-standard/00_KEY-index.md` | planned | `keystone-coordinator` 기준서를 정리한다 |
-| S06 | Skill Creation | `skill-creation/00_KEY-index.md` | planned | 네 개 Keystone skill source를 만든다 |
-| S07 | Integration Verification | `integration-verification/00_KEY-index.md` | planned | 문서와 skill source의 end-to-end 흐름을 검증한다 |
+| S00 | Document Tree Setup | `document-tree-setup/00_key-index.md` | accepted | `work-packages/`를 폐기하고 `works/` 기준 작업 트리를 만든다 |
+| S01 | Project Standard | `project-standard/00_key-index.md` | ready | 전체 공통 기준서를 정리한다 |
+| S02 | Reader Standard | `reader-standard/00_key-index.md` | planned | `keystone-reader` 기준서를 정리한다 |
+| S03 | Author Standard | `author-standard/00_key-index.md` | planned | `keystone-author` 기준서와 작업서 생성 표준을 정리한다 |
+| S04 | Clarify Standard | `clarify-standard/00_key-index.md` | planned | `keystone-clarify` 기준서를 정리한다 |
+| S05 | Coordinator Standard | `coordinator-standard/00_key-index.md` | planned | `keystone-coordinator` 기준서를 정리한다 |
+| S06 | Skill Creation | `skill-creation/00_key-index.md` | planned | 네 개 Keystone skill source를 만든다 |
+| S07 | Integration Verification | `integration-verification/00_key-index.md` | planned | 문서와 skill source의 end-to-end 흐름을 검증한다 |
 
 <!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work -->
 ## 공통 결정
 
-- 결정 기록(6): `KEY-decisions.md`
+- 결정 기록(6): `key-decisions.md`
 
 <!-- key: id=key.work.index.reading-rules refs=key.doc.work key.doc.source key.topic.document-system -->
 ## 읽기 규칙
 
-1. 프로젝트 전체 방향은 `00_docs/KEY-context-map.md`를 먼저 읽는다.
-2. 공통 기준과 용어는 `00_docs/standards/00_KEY-project-standard.md`를 따른다.
+1. 프로젝트 전체 방향은 `00_docs/key-context-map.md`를 먼저 읽는다.
+2. 공통 기준과 용어는 `00_docs/standards/01_key-project-standard.md`를 따른다.
 3. 현재 실행 순서는 이 파일의 `실행 순서` 표를 권위로 삼는다.
-4. 각 work의 세부 목표와 검증은 해당 work node의 `KEY-work-{slug}.md`에서 확인한다.
-5. 각 work의 진행 상태는 해당 work node의 `KEY-progress.md`에서 확인한다.
+4. 각 work의 세부 목표와 검증은 해당 work node의 `key-work-{slug}.md`에서 확인한다.
+5. 각 work의 진행 상태는 해당 work node의 `key-progress.md`에서 확인한다.
 
 <!-- key: id=key.work.index.work-creation-rules refs=key.doc.work key.topic.document-system -->
 ## 작업서 생성 규칙

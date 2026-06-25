@@ -41,7 +41,7 @@ key:
 <!-- key: id=key.standard.skill.reader.standard-relations refs=key.role.reader key.doc.standard key.topic.skill-contract -->
 ## 기준 관계
 
-1. Parent 기준서: `../../00_KEY-project-standard.md`
+1. Parent 기준서: `../../01_key-project-standard.md`
 2. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-010`, `STD-KEYSTONE-011`,
    `STD-KEYSTONE-012`, `STD-KEYSTONE-015`, `STD-KEYSTONE-020`,
    `STD-KEYSTONE-023`, `STD-KEYSTONE-024`, `STD-KEYSTONE-025`,
@@ -106,8 +106,8 @@ Input이 부족하면 Reader는 추측해서 수정하지 않고 `risks_and_gaps
 Reader는 mode와 무관하게 다음 순서를 따른다.
 
 1. 설정된 document root(1)를 `STD-KEYSTONE-010`에 따라 해석한다.
-2. `KEY-context-map.md`가 있으면 먼저 읽어 active standards와 active work를 파악한다.
-3. `standards/00_KEY-index.md` 또는 해당 project의 standards index를 읽는다.
+2. `key-context-map.md`가 있으면 먼저 읽어 active standards와 active work를 파악한다.
+3. `standards/00_key-index.md` 또는 해당 project의 standards index를 읽는다.
 4. 현재 요청과 관련된 child index만 따라 내려가며 관련 없는 branch를 읽지 않는다.
 5. 요청 또는 current work에 관련 키스톤 메타데이터(9)가 있으면 같은 `key.id`를 참조하는
    문서를 탐색 후보로 확인한다.

@@ -34,13 +34,13 @@ risk_level: medium
 <!-- key: id=key.work.project-standard.index.source-standards refs=key.doc.source key.doc.standard -->
 ## 원천 기준서
 
-- `00_docs/standards/00_KEY-project-standard.md`
+- `00_docs/standards/01_key-project-standard.md`
 
 <!-- key: id=key.work.project-standard.index.documents refs=key.doc.work key.topic.progress-update -->
 ## 문서
 
-- 작업서(4): `KEY-work-project-standard.md`
-- 진행 기록(5): `KEY-progress.md`
+- 작업서(4): `key-work-project-standard.md`
+- 진행 기록(5): `key-progress.md`
 
 <!-- key: id=key.work.project-standard.index.current-status refs=key.topic.work-sequence key.topic.progress-update -->
 ## 현재 상태

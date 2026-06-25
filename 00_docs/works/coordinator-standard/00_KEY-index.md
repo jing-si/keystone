@@ -38,14 +38,14 @@ Current Step Brief, Context Pack, report handling, review, verification, accepta
 
 ## 원천 기준서
 
-- `00_docs/standards/skills/coordinator/KEY-standard-coordinator.md`
+- `00_docs/standards/skills/coordinator/key-standard-coordinator.md`
 
 <!-- key: id=key.work.coordinator-standard.index.documents refs=key.doc.work key.topic.progress-update key.topic.document-list -->
 
 ## 문서
 
-- 작업서(4): `KEY-work-coordinator-standard.md`
-- 진행 기록(5): `KEY-progress.md`
+- 작업서(4): `key-work-coordinator-standard.md`
+- 진행 기록(5): `key-progress.md`
 
 <!-- key: id=key.work.coordinator-standard.index.current-status refs=key.topic.work-sequence key.topic.status key.step.s05 -->
 
