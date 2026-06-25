@@ -6,6 +6,8 @@ key:
     - key.role.subagent
     - key.topic.formal-workflow
     - key.topic.work-execution
+    - key.topic.branch-worktree
+    - key.topic.merge-gate
     - key.topic.verification
     - key.contract.output
 ---
@@ -27,7 +29,8 @@ key:
 3. Subagent role catalog
 4. Role별 input과 output contract
 5. Report status 값과 의미
-6. 공통 금지와 stop condition
+6. Branch, worktree, merge 관련 공통 권한 경계
+7. 공통 금지와 stop condition
 
 <!-- key: id=key.standard.subagent.out-of-scope refs=key.role.subagent key.boundary.approval key.topic.acceptance -->
 ## 적용하지 않는 범위
@@ -37,6 +40,7 @@ key:
 3. 사용자가 승인하지 않은 원천 문서(2), code, config, generated file 변경
 4. 추가 subagent 생성 또는 독자적 workflow orchestration
 5. High-impact decision, policy, acceptance criteria, status semantics 확정
+6. Base branch 또는 user-facing stable branch 직접 merge
 
 <!-- key: id=key.standard.subagent.standard-relations refs=key.role.subagent key.doc.standard key.topic.skill-contract -->
 ## 기준 관계
@@ -44,7 +48,8 @@ key:
 1. Parent 기준서: `../01_key-project-standard.md`
 2. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-007`, `STD-KEYSTONE-020`,
    `STD-KEYSTONE-024`, `STD-KEYSTONE-025`, `STD-KEYSTONE-030`,
-   `STD-KEYSTONE-031`, `STD-KEYSTONE-032`, `STD-KEYSTONE-043`
+   `STD-KEYSTONE-031`, `STD-KEYSTONE-032`, `STD-KEYSTONE-034`,
+   `STD-KEYSTONE-043`
 3. Coordinator 기준서: `../skills/coordinator/key-standard-coordinator.md`
 4. Author 기준서: `../skills/author/key-standard-author.md`
 5. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
@@ -61,21 +66,23 @@ key:
 5. `doc-impact-writer`는 `lane=docs`, `role=doc-impact-writer`,
    `authority=bounded_edit`의 별칭이다.
 
-<!-- key: id=key.standard.subagent.lane-role-authority refs=key.role.subagent key.topic.work-execution key.topic.formal-workflow -->
+<!-- key: id=key.standard.subagent.lane-role-authority refs=key.role.subagent key.topic.work-execution key.topic.formal-workflow key.topic.merge-gate -->
 ## Lane, role, authority
 
 실행 역할은 다음 세 축으로 제한한다.
 
 1. Lane: `docs`, `code`, `repo`처럼 작업 영역을 구분한다.
 2. Role: `explorer`, `doc-impact-writer`, `code-worker`, `reviewer`, `verifier`처럼 수행할
-   일을 구분한다.
-3. Authority: `read_only`, `bounded_edit`, `review_only`, `verification`처럼 허용 권한을
-   구분한다.
+   일을 구분한다. 복잡한 병합 전용 역할은 `repo-integrator`를 사용한다.
+3. Authority: `read_only`, `bounded_edit`, `review_only`, `verification`, `staging_merge`처럼
+   허용 권한을 구분한다.
+4. `staging_merge`는 staging branch에서 dry-run 또는 실험 병합만 수행할 수 있는 권한이다.
+   Base branch와 user-facing stable branch merge 권한을 포함하지 않는다.
 
 새 role이 필요하면 Coordinator나 Author 기준서에서 ad hoc으로 만들지 않고 이 기준서를 먼저
 수정하거나 main/user 결정(6)을 받는다.
 
-<!-- key: id=key.standard.subagent.role-catalog refs=key.role.subagent key.topic.work-execution key.topic.verification key.topic.keystone-metadata -->
+<!-- key: id=key.standard.subagent.role-catalog refs=key.role.subagent key.topic.work-execution key.topic.verification key.topic.keystone-metadata key.topic.branch-worktree key.topic.merge-gate -->
 ## Role catalog
 
 1. Explorer
@@ -111,8 +118,18 @@ key:
    - 기본 authority: `verification`
    - 사용: 기준서-led verification을 별도 Goal로 실행하거나 failure 원인을 분리해야 할 때
    - 출력: verification command/result, pass/fail, failure cause, residual risk
+6. Repo-integrator
+   - 기본 lane: `repo`
+   - 기본 authority: `staging_merge`
+   - 사용: 여러 branch의 변경을 합치기 전에 branch diff, text conflict, semantic conflict,
+     merge order, verification 범위를 검토해야 할 때
+   - 출력: branch별 diff 요약, scope 비교, conflict candidate, merge order, staging merge
+     result, verification plan, residual risk
+   - 경계: staging branch에서만 dry-run 또는 실험 병합을 수행할 수 있다. Base branch,
+     integration branch, user-facing stable branch 직접 merge, final acceptance, progress
+     `accepted` 처리는 하지 않는다.
 
-<!-- key: id=key.standard.subagent.input-contract refs=key.role.subagent key.contract.output key.topic.work-execution key.topic.keystone-metadata -->
+<!-- key: id=key.standard.subagent.input-contract refs=key.role.subagent key.contract.output key.topic.work-execution key.topic.keystone-metadata key.topic.branch-worktree key.topic.merge-gate -->
 ## Input contract
 
 Subagent에게 작업을 맡길 때는 최소한 다음을 제공해야 한다.
@@ -126,7 +143,8 @@ Subagent에게 작업을 맡길 때는 최소한 다음을 제공해야 한다.
 7. Completion Criteria
 8. Stop Conditions
 9. Verification path
-10. Report status contract
+10. 필요한 경우 branch context
+11. Report status contract
 
 Input이 부족하면 subagent는 추측해서 범위를 넓히지 않고 `NEEDS_CONTEXT` 또는 `BLOCKED`로
 보고한다.
@@ -150,7 +168,7 @@ Subagent report status 값은 다음과 같다.
 Subagent report status는 progress status가 아니다. Main 또는 Coordinator가 실제 상태와
 verification을 확인하기 전까지 `DONE`을 accepted로 해석하지 않는다.
 
-<!-- key: id=key.standard.subagent.common-boundary refs=key.role.subagent key.boundary.approval key.topic.work-execution key.topic.keystone-metadata -->
+<!-- key: id=key.standard.subagent.common-boundary refs=key.role.subagent key.boundary.approval key.topic.work-execution key.topic.keystone-metadata key.topic.merge-gate -->
 ## 공통 경계
 
 모든 helper/subagent는 다음을 지켜야 한다.
@@ -165,8 +183,11 @@ verification을 확인하기 전까지 `DONE`을 accepted로 해석하지 않는
 8. Metadata 기반 후보나 reuse candidate는 채택 결정이 아니라 검토 대상 evidence로 보고한다.
 9. Impact candidate가 연결되어 있다는 이유만으로 수정하지 않는다. 관련성이 불확실하면
    수정하지 않고 report한다.
+10. `staging_merge` authority를 받더라도 base branch, integration branch, user-facing stable
+    branch에 직접 merge하지 않는다.
+11. Merge 성공을 Main acceptance나 progress `accepted`로 해석하지 않는다.
 
-<!-- key: id=key.standard.subagent.stop-condition refs=key.role.subagent key.boundary.stop-condition key.topic.work-execution -->
+<!-- key: id=key.standard.subagent.stop-condition refs=key.role.subagent key.boundary.stop-condition key.topic.work-execution key.topic.branch-worktree key.topic.merge-gate -->
 ## Stop condition
 
 Subagent는 다음 상황에서 멈추고 report한다.
@@ -178,8 +199,11 @@ Subagent는 다음 상황에서 멈추고 report한다.
 5. 민감한 정보, local-only path, private data가 필요하다.
 6. Verification path가 없거나 실행 결과가 판단 불가능하다.
 7. 추가 subagent나 전체 workflow 재조율이 필요하다.
+8. 파일 수정 또는 merge가 필요한데 branch context가 없다.
+9. Base branch나 user-facing stable branch 직접 merge가 필요하다.
+10. 작업 시작 전 worktree가 dirty 상태인데 허용 여부가 명시되지 않았다.
 
-<!-- key: id=key.standard.subagent.verification refs=key.role.subagent key.topic.verification -->
+<!-- key: id=key.standard.subagent.verification refs=key.role.subagent key.topic.verification key.topic.merge-gate -->
 ## Verification
 
 Subagent 기준은 다음 방법으로 검증한다.
@@ -192,3 +216,4 @@ Subagent 기준은 다음 방법으로 검증한다.
    소유하지 않아야 한다.
 6. Doc-impact-writer는 연결된 모든 문서가 아니라 승인된 변경과 의미상 관련된 문서만 수정해야
    한다.
+7. Repo-integrator는 staging branch 밖의 merge나 final acceptance를 수행하지 않아야 한다.

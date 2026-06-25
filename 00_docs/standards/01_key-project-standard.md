@@ -561,6 +561,30 @@ authority, report status, 공통 금지는 `standards/subagents/key-standard-sub
 5. 어떤 상황이 오면 작업을 멈추고 main이나 사용자에게 물어야 하는가?
 6. 완료 후 무엇으로 제대로 끝났는지 확인할 수 있는가?
 
+<!-- key: id=key.standard.project.std-keystone-034 refs=key.topic.skill-contract key.topic.branch-worktree key.topic.merge-gate key.topic.acceptance key.role.subagent -->
+### STD-KEYSTONE-034: 병렬 실행은 branch와 worktree로 격리한다
+
+여러 main session이나 subagent가 동시에 파일을 수정할 수 있으면 branch와 worktree를 통해
+작업 상태를 격리한다. Branch 운영은 작업물을 옮기는 절차일 뿐 Keystone acceptance를
+대체하지 않는다.
+
+1. Main session은 자기 session branch를 가진다.
+2. 파일 수정이 필요한 subagent 작업은 session branch에서 분기한 task branch 또는 별도
+   worktree에서 수행한다.
+3. Subagent task branch는 자신을 호출한 main-session branch로만 merge할 수 있다.
+4. Main-session branch를 integration 또는 base branch에 반영하는 일은 integration owner
+   Main 또는 사용자의 acceptance 이후에만 가능하다.
+5. Subagent, Coordinator, repo-integrator는 base branch나 user-facing stable branch에 직접
+   merge하지 않는다.
+6. Merge 성공은 Git 상태가 합쳐졌다는 뜻일 뿐 Keystone acceptance가 아니다. 진행 기록(5)의
+   `accepted` 상태는 Main 또는 사용자 acceptance 이후에만 기록한다.
+7. 같은 파일 또는 같은 `key.id`를 여러 branch가 수정하면 repo-integrator 검토가 필요하다.
+8. 같은 `key.refs` overlap은 semantic review candidate로 다루며 자동 block으로 해석하지
+   않는다. 넓은 topic refs만 겹치면 warning으로 보고한다.
+9. Branch 작업에는 base branch, integration branch, session branch, task branch 또는
+   staging branch, worktree path, merge target, forbidden merge target, base commit을 담은
+   branch context가 필요하다.
+
 <!-- key: id=key.standard.project.std-keystone-040 refs=key.topic.skill-contract key.doc.source key.role.reader key.boundary.read-only -->
 ### STD-KEYSTONE-040: Reader는 read-only context preparation을 담당한다
 
