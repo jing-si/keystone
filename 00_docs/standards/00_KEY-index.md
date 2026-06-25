@@ -21,7 +21,7 @@ key:
      정의한다.
 2. Subagent 기준서 색인: `subagents/00_key-index.md`
    - Keystone helper/subagent의 lane, role, authority, report status, 공통 금지와 stop
-     condition을 정의한다.
+     condition, repo-integrator merge authority를 정의한다.
 3. 스킬별 기준서 색인: `skills/00_key-index.md`
    - Keystone 스킬별 child 기준서로 이동하기 위한 색인이다.
 4. Reader 기준서: `skills/reader/key-standard-reader.md`
@@ -42,7 +42,8 @@ key:
 
 1. Keystone 원천 문서(2)를 변경하거나 Keystone 작업을 준비하기 전에
    `01_key-project-standard.md`를 먼저 읽는다.
-2. Subagent role이나 report status가 필요하면 `subagents/00_key-index.md`를 읽는다.
+2. Subagent role, report status, merge authority가 필요하면 `subagents/00_key-index.md`를
+   읽는다.
 3. 스킬별 상세 계약이 필요하면 `skills/00_key-index.md`에서 해당 child 기준서로 내려간다.
 4. 현재 active work는 `00_docs/works/00_key-index.md`에서 찾는다.
 5. 전체 공통 기준서와 child 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의

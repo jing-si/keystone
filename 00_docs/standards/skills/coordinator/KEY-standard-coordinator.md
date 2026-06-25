@@ -7,6 +7,8 @@ key:
     - key.role.subagent
     - key.standard.subagent
     - key.topic.work-execution
+    - key.topic.branch-worktree
+    - key.topic.merge-gate
     - key.topic.verification
     - key.topic.acceptance
 ---
@@ -31,8 +33,9 @@ formal workflow가 필요하면 Coordinator가 조율할 수 있다.
 4. Worker handoff boundary와 reviewer focus 도출
 5. Subagent report handling
 6. Review, verification, repair, escalation, acceptance flow
-7. 진행 상태와 report status update boundary
-8. 파생 에이전트 문서(8) 생성 조건
+7. Branch/worktree isolation과 merge gate
+8. 진행 상태와 report status update boundary
+9. 파생 에이전트 문서(8) 생성 조건
 
 <!-- key: id=key.standard.skill.coordinator.out-of-scope refs=key.role.coordinator key.topic.skill-contract key.topic.external-assist -->
 ## 적용하지 않는 범위
@@ -55,7 +58,8 @@ formal workflow가 필요하면 Coordinator가 조율할 수 있다.
    `STD-KEYSTONE-015`, `STD-KEYSTONE-016`, `STD-KEYSTONE-020`,
    `STD-KEYSTONE-022`, `STD-KEYSTONE-023`, `STD-KEYSTONE-024`,
    `STD-KEYSTONE-025`, `STD-KEYSTONE-030`, `STD-KEYSTONE-031`,
-   `STD-KEYSTONE-032`, `STD-KEYSTONE-033`, `STD-KEYSTONE-043`
+   `STD-KEYSTONE-032`, `STD-KEYSTONE-033`, `STD-KEYSTONE-034`,
+   `STD-KEYSTONE-043`
 3. 관련 기준서: `../../subagents/key-standard-subagents.md`
 4. 관련 결정(6): `00_docs/works/key-decisions.md`
 5. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
@@ -91,6 +95,9 @@ formal workflow가 필요하면 Coordinator가 조율할 수 있다.
    한다.
 8. 문서 작업이라도 Author Edit Contract를 바탕으로 doc-impact-writer, reviewer, verifier가
    이어지는 formal workflow가 필요하다.
+9. Subagent 작업이 파일 수정으로 이어져 branch context, worktree isolation, merge gate가
+   필요하다.
+10. 여러 main-session branch나 task branch를 합치기 전에 repo-integrator 검토가 필요하다.
 
 <!-- key: id=key.standard.skill.coordinator.non-trigger-condition refs=key.role.coordinator key.topic.skill-contract -->
 ## Non-trigger condition
@@ -106,7 +113,7 @@ formal workflow가 필요하면 Coordinator가 조율할 수 있다.
 7. 민감한 정보, local-only path, private data가 포함될 수 있지만 policy가 불명확하다.
 8. 문서 작업인데 Author Edit Contract 또는 승인된 문서 수정 범위가 없다.
 
-<!-- key: id=key.standard.skill.coordinator.required-input refs=key.role.coordinator key.topic.work-execution -->
+<!-- key: id=key.standard.skill.coordinator.required-input refs=key.role.coordinator key.topic.work-execution key.topic.branch-worktree key.topic.merge-gate -->
 ## Required input
 
 Coordinator는 다음 input을 사용할 수 있어야 한다.
@@ -120,11 +127,12 @@ Coordinator는 다음 input을 사용할 수 있어야 한다.
 7. Stop conditions와 escalation conditions
 8. 현재 repository state와 Git worktree risk
 9. 문서 formal workflow인 경우 Author Edit Contract
+10. 파일 수정 또는 merge가 필요한 경우 branch context
 
 Input이 부족하면 Coordinator는 subagent를 배정하지 않고 Reader, Author, Clarify 중 필요한
 다음 작업을 제안하거나 main/user 결정(6)을 요청한다.
 
-<!-- key: id=key.standard.skill.coordinator.common-workflow refs=key.role.coordinator key.topic.work-execution key.topic.verification key.topic.acceptance key.standard.subagent -->
+<!-- key: id=key.standard.skill.coordinator.common-workflow refs=key.role.coordinator key.topic.work-execution key.topic.verification key.topic.acceptance key.standard.subagent key.topic.branch-worktree key.topic.merge-gate -->
 ## Common workflow
 
 Coordinator는 다음 순서를 따른다.
@@ -138,14 +146,15 @@ Coordinator는 다음 순서를 따른다.
    문서를 Context Pack 후보로 확인한다.
 6. Work unit이 subagent-sized이고 scope가 bounded인지 판단한다.
 7. Subagent 기준서에 따라 lane, role, authority를 선택하거나 main override를 반영한다.
-8. Current Step Brief와 Context Pack을 만든다.
-9. Worker handoff boundary 또는 reviewer focus를 구성한다.
-10. Subagent report를 받은 뒤 actual state와 diff 또는 문서 output을 확인한다.
-11. 필요하면 review 또는 verification Goal을 별도로 배정한다.
-12. Report 결과를 accept, repair, verify, escalate, block 중 하나로 처리한다.
-13. Main acceptance 조건이 충족된 경우에만 진행 기록(5)을 갱신한다.
+8. 파일 수정이 필요하면 branch context와 worktree risk를 확인한다.
+9. Current Step Brief와 Context Pack을 만든다.
+10. Worker handoff boundary 또는 reviewer focus를 구성한다.
+11. Subagent report를 받은 뒤 actual state와 diff 또는 문서 output을 확인한다.
+12. 필요하면 review, verification, repo-integrator Goal을 별도로 배정한다.
+13. Report 결과를 accept, repair, verify, escalate, block 중 하나로 처리한다.
+14. Main acceptance 조건이 충족된 경우에만 진행 기록(5)을 갱신한다.
 
-<!-- key: id=key.standard.skill.coordinator.runtime-output-contract refs=key.role.coordinator key.contract.output key.topic.work-execution key.standard.subagent -->
+<!-- key: id=key.standard.skill.coordinator.runtime-output-contract refs=key.role.coordinator key.contract.output key.topic.work-execution key.standard.subagent key.topic.branch-worktree key.topic.merge-gate -->
 ## Runtime output contract
 
 Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
@@ -156,20 +165,25 @@ Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
 2. Context Pack
    - worker나 reviewer가 읽어야 하는 관련 기준서(3), 작업서(4), 결정(6), scope,
      progress 발견사항, metadata 기반 관련 문서 후보를 담는다.
-3. Worker handoff
+3. Branch context
+   - base branch, integration branch, session branch, task branch 또는 staging branch,
+     worktree path, merge target, forbidden merge targets, base commit, dirty worktree
+     허용 여부를 담는다.
+4. Worker handoff
    - subagent 기준서 기준의 lane, role, authority, primary scope, read scope,
-     direct edit scope, conditional edit scope, escalation zone, forbidden changes를 담는다.
-4. Reviewer brief
+     direct edit scope, conditional edit scope, escalation zone, forbidden changes,
+     branch, worktree path, merge target, forbidden merge targets를 담는다.
+5. Reviewer brief
    - worker goal, completion criteria, changed files 또는 문서 output, known risks,
      verification result, 같은 `key.id`를 참조하는 문서와의 충돌 여부, reviewer focus를
      담는다.
-5. Verification checklist
+6. Verification checklist
    - 기준서-led verification expectation과 local verification note를 합쳐 만든다.
 
 이 runtime output은 기본적으로 persistent 문서가 아니다. 명시적 필요가 있을 때만 파생
 에이전트 문서(8)로 저장할 수 있다.
 
-<!-- key: id=key.standard.skill.coordinator.role-routing-contract refs=key.role.coordinator key.role.subagent key.standard.subagent key.topic.work-execution key.topic.keystone-metadata -->
+<!-- key: id=key.standard.skill.coordinator.role-routing-contract refs=key.role.coordinator key.role.subagent key.standard.subagent key.topic.work-execution key.topic.keystone-metadata key.topic.merge-gate -->
 ## Role routing contract
 
 Role catalog와 기본 authority는 `../../subagents/key-standard-subagents.md`를 따른다.
@@ -190,11 +204,82 @@ Coordinator는 그 catalog 안에서 다음 기준으로 실행 역할을 선택
 5. Verifier
    - 기준서-led verification을 별도 Goal로 실행하거나 failure 원인을 분리해야 할 때
      사용한다.
-6. Main 직접 처리
+6. Repo-integrator
+   - 여러 branch의 변경을 합치기 전에 branch diff, text conflict, semantic conflict, merge
+     order, verification 범위를 검토해야 할 때 사용한다. Repo-integrator는 staging branch
+     밖으로 merge하지 않는다.
+7. Main 직접 처리
    - 작은 local 문서 수정, acceptance 판단, scope 변경 판단, high-risk decision이 필요한
      경우 사용한다.
 
 Subagent 공통 금지와 stop condition은 subagent 기준서를 따른다.
+
+<!-- key: id=key.standard.skill.coordinator.branch-worktree-isolation refs=key.role.coordinator key.topic.branch-worktree key.topic.merge-gate key.role.subagent -->
+## Branch and worktree isolation policy
+
+Coordinator가 subagent에게 파일 수정이 필요한 bounded Goal을 배정할 때는 다음 branch와
+worktree 규칙을 따른다.
+
+1. 각 main session은 자기 session branch를 가진다.
+2. Subagent task는 session branch에서 분기한 task branch 또는 별도 worktree에서 수행한다.
+3. Task branch는 자신을 호출한 main-session branch로만 merge할 수 있다.
+4. 여러 main-session branch를 합칠 때는 integration branch 또는 staging branch를 사용한다.
+5. Base branch 또는 user-facing stable branch merge는 integration owner Main 또는 사용자
+   acceptance 이후에만 가능하다.
+6. 한 working tree를 여러 main session이나 subagent가 공유하지 않는다. 병렬 작업은 git
+   worktree 사용을 우선한다.
+7. 작업 시작 전 worktree가 dirty 상태라면 명시적으로 허용되지 않은 한 subagent를 배정하지
+   않는다.
+8. Branch context에는 최소한 base branch, integration branch, session branch, task branch
+   또는 staging branch, worktree path, merge target, forbidden merge targets, base commit,
+   dirty worktree 허용 여부를 기록한다.
+
+<!-- key: id=key.standard.skill.coordinator.merge-gate-policy refs=key.role.coordinator key.topic.merge-gate key.topic.branch-worktree key.topic.keystone-metadata key.topic.acceptance -->
+## Merge gate policy
+
+Main은 단순하고 범위가 명확한 branch를 직접 검토하고 merge할 수 있다. 단순 merge는 다음
+조건을 모두 만족해야 한다.
+
+1. 병합 대상이 단일 task branch다.
+2. 변경 파일이 적고 direct edit scope 안에만 있다.
+3. 공통 권위 문서를 수정하지 않았다.
+4. 같은 파일, 같은 `key.id`, 같은 decision topic, 같은 progress state를 다른 branch가
+   수정하지 않았다.
+5. Git merge가 clean하다.
+6. Verification path가 명확하다.
+7. Main이 diff를 직접 이해하고 scope 위반 여부를 판단할 수 있다.
+
+다음 조건 중 하나라도 있으면 Coordinator는 repo-integrator 또는 reviewer/verifier workflow로
+escalation한다.
+
+1. 병합 대상 main-session branch가 둘 이상이다.
+2. 같은 파일을 여러 branch가 수정했다.
+3. 같은 `key.id`를 여러 branch가 수정했다.
+4. `key-context-map.md`, works index, decisions, progress, project standard 같은 공통 권위
+   문서가 변경되었다.
+5. Scope, acceptance criteria, status semantics, source authority가 변경될 수 있다.
+6. Git conflict 또는 semantic conflict 가능성이 있다.
+7. 병합 순서나 merge 후 verification 범위가 불명확하다.
+
+같은 `key.refs` overlap은 semantic review candidate로 보고한다. 넓은 topic refs만 겹치는
+경우에는 warning으로 보고하고 자동 block으로 처리하지 않는다.
+
+<!-- key: id=key.standard.skill.coordinator.repo-integrator-contract refs=key.role.coordinator key.role.subagent key.topic.merge-gate key.topic.branch-worktree key.topic.verification -->
+## Repo-integrator contract
+
+Repo-integrator는 Coordinator가 호출하는 복잡 병합 전용 subagent role이다. 새 Keystone 스킬이
+아니며, role과 authority는 `../../subagents/key-standard-subagents.md`를 따른다.
+
+1. Lane: `repo`
+2. Role: `repo-integrator`
+3. Authority: `staging_merge`
+4. 허용: branch별 diff 요약, declared scope와 actual diff 비교, text conflict 확인,
+   semantic conflict 후보 확인, merge order 제안, staging branch dry-run 또는 실험 병합,
+   verification plan 작성
+5. 금지: base branch 직접 merge, user-facing stable branch 직접 merge, final acceptance,
+   progress `accepted` 처리, policy 결정, scope 확장
+6. Output: `safe`, `needs_review`, `blocked` 중 하나와 evidence, staging merge result,
+   verification plan, residual risk를 보고한다.
 
 <!-- key: id=key.standard.skill.coordinator.report-handling-contract refs=key.role.coordinator key.topic.report key.role.subagent key.standard.subagent -->
 ## Report handling contract
@@ -213,7 +298,7 @@ Coordinator는 받은 status를 다음 workflow 결정으로 처리한다.
 5. `BLOCKED`
    - unblock path를 찾거나 stop report로 main/user에게 보고한다.
 
-<!-- key: id=key.standard.skill.coordinator.review-verification-flow refs=key.role.coordinator key.topic.verification key.topic.review -->
+<!-- key: id=key.standard.skill.coordinator.review-verification-flow refs=key.role.coordinator key.topic.verification key.topic.review key.topic.merge-gate key.topic.keystone-metadata -->
 ## Review and verification flow
 
 Review와 verification은 다음 순서를 따른다.
@@ -221,15 +306,20 @@ Review와 verification은 다음 순서를 따른다.
 1. Worker output이 scope와 completion criteria 안에 있는지 확인한다.
 2. Existing user change 또는 다른 agent change를 덮어쓸 risk가 있는지 확인한다.
 3. 같은 `key.id`를 참조하는 문서와의 충돌 여부를 reviewer focus 후보로 확인한다.
-4. 필요하면 reviewer Goal을 배정한다.
-5. 기준서(3)에서 verification expectation을 추출한다.
-6. 작업서(4)의 local verification note가 기준서-led verification을 약화하지 않는지 확인한다.
-7. 필요하면 verifier Goal을 배정한다.
-8. Verification failure가 있으면 repair 또는 escalation으로 처리한다.
-9. Verification을 실행할 수 없으면 residual risk로 보고하고 acceptance 여부를 main이
+4. Merge가 포함되면 text conflict와 semantic conflict 후보를 분리해 확인한다.
+5. 같은 `key.id`를 여러 branch가 수정하면 repo-integrator 검토 대상으로 본다.
+6. 같은 `key.refs` overlap은 semantic review candidate로 보고하며 자동 block으로 처리하지
+   않는다.
+7. 필요하면 reviewer Goal을 배정한다.
+8. 기준서(3)에서 verification expectation을 추출한다.
+9. 작업서(4)의 local verification note가 기준서-led verification을 약화하지 않는지 확인한다.
+10. Merge 전 verification과 merge 후 verification이 다를 수 있으면 둘을 분리해 기록한다.
+11. 필요하면 verifier Goal을 배정한다.
+12. Verification failure가 있으면 repair 또는 escalation으로 처리한다.
+13. Verification을 실행할 수 없으면 residual risk로 보고하고 acceptance 여부를 main이
    판단한다.
 
-<!-- key: id=key.standard.skill.coordinator.acceptance-contract refs=key.role.coordinator key.topic.acceptance key.topic.verification -->
+<!-- key: id=key.standard.skill.coordinator.acceptance-contract refs=key.role.coordinator key.topic.acceptance key.topic.verification key.topic.merge-gate -->
 ## Acceptance contract
 
 Main acceptance는 다음 조건이 충족될 때만 가능하다.
@@ -243,10 +333,14 @@ Main acceptance는 다음 조건이 충족될 때만 가능하다.
 7. 진행 상태와 report status를 혼동하지 않았다.
 8. 필요한 원천 문서(2) update가 있다면 승인된 범위 안에서 처리되었거나 별도 next action으로
    남겼다.
+9. Merge가 포함된 경우 merge target이 허용 범위 안에 있고 base branch 직접 merge가 아니다.
+10. Merge 성공을 Keystone acceptance로 해석하지 않았다.
 
 Acceptance 후에만 진행 기록(5)을 `accepted` 또는 해당 project의 완료 상태로 바꿀 수 있다.
+Merge 성공은 Git 상태가 합쳐졌다는 뜻일 뿐이며, 진행 기록(5)의 `accepted` 상태는 Main 또는
+사용자 acceptance 이후에만 기록한다.
 
-<!-- key: id=key.standard.skill.coordinator.progress-update-boundary refs=key.role.coordinator key.topic.progress-update key.topic.acceptance -->
+<!-- key: id=key.standard.skill.coordinator.progress-update-boundary refs=key.role.coordinator key.topic.progress-update key.topic.acceptance key.topic.merge-gate -->
 ## Progress update boundary
 
 진행 기록(5)은 subagent workflow 상태를 복구하기 위해 다음 규칙으로 갱신한다.
@@ -256,10 +350,11 @@ Acceptance 후에만 진행 기록(5)을 `accepted` 또는 해당 project의 완
 3. Review 중이면 `reviewing`, verification 중이면 `verifying`을 기록할 수 있다.
 4. Main acceptance 전에는 `accepted`로 표시하지 않는다.
 5. Worker `DONE`만으로 progress를 완료 처리하지 않는다.
-6. 문서 작성/수정의 기준과 반영 범위는 `keystone-author`가 담당한다. Formal workflow 상태를
+6. Merge 성공만으로 progress를 완료 처리하지 않는다.
+7. 문서 작성/수정의 기준과 반영 범위는 `keystone-author`가 담당한다. Formal workflow 상태를
    복구해야 하는 경우에만 Coordinator가 진행 상태 전이를 조율한다.
-7. 단순 오탈자, 미세 표현 수정, 의미 변화 없는 formatting은 진행 기록(5)에 남기지 않는다.
-8. Status semantics를 바꾸려면 Author 또는 Clarify를 통해 원천 문서(2) update 결정을 먼저
+8. 단순 오탈자, 미세 표현 수정, 의미 변화 없는 formatting은 진행 기록(5)에 남기지 않는다.
+9. Status semantics를 바꾸려면 Author 또는 Clarify를 통해 원천 문서(2) update 결정을 먼저
    받는다.
 
 <!-- key: id=key.standard.skill.coordinator.derived-document-policy refs=key.role.coordinator key.doc.source key.topic.document-system -->
@@ -275,7 +370,7 @@ Acceptance 후에만 진행 기록(5)을 `accepted` 또는 해당 project의 완
 
 파생 에이전트 문서(8)가 원천 문서(2)와 충돌하면 원천 문서(2)가 우선한다.
 
-<!-- key: id=key.standard.skill.coordinator.stop-condition refs=key.role.coordinator key.topic.skill-contract key.topic.work-execution -->
+<!-- key: id=key.standard.skill.coordinator.stop-condition refs=key.role.coordinator key.topic.skill-contract key.topic.work-execution key.topic.branch-worktree key.topic.merge-gate -->
 ## Stop condition
 
 Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한다.
@@ -291,8 +386,14 @@ Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청
 9. 민감한 정보, local-only path, private data를 worker context에 넣어야 할 수 있다.
 10. 문서 작업인데 Author Edit Contract 없이 무엇을 어떻게 쓸지 결정해야 한다.
 11. Subagent가 전체 작업서(4)를 재해석하거나 추가 subagent를 생성해야만 진행할 수 있다.
+12. 파일 수정 또는 merge가 필요한데 branch context가 없다.
+13. 작업 시작 전 worktree가 dirty 상태이고 허용 여부가 명시되지 않았다.
+14. Task branch가 호출한 main-session branch가 아닌 곳에 merge되려 한다.
+15. Base branch 또는 user-facing stable branch 직접 merge가 요구된다.
+16. 같은 파일 또는 같은 `key.id`를 여러 branch가 수정했지만 repo-integrator 검토가 없다.
+17. Merge 후 verification 범위가 불명확하다.
 
-<!-- key: id=key.standard.skill.coordinator.verification refs=key.role.coordinator key.topic.verification key.topic.acceptance key.standard.subagent -->
+<!-- key: id=key.standard.skill.coordinator.verification refs=key.role.coordinator key.topic.verification key.topic.acceptance key.standard.subagent key.topic.branch-worktree key.topic.merge-gate -->
 ## Verification
 
 Coordinator 기준은 다음 방법으로 검증한다.
@@ -308,7 +409,12 @@ Coordinator 기준은 다음 방법으로 검증한다.
 9. Metadata 기반 후보 문서를 Context Pack 후보와 reviewer focus 후보로 사용할 수 있어야
    한다.
 10. Role catalog와 report status 정의를 반복하지 않고 subagent 기준서를 참조해야 한다.
-11. Verification command:
+11. Branch context를 보고 task branch, worktree, merge target, forbidden merge target을
+    구분할 수 있어야 한다.
+12. Repo-integrator가 staging branch 밖의 merge나 final acceptance를 수행하지 않는다는 점을
+    확인할 수 있어야 한다.
+13. Merge 성공과 Keystone acceptance를 구분할 수 있어야 한다.
+14. Verification command:
    - `rg --files 00_docs`
    - Coordinator 관련 기준서를 읽어 link와 scope consistency 확인
    - `git diff --check`

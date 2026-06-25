@@ -7,6 +7,8 @@ key:
     - key.role.coordinator
     - key.role.subagent
     - key.standard.subagent
+    - key.topic.branch-worktree
+    - key.topic.merge-gate
     - key.topic.orchestration
     - key.topic.acceptance
 work_id: coordinator-standard
@@ -27,13 +29,13 @@ risk_level: medium
 
 `keystone-coordinator`의 main-supervised subagent workflow 기준서를 정리한다.
 
-<!-- key: id=key.work.coordinator-standard.index.goal refs=key.role.coordinator key.topic.current-step key.output.context-pack key.topic.report-handling key.topic.verification key.topic.acceptance -->
+<!-- key: id=key.work.coordinator-standard.index.goal refs=key.role.coordinator key.topic.current-step key.output.context-pack key.topic.report-handling key.topic.verification key.topic.acceptance key.topic.branch-worktree key.topic.merge-gate -->
 
 ## 목표
 
 Coordinator가 current work step을 복구하고 role-based subagent workflow를 조율할 수 있도록
-Current Step Brief, Context Pack, report handling, review, verification, acceptance 기준을
-명확히 한다.
+Current Step Brief, Context Pack, report handling, review, verification, branch/worktree
+isolation, merge gate, acceptance 기준을 명확히 한다.
 
 <!-- key: id=key.work.coordinator-standard.index.source-standards refs=key.role.coordinator key.topic.source-standard key.doc.standard key.standard.subagent -->
 
