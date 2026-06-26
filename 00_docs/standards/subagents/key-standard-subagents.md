@@ -12,6 +12,7 @@ key:
     - key.topic.commit-checkpoint
     - key.topic.verification
     - key.topic.git-capability
+    - key.topic.artifact-graph
     - key.contract.output
     - key.contract.report
 ---
@@ -25,7 +26,7 @@ key:
 스킬이 승인한 bounded Goal을 수행하는 실행자이며, 원천 문서(2)의 권위나 Main acceptance를
 대체하지 않는다.
 
-<!-- key: id=key.standard.subagent.scope refs=key.role.subagent key.topic.work-execution key.topic.git-capability key.contract.output key.contract.report -->
+<!-- key: id=key.standard.subagent.scope refs=key.role.subagent key.topic.work-execution key.topic.git-capability key.topic.artifact-graph key.contract.output key.contract.report -->
 ## 적용 범위
 
 1. Helper와 subagent의 공통 책임 경계
@@ -34,9 +35,10 @@ key:
 4. Role별 input과 output contract
 5. Report status 값과 의미
 6. Authority별 Git/file capability matrix
-7. Branch, worktree, merge 관련 공통 권한 경계
-8. 공통 report envelope
-9. 공통 금지와 stop condition
+7. 아티팩트 그래프(14) 기반 reuse discovery, impact review, graph validation 책임
+8. Branch, worktree, merge 관련 공통 권한 경계
+9. 공통 report envelope
+10. 공통 금지와 stop condition
 
 <!-- key: id=key.standard.subagent.out-of-scope refs=key.role.subagent key.boundary.approval key.topic.acceptance -->
 ## 적용하지 않는 범위
@@ -49,13 +51,14 @@ key:
 6. Base branch, integration branch, user-facing stable branch 직접 merge
 7. 사용자 명시 승인 없는 remote push, remote branch 생성, PR 생성, remote merge
 
-<!-- key: id=key.standard.subagent.standard-relations refs=key.role.subagent key.doc.standard key.topic.skill-contract -->
+<!-- key: id=key.standard.subagent.standard-relations refs=key.role.subagent key.doc.standard key.topic.skill-contract key.topic.artifact-graph -->
 ## 기준 관계
 
 1. Parent 기준서: `../01_key-project-standard.md`
-2. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-007`, `STD-KEYSTONE-020`,
-   `STD-KEYSTONE-024`, `STD-KEYSTONE-025`, `STD-KEYSTONE-030`,
-   `STD-KEYSTONE-031`, `STD-KEYSTONE-032`, `STD-KEYSTONE-034`,
+2. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-007`, `STD-KEYSTONE-015`,
+   `STD-KEYSTONE-017`, `STD-KEYSTONE-018`, `STD-KEYSTONE-020`,
+   `STD-KEYSTONE-024`, `STD-KEYSTONE-025`, `STD-KEYSTONE-027`,
+   `STD-KEYSTONE-030`, `STD-KEYSTONE-031`, `STD-KEYSTONE-032`, `STD-KEYSTONE-034`,
    `STD-KEYSTONE-043`
 3. Coordinator 기준서: `../skills/coordinator/key-standard-coordinator.md`
 4. Author 기준서: `../skills/author/key-standard-author.md`
@@ -89,15 +92,17 @@ key:
 새 role이 필요하면 Coordinator나 Author 기준서에서 ad hoc으로 만들지 않고 이 기준서를 먼저
 수정하거나 main/user 결정(6)을 받는다.
 
-<!-- key: id=key.standard.subagent.role-catalog refs=key.role.subagent key.topic.work-execution key.topic.verification key.topic.keystone-metadata key.topic.branch-worktree key.topic.merge-gate -->
+<!-- key: id=key.standard.subagent.role-catalog refs=key.role.subagent key.topic.work-execution key.topic.verification key.topic.keystone-metadata key.topic.artifact-graph key.topic.branch-worktree key.topic.merge-gate -->
 ## Role catalog
 
 1. Explorer
    - 기본 authority: `read_only`
    - 사용: 기존 규칙 중복 확인, 기존 구현/API/component/service/utility/test/화면 사용처 조사,
-     repository 조사, prototype 비교, metadata 기반 관련 문서 탐색
-   - 출력: 조사 요약, reuse candidate, 후보 위치, 기존 사용 사례, 입력/출력, 권한/제약,
-     요구사항과의 차이, sources read, assumptions, risks and gaps
+     repository 조사, prototype 비교, 키메타와 코드 앵커 기반 관련 문서와 artifact 탐색,
+     capability provider 후보와 키메타/코드 앵커 gap 조사
+   - 출력: 조사 요약, reuse candidate, artifact candidates, 후보 위치, 기존 사용 사례, 입력/출력,
+     권한/제약, 요구사항과의 차이, 키메타/코드 앵커 gaps, sources read, assumptions, risks and
+     gaps
    - 경계: Explorer는 후보와 evidence를 보고하지만 해당 후보를 실제로 채택할지 결정하지
      않는다.
 2. Doc-impact-writer
@@ -115,21 +120,32 @@ key:
    - 기본 lane: `code`
    - 기본 authority: `bounded_edit`
    - 사용: Coordinator가 정한 승인 범위 안의 bounded implementation
-   - 출력: 변경 파일, verification result, 남은 risk
+   - 출력: 변경 파일, reuse decision, 코드 앵커 변경, verification result, 남은 risk
    - 경계: 명시 승인 없이 API contract, DB schema/migration, auth/security, generated/codegen,
      shared architecture, public interface, dependency 또는 build system을 변경하지 않는다.
+   - 재사용: 새 기능이나 method를 만들기 전에 capability, `provides`, `uses`, `implements`,
+     실제 code reference, 기존 test를 함께 검색하고 `reuse_existing`, `extend_existing`,
+     `create_new` 중 하나로 reuse decision을 보고한다.
+   - 코드 앵커: reusable core method, public API, domain rule, shared service, 중요한 test에는 필요한
+     경우 코드 앵커를 추가한다. Local helper, trivial wrapper, generated code에는 기본적으로
+     추가하지 않는다.
 4. Reviewer
    - 기본 authority: `review_only`
    - 사용: worker output이 completion criteria, scope, risk, regression 가능성 측면에서 검토가
      필요할 때
    - 출력: findings, risks, required repair, review conclusion
    - 경계: Reviewer는 판단과 보고를 수행한다. 파일 수정, commit, merge는 하지 않는다.
+   - Graph review: 기존 capability 재사용 여부, 중복 implementation 생성 여부, semantic stale,
+     코드 앵커 admission 적절성을 검토한다.
 5. Verifier
    - 기본 authority: `verification`
    - 사용: 기준서-led verification을 별도 Goal로 실행하거나 failure 원인을 분리해야 할 때
-   - 출력: verification command/result, pass/fail, failure cause, residual risk
+   - 출력: verification command/result, pass/fail, failure cause, graph validation result,
+     residual risk
    - 경계: Verifier는 승인된 검증 명령을 실행하고 원인을 분리한다. 명시 승인 없이 tracked file
      수정, repair commit, merge를 하지 않는다.
+   - Graph validation: duplicate ID, unresolved relation, stale locator, missing symbol, missing
+     test reference 같은 mechanical stale을 확인한다.
 6. Repo-integrator
    - 기본 lane: `repo`
    - 기본 authority: `staging_merge`
@@ -142,7 +158,7 @@ key:
      progress `accepted` 처리는 하지 않는다. 의미 선택이 필요한 conflict는 직접 해결하지 않고
      `needs_review` 또는 `BLOCKED`로 보고한다.
 
-<!-- key: id=key.standard.subagent.input-contract refs=key.role.subagent key.contract.output key.topic.work-execution key.topic.keystone-metadata key.topic.branch-worktree key.topic.merge-gate -->
+<!-- key: id=key.standard.subagent.input-contract refs=key.role.subagent key.contract.output key.topic.work-execution key.topic.keystone-metadata key.topic.artifact-graph key.topic.branch-worktree key.topic.merge-gate -->
 ## Input contract
 
 Subagent에게 작업을 맡길 때는 최소한 다음을 제공해야 한다.
@@ -152,12 +168,13 @@ Subagent에게 작업을 맡길 때는 최소한 다음을 제공해야 한다.
 3. Primary scope와 read scope
 4. Direct edit scope와 forbidden changes
 5. Source Context 또는 Context Pack
-6. 관련 `key.id`, `key.refs`, metadata 기반 후보 문서
+6. 관련 `key.id`, `key.refs`, 코드 앵커 typed relation, 키메타/코드 앵커 기반 후보 문서와 artifact
 7. Completion Criteria
 8. Stop Conditions
 9. Verification path
-10. 필요한 경우 branch context
-11. Report status contract
+10. 필요한 경우 impact seeds 또는 Change Set(17)
+11. 필요한 경우 branch context
+12. Report status contract
 
 Input이 부족하면 subagent는 추측해서 범위를 넓히지 않고 `NEEDS_CONTEXT` 또는 `BLOCKED`로
 보고한다.
@@ -222,10 +239,14 @@ report:
   branch_context:
   commit_range:
   changed_files:
+  keymeta_or_code_anchor_changes:
+  reuse_decision:
   findings:
   verification:
+  graph_validation:
   scope_check:
   forbidden_change_check:
+  keymeta_or_code_anchor_gap_candidates:
   risks:
   residual_risk:
   recommended_next_action:
@@ -251,7 +272,7 @@ Repo-integrator result는 report status와 다음처럼 연결한다.
 5. 승인되지 않은 source authority, acceptance criteria, status semantics를 바꾸지 않는다.
 6. 민감한 정보, local-only path, private data가 필요하면 멈추고 보고한다.
 7. Worker output은 원천 문서(2)나 Main decision을 대체하지 않는다.
-8. Metadata 기반 후보나 reuse candidate는 채택 결정이 아니라 검토 대상 evidence로 보고한다.
+8. 키메타/코드 앵커 기반 후보나 reuse candidate는 채택 결정이 아니라 검토 대상 evidence로 보고한다.
 9. Impact candidate가 연결되어 있다는 이유만으로 수정하지 않는다. 관련성이 불확실하면
    수정하지 않고 report한다.
 10. `staging_merge` authority를 받더라도 base branch, integration branch, user-facing stable
@@ -263,6 +284,10 @@ Repo-integrator result는 report status와 다음처럼 연결한다.
     repo-integrator staging input으로 사용하지 않는다.
 14. File-writing worker는 준비된 task branch와 worktree에서만 작업한다. 임의 branch/worktree
     생성, 전환, 삭제는 하지 않는다.
+15. 아티팩트 그래프(14) relation은 자동 수정 또는 자동 acceptance 근거가 아니다.
+16. Observed relation과 inferred relation은 declared 키메타나 코드 앵커로 조용히 승격하지 않는다.
+17. 기존 reusable capability provider가 발견되면 중복 구현을 만들기 전에 reuse 또는 extension
+    가능성을 보고한다.
 
 <!-- key: id=key.standard.subagent.stop-condition refs=key.role.subagent key.boundary.stop-condition key.topic.work-execution key.topic.branch-worktree key.topic.merge-gate key.topic.remote-policy key.topic.commit-checkpoint -->
 ## Stop condition
@@ -284,6 +309,8 @@ Subagent는 다음 상황에서 멈추고 report한다.
 13. File-writing task인데 준비된 task branch와 worktree가 없다.
 14. 배정된 branch/worktree 밖에서 branch 생성, worktree 생성, branch 전환, worktree 삭제가
     필요하다.
+15. 새 reusable artifact를 만들어야 하지만 기존 capability/provider 탐색 결과가 없다.
+16. 키메타 또는 코드 앵커 relation이 가리키는 artifact가 없고 fallback 판단이 불가능하다.
 
 <!-- key: id=key.standard.subagent.verification refs=key.role.subagent key.topic.verification key.topic.merge-gate key.topic.remote-policy key.topic.commit-checkpoint -->
 ## Verification
@@ -306,3 +333,6 @@ Subagent 기준은 다음 방법으로 검증한다.
     수 있어야 한다.
 11. 공통 report envelope와 repo-integrator result mapping을 보고 Coordinator가 후속 workflow를
     결정할 수 있어야 한다.
+12. Code-worker는 새 구현 전에 reuse discovery 결과를 보고해야 한다.
+13. Reviewer는 semantic stale과 중복 구현 risk를 검토할 수 있어야 한다.
+14. Verifier는 graph validation의 mechanical stale을 보고할 수 있어야 한다.

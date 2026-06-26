@@ -4,6 +4,7 @@ key:
   id: key.standard.index
   refs:
     - key.topic.document-system
+    - key.topic.artifact-graph
     - key.doc.standard
     - key.topic.skill-contract
     - key.doc.source
@@ -18,7 +19,7 @@ key:
 
 1. 전체 공통 기준서: `01_key-project-standard.md`
    - Keystone의 원천 문서(2), 기준서(3), 작업서(4), 진행 기록(5), 결정(6), 파생
-     에이전트 문서(8), `standards/`와 `works/` tree, 스킬 역할, verification 정책을
+     에이전트 문서(8), 아티팩트 그래프(14), `standards/`와 `works/` tree, 스킬 역할, verification 정책을
      정의한다.
 2. Subagent 기준서 색인: `subagents/00_key-index.md`
    - Keystone helper/subagent의 lane, role, authority, report status, 공통 금지와 stop

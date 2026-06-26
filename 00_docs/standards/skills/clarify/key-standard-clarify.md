@@ -8,6 +8,9 @@ key:
     - key.topic.question-flow
     - key.output.edit-plan
     - key.topic.impact-review
+    - key.topic.keystone-metadata
+    - key.topic.code-anchor
+    - key.topic.artifact-graph
 ---
 
 # keystone-clarify 기준서
@@ -163,11 +166,12 @@ Clarify result는 다음을 포함해야 한다.
 3. `rationale`: 주요 이유와 tradeoff
 4. `working_assumptions`: 이후 작업에서 사용할 가정
 5. `affected_documents`: 업데이트가 필요한 원천 문서(2)
-6. `edit_plan`: 문서별 변경 요약
-7. `stop_conditions`: 적용 중 중단해야 하는 조건
-8. `open_questions`: 이번 topic 밖에 남은 질문
+6. `affected_artifact_candidates`: capability, API, code, test 영향 후보
+7. `edit_plan`: 문서별 변경 요약
+8. `stop_conditions`: 적용 중 중단해야 하는 조건
+9. `open_questions`: 이번 topic 밖에 남은 질문
 
-<!-- key: id=key.standard.skill.clarify.impact-update refs=key.role.clarify key.topic.impact-review key.output.edit-plan -->
+<!-- key: id=key.standard.skill.clarify.impact-update refs=key.role.clarify key.topic.impact-review key.output.edit-plan key.topic.keystone-metadata key.topic.code-anchor key.topic.artifact-graph -->
 ## Impact update
 
 수락된 clarify result가 문서에 반영될 때는 다음 규칙을 따른다.
@@ -180,11 +184,13 @@ Clarify result는 다음을 포함해야 한다.
 4. 결정(6)은 장기 정책이나 여러 문서에 영향을 주는 경우에 기록한다.
 5. 파생 에이전트 문서(8)는 이미 존재하고 명확히 영향받을 때만 edit plan에 포함한다. 새로
    생성하는 경우는 `STD-KEYSTONE-016`의 명시적 필요 조건을 따른다.
-6. 키스톤 메타데이터(9)가 있는 topic이나 문서가 관련되면 같은 `key.id`를 참조하는 문서를
+6. 키메타(9)가 있는 topic이나 문서가 관련되면 같은 `key.id`를 참조하는 문서를
    affected document 후보로 검토한다.
 7. 같은 `key.refs`가 있어도 자동으로 edit plan에 포함하지 않는다.
 8. `key.refs`가 없어도 관련 없음으로 단정하지 않는다.
-9. 영향 범위가 불확실하면 문서 수정을 멈추고 사용자 또는 main 결정(6)을 요청한다.
+9. 결정이 capability, API, code, test artifact에 영향을 줄 수 있으면 코드 앵커(18)나
+   아티팩트 그래프(14) 기반 affected artifact 후보를 edit plan에 분리해 기록한다.
+10. 영향 범위가 불확실하면 문서 수정을 멈추고 사용자 또는 main 결정(6)을 요청한다.
 
 <!-- key: id=key.standard.skill.clarify.initial-setup-question-contract refs=key.role.clarify key.topic.question-flow key.topic.document-system -->
 ## Initial setup question contract
@@ -231,7 +237,7 @@ Clarify 기준은 다음 방법으로 검증한다.
 4. Reflection과 edit plan만 보고 Author가 문서 update 범위를 판단할 수 있어야 한다.
 5. Initial setup question이 `STD-KEYSTONE-050`, `STD-KEYSTONE-051`,
    `STD-KEYSTONE-052`과 일관되어야 한다.
-6. Metadata 기반 affected document 후보가 있으면 edit plan에서 후보와 실제 반영 여부를
+6. 키메타와 코드 앵커 기반 affected 후보가 있으면 edit plan에서 후보와 실제 반영 여부를
    구분할 수 있어야 한다.
 7. Verification command:
    - `rg --files 00_docs`

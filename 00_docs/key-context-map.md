@@ -4,6 +4,7 @@ key:
   id: key.context-map
   refs:
     - key.topic.document-system
+    - key.topic.artifact-graph
     - key.doc.source
     - key.topic.work-sequence
     - key.topic.work-round
@@ -21,7 +22,8 @@ key:
 ## 프로젝트
 
 이 저장소는 `keystone` 스킬 시스템을 정의하고 구현하기 위한 저장소다. 최종 산출물은
-사람이 읽을 수 있는 원천 문서(2)를 바탕으로 함께 동작하는 독립 스킬들의 집합이다.
+사람이 읽을 수 있는 원천 문서(2)를 중심 인터페이스로 삼아 사람의 의도, 문서, code, test를
+아티팩트 그래프(14)로 연결하는 독립 스킬들의 집합이다.
 
 1. `keystone-reader`: 기준서(3)와 작업서(4)를 읽고 작업 준비 context를 만든다.
 2. `keystone-author`: 기준서와 작업서를 작성하거나 승인된 범위에서 수정한다.
@@ -37,7 +39,7 @@ key:
 | 영역 | 경로 | 읽는 시점 |
 |---|---|---|
 | 색인 | `00_docs/standards/00_key-index.md` | 사용 가능한 기준서를 탐색할 때 먼저 읽는다 |
-| 프로젝트 | `00_docs/standards/01_key-project-standard.md` | 프로젝트 공통 규칙, 원천 문서(2) 정책, 스킬군 역할, coordinator 호환성을 확인할 때 읽는다 |
+| 프로젝트 | `00_docs/standards/01_key-project-standard.md` | 프로젝트 공통 규칙, 원천 문서(2) 정책, 아티팩트 그래프(14), 스킬군 역할, coordinator 호환성을 확인할 때 읽는다 |
 | Subagent | `00_docs/standards/subagents/key-standard-subagents.md` | helper/subagent의 lane, role, authority, report status, merge authority를 확인할 때 읽는다 |
 | 스킬별 | `00_docs/standards/skills/00_key-index.md` | 개별 Keystone 스킬의 상세 기준서를 찾을 때 읽는다 |
 | Reader | `00_docs/standards/skills/reader/key-standard-reader.md` | `keystone-reader`의 trigger, mode, output, read-only boundary를 확인할 때 읽는다 |
