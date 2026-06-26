@@ -11,7 +11,9 @@ key:
     - key.topic.remote-policy
     - key.topic.commit-checkpoint
     - key.topic.verification
+    - key.topic.git-capability
     - key.contract.output
+    - key.contract.report
 ---
 
 # Keystone subagent 기준서
@@ -23,7 +25,7 @@ key:
 스킬이 승인한 bounded Goal을 수행하는 실행자이며, 원천 문서(2)의 권위나 Main acceptance를
 대체하지 않는다.
 
-<!-- key: id=key.standard.subagent.scope refs=key.role.subagent key.topic.work-execution key.contract.output -->
+<!-- key: id=key.standard.subagent.scope refs=key.role.subagent key.topic.work-execution key.topic.git-capability key.contract.output key.contract.report -->
 ## 적용 범위
 
 1. Helper와 subagent의 공통 책임 경계
@@ -31,8 +33,10 @@ key:
 3. Subagent role catalog
 4. Role별 input과 output contract
 5. Report status 값과 의미
-6. Branch, worktree, merge 관련 공통 권한 경계
-7. 공통 금지와 stop condition
+6. Authority별 Git/file capability matrix
+7. Branch, worktree, merge 관련 공통 권한 경계
+8. 공통 report envelope
+9. 공통 금지와 stop condition
 
 <!-- key: id=key.standard.subagent.out-of-scope refs=key.role.subagent key.boundary.approval key.topic.acceptance -->
 ## 적용하지 않는 범위
@@ -42,7 +46,8 @@ key:
 3. 사용자가 승인하지 않은 원천 문서(2), code, config, generated file 변경
 4. 추가 subagent 생성 또는 독자적 workflow orchestration
 5. High-impact decision, policy, acceptance criteria, status semantics 확정
-6. Base branch 또는 user-facing stable branch 직접 merge
+6. Base branch, integration branch, user-facing stable branch 직접 merge
+7. 사용자 명시 승인 없는 remote push, remote branch 생성, PR 생성, remote merge
 
 <!-- key: id=key.standard.subagent.standard-relations refs=key.role.subagent key.doc.standard key.topic.skill-contract -->
 ## 기준 관계
@@ -111,15 +116,20 @@ key:
    - 기본 authority: `bounded_edit`
    - 사용: Coordinator가 정한 승인 범위 안의 bounded implementation
    - 출력: 변경 파일, verification result, 남은 risk
+   - 경계: 명시 승인 없이 API contract, DB schema/migration, auth/security, generated/codegen,
+     shared architecture, public interface, dependency 또는 build system을 변경하지 않는다.
 4. Reviewer
    - 기본 authority: `review_only`
    - 사용: worker output이 completion criteria, scope, risk, regression 가능성 측면에서 검토가
      필요할 때
    - 출력: findings, risks, required repair, review conclusion
+   - 경계: Reviewer는 판단과 보고를 수행한다. 파일 수정, commit, merge는 하지 않는다.
 5. Verifier
    - 기본 authority: `verification`
    - 사용: 기준서-led verification을 별도 Goal로 실행하거나 failure 원인을 분리해야 할 때
    - 출력: verification command/result, pass/fail, failure cause, residual risk
+   - 경계: Verifier는 승인된 검증 명령을 실행하고 원인을 분리한다. 명시 승인 없이 tracked file
+     수정, repair commit, merge를 하지 않는다.
 6. Repo-integrator
    - 기본 lane: `repo`
    - 기본 authority: `staging_merge`
@@ -128,8 +138,9 @@ key:
    - 출력: branch별 diff 요약, scope 비교, conflict candidate, merge order, staging merge
      result, verification plan, residual risk
    - 경계: staging branch에서만 dry-run 또는 실험 병합을 수행할 수 있다. Base branch,
-     integration branch, user-facing stable branch 직접 merge, final acceptance, progress
-     `accepted` 처리는 하지 않는다.
+     integration branch, user-facing stable branch 직접 merge, remote write, final acceptance,
+     progress `accepted` 처리는 하지 않는다. 의미 선택이 필요한 conflict는 직접 해결하지 않고
+     `needs_review` 또는 `BLOCKED`로 보고한다.
 
 <!-- key: id=key.standard.subagent.input-contract refs=key.role.subagent key.contract.output key.topic.work-execution key.topic.keystone-metadata key.topic.branch-worktree key.topic.merge-gate -->
 ## Input contract
@@ -170,6 +181,64 @@ Subagent report status 값은 다음과 같다.
 Subagent report status는 progress status가 아니다. Main 또는 Coordinator가 실제 상태와
 verification을 확인하기 전까지 `DONE`을 accepted로 해석하지 않는다.
 
+<!-- key: id=key.standard.subagent.git-file-capability-matrix refs=key.role.subagent key.topic.git-capability key.topic.branch-worktree key.topic.remote-policy key.topic.commit-checkpoint -->
+## Git/file capability matrix
+
+Authority별 Git과 file 행위는 다음 표를 따른다.
+
+| Role | 허용 | 금지 |
+| --- | --- | --- |
+| Explorer | `git status`, `git diff`, `git log`, `git show`, `git merge-base` 같은 read-only 조사 | `git add`, `git commit`, `git merge`, `git rebase`, `git reset`, `git stash`, `git clean`, remote write |
+| Doc-impact-writer / Code-worker | 준비된 task worktree 안의 scoped file edit, scoped `git add`, local `git commit` | 임의 `git checkout`/`git switch`, branch 삭제, merge, rebase, reset, stash, clean, remote write |
+| Reviewer | diff/log/show 기반 검토와 finding 보고 | file edit, commit, merge, repair |
+| Verifier | 승인된 verification command 실행과 failure cause 분리 | 명시 승인 없는 tracked file 수정, repair commit, merge |
+| Repo-integrator | 승인된 staging worktree의 diff, merge-base, staging merge experiment, verification plan | integration/base/user-facing branch merge, remote write, history rewrite, 의미 선택 conflict 직접 해결 |
+
+모든 role은 명시 승인 없이 다음 명령 또는 동등한 효과를 내는 작업을 수행하지 않는다.
+
+1. `git stash`
+2. `git reset --hard`
+3. `git clean -fd`
+4. `git branch -D`
+5. `git worktree remove`
+6. `git update-ref`
+7. `git rebase`
+8. 배정된 branch/worktree 밖으로 이동하는 임의 `git checkout` 또는 `git switch`
+
+<!-- key: id=key.standard.subagent.report-envelope refs=key.role.subagent key.contract.report key.contract.output key.topic.branch-worktree key.topic.verification -->
+## Report envelope
+
+Subagent report는 role-specific payload를 추가할 수 있지만, 기본 envelope는 다음 필드를 우선
+사용한다.
+
+```yaml
+report:
+  role:
+  lane:
+  authority:
+  status:
+  goal:
+  scope_summary:
+  branch_context:
+  commit_range:
+  changed_files:
+  findings:
+  verification:
+  scope_check:
+  forbidden_change_check:
+  risks:
+  residual_risk:
+  recommended_next_action:
+```
+
+Repo-integrator result는 report status와 다음처럼 연결한다.
+
+1. `safe`는 `DONE`으로 보고한다.
+2. `needs_review`는 `DONE_WITH_CONCERNS`로 보고한다.
+3. Branch context, commit range, verification input이 부족하면 `NEEDS_CONTEXT`로 보고한다.
+4. Scope, acceptance criteria, source authority 변경이 필요하면 `NEEDS_SCOPE_CHANGE`로 보고한다.
+5. 해결 불가능 conflict, 금지된 merge target, remote write 요구는 `BLOCKED`로 보고한다.
+
 <!-- key: id=key.standard.subagent.common-boundary refs=key.role.subagent key.boundary.approval key.topic.work-execution key.topic.keystone-metadata key.topic.merge-gate key.topic.remote-policy key.topic.commit-checkpoint -->
 ## 공통 경계
 
@@ -188,10 +257,12 @@ verification을 확인하기 전까지 `DONE`을 accepted로 해석하지 않는
 10. `staging_merge` authority를 받더라도 base branch, integration branch, user-facing stable
     branch에 직접 merge하지 않는다.
 11. Merge 성공을 Main acceptance나 progress `accepted`로 해석하지 않는다.
-12. Remote push, remote branch 생성, PR 생성, remote merge를 수행하지 않는다. 단, 사용자
-    또는 integration owner Main이 명시적으로 승인한 경우는 예외다.
+12. Remote push, remote branch 생성, PR 생성, remote merge를 수행하지 않는다. Remote write는
+    사용자가 명시적으로 승인한 경우에만 가능하다.
 13. 파일 수정 결과는 merge 전 local commit으로 고정한다. Uncommitted diff는 merge 대상이나
     repo-integrator staging input으로 사용하지 않는다.
+14. File-writing worker는 준비된 task branch와 worktree에서만 작업한다. 임의 branch/worktree
+    생성, 전환, 삭제는 하지 않는다.
 
 <!-- key: id=key.standard.subagent.stop-condition refs=key.role.subagent key.boundary.stop-condition key.topic.work-execution key.topic.branch-worktree key.topic.merge-gate key.topic.remote-policy key.topic.commit-checkpoint -->
 ## Stop condition
@@ -208,8 +279,11 @@ Subagent는 다음 상황에서 멈추고 report한다.
 8. 파일 수정 또는 merge가 필요한데 branch context가 없다.
 9. Base branch, integration branch, user-facing stable branch 직접 merge가 필요하다.
 10. 작업 시작 전 worktree가 dirty 상태인데 허용 여부가 명시되지 않았다.
-11. Remote push, remote branch 생성, PR 생성, remote merge가 필요한데 명시 승인이 없다.
+11. Remote push, remote branch 생성, PR 생성, remote merge가 필요한데 사용자 명시 승인이 없다.
 12. 파일 수정 결과를 report하거나 merge해야 하는데 변경이 local commit으로 고정되지 않았다.
+13. File-writing task인데 준비된 task branch와 worktree가 없다.
+14. 배정된 branch/worktree 밖에서 branch 생성, worktree 생성, branch 전환, worktree 삭제가
+    필요하다.
 
 <!-- key: id=key.standard.subagent.verification refs=key.role.subagent key.topic.verification key.topic.merge-gate key.topic.remote-policy key.topic.commit-checkpoint -->
 ## Verification
@@ -225,6 +299,10 @@ Subagent 기준은 다음 방법으로 검증한다.
 6. Doc-impact-writer는 연결된 모든 문서가 아니라 승인된 변경과 의미상 관련된 문서만 수정해야
    한다.
 7. Repo-integrator는 staging branch 밖의 merge나 final acceptance를 수행하지 않아야 한다.
-8. Subagent는 명시 승인 없이 remote push, remote branch 생성, PR 생성, remote merge를 하지
-   않아야 한다.
+8. Subagent는 사용자 명시 승인 없이 remote push, remote branch 생성, PR 생성, remote merge를
+   하지 않아야 한다.
 9. 파일 수정 subagent의 결과는 merge 전 local commit checkpoint로 고정되어야 한다.
+10. Authority별 Git/file capability matrix만 보고 role별 허용 command와 금지 command를 구분할
+    수 있어야 한다.
+11. 공통 report envelope와 repo-integrator result mapping을 보고 Coordinator가 후속 workflow를
+    결정할 수 있어야 한다.
