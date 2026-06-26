@@ -8,6 +8,8 @@ key:
     - key.topic.work-execution
     - key.topic.branch-worktree
     - key.topic.merge-gate
+    - key.topic.remote-policy
+    - key.topic.commit-checkpoint
     - key.topic.verification
     - key.contract.output
 ---
@@ -77,7 +79,7 @@ key:
 3. Authority: `read_only`, `bounded_edit`, `review_only`, `verification`, `staging_merge`처럼
    허용 권한을 구분한다.
 4. `staging_merge`는 staging branch에서 dry-run 또는 실험 병합만 수행할 수 있는 권한이다.
-   Base branch와 user-facing stable branch merge 권한을 포함하지 않는다.
+   Base branch, integration branch, user-facing stable branch merge 권한을 포함하지 않는다.
 
 새 role이 필요하면 Coordinator나 Author 기준서에서 ad hoc으로 만들지 않고 이 기준서를 먼저
 수정하거나 main/user 결정(6)을 받는다.
@@ -168,7 +170,7 @@ Subagent report status 값은 다음과 같다.
 Subagent report status는 progress status가 아니다. Main 또는 Coordinator가 실제 상태와
 verification을 확인하기 전까지 `DONE`을 accepted로 해석하지 않는다.
 
-<!-- key: id=key.standard.subagent.common-boundary refs=key.role.subagent key.boundary.approval key.topic.work-execution key.topic.keystone-metadata key.topic.merge-gate -->
+<!-- key: id=key.standard.subagent.common-boundary refs=key.role.subagent key.boundary.approval key.topic.work-execution key.topic.keystone-metadata key.topic.merge-gate key.topic.remote-policy key.topic.commit-checkpoint -->
 ## 공통 경계
 
 모든 helper/subagent는 다음을 지켜야 한다.
@@ -186,8 +188,12 @@ verification을 확인하기 전까지 `DONE`을 accepted로 해석하지 않는
 10. `staging_merge` authority를 받더라도 base branch, integration branch, user-facing stable
     branch에 직접 merge하지 않는다.
 11. Merge 성공을 Main acceptance나 progress `accepted`로 해석하지 않는다.
+12. Remote push, remote branch 생성, PR 생성, remote merge를 수행하지 않는다. 단, 사용자
+    또는 integration owner Main이 명시적으로 승인한 경우는 예외다.
+13. 파일 수정 결과는 merge 전 local commit으로 고정한다. Uncommitted diff는 merge 대상이나
+    repo-integrator staging input으로 사용하지 않는다.
 
-<!-- key: id=key.standard.subagent.stop-condition refs=key.role.subagent key.boundary.stop-condition key.topic.work-execution key.topic.branch-worktree key.topic.merge-gate -->
+<!-- key: id=key.standard.subagent.stop-condition refs=key.role.subagent key.boundary.stop-condition key.topic.work-execution key.topic.branch-worktree key.topic.merge-gate key.topic.remote-policy key.topic.commit-checkpoint -->
 ## Stop condition
 
 Subagent는 다음 상황에서 멈추고 report한다.
@@ -200,10 +206,12 @@ Subagent는 다음 상황에서 멈추고 report한다.
 6. Verification path가 없거나 실행 결과가 판단 불가능하다.
 7. 추가 subagent나 전체 workflow 재조율이 필요하다.
 8. 파일 수정 또는 merge가 필요한데 branch context가 없다.
-9. Base branch나 user-facing stable branch 직접 merge가 필요하다.
+9. Base branch, integration branch, user-facing stable branch 직접 merge가 필요하다.
 10. 작업 시작 전 worktree가 dirty 상태인데 허용 여부가 명시되지 않았다.
+11. Remote push, remote branch 생성, PR 생성, remote merge가 필요한데 명시 승인이 없다.
+12. 파일 수정 결과를 report하거나 merge해야 하는데 변경이 local commit으로 고정되지 않았다.
 
-<!-- key: id=key.standard.subagent.verification refs=key.role.subagent key.topic.verification key.topic.merge-gate -->
+<!-- key: id=key.standard.subagent.verification refs=key.role.subagent key.topic.verification key.topic.merge-gate key.topic.remote-policy key.topic.commit-checkpoint -->
 ## Verification
 
 Subagent 기준은 다음 방법으로 검증한다.
@@ -217,3 +225,6 @@ Subagent 기준은 다음 방법으로 검증한다.
 6. Doc-impact-writer는 연결된 모든 문서가 아니라 승인된 변경과 의미상 관련된 문서만 수정해야
    한다.
 7. Repo-integrator는 staging branch 밖의 merge나 final acceptance를 수행하지 않아야 한다.
+8. Subagent는 명시 승인 없이 remote push, remote branch 생성, PR 생성, remote merge를 하지
+   않아야 한다.
+9. 파일 수정 subagent의 결과는 merge 전 local commit checkpoint로 고정되어야 한다.

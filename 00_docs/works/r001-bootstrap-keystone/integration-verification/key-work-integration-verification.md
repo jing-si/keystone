@@ -50,6 +50,7 @@ Conditionally allowed:
 - `00_docs/standards/01_key-project-standard.md`
 - `00_docs/standards/skills/00_key-index.md`
 - `00_docs/works/00_key-index.md`
+- `00_docs/works/r001-bootstrap-keystone/00_key-index.md`
 - repo-local `skills/` source
 
 <!-- key: id=key.work.integration-verification.order.completion-criteria refs=key.topic.acceptance key.topic.source-document-model key.topic.input-output key.topic.current-step key.topic.risk-record -->

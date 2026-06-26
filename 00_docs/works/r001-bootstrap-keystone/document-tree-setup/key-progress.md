@@ -48,7 +48,7 @@ S00
 
 - `work-packages/` 기반 active 작업 문서는 폐기 대상이다.
 - 작업서는 기준서 tree와 1:1일 필요가 없고, reviewable goal 단위로 만든다.
-- 실행 순서는 `00_docs/works/00_key-index.md`가 관리한다.
+- 실행 순서는 `00_docs/works/r001-bootstrap-keystone/00_key-index.md`가 관리한다.
 
 <!-- key: id=key.work.document-tree-setup.progress.next-step refs=key.topic.work-sequence key.topic.progress-update -->
 ## 다음 권장 작업

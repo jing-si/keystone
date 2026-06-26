@@ -47,6 +47,7 @@ Conditionally allowed:
 - `00_docs/standards/00_key-index.md`
 - `00_docs/standards/skills/00_key-index.md`
 - `00_docs/works/00_key-index.md`
+- `00_docs/works/r001-bootstrap-keystone/00_key-index.md`
 
 <!-- key: id=key.work.project-standard.order.completion-criteria refs=key.topic.verification key.doc.standard key.topic.skill-contract -->
 ## Completion Criteria

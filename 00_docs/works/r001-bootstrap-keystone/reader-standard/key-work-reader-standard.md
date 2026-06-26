@@ -46,6 +46,7 @@ Conditionally allowed:
 - `00_docs/standards/skills/reader/00_key-index.md`
 - `00_docs/standards/skills/reader/key-standard-reader.md`
 - `00_docs/works/00_key-index.md`
+- `00_docs/works/r001-bootstrap-keystone/00_key-index.md`
 
 <!-- key: id=key.work.reader-standard.order.completion-criteria refs=key.topic.verification key.role.reader key.contract.output -->
 ## Completion Criteria

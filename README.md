@@ -59,7 +59,10 @@ Future Keystone documents should use English paths and index-based trees:
     ...
   works/
     00_key-index.md
-    ...
+    key-decisions.md
+    r001-bootstrap-keystone/
+      00_key-index.md
+      ...
 ```
 
 Keystone-managed Markdown files use the `key` filename prefix so they can be

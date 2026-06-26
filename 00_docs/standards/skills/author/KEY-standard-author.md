@@ -161,15 +161,16 @@ Create Mode는 새 원천 문서(2)를 만든다.
 
 1. 기준서(3)는 `standards/` tree와 `STD-KEYSTONE-011`, `STD-KEYSTONE-013`을 따른다.
 2. 작업서(4)는 `works/` tree와 `STD-KEYSTONE-011`, `STD-KEYSTONE-013`,
-   `STD-KEYSTONE-022`을 따른다.
-3. 새 작업 문서는 `works/` tree에만 만든다.
-4. 새 work node를 만들면 `00_key-index.md`를 함께 만든다.
-5. Minimal document set을 먼저 만들고, scope, decisions, coordination 문서는 필요할 때만
+   `STD-KEYSTONE-022`, `STD-KEYSTONE-026`을 따른다.
+3. 새 작업 문서는 active work round 안에 만든다.
+4. 새 work round를 만들면 round folder와 `00_key-index.md`를 함께 만든다.
+5. 새 work node를 만들면 node `00_key-index.md`를 함께 만든다.
+6. Minimal document set을 먼저 만들고, scope, decisions, coordination 문서는 필요할 때만
    추가한다.
-6. 파생 에이전트 문서(8)는 `STD-KEYSTONE-016`의 생성 및 업데이트 조건을 만족할 때만
+7. 파생 에이전트 문서(8)는 `STD-KEYSTONE-016`의 생성 및 업데이트 조건을 만족할 때만
    추가하거나 업데이트한다.
-7. Parent 기준서는 상세 규칙을 반복하지 않고 feature 이름, 짧은 설명, child link를 둔다.
-8. Child 기준서는 trigger, non-trigger, input, output, workflow, verification, stop
+8. Parent 기준서는 상세 규칙을 반복하지 않고 feature 이름, 짧은 설명, child link를 둔다.
+9. Child 기준서는 trigger, non-trigger, input, output, workflow, verification, stop
    condition을 구현 가능한 수준으로 작성한다.
 
 <!-- key: id=key.standard.skill.author.revise-mode refs=key.role.author key.topic.document-authoring key.topic.impact-review -->
@@ -265,15 +266,21 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
 새 작업서(4)를 만들 때는 다음 표준을 따른다.
 
 1. 작업서는 기준서 tree에 종속되지 않는다.
-2. 기준서별, 기능별, 구현 단계별, 검증 단계별로 독립 work를 만들 수 있다.
-3. 각 work는 하나의 reviewable goal을 가져야 한다.
-4. 작업서는 관련 기준서(3)를 참조하지만, 기준서 안에 실행 순서를 박지 않는다.
-5. 실행 순서는 works index 또는 별도 상위 work plan이 관리한다.
-6. 너무 작은 작업은 별도 work로 만들지 않고 관련 work의 step으로 흡수한다.
-7. Work node는 기본적으로 `00_key-index.md`, `key-work-{slug}.md`, `key-progress.md`를 가진다.
-8. 결정(6) 기록은 여러 work에 영향을 주면 `works/key-decisions.md`에, 특정 work에만 영향을
-   주면 해당 work node의 `key-decisions.md`에 둔다.
-9. 작업서 생성 후 context map과 works index의 link와 status drift를 확인한다.
+2. 작업서는 작업 round 단위로 묶는다.
+3. Work round folder는 `r{number}-{slug}` 형식을 사용한다. `r`은 round를 뜻한다.
+4. 각 round 안의 실행 순서는 `S00`부터 다시 시작한다.
+5. 기준서별, 기능별, 구현 단계별, 검증 단계별로 독립 work를 만들 수 있다.
+6. 각 work는 하나의 reviewable goal을 가져야 한다.
+7. 작업서는 관련 기준서(3)를 참조하지만, 기준서 안에 실행 순서를 박지 않는다.
+8. 실행 순서는 root works index가 아니라 active round의 `00_key-index.md`가 관리한다.
+9. 너무 작은 작업은 별도 work로 만들지 않고 관련 work의 step으로 흡수한다.
+10. Work node는 기본적으로 `00_key-index.md`, `key-work-{slug}.md`, `key-progress.md`를
+    가진다.
+11. 결정(6) 기록은 여러 round에 영향을 주면 `works/key-decisions.md`에, 특정 round에만
+    영향을 주면 해당 round의 `key-decisions.md`에, 특정 work node에만 영향을 주면 해당 work
+    node의 `key-decisions.md`에 둔다.
+12. 작업서 생성 후 context map, root works index, round index의 link와 status drift를
+    확인한다.
 
 <!-- key: id=key.standard.skill.author.metadata-writing-impact-review refs=key.role.author key.topic.keystone-metadata key.topic.impact-review -->
 ## Keystone metadata 작성과 impact 검토

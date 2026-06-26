@@ -6,6 +6,7 @@ key:
     - key.topic.document-system
     - key.doc.source
     - key.topic.work-sequence
+    - key.topic.work-round
     - key.topic.skill-contract
     - key.standard.subagent
     - key.topic.bootstrap
@@ -13,8 +14,8 @@ key:
 
 # 프로젝트 컨텍스트 맵
 
-활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 active work tree는
-`00_docs/works/`다.
+활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 active work round는
+`00_docs/works/r001-bootstrap-keystone/`다.
 
 <!-- key: id=key.context-map.project refs=key.doc.source key.topic.skill-contract key.topic.bootstrap -->
 ## 프로젝트
@@ -44,22 +45,23 @@ key:
 | Clarify | `00_docs/standards/skills/clarify/key-standard-clarify.md` | `keystone-clarify`의 decision collection, reflection, Author handoff를 확인할 때 읽는다 |
 | Coordinator | `00_docs/standards/skills/coordinator/key-standard-coordinator.md` | `keystone-coordinator`의 Goal assignment, routing, branch/worktree isolation, merge gate, report, review, verification, acceptance flow를 확인할 때 읽는다 |
 
-<!-- key: id=key.context-map.work-order refs=key.topic.document-system key.doc.source key.topic.work-sequence -->
+<!-- key: id=key.context-map.work-order refs=key.topic.document-system key.doc.source key.topic.work-sequence key.topic.work-round -->
 ## 작업서
 
 | 작업 | 경로 | 상태 | 담당 영역 |
 |---|---|---|---|
-| 작업서 색인 | `00_docs/works/00_key-index.md` | active | 실행 순서와 active work 탐색 |
-| Document Tree Setup | `00_docs/works/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
-| Project Standard | `00_docs/works/project-standard/00_key-index.md` | ready | 전체 공통 기준서 |
-| Reader Standard | `00_docs/works/reader-standard/00_key-index.md` | planned | `keystone-reader` 기준서 |
-| Author Standard | `00_docs/works/author-standard/00_key-index.md` | planned | `keystone-author` 기준서와 작업서 생성 표준 |
-| Clarify Standard | `00_docs/works/clarify-standard/00_key-index.md` | planned | `keystone-clarify` 기준서 |
-| Coordinator Standard | `00_docs/works/coordinator-standard/00_key-index.md` | planned | `keystone-coordinator` 기준서 |
-| Skill Creation | `00_docs/works/skill-creation/00_key-index.md` | planned | Keystone skill source 생성 |
-| Integration Verification | `00_docs/works/integration-verification/00_key-index.md` | planned | 통합 검증 |
+| Round 색인 | `00_docs/works/00_key-index.md` | active | active work round 탐색 |
+| R001 Bootstrap Keystone | `00_docs/works/r001-bootstrap-keystone/00_key-index.md` | active | 초기 Keystone 기준 corpus와 스킬 기준서 |
+| Document Tree Setup | `00_docs/works/r001-bootstrap-keystone/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
+| Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | ready | 전체 공통 기준서 |
+| Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | planned | `keystone-reader` 기준서 |
+| Author Standard | `00_docs/works/r001-bootstrap-keystone/author-standard/00_key-index.md` | planned | `keystone-author` 기준서와 작업서 생성 표준 |
+| Clarify Standard | `00_docs/works/r001-bootstrap-keystone/clarify-standard/00_key-index.md` | planned | `keystone-clarify` 기준서 |
+| Coordinator Standard | `00_docs/works/r001-bootstrap-keystone/coordinator-standard/00_key-index.md` | planned | `keystone-coordinator` 기준서 |
+| Skill Creation | `00_docs/works/r001-bootstrap-keystone/skill-creation/00_key-index.md` | planned | Keystone skill source 생성 |
+| Integration Verification | `00_docs/works/r001-bootstrap-keystone/integration-verification/00_key-index.md` | planned | 통합 검증 |
 
-<!-- key: id=key.context-map.document-tree-policy refs=key.topic.document-system key.doc.source -->
+<!-- key: id=key.context-map.document-tree-policy refs=key.topic.document-system key.doc.source key.topic.work-round -->
 ## 문서 트리 정책
 
 Keystone 문서는 영어 경로와 설정된 document root(1)를 사용한다. 현재 사용자 지시나
@@ -91,25 +93,29 @@ Keystone 문서는 영어 경로와 설정된 document root(1)를 사용한다. 
   works/
     00_key-index.md
     key-decisions.md
-    document-tree-setup/
+    r001-bootstrap-keystone/
       00_key-index.md
-      key-work-document-tree-setup.md
-      key-progress.md
-    project-standard/
-      00_key-index.md
-      key-work-project-standard.md
-      key-progress.md
+      document-tree-setup/
+        00_key-index.md
+        key-work-document-tree-setup.md
+        key-progress.md
+      project-standard/
+        00_key-index.md
+        key-work-project-standard.md
+        key-progress.md
     ...
 ```
 
 기준서는 전체 공통 기준서에서 시작해 필요한 경우 스킬별 child 기준서로 내려간다. 작업서는
-기준서 구조에 종속되지 않고 reviewable goal 단위로 만든다. 실행 순서는
-`00_docs/works/00_key-index.md`가 관리하며, 최종 작업서는 `key-work-{slug}.md` 형식을 사용한다.
+기준서 구조에 종속되지 않고 work round 안의 reviewable goal 단위로 만든다. Root works
+index는 active round를 관리하고, round 내부 실행 순서는 해당 round의 `00_key-index.md`가
+관리한다. 최종 작업서는 `key-work-{slug}.md` 형식을 사용한다.
 
-<!-- key: id=key.context-map.section refs=key.topic.work-sequence key.topic.document-system -->
+<!-- key: id=key.context-map.section refs=key.topic.work-sequence key.topic.document-system key.topic.work-round -->
 ## 현재 작업 단계
 
-현재 active work는 S01이다. S00 문서 트리 재정비는 accepted 상태다.
+현재 active round는 R001 Bootstrap Keystone이고, active work는 S01이다. S00 문서 트리
+재정비는 accepted 상태다.
 
 | Step | 제목 | 목적 |
 |---|---|---|

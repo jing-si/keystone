@@ -8,6 +8,7 @@ key:
     - key.topic.skill-contract
     - key.doc.source
     - key.standard.subagent
+    - key.topic.work-round
 ---
 
 # 기준서(3) 색인
@@ -37,7 +38,7 @@ key:
    - `keystone-coordinator`의 Goal assignment, subagent routing, report, review,
      verification, acceptance flow를 정의한다.
 
-<!-- key: id=key.standard.index.reading-rules refs=key.doc.source key.doc.standard key.topic.document-system key.standard.subagent -->
+<!-- key: id=key.standard.index.reading-rules refs=key.doc.source key.doc.standard key.topic.document-system key.standard.subagent key.topic.work-round -->
 ## 읽기 규칙
 
 1. Keystone 원천 문서(2)를 변경하거나 Keystone 작업을 준비하기 전에
@@ -45,6 +46,7 @@ key:
 2. Subagent role, report status, merge authority가 필요하면 `subagents/00_key-index.md`를
    읽는다.
 3. 스킬별 상세 계약이 필요하면 `skills/00_key-index.md`에서 해당 child 기준서로 내려간다.
-4. 현재 active work는 `00_docs/works/00_key-index.md`에서 찾는다.
+4. 현재 active work round는 `00_docs/works/00_key-index.md`에서 찾고, round 내부 실행 순서는
+   해당 round의 `00_key-index.md`에서 찾는다.
 5. 전체 공통 기준서와 child 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 전체 공통 기준서를 임시 우선 기준으로 삼는다.

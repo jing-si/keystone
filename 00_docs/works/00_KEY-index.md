@@ -1,53 +1,49 @@
 ---
-doc_type: work_index
+doc_type: work_round_index
 key:
   id: key.work.index
   refs:
     - key.doc.work
+    - key.topic.work-round
     - key.topic.work-sequence
     - key.topic.document-system
     - key.doc.source
 ---
 
-# 작업서(4) 색인
+# 작업서(4) round 색인
 
-이 색인은 현재 Keystone 작업서(4)를 찾기 위한 진입점이다. 작업서 구조는 기준서 tree에
-종속되지 않는다. 각 work node는 하나의 reviewable goal을 가지며, 실행 순서는 이 색인에서
-관리한다.
+이 색인은 Keystone work round를 찾기 위한 최상위 진입점이다. 각 work round는 특정 시점의
+기준서와 목표를 바탕으로 진행하는 하나의 작업 차수이며, round 안에서 작업 순서는 `S00`부터
+다시 시작한다.
 
-<!-- key: id=key.work.index.execution-order refs=key.topic.work-sequence key.doc.work key.topic.document-system -->
-## 실행 순서
+<!-- key: id=key.work.index.rounds refs=key.topic.work-round key.doc.work key.topic.work-sequence -->
+## Work rounds
 
-| 순서 | Work | 경로 | 상태 | 목적 |
+| Round | 제목 | 경로 | 상태 | 목적 |
 |---|---|---|---|---|
-| S00 | Document Tree Setup | `document-tree-setup/00_key-index.md` | accepted | `work-packages/`를 폐기하고 `works/` 기준 작업 트리를 만든다 |
-| S01 | Project Standard | `project-standard/00_key-index.md` | ready | 전체 공통 기준서를 정리한다 |
-| S02 | Reader Standard | `reader-standard/00_key-index.md` | planned | `keystone-reader` 기준서를 정리한다 |
-| S03 | Author Standard | `author-standard/00_key-index.md` | planned | `keystone-author` 기준서와 작업서 생성 표준을 정리한다 |
-| S04 | Clarify Standard | `clarify-standard/00_key-index.md` | planned | `keystone-clarify` 기준서를 정리한다 |
-| S05 | Coordinator Standard | `coordinator-standard/00_key-index.md` | planned | `keystone-coordinator` 기준서를 정리한다 |
-| S06 | Skill Creation | `skill-creation/00_key-index.md` | planned | 네 개 Keystone skill source를 만든다 |
-| S07 | Integration Verification | `integration-verification/00_key-index.md` | planned | 문서와 skill source의 end-to-end 흐름을 검증한다 |
+| R001 | Bootstrap Keystone | `r001-bootstrap-keystone/00_key-index.md` | active | Keystone 기준 corpus와 초기 스킬 기준서를 만든다 |
 
-<!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work -->
+<!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work key.topic.work-round -->
 ## 공통 결정
 
-- 결정 기록(6): `key-decisions.md`
+- 여러 round에 영향을 주는 결정 기록(6): `key-decisions.md`
 
-<!-- key: id=key.work.index.reading-rules refs=key.doc.work key.doc.source key.topic.document-system -->
+<!-- key: id=key.work.index.reading-rules refs=key.doc.work key.doc.source key.topic.document-system key.topic.work-round -->
 ## 읽기 규칙
 
 1. 프로젝트 전체 방향은 `00_docs/key-context-map.md`를 먼저 읽는다.
 2. 공통 기준과 용어는 `00_docs/standards/01_key-project-standard.md`를 따른다.
-3. 현재 실행 순서는 이 파일의 `실행 순서` 표를 권위로 삼는다.
-4. 각 work의 세부 목표와 검증은 해당 work node의 `key-work-{slug}.md`에서 확인한다.
-5. 각 work의 진행 상태는 해당 work node의 `key-progress.md`에서 확인한다.
+3. 현재 active round는 이 파일의 `Work rounds` 표를 권위로 삼는다.
+4. Round 내부 실행 순서는 해당 round의 `00_key-index.md`에서 확인한다.
+5. 각 work의 세부 목표와 검증은 해당 work node의 `key-work-{slug}.md`에서 확인한다.
+6. 각 work의 진행 상태는 해당 work node의 `key-progress.md`에서 확인한다.
 
-<!-- key: id=key.work.index.work-creation-rules refs=key.doc.work key.topic.document-system -->
-## 작업서 생성 규칙
+<!-- key: id=key.work.index.round-creation-rules refs=key.doc.work key.topic.document-system key.topic.work-round -->
+## Work round 생성 규칙
 
-1. 작업서는 기준서 파일 구조에 종속되지 않는다.
-2. 기준서별, 기능별, 구현 단계별, 검증 단계별로 독립 work를 만들 수 있다.
-3. 작업서는 관련 기준서를 참조하지만, 기준서 안에 실행 순서를 박지 않는다.
-4. 실행 순서는 이 색인이나 별도 상위 work plan에서 관리한다.
-5. 너무 작은 작업은 별도 work로 만들지 않고 관련 work의 step으로 흡수한다.
+1. Work round folder는 `r{number}-{slug}` 형식을 사용한다.
+2. `r`은 round를 뜻하며, 특정 시점의 기준서와 목표를 바탕으로 진행하는 하나의 작업 차수를
+   나타낸다.
+3. 각 round는 `00_key-index.md`를 가지며, round 안의 실행 순서는 `S00`부터 다시 시작한다.
+4. Round 안의 work node는 하나의 reviewable goal을 가져야 한다.
+5. 너무 작은 작업은 별도 work node로 만들지 않고 관련 work의 step으로 흡수한다.

@@ -8,6 +8,8 @@ key:
     - key.role.subagent
     - key.topic.branch-worktree
     - key.topic.merge-gate
+    - key.topic.remote-policy
+    - key.topic.commit-checkpoint
     - key.topic.orchestration
     - key.topic.acceptance
 ---
@@ -31,6 +33,7 @@ Include:
 - report handling
 - review, verification, acceptance flow
 - branch/worktree isolation과 merge gate
+- local-only branch workflow와 commit checkpoint
 - progress/report status 분리
 - derived agent document policy
 
@@ -53,8 +56,9 @@ Conditionally allowed:
 - `00_docs/standards/skills/coordinator/00_key-index.md`
 - `00_docs/standards/skills/coordinator/key-standard-coordinator.md`
 - `00_docs/works/00_key-index.md`
+- `00_docs/works/r001-bootstrap-keystone/00_key-index.md`
 
-<!-- key: id=key.work.coordinator-standard.order.completion-criteria refs=key.topic.acceptance key.role.coordinator key.topic.current-step key.topic.worker-handoff key.topic.reviewer-focus key.standard.subagent key.topic.branch-worktree key.topic.merge-gate -->
+<!-- key: id=key.work.coordinator-standard.order.completion-criteria refs=key.topic.acceptance key.role.coordinator key.topic.current-step key.topic.worker-handoff key.topic.reviewer-focus key.standard.subagent key.topic.branch-worktree key.topic.merge-gate key.topic.remote-policy key.topic.commit-checkpoint -->
 
 ## Completion Criteria
 
@@ -63,6 +67,9 @@ Conditionally allowed:
 - [ ] Scope가 worker handoff boundary로 변환된다.
 - [ ] Review points가 reviewer focus로 변환된다.
 - [ ] Branch context와 merge gate를 통해 병렬 작업을 격리할 수 있다.
+- [ ] Branch workflow는 local-only이고 remote push, remote branch 생성, PR 생성, remote
+      merge는 명시 승인 없이는 금지된다.
+- [ ] 파일 수정 subagent의 결과는 merge 전 local commit checkpoint로 고정된다.
 - [ ] Merge 성공과 Main acceptance가 분리된다.
 - [ ] Main acceptance 전에는 accepted로 표시하지 않는다.
 
@@ -81,6 +88,7 @@ Clarify로 남긴다.
 - `STD-KEYSTONE-034`
 - `00_docs/standards/subagents/key-standard-subagents.md`
 - progress/report status rule
+- local-only branch workflow와 commit checkpoint
 - high-risk work stop condition
 
 <!-- key: id=key.work.coordinator-standard.order.stop-conditions refs=key.section.stop-conditions key.topic.current-step key.topic.subagent-sizing key.boundary.high-risk-work key.topic.branch-worktree key.topic.merge-gate -->
@@ -90,7 +98,9 @@ Clarify로 남긴다.
 - current step이 복구되지 않는다.
 - work unit이 subagent-sized Goal이 아니다.
 - high-risk implementation이 main/user decision 없이 필요하다.
-- branch context가 없거나 base branch 직접 merge가 필요하다.
+- branch context가 없거나 base, integration, user-facing stable branch 직접 merge가 필요하다.
+- remote push, remote branch 생성, PR 생성, remote merge가 필요한데 명시 승인이 없다.
+- merge 대상 변경이 local commit으로 고정되지 않았다.
 
 <!-- key: id=key.work.coordinator-standard.order.verification refs=key.topic.verification key.role.coordinator key.verification.git-diff-check key.topic.standard-verification -->
 
@@ -98,7 +108,7 @@ Clarify로 남긴다.
 
 Allowed:
 
-- `rg -n "Current Step Brief|Context Pack|accepted" 00_docs/standards/skills/coordinator/key-standard-coordinator.md`
+- `rg -n "Current Step Brief|Context Pack|accepted|local_only|commit_required_before_merge|remote push" 00_docs/standards/skills/coordinator/key-standard-coordinator.md`
 - `git diff --check`
 
 <!-- key: id=key.work.coordinator-standard.order.expected-output refs=key.contract.output key.role.coordinator key.topic.runtime-handoff key.doc.work-order -->
@@ -113,6 +123,8 @@ Allowed:
 
 - High-risk work가 자동 worker-routable로 처리되지 않는지 확인한다.
 - Worker `DONE`과 main acceptance가 분리되는지 확인한다.
+- Remote push와 PR 생성이 명시 승인 없이는 금지되는지 확인한다.
+- Task branch 변경이 merge 전 local commit checkpoint로 고정되는지 확인한다.
 - Merge 성공과 Keystone acceptance가 분리되는지 확인한다.
 
 <!-- key: id=key.work.coordinator-standard.order.progress-record refs=key.topic.progress-update key.topic.main-acceptance key.step.s05 -->

@@ -38,7 +38,7 @@ Exclude:
 
 Conditionally allowed:
 
-- 작업서 생성 표준을 반영하기 위한 `works/00_key-index.md` link 보정
+- 작업서 생성 표준을 반영하기 위한 root works index와 round index link 보정
 
 <!-- key: id=key.work.author-standard.order.source-context refs=key.section.source-context key.role.author key.doc.standard key.doc.decision-record -->
 
@@ -55,7 +55,7 @@ Conditionally allowed:
 
 - [ ] Author가 새 작업서를 `works/` tree에 만든다는 점이 명확하다.
 - [ ] 작업서가 기준서 구조에 종속되지 않는다는 표준이 명확하다.
-- [ ] 작업 순서는 기준서가 아니라 `works/00_key-index.md`나 상위 work plan이 관리한다.
+- [ ] 작업 순서는 기준서가 아니라 active round index나 상위 work plan이 관리한다.
 - [ ] progress update가 main acceptance와 worker report를 혼동하지 않는다.
 - [ ] Clarify와 Author의 책임 경계가 명확하다.
 

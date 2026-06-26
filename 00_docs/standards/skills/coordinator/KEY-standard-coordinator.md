@@ -9,6 +9,8 @@ key:
     - key.topic.work-execution
     - key.topic.branch-worktree
     - key.topic.merge-gate
+    - key.topic.remote-policy
+    - key.topic.commit-checkpoint
     - key.topic.verification
     - key.topic.acceptance
 ---
@@ -154,7 +156,7 @@ Coordinator는 다음 순서를 따른다.
 13. Report 결과를 accept, repair, verify, escalate, block 중 하나로 처리한다.
 14. Main acceptance 조건이 충족된 경우에만 진행 기록(5)을 갱신한다.
 
-<!-- key: id=key.standard.skill.coordinator.runtime-output-contract refs=key.role.coordinator key.contract.output key.topic.work-execution key.standard.subagent key.topic.branch-worktree key.topic.merge-gate -->
+<!-- key: id=key.standard.skill.coordinator.runtime-output-contract refs=key.role.coordinator key.contract.output key.topic.work-execution key.standard.subagent key.topic.branch-worktree key.topic.merge-gate key.topic.remote-policy key.topic.commit-checkpoint -->
 ## Runtime output contract
 
 Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
@@ -168,11 +170,13 @@ Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
 3. Branch context
    - base branch, integration branch, session branch, task branch 또는 staging branch,
      worktree path, merge target, forbidden merge targets, base commit, dirty worktree
-     허용 여부를 담는다.
+     허용 여부, remote policy, push 허용 여부, commit requirement, 필요한 경우 task commit
+     range를 담는다.
 4. Worker handoff
    - subagent 기준서 기준의 lane, role, authority, primary scope, read scope,
      direct edit scope, conditional edit scope, escalation zone, forbidden changes,
-     branch, worktree path, merge target, forbidden merge targets를 담는다.
+     branch, worktree path, merge target, forbidden merge targets, remote policy,
+     commit checkpoint requirement를 담는다.
 5. Reviewer brief
    - worker goal, completion criteria, changed files 또는 문서 output, known risks,
      verification result, 같은 `key.id`를 참조하는 문서와의 충돌 여부, reviewer focus를
@@ -214,7 +218,7 @@ Coordinator는 그 catalog 안에서 다음 기준으로 실행 역할을 선택
 
 Subagent 공통 금지와 stop condition은 subagent 기준서를 따른다.
 
-<!-- key: id=key.standard.skill.coordinator.branch-worktree-isolation refs=key.role.coordinator key.topic.branch-worktree key.topic.merge-gate key.role.subagent -->
+<!-- key: id=key.standard.skill.coordinator.branch-worktree-isolation refs=key.role.coordinator key.topic.branch-worktree key.topic.merge-gate key.role.subagent key.topic.remote-policy key.topic.commit-checkpoint -->
 ## Branch and worktree isolation policy
 
 Coordinator가 subagent에게 파일 수정이 필요한 bounded Goal을 배정할 때는 다음 branch와
@@ -223,18 +227,29 @@ worktree 규칙을 따른다.
 1. 각 main session은 자기 session branch를 가진다.
 2. Subagent task는 session branch에서 분기한 task branch 또는 별도 worktree에서 수행한다.
 3. Task branch는 자신을 호출한 main-session branch로만 merge할 수 있다.
-4. 여러 main-session branch를 합칠 때는 integration branch 또는 staging branch를 사용한다.
-5. Base branch 또는 user-facing stable branch merge는 integration owner Main 또는 사용자
+4. 여러 main-session branch를 검토할 때 Coordinator 또는 repo-integrator는 staging branch를
+   사용한다.
+5. Integration branch 반영은 staging 결과가 `safe` 또는 acceptance candidate로 보고된 뒤
+   integration owner Main 또는 사용자가 수행한다.
+6. Base branch 또는 user-facing stable branch merge는 integration owner Main 또는 사용자
    acceptance 이후에만 가능하다.
-6. 한 working tree를 여러 main session이나 subagent가 공유하지 않는다. 병렬 작업은 git
+7. 한 working tree를 여러 main session이나 subagent가 공유하지 않는다. 병렬 작업은 git
    worktree 사용을 우선한다.
-7. 작업 시작 전 worktree가 dirty 상태라면 명시적으로 허용되지 않은 한 subagent를 배정하지
+8. 작업 시작 전 worktree가 dirty 상태라면 명시적으로 허용되지 않은 한 subagent를 배정하지
    않는다.
-8. Branch context에는 최소한 base branch, integration branch, session branch, task branch
+9. Branch workflow는 기본적으로 local-only다. Branch context에는 `remote_policy:
+   local_only`, `push_allowed: false`, `commit_required_before_merge: true`를 포함한다.
+10. Coordinator, subagent, repo-integrator는 remote push, remote branch 생성, PR 생성,
+    remote merge를 수행하지 않는다. Remote push는 사용자 또는 integration owner Main의 명시
+    요청이 있을 때만 가능하다.
+11. 파일 수정 subagent는 task branch 변경을 local commit으로 고정한 뒤 report한다.
+    Uncommitted diff는 merge 대상이나 repo-integrator staging input으로 사용하지 않는다.
+12. Branch context에는 최소한 base branch, integration branch, session branch, task branch
    또는 staging branch, worktree path, merge target, forbidden merge targets, base commit,
-   dirty worktree 허용 여부를 기록한다.
+   dirty worktree 허용 여부, remote policy, push 허용 여부, commit requirement, 필요한 경우
+   task commit range를 기록한다.
 
-<!-- key: id=key.standard.skill.coordinator.merge-gate-policy refs=key.role.coordinator key.topic.merge-gate key.topic.branch-worktree key.topic.keystone-metadata key.topic.acceptance -->
+<!-- key: id=key.standard.skill.coordinator.merge-gate-policy refs=key.role.coordinator key.topic.merge-gate key.topic.branch-worktree key.topic.keystone-metadata key.topic.acceptance key.topic.commit-checkpoint -->
 ## Merge gate policy
 
 Main은 단순하고 범위가 명확한 branch를 직접 검토하고 merge할 수 있다. 단순 merge는 다음
@@ -245,9 +260,11 @@ Main은 단순하고 범위가 명확한 branch를 직접 검토하고 merge할 
 3. 공통 권위 문서를 수정하지 않았다.
 4. 같은 파일, 같은 `key.id`, 같은 decision topic, 같은 progress state를 다른 branch가
    수정하지 않았다.
-5. Git merge가 clean하다.
-6. Verification path가 명확하다.
-7. Main이 diff를 직접 이해하고 scope 위반 여부를 판단할 수 있다.
+5. Task branch 변경이 local commit으로 고정되어 있고 검토할 commit range 또는 branch diff가
+   명확하다.
+6. Git merge가 clean하다.
+7. Verification path가 명확하다.
+8. Main이 diff를 직접 이해하고 scope 위반 여부를 판단할 수 있다.
 
 다음 조건 중 하나라도 있으면 Coordinator는 repo-integrator 또는 reviewer/verifier workflow로
 escalation한다.
@@ -259,12 +276,13 @@ escalation한다.
    문서가 변경되었다.
 5. Scope, acceptance criteria, status semantics, source authority가 변경될 수 있다.
 6. Git conflict 또는 semantic conflict 가능성이 있다.
-7. 병합 순서나 merge 후 verification 범위가 불명확하다.
+7. Task branch commit range가 불명확하거나 uncommitted diff를 병합해야 한다.
+8. 병합 순서나 merge 후 verification 범위가 불명확하다.
 
 같은 `key.refs` overlap은 semantic review candidate로 보고한다. 넓은 topic refs만 겹치는
 경우에는 warning으로 보고하고 자동 block으로 처리하지 않는다.
 
-<!-- key: id=key.standard.skill.coordinator.repo-integrator-contract refs=key.role.coordinator key.role.subagent key.topic.merge-gate key.topic.branch-worktree key.topic.verification -->
+<!-- key: id=key.standard.skill.coordinator.repo-integrator-contract refs=key.role.coordinator key.role.subagent key.topic.merge-gate key.topic.branch-worktree key.topic.verification key.topic.remote-policy key.topic.commit-checkpoint -->
 ## Repo-integrator contract
 
 Repo-integrator는 Coordinator가 호출하는 복잡 병합 전용 subagent role이다. 새 Keystone 스킬이
@@ -274,10 +292,11 @@ Repo-integrator는 Coordinator가 호출하는 복잡 병합 전용 subagent rol
 2. Role: `repo-integrator`
 3. Authority: `staging_merge`
 4. 허용: branch별 diff 요약, declared scope와 actual diff 비교, text conflict 확인,
-   semantic conflict 후보 확인, merge order 제안, staging branch dry-run 또는 실험 병합,
-   verification plan 작성
-5. 금지: base branch 직접 merge, user-facing stable branch 직접 merge, final acceptance,
-   progress `accepted` 처리, policy 결정, scope 확장
+   semantic conflict 후보 확인, commit range 확인, merge order 제안, staging branch dry-run
+   또는 실험 병합, verification plan 작성
+5. 금지: base branch 직접 merge, integration branch 직접 merge, user-facing stable branch 직접
+   merge, remote push, remote branch 생성, PR 생성, remote merge, final acceptance, progress
+   `accepted` 처리, policy 결정, scope 확장
 6. Output: `safe`, `needs_review`, `blocked` 중 하나와 evidence, staging merge result,
    verification plan, residual risk를 보고한다.
 
@@ -334,7 +353,9 @@ Main acceptance는 다음 조건이 충족될 때만 가능하다.
 8. 필요한 원천 문서(2) update가 있다면 승인된 범위 안에서 처리되었거나 별도 next action으로
    남겼다.
 9. Merge가 포함된 경우 merge target이 허용 범위 안에 있고 base branch 직접 merge가 아니다.
-10. Merge 성공을 Keystone acceptance로 해석하지 않았다.
+10. Merge가 포함된 경우 병합 대상 변경이 local commit checkpoint로 고정되어 있다.
+11. Remote push, remote branch 생성, PR 생성, remote merge가 필요한 경우 명시 승인이 있다.
+12. Merge 성공을 Keystone acceptance로 해석하지 않았다.
 
 Acceptance 후에만 진행 기록(5)을 `accepted` 또는 해당 project의 완료 상태로 바꿀 수 있다.
 Merge 성공은 Git 상태가 합쳐졌다는 뜻일 뿐이며, 진행 기록(5)의 `accepted` 상태는 Main 또는
@@ -370,7 +391,7 @@ Merge 성공은 Git 상태가 합쳐졌다는 뜻일 뿐이며, 진행 기록(5)
 
 파생 에이전트 문서(8)가 원천 문서(2)와 충돌하면 원천 문서(2)가 우선한다.
 
-<!-- key: id=key.standard.skill.coordinator.stop-condition refs=key.role.coordinator key.topic.skill-contract key.topic.work-execution key.topic.branch-worktree key.topic.merge-gate -->
+<!-- key: id=key.standard.skill.coordinator.stop-condition refs=key.role.coordinator key.topic.skill-contract key.topic.work-execution key.topic.branch-worktree key.topic.merge-gate key.topic.remote-policy key.topic.commit-checkpoint -->
 ## Stop condition
 
 Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한다.
@@ -389,11 +410,13 @@ Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청
 12. 파일 수정 또는 merge가 필요한데 branch context가 없다.
 13. 작업 시작 전 worktree가 dirty 상태이고 허용 여부가 명시되지 않았다.
 14. Task branch가 호출한 main-session branch가 아닌 곳에 merge되려 한다.
-15. Base branch 또는 user-facing stable branch 직접 merge가 요구된다.
+15. Base branch, integration branch, user-facing stable branch 직접 merge가 요구된다.
 16. 같은 파일 또는 같은 `key.id`를 여러 branch가 수정했지만 repo-integrator 검토가 없다.
 17. Merge 후 verification 범위가 불명확하다.
+18. Remote push 또는 remote branch 생성, PR 생성, remote merge가 필요한데 명시 승인이 없다.
+19. Merge 대상 task branch에 local commit으로 고정되지 않은 변경이 있다.
 
-<!-- key: id=key.standard.skill.coordinator.verification refs=key.role.coordinator key.topic.verification key.topic.acceptance key.standard.subagent key.topic.branch-worktree key.topic.merge-gate -->
+<!-- key: id=key.standard.skill.coordinator.verification refs=key.role.coordinator key.topic.verification key.topic.acceptance key.standard.subagent key.topic.branch-worktree key.topic.merge-gate key.topic.remote-policy key.topic.commit-checkpoint -->
 ## Verification
 
 Coordinator 기준은 다음 방법으로 검증한다.
@@ -413,8 +436,11 @@ Coordinator 기준은 다음 방법으로 검증한다.
     구분할 수 있어야 한다.
 12. Repo-integrator가 staging branch 밖의 merge나 final acceptance를 수행하지 않는다는 점을
     확인할 수 있어야 한다.
-13. Merge 성공과 Keystone acceptance를 구분할 수 있어야 한다.
-14. Verification command:
+13. Remote push, remote branch 생성, PR 생성, remote merge는 명시 승인 없이는 수행되지
+    않아야 한다.
+14. Task branch 변경은 merge 전 local commit checkpoint로 고정되어야 한다.
+15. Merge 성공과 Keystone acceptance를 구분할 수 있어야 한다.
+16. Verification command:
    - `rg --files 00_docs`
    - Coordinator 관련 기준서를 읽어 link와 scope consistency 확인
    - `git diff --check`
