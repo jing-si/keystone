@@ -122,7 +122,7 @@ Reader는 mode와 무관하게 다음 순서를 따른다.
 7. 현재 요청과 관련된 child index만 따라 내려가며 관련 없는 하위 기준서를 읽지 않는다.
 8. 요청 또는 current work에 관련 키메타(9)가 있으면 같은 `key.id`를 참조하는
    문서를 탐색 후보로 확인한다.
-9. 요청 또는 current work에 capability, API, code, test 단서가 있으면 artifact graph가 필요한지
+9. 요청 또는 current work에 capability, code, config, schema, API, test 단서가 있으면 artifact graph가 필요한지
    판단하고, 깊은 후보 탐색이 필요하면 `keystone-linker`를 recommended next action으로 남긴다.
 10. Reader가 확인한 키메타(9), link, path, heading, keyword는 Linker handoff seed로만 사용하고
     artifact relation을 확정하지 않는다.

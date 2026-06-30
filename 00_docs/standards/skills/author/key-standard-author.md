@@ -89,7 +89,7 @@ key:
 5. 작업서(4) step을 Goal unit으로 정리해 coordinator가 Current Step Brief, Context Pack,
    worker handoff, reviewer focus를 도출할 수 있게 해야 한다.
 6. 문서 변경에 따라 index, context map, progress, 결정(6) 기록을 함께 갱신해야 한다.
-7. 문서 변경이 capability, API, code, test artifact에 미칠 후보 영향을 Change Set(17)이나
+7. 문서 변경이 capability, code, config, schema, API, test artifact에 미칠 후보 영향을 Change Set(17)이나
    Linker handoff seed로 남겨야 한다.
 8. 큰 문서 수정 전에 대상, 범위, 영향 문서, 검증 기준을 Author Edit Contract로 정리해야
    한다.
@@ -125,7 +125,7 @@ Author는 다음 input을 사용할 수 있어야 한다.
 5. 변경할 document section 또는 새 문서의 목적
 6. 승인된 scope와 acceptance boundary
 7. 현재 workspace state와 existing-change risk
-8. 관련 capability, API, code, test artifact 후보 또는 impact seed
+8. 관련 capability, code, config, schema, API, test artifact 후보 또는 impact seed
 9. 필요한 경우 `keystone-linker` report 또는 Linker handoff seed
 10. File-writing helper를 직접 사용할 경우 single workspace guard
 
@@ -169,7 +169,7 @@ Author는 작업 mode와 무관하게 다음 순서를 따른다.
 19. 코드 앵커(18) typed relation이나 capability(16)가 있는 경우 관련 code/config/schema/API/test
     artifact를 직접 확정하지 않고 Linker handoff seed 또는 Linker report requirement로 남긴다.
 20. 큰 변경이나 문서-code-test 동시 영향이 있는 변경은 Change Set(17)을 작성하거나 갱신한다.
-21. Code, API, test 수정이 필요하면 직접 수정하지 않고 Coordinator가 조율할 next action으로
+21. Code, config, schema, API, test 수정이 필요하면 직접 수정하지 않고 Coordinator가 조율할 next action으로
     남긴다.
 22. 문서 link, 용어, 구조, Markdown 형식을 검증한다.
 23. 변경 파일, 적용한 결정(6), 검증 결과, 남은 risk를 보고한다.
@@ -253,14 +253,16 @@ Revise Mode는 기존 원천 문서(2)를 수정한다.
 
 Clarify-Apply Mode는 수락된 Clarify result를 문서에 반영한다.
 
-1. Decision summary, rationale, working assumptions, affected documents, edit plan이
-   충분해야 한다.
+1. Decision summary, rationale, working assumptions, affected documents,
+   affected_artifact_candidates, decision_completeness_check, edit plan이 충분해야 한다.
 2. Author는 Clarify result를 새 decision으로 확정하지 않는다.
-3. Edit plan 밖의 scope나 acceptance criteria는 바꾸지 않는다.
-4. 적용 중 충돌이 발견되면 중단하고 main/user 결정(6)을 요청한다.
-5. 적용 후 필요한 경우 결정(6) 기록과 진행 기록(5)을 갱신한다.
-6. 다른 문서와 함께 맞춰야 하는 원천 문서(2) 수정은 Clarify가 아니라 Author가 담당한다.
-7. `keystone-clarify`가 명시 승인된 현재 대상 문서의 단순 오탈자만 직접 수정할 수 있다는
+3. `decision_completeness_check.author_edit_ready`가 `false`이면 Author는 적용하지 않고
+   Clarify 또는 main/user 결정(6) 보강을 요청한다.
+4. Edit plan 밖의 scope나 acceptance criteria는 바꾸지 않는다.
+5. 적용 중 충돌이 발견되면 중단하고 main/user 결정(6)을 요청한다.
+6. 적용 후 필요한 경우 결정(6) 기록과 진행 기록(5)을 갱신한다.
+7. 다른 문서와 함께 맞춰야 하는 원천 문서(2) 수정은 Clarify가 아니라 Author가 담당한다.
+8. `keystone-clarify`가 명시 승인된 현재 대상 문서의 단순 오탈자만 직접 수정할 수 있다는
    예외는 `key-standard-clarify.md`의 Default Mode contract를 따른다.
 
 <!-- key: id=key.standard.skill.author.normalize-mode refs=key.role.author key.topic.document-system -->
@@ -411,7 +413,7 @@ Author는 키메타(9)와 코드 앵커(18)를 다음처럼 다룬다.
    seed 또는 Linker report requirement로 보고한다.
 10. Capability(16)가 바뀌면 provider, consumer, verifier 후보 탐색이 필요한지 보고한다.
 11. 실제 문서 수정은 승인 범위와 의미 영향이 명확할 때만 수행한다.
-12. Code, config, test artifact와 코드 앵커 수정은 Author가 직접 수행하지 않는다.
+12. Code, config, schema, API, test artifact와 코드 앵커 수정은 Author가 직접 수행하지 않는다.
 
 <!-- key: id=key.standard.skill.author.output-contract refs=key.role.author key.contract.output -->
 ## Output contract

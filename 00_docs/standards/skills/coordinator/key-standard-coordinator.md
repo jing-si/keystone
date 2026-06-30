@@ -102,7 +102,7 @@ authority, scope, workspace guard, stop condition, report contract를 정하는 
    한다.
 8. 문서 작업이라도 Author Edit Contract를 바탕으로 document_edit, review, verify assignment가
    이어지는 formal workflow가 필요하다.
-9. Linker report를 바탕으로 문서, code, API, capability, test artifact 변경 후보를 Change
+9. Linker report를 바탕으로 문서, capability, code, config, schema, API, test artifact 변경 후보를 Change
    Set(17) 단위로 조율해야 한다.
 10. Keystone 작업 문맥에서 code/config/schema/test 수정 요청이 들어왔고, bounded implementation
     assignment를 구성해야 한다.

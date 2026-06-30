@@ -36,7 +36,7 @@ Exclude:
 
 - 넓은 문서 수정
 - 기준서(3)나 작업서(4) 직접 작성
-- implementation code
+- implementation code, config, schema, API, test, generated/codegen artifact
 
 Conditionally allowed:
 
@@ -47,6 +47,7 @@ Conditionally allowed:
 ## Source Context
 
 - `00_docs/standards/01_key-project-standard.md`
+- `00_docs/standards/skills/author/key-standard-author.md`
 - `00_docs/standards/skills/clarify/00_key-index.md`
 - `00_docs/standards/skills/clarify/key-standard-clarify.md`
 
@@ -58,10 +59,17 @@ Conditionally allowed:
 - [ ] 수락된 decision summary와 edit plan을 Author가 적용한다는 경계가 명확하다.
 - [ ] `decision_completeness_check`가 선택/기각 옵션, 영향 문서와 artifact, acceptance 또는
       status 영향, 기록 범위, Author 적용 가능 여부를 드러낸다.
+- [ ] affected artifact 후보 범위가 capability, code, config, schema, API, test를 포함한다.
 - [ ] decision recording hint가 global, round, work 범위별 기록 위치를 권장하되 기록 권한으로
       해석되지 않는다.
+- [ ] decision recording hint가 Clarify result의 조건부 필수 output으로 연결되어 있다.
+- [ ] 불충분한 답변은 `author_edit_ready: false`, unresolved `open_questions`, Author-ready
+      `edit_plan` 없음으로 보고된다.
+- [ ] `affected_documents`가 update target, inspect-only 후보, excluded 후보를 구분한다.
 - [ ] 직접 수정 예외가 단순 오탈자로 제한된다.
 - [ ] setup question이 common/global instruction file에 쓰도록 유도하지 않는다.
+- [ ] Clarify가 `.keystone/config.yaml` 또는 `.keystone/config.local.yaml`을 직접 생성하거나
+      수정하지 않는다는 경계가 명확하다.
 
 <!-- key: id=key.work.clarify-standard.order.recommended-approach refs=key.section.recommended-approach key.role.clarify key.topic.decision-collection key.topic.author-handoff -->
 
@@ -96,8 +104,12 @@ Allowed:
 
 - `rg -n "Plan Mode|Default Mode|Author handoff" 00_docs/standards/skills/clarify/key-standard-clarify.md`
 - `rg -n "decision_completeness_check|author_edit_ready|acceptance_or_status_impact" 00_docs/standards/skills/clarify/key-standard-clarify.md`
+- `rg -n "capability, code, config, schema, API, test|config, schema" 00_docs/standards/skills/clarify/key-standard-clarify.md`
 - `rg -n "decision_recording_hint|recommended_path|requires_author_update" 00_docs/standards/skills/clarify/key-standard-clarify.md`
-- Clarify 기준서와 Project Standard의 trigger/non-trigger consistency 확인
+- `rg -n "author_edit_ready: false|open_questions|Author-ready" 00_docs/standards/skills/clarify/key-standard-clarify.md`
+- `rg -n "update target|inspect-only|excluded" 00_docs/standards/skills/clarify/key-standard-clarify.md`
+- `rg -n "\\.keystone/config.yaml|\\.keystone/config.local.yaml|직접 생성하거나 수정하지 않는다" 00_docs/standards/skills/clarify/key-standard-clarify.md`
+- Clarify 기준서와 Project Standard, Author 기준서의 trigger/non-trigger, handoff consistency 확인
 
 <!-- key: id=key.work.clarify-standard.order.expected-output refs=key.contract.output key.role.clarify key.doc.standard -->
 
