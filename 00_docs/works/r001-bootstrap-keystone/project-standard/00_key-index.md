@@ -10,7 +10,7 @@ key:
     - key.topic.skill-contract
 work_id: project-standard
 title: Project Standard
-status: ready
+status: accepted
 owner_lane: main-session
 work_type:
   - documentation
@@ -45,5 +45,5 @@ risk_level: medium
 <!-- key: id=key.work.project-standard.index.current-status refs=key.topic.work-sequence key.topic.progress-update -->
 ## 현재 상태
 
-- Status: ready
+- Status: accepted
 - Current step: S01

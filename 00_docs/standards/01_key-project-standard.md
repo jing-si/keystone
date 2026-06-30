@@ -988,6 +988,7 @@ Target project의 initial setup에서 Keystone은 다음 선택지를 제공해�
 <!-- key: id=key.standard.project.child-standards refs=key.topic.skill-contract key.topic.document-system -->
 ## 관련 child 기준서
 
+- `00_docs/standards/subagents/key-standard-subagents.md`
 - `00_docs/standards/skills/reader/key-standard-reader.md`
 - `00_docs/standards/skills/author/key-standard-author.md`
 - `00_docs/standards/skills/clarify/key-standard-clarify.md`

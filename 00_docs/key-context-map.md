@@ -63,8 +63,8 @@ bounded worker 실행 결과를 아티팩트 그래프(14)와 worker assignment/
 | Round 색인 | `00_docs/works/00_key-index.md` | active | active work round 탐색 |
 | R001 Bootstrap Keystone | `00_docs/works/r001-bootstrap-keystone/00_key-index.md` | active | 초기 Keystone 기준 corpus와 스킬 기준서 |
 | Document Tree Setup | `00_docs/works/r001-bootstrap-keystone/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
-| Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | ready | 전체 공통 기준서 |
-| Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | planned | `keystone-reader` 기준서 |
+| Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | accepted | 전체 공통 기준서 |
+| Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | ready | `keystone-reader` 기준서 |
 | Author Standard | `00_docs/works/r001-bootstrap-keystone/author-standard/00_key-index.md` | planned | `keystone-author` 기준서와 작업서 생성 표준 |
 | Clarify Standard | `00_docs/works/r001-bootstrap-keystone/clarify-standard/00_key-index.md` | planned | `keystone-clarify` 기준서 |
 | Coordinator Standard | `00_docs/works/r001-bootstrap-keystone/coordinator-standard/00_key-index.md` | planned | `keystone-coordinator` 기준서 |
@@ -140,8 +140,8 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 <!-- key: id=key.context-map.section refs=key.topic.work-sequence key.topic.document-system key.topic.work-round -->
 ## 현재 작업 단계
 
-현재 active round는 R001 Bootstrap Keystone이고, active work는 S01이다. S00 문서 트리
-재정비는 accepted 상태다.
+현재 active round는 R001 Bootstrap Keystone이고, active work는 S02다. S00 문서 트리
+재정비와 S01 전체 기준서는 accepted 상태다.
 
 | Step | 제목 | 목적 |
 |---|---|---|

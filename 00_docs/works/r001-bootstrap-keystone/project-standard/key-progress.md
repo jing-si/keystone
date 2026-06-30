@@ -19,14 +19,14 @@ S01
 <!-- key: id=key.work.project-standard.progress.last-accepted-step refs=key.topic.progress-update key.topic.acceptance -->
 ## 마지막 수락 Step
 
-None
+S01
 
 <!-- key: id=key.work.project-standard.progress.step-status refs=key.topic.progress-update key.topic.acceptance -->
 ## Step 상태
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S01 | ready | pending | S00이 수락되어 S01을 시작할 수 있다 |
+| S01 | accepted | accepted | Project Standard 검토 결과가 수락되었고 Subagent child 기준서 link가 보정되었다 |
 
 <!-- key: id=key.work.project-standard.progress.recent-worker-result refs=key.topic.report key.topic.progress-update -->
 ## 최근 Worker 결과
@@ -46,9 +46,9 @@ None
 <!-- key: id=key.work.project-standard.progress.findings refs=key.doc.standard key.topic.document-system -->
 ## 누적 발견사항
 
-- None
+- Subagent 기준서가 Project Standard의 관련 child 기준서 목록에 포함되어야 한다.
 
 <!-- key: id=key.work.project-standard.progress.next-step refs=key.topic.work-sequence key.doc.standard -->
 ## 다음 권장 작업
 
-전체 기준서를 검토한다.
+S02 Reader Standard 작업을 진행한다.

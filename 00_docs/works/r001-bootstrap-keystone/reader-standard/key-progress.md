@@ -26,7 +26,7 @@ None
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S02 | planned | pending | S01 수락 후 시작한다 |
+| S02 | ready | pending | S01이 수락되어 S02를 시작할 수 있다 |
 
 <!-- key: id=key.work.reader-standard.progress.recent-worker-result refs=key.topic.report key.topic.progress-update -->
 ## 최근 Worker 결과
@@ -51,4 +51,4 @@ None
 <!-- key: id=key.work.reader-standard.progress.next-step refs=key.topic.work-sequence key.role.reader -->
 ## 다음 권장 작업
 
-S01을 수락한 뒤 Reader 기준서를 검토한다.
+Reader 기준서를 검토한다.
