@@ -29,8 +29,8 @@ risk_level: medium
 <!-- key: id=key.work.linker-standard.index.goal refs=key.role.linker key.doc.standard key.topic.artifact-graph -->
 ## 목표
 
-Linker가 문서, capability, code, API, test artifact의 연결과 impact/stale 후보를 read-only로
-탐색하고 Coordinator에게 worker assignment seed를 넘기는 경계를 명확히 한다.
+Linker가 문서, capability, code, config, schema, API, test artifact의 연결과 impact/stale 후보를
+read-only로 탐색하고 Coordinator에게 worker assignment seed를 넘기는 경계를 명확히 한다.
 
 <!-- key: id=key.work.linker-standard.index.source-standards refs=key.role.linker key.doc.standard -->
 ## 원천 기준서

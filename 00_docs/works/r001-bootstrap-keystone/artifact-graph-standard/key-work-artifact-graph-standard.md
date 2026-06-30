@@ -33,7 +33,7 @@ Include:
 Exclude:
 
 - Skill source 생성
-- 실제 code/test metadata 작성
+- 실제 code/config/schema/test metadata 작성
 - 모든 code symbol을 indexing하는 완전한 code index 설계
 - R001 다른 work의 accepted 처리
 
@@ -53,7 +53,8 @@ Conditionally allowed:
 <!-- key: id=key.work.artifact-graph-standard.order.completion-criteria refs=key.topic.verification key.topic.artifact-graph -->
 ## Completion Criteria
 
-- [ ] Artifact namespace가 문서, decision, work, capability, code, API, test를 구분한다.
+- [ ] Artifact namespace가 문서, decision, work, capability, code, config, schema, API, test를
+      구분한다.
 - [ ] Typed relation과 `key.refs`의 책임 차이가 명확하다.
 - [ ] Metadata admission policy가 metadata 과다 부여를 막는다.
 - [ ] Locator와 stable ID가 분리된다.

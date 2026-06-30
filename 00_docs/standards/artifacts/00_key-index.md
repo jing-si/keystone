@@ -30,7 +30,7 @@ key:
 <!-- key: id=key.standard.artifact.index.reading-rules refs=key.doc.standard key.topic.artifact-graph key.topic.impact-review -->
 ## 읽기 규칙
 
-1. 문서와 code/test artifact 연결, impact candidate, stale metadata 판단이 필요하면
+1. 문서와 code/config/schema/test artifact 연결, impact candidate, stale metadata 판단이 필요하면
    `key-standard-artifact-graph.md`를 읽는다.
 2. Artifact graph 기준은 원천 문서(2) 권위와 Main acceptance 규칙을 대체하지 않는다.
 3. Artifact graph 후보를 실제 변경으로 연결해야 하면 `../skills/linker/00_key-index.md`와

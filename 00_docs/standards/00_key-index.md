@@ -29,7 +29,7 @@ key:
 3. 스킬별 기준서 색인: `skills/00_key-index.md`
    - Keystone 스킬별 child 기준서로 이동하기 위한 색인이다.
 4. Artifact Graph 기준서 색인: `artifacts/00_key-index.md`
-   - source document, decision, work, capability, code, API, test artifact의 metadata,
+   - source document, decision, work, capability, code, config, schema, API, test artifact의 metadata,
      relation, locator, stale handling, impact candidate 기준으로 이동하기 위한 색인이다.
 5. Reader 기준서: `skills/reader/key-standard-reader.md`
    - `keystone-reader`의 trigger, mode, read-only boundary, output contract,
@@ -54,7 +54,7 @@ key:
    `01_key-project-standard.md`를 먼저 읽는다.
 2. Subagent purpose preset, authority, report status, workspace guard가 필요하면
    `subagents/00_key-index.md`를 읽는다.
-3. 문서와 code/test artifact 연결, impact candidate, stale metadata 판단이 필요하면
+3. 문서와 code/config/schema/test artifact 연결, impact candidate, stale metadata 판단이 필요하면
    `artifacts/00_key-index.md`를 읽는다.
 4. 스킬별 상세 계약이 필요하면 `skills/00_key-index.md`에서 해당 child 기준서로 내려간다.
 5. 현재 active work round는 `00_docs/works/00_key-index.md`에서 찾고, round 내부 실행 순서는

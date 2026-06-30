@@ -29,8 +29,8 @@ Artifact Graph의 metadata, typed relation, locator, stale handling, impact cand
 <!-- key: id=key.work.artifact-graph-standard.index.goal refs=key.topic.artifact-graph key.doc.standard -->
 ## 목표
 
-문서, decision, work, capability, code, API, test artifact를 연결하는 관계 계층의 기준을
-정리해 Linker와 Coordinator가 같은 artifact model을 사용할 수 있게 한다.
+문서, decision, work, capability, code, config, schema, API, test artifact를 연결하는 관계 계층의
+기준을 정리해 Linker와 Coordinator가 같은 artifact model을 사용할 수 있게 한다.
 
 <!-- key: id=key.work.artifact-graph-standard.index.source-standards refs=key.doc.standard key.topic.artifact-graph -->
 ## 원천 기준서

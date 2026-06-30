@@ -34,7 +34,7 @@ Include:
 Exclude:
 
 - 원천 문서 직접 수정
-- code/test implementation
+- code/config/schema/test implementation
 - worker assignment 실제 배정
 - high-impact decision 질문 수집
 
@@ -57,7 +57,7 @@ Conditionally allowed:
 
 - [ ] Linker trigger와 non-trigger가 명확하다.
 - [ ] 네 mode의 목적과 output focus가 구분된다.
-- [ ] Linker가 원천 문서(2), code, config, test를 직접 수정하지 않는다는 경계가 명확하다.
+- [ ] Linker가 원천 문서(2), code, config, schema, test를 직접 수정하지 않는다는 경계가 명확하다.
 - [ ] `linker_report`가 Coordinator worker assignment의 artifact context seed로 사용될 수 있다.
 - [ ] Markdown key metadata와 code anchor parsing surface가 명확하다.
 - [ ] Metadata gap, mechanical stale, semantic stale 후보가 구분된다.

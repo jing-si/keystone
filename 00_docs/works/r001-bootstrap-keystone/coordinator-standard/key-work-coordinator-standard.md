@@ -70,7 +70,7 @@ Conditionally allowed:
 - [ ] Purpose preset, authority, injected skill contract는 subagent 기준서를 따른다.
 - [ ] Domain-specific injected skill이 없으면 `keystone-default-bounded-worker` contract를
       사용한다.
-- [ ] Keystone 작업 문맥에서 code/config/test 수정 요청이 들어오면 Coordinator가 기본
+- [ ] Keystone 작업 문맥에서 code/config/schema/test 수정 요청이 들어오면 Coordinator가 기본
       execution routing으로 사용된다.
 - [ ] 명시된 외부 코딩 스킬은 Coordinator를 대체하지 않고 `injected_skills`로 주입된다.
 - [ ] 외부 코딩 스킬이 명시되지 않으면 매번 선택지를 표시하지 않고 default bounded worker

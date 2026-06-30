@@ -171,6 +171,21 @@ Clarify result는 다음을 포함해야 한다.
 8. `stop_conditions`: 적용 중 중단해야 하는 조건
 9. `open_questions`: 이번 topic 밖에 남은 질문
 
+Decision completeness check는 다음 shape을 우선 사용한다.
+
+```yaml
+decision_completeness_check:
+  selected_option:
+  rejected_options:
+  rationale:
+  affected_source_documents:
+  affected_work_orders:
+  affected_artifact_candidates:
+  acceptance_or_status_impact:
+  recording_scope: global | round | work
+  author_edit_ready: true | false
+```
+
 Decision recording hint는 다음 shape을 우선 사용한다.
 
 ```yaml
@@ -190,6 +205,10 @@ decision_recording_hint:
    `decision_recording_hint`를 포함한다.
 5. Hint는 기록 권한이 아니며, 실제 원천 문서(2) 반영은 Author 또는 Main이 승인 범위 안에서
    처리한다.
+6. `author_edit_ready`가 `false`이면 Clarify result는 Author가 바로 적용할 수 있는 edit
+   instruction이 아니다. Main 또는 사용자는 남은 open question을 먼저 결정해야 한다.
+7. `acceptance_or_status_impact`가 있으면 progress status, acceptance criteria, status semantics를
+   바꾸는지 분리해 보고한다.
 
 <!-- key: id=key.standard.skill.clarify.impact-update refs=key.role.clarify key.topic.impact-review key.output.edit-plan key.topic.keystone-metadata key.topic.code-anchor key.topic.artifact-graph -->
 ## Impact update

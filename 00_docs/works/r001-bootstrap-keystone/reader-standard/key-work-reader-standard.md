@@ -31,7 +31,7 @@ Include:
 
 Exclude:
 
-- 문서 수정
+- Reader runtime 책임으로 원천 문서(2), code, config, 진행 기록(5), 결정(6)을 수정하게 만들기
 - subagent assignment 확정
 - Skill source 생성
 
@@ -55,6 +55,8 @@ Conditionally allowed:
 - [ ] 세 mode의 입력, 읽기 범위, output field가 명확하다.
 - [ ] Reader가 원천 문서(2)를 수정하지 않는다는 경계가 명확하다.
 - [ ] `works/` tree에서 current work를 찾는 흐름이 명확하다.
+- [ ] Reader output이 status source, status authority, status conflict를 구분한다.
+- [ ] Work Prep output이 final worker handoff를 확정하지 않는다는 점이 명확하다.
 
 <!-- key: id=key.work.reader-standard.order.recommended-approach refs=key.role.reader key.doc.standard -->
 ## Recommended Approach
@@ -67,6 +69,7 @@ Conditionally allowed:
 - `STD-KEYSTONE-040`
 - Reader child 기준서
 - active work index
+- status source와 active work authority order
 
 <!-- key: id=key.work.reader-standard.order.stop-conditions refs=key.section.scope key.role.reader key.boundary.read-only -->
 ## Stop Conditions

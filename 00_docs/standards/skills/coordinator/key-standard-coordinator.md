@@ -104,7 +104,7 @@ authority, scope, workspace guard, stop condition, report contract를 정하는 
    이어지는 formal workflow가 필요하다.
 9. Linker report를 바탕으로 문서, code, API, capability, test artifact 변경 후보를 Change
    Set(17) 단위로 조율해야 한다.
-10. Keystone 작업 문맥에서 code/config/test 수정 요청이 들어왔고, bounded implementation
+10. Keystone 작업 문맥에서 code/config/schema/test 수정 요청이 들어왔고, bounded implementation
     assignment를 구성해야 한다.
 11. 사용자가 `superpowers` 같은 외부 코딩 스킬(12)을 명시해 해당 workflow를 worker
     assignment에 주입해야 한다.
@@ -285,10 +285,14 @@ Worker assignment는 `injected_skills`를 비워 두지 않는다. Domain-specif
 `keystone-default-bounded-worker` contract를 포함해 worker가 적용할 기본 절차와 report 기준을
 명시한다.
 
+Assignment의 goal, purpose, authority, scope, forbidden changes, workspace guard, verification,
+return report contract는 모든 worker에게 적용되는 Keystone 기본 경계다. 외부 코딩 스킬(12)이
+명시된 경우 해당 스킬은 `injected_skills`로 들어가지만 이 기본 경계를 대체하지 않는다.
+
 <!-- key: id=key.standard.skill.coordinator.injected-skill-selection refs=key.role.coordinator key.topic.external-assist key.topic.skill-contract key.standard.subagent -->
 ### Injected skill selection contract
 
-Coordinator는 Keystone 작업 문맥과 code/config/test 수정 요청을 분리하지 않는다. Keystone
+Coordinator는 Keystone 작업 문맥과 code/config/schema/test 수정 요청을 분리하지 않는다. Keystone
 작업 문맥이 복구되고 bounded implementation이 가능한 경우, 명시적 `$coordinator` 호출이 없어도
 Coordinator를 기본 execution routing으로 사용한다.
 
@@ -297,15 +301,19 @@ Coordinator를 기본 execution routing으로 사용한다.
 1. 사용자가 `$coordinator`만 명시하면 Coordinator는 `keystone-default-bounded-worker` contract를
    사용한다.
 2. 사용자가 `$superpowers`처럼 외부 코딩 스킬만 명시하고 Keystone 작업 문맥에서
-   code/config/test 수정 요청을 하면 Coordinator를 기본으로 사용하고, 해당 스킬을
+   code/config/schema/test 수정 요청을 하면 Coordinator를 기본으로 사용하고, 해당 스킬을
    `injected_skills`에 추가한다.
 3. 사용자가 `$coordinator`와 외부 코딩 스킬을 함께 명시하면 Coordinator와 해당 injected skill을
    함께 사용한다.
 4. 사용자가 외부 코딩 스킬을 명시하지 않으면 Coordinator는 선택지를 매번 표시하지 않고
    `keystone-default-bounded-worker` contract를 사용한다.
-5. 여러 외부 코딩 스킬 후보가 있고 선택에 따라 workflow, verification, risk, required output이
+5. 외부 코딩 스킬이 명시된 경우 `keystone-default-bounded-worker` contract를 중복 주입하지
+   않아도 된다. 이 경우에도 assignment의 기본 경계와 return report contract는 유지된다.
+6. 외부 코딩 스킬 mode는 subagent 기준서의 external coding skill mode policy를 따른다.
+   Mode가 명시되지 않으면 `coding_guidance`를 사용한다.
+7. 여러 외부 코딩 스킬 후보가 있고 선택에 따라 workflow, verification, risk, required output이
    달라질 때만 main/user에게 선택지를 제시한다.
-6. 사용자가 Coordinator를 사용하지 말라고 명시하면 Keystone source authority, scope,
+8. 사용자가 Coordinator를 사용하지 말라고 명시하면 Keystone source authority, scope,
    verification, acceptance risk를 검토하고 안전하지 않으면 중단하거나 사용자 결정을 요청한다.
 
 외부 코딩 스킬 주입은 다음 경계를 따른다.
@@ -316,9 +324,12 @@ Coordinator를 기본 execution routing으로 사용한다.
 3. Injected skill이 assignment scope 밖의 절차, 추가 authority, 추가 subagent, external state,
    publishing, dependency/build system 변경을 요구하면 worker는 `NEEDS_SCOPE_CHANGE` 또는
    `NEEDS_CONTEXT`로 보고한다.
-4. Worker report는 `skill_usage`에 사용한 external coding skill, mode, outputs used,
+4. `NEEDS_SCOPE_CHANGE`의 `kind`는 subagent 기준서의 catalog를 우선 사용한다.
+5. 외부 코딩 스킬 사용은 worker의 local workflow를 바꿀 수 있지만 Keystone acceptance
+   criteria를 바꾸지 않는다.
+6. Worker report는 `skill_usage`에 사용한 external coding skill, mode, outputs used,
    limits hit를 남긴다.
-5. Review와 verification은 external coding skill output보다 Coordinator assignment와 Keystone
+7. Review와 verification은 external coding skill output보다 Coordinator assignment와 Keystone
    기준서를 우선한다.
 
 Worker report는 다음 shape을 우선 사용한다.
@@ -536,8 +547,8 @@ Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청
 14. Default worker contract 또는 domain-specific injected skill contract가 없다.
 15. Accepted decision이 관련 work order나 progress record에 전파되지 않아 current task 방향을
     바꿀 수 있다.
-16. 새 reusable code/API/test artifact를 만들려 하지만 Linker report 또는 reuse discovery 결과가
-    없다.
+16. 새 reusable code/config/schema/API/test artifact를 만들려 하지만 Linker report 또는 reuse
+    discovery 결과가 없다.
 17. 아티팩트 그래프(14) mismatch가 current task 방향을 바꿀 수 있지만 Change Set(17) 또는
     Linker report가 없다.
 18. 외부 코딩 스킬 후보가 여러 개이고 선택에 따라 workflow, verification, risk가 달라지지만
@@ -570,8 +581,8 @@ Coordinator 기준은 다음 방법으로 검증한다.
     preserved boundary가 보존되는지 확인할 수 있어야 한다.
 17. Source conflict, stale work order, stale progress record, accepted decision propagation
     누락을 reason code와 review focus로 분리할 수 있어야 한다.
-18. Keystone 작업 문맥에서 code/config/test 수정 요청이 들어오면 Coordinator가 기본 routing임을
-    확인할 수 있어야 한다.
+18. Keystone 작업 문맥에서 code/config/schema/test 수정 요청이 들어오면 Coordinator가 기본
+    routing임을 확인할 수 있어야 한다.
 19. 외부 코딩 스킬이 명시되면 Coordinator를 대체하지 않고 injected skill로 들어가야 한다.
 20. 외부 코딩 스킬이 명시되지 않으면 `keystone-default-bounded-worker` contract가 사용되어야
     한다.

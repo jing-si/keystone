@@ -66,6 +66,7 @@ Conditionally allowed:
 - [ ] 각 `SKILL.md`는 `name`과 `description` frontmatter를 가진다.
 - [ ] Skill description은 trigger/non-trigger 경계를 드러낸다.
 - [ ] 각 `SKILL.md`는 공통 skeleton의 핵심 section을 가진다.
+- [ ] 각 `SKILL.md`는 해당 skill의 최소 output example 또는 YAML field shape를 가진다.
 - [ ] Linker가 artifact graph, impact candidate, stale candidate 책임을 가진다.
 - [ ] Coordinator가 worker assignment와 worker report를 다룬다.
 - [ ] Coordinator가 single workspace bounded worker model을 따른다.
@@ -90,6 +91,8 @@ Conditionally allowed:
 ## Workflow
 
 ## Output Contract
+
+## Output Examples
 
 ## Boundaries
 
@@ -137,7 +140,7 @@ Allowed:
 
 - `rg --files skills`
 - `rg -n "^name:|^description:" skills/*/SKILL.md`
-- `rg -n "## Purpose|## Workflow|## Output Contract|## Stop Conditions|## Verification" skills/*/SKILL.md`
+- `rg -n "## Purpose|## Workflow|## Output Contract|## Output Examples|## Stop Conditions|## Verification" skills/*/SKILL.md`
 - 생성된 `SKILL.md` 읽기
 
 Forbidden until explicitly allowed:

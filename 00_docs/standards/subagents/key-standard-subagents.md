@@ -251,27 +251,54 @@ injected_skill:
     - verification path가 skill 요구와 충돌함
 ```
 
+External coding skill mode policy는 다음 값을 우선 사용한다.
+
+```yaml
+external_coding_skill_mode_policy:
+  default_mode: coding_guidance
+  allowed_modes:
+    - coding_guidance
+    - planning
+    - tdd
+    - debugging
+    - review
+    - skill_testing
+  mode_selection:
+    coding_guidance: 별도 mode가 명시되지 않은 일반 구현 보조
+    planning: 구현 전 접근 비교와 계획 수립이 주목적일 때
+    tdd: test-first 변경이 승인된 edit scope와 verification path에 포함될 때
+    debugging: 실패 재현과 원인 분리가 주목적일 때
+    review: 파일 수정 없이 검토가 주목적일 때
+    skill_testing: SKILL.md behavior simulation이나 fixture 검증이 주목적일 때
+```
+
 규칙은 다음과 같다.
 
-1. Worker authority는 assignment authority와 injected skill의 `authority_ceiling` 중 더 좁은
+1. Worker의 기본 경계는 assignment의 goal, purpose, authority, scope, forbidden changes,
+   workspace guard, verification, return report contract가 정한다.
+2. Worker authority는 assignment authority와 injected skill의 `authority_ceiling` 중 더 좁은
    경계를 따른다.
-2. `keystone-linker` 같은 read-only skill을 주입받아 발견한 후보는 evidence일 뿐 edit
+3. `keystone-linker` 같은 read-only skill을 주입받아 발견한 후보는 evidence일 뿐 edit
    permission이 아니다.
-3. Discovered candidate는 자동 채택, 자동 수정, 자동 acceptance 근거가 아니다.
-4. Injected skill이 요구하는 절차가 assignment scope를 넘으면 worker는 `NEEDS_SCOPE_CHANGE`
+4. Discovered candidate는 자동 채택, 자동 수정, 자동 acceptance 근거가 아니다.
+5. Injected skill이 요구하는 절차가 assignment scope를 넘으면 worker는 `NEEDS_SCOPE_CHANGE`
    또는 `NEEDS_CONTEXT`로 보고한다.
-5. Injected skill output은 worker report에 `skill_usage`로 남긴다.
-6. Domain-specific injected skill이 없더라도 Coordinator는 worker assignment에
+6. Injected skill output은 worker report에 `skill_usage`로 남긴다.
+7. Domain-specific 또는 명시된 external coding skill이 없으면 Coordinator는 worker assignment에
    `keystone-default-bounded-worker` contract를 포함한다.
-7. `injected_skills: []`는 worker에게 맡길 절차와 report 기준이 없다는 뜻이므로 기본값으로
+8. `injected_skills: []`는 worker에게 맡길 절차와 report 기준이 없다는 뜻이므로 기본값으로
    사용하지 않는다.
-8. 외부 코딩 스킬이 명시되면 worker는 해당 스킬의 workflow guidance를 사용할 수 있지만,
+9. 외부 코딩 스킬이 명시되면 worker는 해당 스킬의 workflow guidance를 사용할 수 있지만,
    Coordinator assignment의 scope, forbidden changes, workspace guard, verification,
    return report contract를 우선한다.
-9. 외부 코딩 스킬이 자체적으로 TDD, debugging, review 같은 workflow를 요구해도 그 절차가
+10. 외부 코딩 스킬이 명시된 경우 `keystone-default-bounded-worker` contract를 중복 주입하지
+    않아도 된다. 이 경우에도 assignment의 기본 경계와 return report contract는 항상 적용된다.
+11. 외부 코딩 스킬이 자체적으로 TDD, debugging, review 같은 workflow를 요구해도 그 절차가
    assignment scope 밖의 파일 변경, 권한 상승, 추가 subagent 생성, Main acceptance를 요구하면
    worker는 진행하지 않고 보고한다.
-10. 외부 코딩 스킬을 사용한 worker report는 `skill_usage`에 skill id, mode, outputs used,
+12. 외부 코딩 스킬 사용은 worker의 local workflow를 바꿀 수 있지만 Keystone acceptance
+    criteria를 바꾸지 않는다.
+13. 외부 코딩 스킬을 사용한 worker report는 `skill_usage`에 skill id, mode, outputs used,
     limits hit를 남겨야 한다.
 
 <!-- key: id=key.standard.subagent.input-contract refs=key.role.subagent key.contract.output key.topic.work-execution key.topic.keystone-metadata key.topic.artifact-graph -->
@@ -411,6 +438,22 @@ requested_scope_change:
   verification_impact:
   recommended_next_action:
 ```
+
+`kind`는 다음 값을 우선 사용한다.
+
+1. `api_contract`
+2. `schema`
+3. `auth_security`
+4. `generated_codegen`
+5. `shared_architecture`
+6. `public_interface`
+7. `dependency`
+8. `build_system`
+9. `test_scope`
+10. `external_skill_scope_conflict`
+11. `source_authority_change`
+12. `acceptance_criteria_change`
+13. `status_semantics_change`
 
 <!-- key: id=key.standard.subagent.common-boundary refs=key.role.subagent key.boundary.approval key.topic.work-execution key.topic.keystone-metadata -->
 ## 공통 경계

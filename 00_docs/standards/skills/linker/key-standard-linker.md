@@ -18,7 +18,7 @@ key:
 
 이 기준서는 `keystone-linker`의 상세 계약을 정의한다. `keystone-linker`는 원천 문서(2),
 키메타(9), 코드 앵커(18), repository evidence를 read-only로 조사해 문서, capability(16),
-code, API, test artifact의 연결과 impact/stale 후보를 찾고, Coordinator가 worker
+code, config, schema, API, test artifact의 연결과 impact/stale 후보를 찾고, Coordinator가 worker
 assignment(19)를 만들 수 있는 artifact context seed를 제공한다.
 
 <!-- key: id=key.standard.skill.linker.scope refs=key.role.linker key.topic.artifact-graph key.topic.impact-review -->
@@ -35,7 +35,7 @@ assignment(19)를 만들 수 있는 artifact context seed를 제공한다.
 <!-- key: id=key.standard.skill.linker.out-of-scope refs=key.role.linker key.boundary.read-only -->
 ## 적용하지 않는 범위
 
-1. 원천 문서(2), code, config, test, generated file 수정
+1. 원천 문서(2), code, config, schema, test, generated file 수정
 2. 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록 작성
 3. High-impact decision 질문 수집 또는 수락
 4. Worker assignment를 실제 worker에게 배정
@@ -71,8 +71,9 @@ assignment(19)를 만들 수 있는 artifact context seed를 제공한다.
 
 `keystone-linker`는 다음 경우에 사용할 수 있다.
 
-1. 기준서(3), 작업서(4), 결정(6) 변경이 code/API/test artifact에 영향을 줄 수 있다.
-2. Code/test 변경이 source document나 decision을 stale하게 만들 수 있다.
+1. 기준서(3), 작업서(4), 결정(6) 변경이 code/config/schema/API/test artifact에 영향을 줄 수
+   있다.
+2. Code/config/schema/test 변경이 source document나 decision을 stale하게 만들 수 있다.
 3. 새 기능을 작성하기 전에 기존 capability(16), API, reusable code, test를 찾아야 한다.
 4. Metadata가 오래되었거나 누락되었는지 확인해야 한다.
 5. Coordinator가 worker assignment(19)를 만들기 전에 affected artifact 후보가 필요하다.
@@ -101,7 +102,7 @@ Linker는 다음 input을 사용할 수 있어야 한다.
 2. 설정된 document root(1)
 3. 현재 work 또는 변경 의도
 4. 관련 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록
-5. Known `key.id`, `key.refs`, capability(16), API, code, test seed
+5. Known `key.id`, `key.refs`, capability(16), API, code, config, schema, test seed
 6. 필요한 경우 changed documents, changed code files, changed tests, diff summary
 7. 필요한 경우 Change Set(17) 또는 worker assignment(19) 준비 목적
 
@@ -116,8 +117,8 @@ Linker는 mode와 무관하게 다음 순서를 따른다.
 1. 설정된 document root(1)를 해석한다.
 2. Artifact Graph 기준서를 읽어 metadata admission, typed relation, stale handling 기준을
    확인한다.
-3. Input seed를 `key.id`, `key.refs`, capability(16), API, code, test, path, symbol, keyword로
-   분리한다.
+3. Input seed를 `key.id`, `key.refs`, capability(16), API, code, config, schema, test, path,
+   symbol, keyword로 분리한다.
 4. 키메타(9)와 코드 앵커(18)를 검색한다.
 5. Repository evidence를 함께 확인한다.
 6. Declared relation, observed relation, inferred relation을 구분한다.
@@ -141,7 +142,7 @@ Linker는 초기 구현에서 다음 metadata surface를 우선 읽는다.
    ## Example section
    ```
 
-3. Code, test, config artifact 안의 `keystone:` line comment
+3. Code, test, config, schema artifact 안의 `keystone:` line comment
 4. Repository path, symbol, test name, config key 같은 locator evidence
 
 Parsing과 normalization은 다음 기준을 따른다.
@@ -165,7 +166,7 @@ Parsing과 normalization은 다음 기준을 따른다.
 
 ### Artifact Discovery Mode
 
-현재 요청과 관련된 capability(16), API, code, test artifact 후보를 찾는다.
+현재 요청과 관련된 capability(16), API, code, config, schema, test artifact 후보를 찾는다.
 
 Output focus:
 
@@ -236,6 +237,14 @@ linker_report:
     required:
     strong_candidates:
     weak_candidates:
+  config_candidates:
+    required:
+    strong_candidates:
+    weak_candidates:
+  schema_candidates:
+    required:
+    strong_candidates:
+    weak_candidates:
   test_candidates:
     required:
     strong_candidates:
@@ -263,17 +272,29 @@ linker_report:
     declared:
     observed:
     inferred:
+  candidate_budget:
+    applied: true | false
+    truncated:
+      required:
+      strong_candidates:
+      weak_candidates:
+      informational:
+    omitted_summary:
   risks_and_gaps:
   recommended_next_action:
     skill:
     reason:
 ```
 
+`candidate_budget`은 후보가 많아 output을 줄였을 때만 사용한다. Linker는 `required` 후보를
+자의적으로 숨기지 않으며, 생략이 필요하면 `omitted_summary`에 evidence type, keyword, path
+범위, 생략 이유를 남긴다.
+
 <!-- key: id=key.standard.skill.linker.handoff refs=key.role.linker key.role.author key.role.coordinator -->
 ## Handoff boundary
 
 1. 문서 metadata 또는 source document 수정이 필요하면 `keystone-author`가 처리한다.
-2. Code/test metadata 수정이나 implementation이 필요하면 `keystone-coordinator`가 worker
+2. Code/config/schema/test metadata 수정이나 implementation이 필요하면 `keystone-coordinator`가 worker
    assignment(19)로 조율한다.
 3. High-impact decision이 필요하면 `keystone-clarify`가 topic을 정리한다.
 4. Current step과 work context가 부족하면 `keystone-reader`가 context brief를 만든다.
@@ -300,7 +321,7 @@ Linker 기준은 다음 방법으로 검증한다.
 
 1. Linker contract만 보고 trigger와 non-trigger를 구분할 수 있어야 한다.
 2. 네 mode의 output focus가 서로 구분되어야 한다.
-3. Linker가 원천 문서(2), code, config, test를 직접 수정하지 않는다는 경계가 명확해야 한다.
+3. Linker가 원천 문서(2), code, config, schema, test를 직접 수정하지 않는다는 경계가 명확해야 한다.
 4. Linker report가 Coordinator worker assignment의 artifact context seed로 사용될 수 있어야 한다.
 5. Mechanical stale과 semantic stale을 구분할 수 있어야 한다.
 6. Candidate 발견이 자동 수정 또는 자동 acceptance로 해석되지 않아야 한다.
