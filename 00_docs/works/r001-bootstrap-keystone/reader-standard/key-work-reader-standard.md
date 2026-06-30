@@ -80,7 +80,7 @@ Conditionally allowed:
 Allowed:
 
 - `rg -n "work-packages|legacy|works" 00_docs/standards/skills/reader`
-- `git diff --check`
+- Reader 기준서와 context map의 active work navigation consistency 확인
 
 <!-- key: id=key.work.reader-standard.order.expected-output refs=key.role.reader key.doc.standard key.topic.document-system -->
 ## Expected Output

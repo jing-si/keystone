@@ -154,7 +154,8 @@ Coordinator는 다음 순서를 따른다.
 6. 아티팩트 그래프(14) 후보가 있으면 Linker report를 요구하거나 기존 Linker report에서 impact
    seed, required/optional/excluded candidates를 확인한다.
 7. Work unit이 bounded worker assignment로 자를 수 있는지 판단한다.
-8. Subagent 기준서에 따라 purpose preset, authority, injected skill contract를 선택한다.
+8. Subagent 기준서에 따라 purpose preset, authority, injected skill contract를 선택한다. Domain-specific
+   injected skill이 없으면 `keystone-default-bounded-worker` contract를 선택한다.
 9. File-writing worker가 필요하면 single workspace guard를 설정한다.
 10. Current Step Brief, Context Pack, worker assignment를 만든다.
 11. Worker handoff boundary 또는 reviewer focus를 구성한다.
@@ -170,7 +171,8 @@ Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
 
 1. Current Step Brief
    - `round_id`, `work_id`, `step_id`, current step, Goal, completion criteria, applicable
-     standards, excluded work, expected edit area, verification, known risks를 담는다.
+     standards, excluded work, expected edit area, verification, known risks,
+     `main_context_checkpoint`를 담는다.
 2. Context Pack
    - worker나 reviewer가 읽어야 하는 관련 기준서(3), 작업서(4), 결정(6), scope,
      progress 발견사항, 키메타와 코드 앵커 기반 관련 문서와 artifact 후보를 담는다.
@@ -181,10 +183,11 @@ Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
    - assignment id, goal, intent summary, purpose, role hint, authority, source documents,
      accepted decisions, applicable standards, context pack, injected skill contract,
      scope, forbidden changes, stop conditions, verification, workspace guard,
-     return report contract를 담는다.
+     main context checkpoint, return report contract를 담는다.
 5. Worker report review
    - status, changed files, changed artifact IDs, verification result, scope check,
-     document sync need, metadata sync need, stale candidates, residual risk를 확인한다.
+     document sync need, metadata sync need, stale candidates, source conflicts,
+     main context preservation, residual risk를 확인한다.
 6. Worker handoff
    - subagent 기준서 기준의 purpose, role hint, authority, primary scope, read scope,
      direct edit scope, conditional edit scope, escalation zone, forbidden changes,
@@ -195,6 +198,28 @@ Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
      담는다.
 8. Verification checklist
    - 기준서-led verification expectation, graph validation, local verification note를 합쳐 만든다.
+
+Main context checkpoint는 다음 shape을 우선 사용한다.
+
+```yaml
+main_context_checkpoint:
+  global_intent_summary:
+  accepted_decisions_in_effect:
+  current_work_identity:
+    round_id:
+    work_id:
+    step_id:
+  current_user_instruction:
+  source_conflicts:
+    - document:
+      conflict:
+      resolved_by:
+  preserved_boundaries:
+    - main_acceptance_only
+    - no_scope_expansion
+    - no_child_subagents
+    - single_workspace_one_writer
+```
 
 이 runtime output은 기본적으로 persistent 문서가 아니다. 명시적 필요가 있을 때만 파생
 에이전트 문서(8)로 저장할 수 있다.
@@ -223,6 +248,7 @@ worker_assignment:
     test_candidates:
     document_sync_candidates:
     metadata_sync_risks:
+  main_context_checkpoint:
   injected_skills:
     - skill_id:
       mode:
@@ -243,6 +269,10 @@ worker_assignment:
   return_report_contract:
 ```
 
+Worker assignment는 `injected_skills`를 비워 두지 않는다. Domain-specific skill이 없으면
+`keystone-default-bounded-worker` contract를 포함해 worker가 적용할 기본 절차와 report 기준을
+명시한다.
+
 Worker report는 다음 shape을 우선 사용한다.
 
 ```yaml
@@ -250,6 +280,7 @@ worker_report:
   assignment_id:
   status: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | NEEDS_SCOPE_CHANGE | BLOCKED
   status_reason:
+  reason_code:
   purpose:
   authority:
   goal:
@@ -273,6 +304,8 @@ worker_report:
   verification:
   document_sync_needed:
   metadata_sync_needed:
+  source_conflicts:
+  main_context_checkpoint_check:
   workspace_conflicts:
   residual_risk:
   recommended_next_action:
@@ -368,13 +401,18 @@ Review와 verification은 다음 순서를 따른다.
 3. 같은 `key.id`를 참조하는 문서와의 충돌 여부를 reviewer focus 후보로 확인한다.
 4. 아티팩트 그래프(14)가 관련되면 Linker report를 기준으로 capability reuse, typed relation,
    코드 앵커 admission, semantic stale을 reviewer focus 후보로 확인한다.
-5. 필요하면 별도 `review` assignment를 배정한다.
-6. 기준서(3)에서 verification expectation을 추출한다.
-7. 아티팩트 그래프(14)가 관련되면 graph validation expectation을 verification 후보로 추가한다.
-8. 작업서(4)의 local verification note가 기준서-led verification을 약화하지 않는지 확인한다.
-9. 필요하면 별도 `verify` assignment를 배정한다.
-10. Verification failure가 있으면 repair 또는 escalation으로 처리한다.
-11. Verification을 실행할 수 없으면 residual risk로 보고하고 acceptance 여부를 main이
+5. Worker report의 `main_context_checkpoint_check`가 Current Step Brief의 intent, accepted
+   decision, current work identity, preserved boundary를 훼손하지 않았는지 확인한다.
+6. `source_conflicts`가 있으면 stale work order, stale progress record, accepted decision
+   propagation 누락 여부를 분리해 확인한다.
+7. 필요하면 별도 `review` assignment를 배정한다.
+8. 기준서(3)에서 verification expectation을 추출한다.
+9. 아티팩트 그래프(14)가 관련되면 graph validation expectation을 verification 후보로 추가한다.
+10. 작업서(4)의 local verification note가 기준서-led verification을 약화하지 않는지 확인한다.
+11. 모델 변경 결정이 있으면 old term과 new term consistency scan을 verification 후보로 추가한다.
+12. 필요하면 별도 `verify` assignment를 배정한다.
+13. Verification failure가 있으면 repair 또는 escalation으로 처리한다.
+14. Verification을 실행할 수 없으면 residual risk로 보고하고 acceptance 여부를 main이
     판단한다.
 
 Self-review는 worker report의 일부일 수 있지만 independent review로 보지 않는다. Independent
@@ -396,13 +434,14 @@ Main acceptance는 다음 조건이 충족될 때만 가능하다.
    남겼다.
 9. 아티팩트 그래프(14)가 관련된 경우 reuse decision, 키메타 또는 코드 앵커 gap, graph
    validation residual risk를 확인했다.
+10. Source conflict가 있으면 resolved, excluded, or next action으로 분리되어 있다.
 
 Acceptance 후에만 진행 기록(5)을 `accepted` 또는 해당 project의 완료 상태로 바꿀 수 있다.
 
 <!-- key: id=key.standard.skill.coordinator.progress-update-boundary refs=key.role.coordinator key.topic.progress-update key.topic.acceptance -->
 ## Progress update boundary
 
-진행 기록(5)은 subagent workflow 상태를 복구하기 위해 다음 규칙으로 갱신한다.
+진행 기록(5)은 worker workflow 상태를 복구하기 위해 다음 규칙으로 갱신한다.
 
 1. Assignment를 만들면 필요한 경우 `assigned`를 기록할 수 있다.
 2. Report를 받으면 필요한 경우 `reported`를 기록할 수 있다.
@@ -446,9 +485,12 @@ Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청
 11. Worker가 전체 작업서(4)를 재해석하거나 추가 subagent를 생성해야만 진행할 수 있다.
 12. File-writing worker가 필요한데 single workspace guard가 없다.
 13. 여러 file-writing worker를 동시에 배정해야만 진행할 수 있다.
-14. 새 reusable code/API/test artifact를 만들려 하지만 Linker report 또는 reuse discovery 결과가
+14. Default worker contract 또는 domain-specific injected skill contract가 없다.
+15. Accepted decision이 관련 work order나 progress record에 전파되지 않아 current task 방향을
+    바꿀 수 있다.
+16. 새 reusable code/API/test artifact를 만들려 하지만 Linker report 또는 reuse discovery 결과가
     없다.
-15. 아티팩트 그래프(14) mismatch가 current task 방향을 바꿀 수 있지만 Change Set(17) 또는
+17. 아티팩트 그래프(14) mismatch가 current task 방향을 바꿀 수 있지만 Change Set(17) 또는
     Linker report가 없다.
 
 <!-- key: id=key.standard.skill.coordinator.verification refs=key.role.coordinator key.topic.verification key.topic.acceptance key.standard.subagent -->
@@ -471,6 +513,13 @@ Coordinator 기준은 다음 방법으로 검증한다.
 12. Single workspace guard만 보고 file-writing worker의 배정 가능 여부를 판단할 수 있어야 한다.
 13. Worker assignment와 worker report contract를 구분할 수 있어야 한다.
 14. Worker `DONE`과 Keystone acceptance를 구분할 수 있어야 한다.
-15. Verification command:
+15. Default worker contract가 assignment에 포함되어야 하는 상황을 판단할 수 있어야 한다.
+16. Main context checkpoint로 global intent, accepted decision, current work identity,
+    preserved boundary가 보존되는지 확인할 수 있어야 한다.
+17. Source conflict, stale work order, stale progress record, accepted decision propagation
+    누락을 reason code와 review focus로 분리할 수 있어야 한다.
+18. Verification command:
    - `rg --files 00_docs`
    - Coordinator 관련 기준서를 읽어 link와 scope consistency 확인
+   - `rg -n "branch|worktree|merge gate|remote push|commit checkpoint|repo-integrator|task branch|session branch" 00_docs/standards 00_docs/works`
+   - `rg -n "single workspace|bounded worker|worker assignment|purpose preset|injected skill contract|workspace guard" 00_docs/standards 00_docs/works`

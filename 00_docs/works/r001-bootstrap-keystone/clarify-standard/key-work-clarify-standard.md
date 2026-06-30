@@ -80,14 +80,14 @@ Clarify는 결정 수집과 적용 계획에 집중한다. 문서 반영은 Auth
 - 변경 대상 문서나 승인 범위가 불명확하다.
 - Clarify가 Author의 문서 작성 책임을 가져야 할 것처럼 보인다.
 
-<!-- key: id=key.work.clarify-standard.order.verification refs=key.topic.verification key.role.clarify key.verification.git-diff-check key.topic.standard-verification -->
+<!-- key: id=key.work.clarify-standard.order.verification refs=key.topic.verification key.role.clarify key.topic.standard-verification -->
 
 ## Verification
 
 Allowed:
 
 - `rg -n "Plan Mode|Default Mode|Author handoff" 00_docs/standards/skills/clarify/key-standard-clarify.md`
-- `git diff --check`
+- Clarify 기준서와 Project Standard의 trigger/non-trigger consistency 확인
 
 <!-- key: id=key.work.clarify-standard.order.expected-output refs=key.contract.output key.role.clarify key.doc.standard -->
 

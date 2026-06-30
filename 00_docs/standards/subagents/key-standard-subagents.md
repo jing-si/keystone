@@ -175,6 +175,33 @@ injected_skill:
   stop_conditions:
 ```
 
+Default bounded worker contract는 다음 shape을 우선 사용한다.
+
+```yaml
+injected_skill:
+  skill_id: keystone-default-bounded-worker
+  mode: default
+  authority_ceiling: assignment_authority
+  allowed_use:
+    - assignment 안의 local planning
+    - 제공된 source context와 read scope 사용
+    - missing context, missing scope, missing verification 보고
+  required_output:
+    - scope_check
+    - forbidden_change_check
+    - verification
+    - residual_risk
+  forbidden_use:
+    - child subagent creation
+    - scope expansion
+    - Main acceptance
+    - progress accepted 또는 complete update
+  stop_conditions:
+    - source context 부족
+    - scope 또는 authority 불명확
+    - verification path 부재
+```
+
 규칙은 다음과 같다.
 
 1. Worker authority는 assignment authority와 injected skill의 `authority_ceiling` 중 더 좁은
@@ -185,6 +212,10 @@ injected_skill:
 4. Injected skill이 요구하는 절차가 assignment scope를 넘으면 worker는 `NEEDS_SCOPE_CHANGE`
    또는 `NEEDS_CONTEXT`로 보고한다.
 5. Injected skill output은 worker report에 `skill_usage`로 남긴다.
+6. Domain-specific injected skill이 없더라도 Coordinator는 worker assignment에
+   `keystone-default-bounded-worker` contract를 포함한다.
+7. `injected_skills: []`는 worker에게 맡길 절차와 report 기준이 없다는 뜻이므로 기본값으로
+   사용하지 않는다.
 
 <!-- key: id=key.standard.subagent.input-contract refs=key.role.subagent key.contract.output key.topic.work-execution key.topic.keystone-metadata key.topic.artifact-graph -->
 ## Input contract
@@ -199,7 +230,8 @@ Worker에게 작업을 맡길 때는 최소한 다음을 제공해야 한다.
 6. Allowed edit scope, excluded scope, conditional scope
 7. Source Context 또는 Context Pack
 8. 관련 `key.id`, `key.refs`, 코드 앵커 typed relation, 키메타/코드 앵커 기반 후보 문서와 artifact
-9. Injected skill contract
+9. Injected skill contract. Domain-specific skill이 없으면 `keystone-default-bounded-worker`
+   contract를 포함한다.
 10. Completion Criteria
 11. Stop Conditions
 12. Verification path
@@ -267,6 +299,7 @@ worker_report:
   assignment_id:
   status: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | NEEDS_SCOPE_CHANGE | BLOCKED
   status_reason:
+  reason_code:
   purpose:
   role_hint:
   authority:
@@ -305,6 +338,11 @@ worker_report:
 3. `missing_artifact_seed`
 4. `missing_skill_contract`
 5. `missing_verification_path`
+6. `source_conflict`
+7. `stale_work_order`
+8. `stale_progress_record`
+9. `accepted_decision_not_propagated`
+10. `default_worker_contract_missing`
 
 `NEEDS_SCOPE_CHANGE` report는 가능하면 다음 shape을 포함한다.
 

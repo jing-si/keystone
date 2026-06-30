@@ -84,8 +84,8 @@ Allowed:
 
 - `rg --files 00_docs`
 - `rg -n "WP-KEYSTON[E]|work-keystone-skill-syste[m]" 00_docs README.md`
-- `git diff --check`
 - `rg -n "[ \t]+$" 00_docs README.md`
+- Document tree index와 context map의 link consistency 확인
 
 <!-- key: id=key.work.document-tree-setup.order.expected-output refs=key.doc.work key.topic.document-system key.topic.work-sequence -->
 ## Expected Output

@@ -40,7 +40,7 @@ key:
 
 1. High-impact topic을 질문으로 수집하고 결정(6)을 확정하기
 2. Read-only project orientation, document navigation, work preparation
-3. Formal subagent workflow orchestration, worker handoff 확정, report acceptance
+3. Formal worker workflow orchestration, worker handoff 확정, report acceptance
 4. Implementation code, schema, generated file, runtime config 수정
 5. 승인되지 않은 scope, acceptance criteria, status semantics 변경
 6. 명시적 필요 없이 persistent 파생 에이전트 문서(8) 생성

@@ -60,8 +60,8 @@ Conditionally allowed:
 - [ ] 각 `SKILL.md`는 해당 child 기준서와 일치한다.
 - [ ] Skill description은 trigger/non-trigger 경계를 드러낸다.
 - [ ] Linker가 artifact graph, impact candidate, stale candidate 책임을 가진다.
-- [ ] Coordinator가 execution packet과 execution report를 다룬다.
-- [ ] Superpowers 또는 다른 executor는 optional executor로만 취급된다.
+- [ ] Coordinator가 worker assignment와 worker report를 다룬다.
+- [ ] Coordinator가 single workspace bounded worker model을 따른다.
 - [ ] Prototype skill을 runtime dependency로 삼지 않는다.
 
 <!-- key: id=key.work.skill-creation.order.recommended-approach refs=key.section.recommended-approach key.topic.accepted-standard key.output.context-pack key.topic.bounded-worker -->
@@ -114,7 +114,8 @@ Forbidden until explicitly allowed:
 
 - 각 skill이 자신의 기준서 책임만 포함하는지 확인한다.
 - Reader, Author, Clarify, Linker, Coordinator 사이 책임이 섞이지 않는지 확인한다.
-- 외부 executor가 Keystone runtime dependency로 굳어지지 않는지 확인한다.
+- Prototype skill이나 외부 installed skill이 Keystone runtime dependency로 굳어지지 않는지
+  확인한다.
 
 <!-- key: id=key.work.skill-creation.order.progress-record refs=key.topic.progress-update key.topic.main-acceptance key.step.s08 -->
 
