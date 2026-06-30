@@ -77,6 +77,7 @@ Conditionally allowed:
       contract를 사용한다.
 - [ ] 여러 외부 코딩 스킬 후보가 있고 선택에 따라 workflow, verification, risk가 달라질 때만
       main/user 선택을 요청한다.
+- [ ] 외부 코딩 스킬 mode policy와 `NEEDS_SCOPE_CHANGE` kind catalog는 subagent 기준서를 따른다.
 - [ ] Scope가 worker handoff boundary로 변환된다.
 - [ ] Worker assignment가 goal, authority, scope, workspace guard, stop condition,
       return report contract를 포함한다.
@@ -108,6 +109,8 @@ Coordinator 역할이나 Main acceptance를 대체하지 않는다.
 - `00_docs/standards/subagents/key-standard-subagents.md`
 - purpose preset, authority, injected skill contract, default bounded worker contract
 - external coding skill injected skill contract
+- external coding skill mode policy
+- `NEEDS_SCOPE_CHANGE` kind catalog
 - Main context checkpoint
 - source conflict reason code
 - single workspace guard
@@ -141,6 +144,7 @@ Allowed:
 - `rg -n "Worker assignment|worker_report|single workspace|injected skill|accepted" 00_docs/standards/skills/coordinator/key-standard-coordinator.md`
 - `rg -n "keystone-default-bounded-worker|main_context_checkpoint|source_conflict|stale_work_order|accepted_decision_not_propagated" 00_docs/standards`
 - `rg -n "external coding skill|외부 코딩 스킬|DEC-WORKS-008|injected skill" 00_docs/standards 00_docs/works`
+- `rg -n "requested_scope_change|api_contract|external_skill_scope_conflict|source_authority_change|acceptance_criteria_change" 00_docs/standards/subagents/key-standard-subagents.md`
 - `rg -n "branch|worktree|merge gate|remote push|commit checkpoint|repo-integrator|task branch|session branch" 00_docs/standards 00_docs/works`
 - Coordinator 관련 기준서와 작업서의 link와 scope consistency 확인
 

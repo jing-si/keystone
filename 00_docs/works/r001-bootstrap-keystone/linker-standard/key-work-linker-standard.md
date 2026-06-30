@@ -61,6 +61,8 @@ Conditionally allowed:
 - [ ] `linker_report`가 Coordinator worker assignment의 artifact context seed로 사용될 수 있다.
 - [ ] Markdown key metadata와 code anchor parsing surface가 명확하다.
 - [ ] Metadata gap, mechanical stale, semantic stale 후보가 구분된다.
+- [ ] `candidate_budget`이 적용될 때 `required` 후보를 숨기지 않고 `omitted_summary`로 생략
+      근거를 남긴다.
 - [ ] 후보 발견이 자동 수정이나 자동 acceptance로 해석되지 않는다.
 
 <!-- key: id=key.work.linker-standard.order.recommended-approach refs=key.role.linker key.topic.responsibility-boundary -->
@@ -75,6 +77,7 @@ report 회수는 Coordinator 책임으로 남긴다.
 - `STD-KEYSTONE-044`
 - Artifact Graph 기준서
 - Metadata parsing rule
+- Candidate budget과 omitted summary rule
 - Reader context brief handoff
 - Author Change Set handoff
 - Coordinator worker assignment seed
@@ -84,6 +87,7 @@ report 회수는 Coordinator 책임으로 남긴다.
 
 - Linker가 문서나 code를 직접 수정해야만 설명 가능한 구조가 된다.
 - metadata parsing rule이 required impact relation을 과도하게 확정한다.
+- candidate budget이 `required` 후보를 숨기거나 생략 근거를 잃게 만든다.
 - 후보 등급화가 자동 수정 또는 자동 acceptance로 해석된다.
 - Worker assignment 배정 책임이 Linker로 넘어간다.
 
@@ -94,6 +98,7 @@ Allowed:
 
 - `rg -n "Artifact Discovery|Impact Analysis|Stale Review|linker_report" 00_docs/standards/skills/linker`
 - `rg -n "Metadata parsing rule|key.refs|keystone:|metadata_gaps" 00_docs/standards/skills/linker/key-standard-linker.md`
+- `rg -n "candidate_budget|omitted_summary|required" 00_docs/standards/skills/linker/key-standard-linker.md`
 - Linker 기준서와 Artifact Graph 기준서의 link와 scope consistency 확인
 
 <!-- key: id=key.work.linker-standard.order.expected-output refs=key.contract.output key.role.linker -->

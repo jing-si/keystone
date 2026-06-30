@@ -21,7 +21,7 @@ S03
 
 ## 마지막 수락 Step
 
-None
+S03
 
 <!-- key: id=key.work.author-standard.progress.step-status refs=key.topic.step-status key.topic.work-sequence key.topic.main-acceptance -->
 
@@ -29,7 +29,7 @@ None
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S03 | ready | pending | S02가 수락되어 S03을 시작할 수 있다 |
+| S03 | accepted | accepted | Author Standard 검토 결과가 수락되었다 |
 
 <!-- key: id=key.work.author-standard.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 
@@ -55,8 +55,8 @@ None
 
 - 작업서는 기준서 tree와 별도로 reviewable goal 단위로 만들 수 있어야 한다.
 
-<!-- key: id=key.work.author-standard.progress.next-step refs=key.topic.next-step key.step.s02 key.role.author -->
+<!-- key: id=key.work.author-standard.progress.next-step refs=key.topic.next-step key.step.s04 key.role.clarify -->
 
 ## 다음 권장 작업
 
-S02를 수락한 뒤 Author 기준서와 작업서 생성 표준을 검토한다.
+S04 Clarify Standard를 시작한다.

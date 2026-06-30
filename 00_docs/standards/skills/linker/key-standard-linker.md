@@ -172,7 +172,7 @@ Output focus:
 
 1. Seed artifacts
 2. Affected capabilities
-3. Code/API/test candidates
+3. Code/config/schema/API/test candidates
 4. Reuse candidates
 5. Evidence and confidence
 

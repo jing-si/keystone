@@ -422,7 +422,7 @@ Author는 작업 후 다음을 보고해야 한다.
 2. 새로 만든 문서와 연결한 index
 3. 적용한 결정(6) 또는 사용한 가정
 4. 의도적으로 수정하지 않은 관련 문서
-5. Code/API/test impact seed 또는 Linker report 요약
+5. Code/config/schema/API/test impact seed 또는 Linker report 요약
 6. Change Set 변경 또는 생성 여부
 7. Linker report requirement 또는 Linker handoff seed
 8. Metadata gap candidates

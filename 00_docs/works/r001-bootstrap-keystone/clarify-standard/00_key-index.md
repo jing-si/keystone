@@ -10,7 +10,7 @@ key:
     - key.topic.author-handoff
 work_id: clarify-standard
 title: Clarify Standard
-status: planned
+status: ready
 owner_lane: main-session
 work_type:
   - documentation
@@ -50,5 +50,5 @@ edit plan을 만들도록 경계를 명확히 한다.
 
 ## 현재 상태
 
-- Status: planned
+- Status: ready
 - Current step: S04
