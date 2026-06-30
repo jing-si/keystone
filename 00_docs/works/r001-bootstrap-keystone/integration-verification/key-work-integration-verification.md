@@ -93,6 +93,7 @@ fixtures/simple-keystone-project/
   00_docs/
     key-context-map.md
     standards/
+      00_key-index.md
       01_key-project-standard.md
     works/
       00_key-index.md

@@ -135,7 +135,12 @@ Linker는 초기 구현에서 다음 metadata surface를 우선 읽는다.
 
 1. Markdown YAML frontmatter의 `key.id`와 `key.refs`
 2. Markdown heading 바로 위 section-level comment
-   `<!-- key: id=<id> refs=<ref-id> <ref-id> -->`
+
+   ```markdown
+   <!-- key: id=key.standard.example.section refs=key.topic.example key.doc.source -->
+   ## Example section
+   ```
+
 3. Code, test, config artifact 안의 `keystone:` line comment
 4. Repository path, symbol, test name, config key 같은 locator evidence
 
