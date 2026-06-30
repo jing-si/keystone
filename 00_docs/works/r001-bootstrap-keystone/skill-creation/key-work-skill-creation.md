@@ -16,7 +16,7 @@ key:
 
 ## Goal
 
-수락된 기준서에 맞춰 네 개 Keystone skill source를 repo-local `skills/` 아래에 생성한다.
+수락된 기준서에 맞춰 다섯 개 Keystone skill source를 repo-local `skills/` 아래에 생성한다.
 
 <!-- key: id=key.work.skill-creation.order.scope refs=key.topic.skill-source key.section.scope key.artifact.skill-md key.topic.repo-local key.boundary.publish-forbidden key.boundary.install-forbidden -->
 
@@ -27,6 +27,7 @@ Include:
 - `skills/keystone-reader/SKILL.md`
 - `skills/keystone-author/SKILL.md`
 - `skills/keystone-clarify/SKILL.md`
+- `skills/keystone-linker/SKILL.md`
 - `skills/keystone-coordinator/SKILL.md`
 - 필요한 경우 작은 reference file
 
@@ -46,31 +47,35 @@ Conditionally allowed:
 
 ## Source Context
 
-- S01-S05에서 수락된 기준서
+- S01-S07에서 수락된 기준서
 - `00_docs/standards/01_key-project-standard.md`
+- `00_docs/standards/artifacts/key-standard-artifact-graph.md`
 - 각 skill별 child 기준서
 
 <!-- key: id=key.work.skill-creation.order.completion-criteria refs=key.topic.acceptance key.topic.skill-directory key.artifact.skill-md key.boundary.trigger key.topic.prototype-dependency -->
 
 ## Completion Criteria
 
-- [ ] 네 개 skill directory가 존재한다.
+- [ ] 다섯 개 skill directory가 존재한다.
 - [ ] 각 `SKILL.md`는 해당 child 기준서와 일치한다.
 - [ ] Skill description은 trigger/non-trigger 경계를 드러낸다.
+- [ ] Linker가 artifact graph, impact candidate, stale candidate 책임을 가진다.
+- [ ] Coordinator가 execution packet과 execution report를 다룬다.
+- [ ] Superpowers 또는 다른 executor는 optional executor로만 취급된다.
 - [ ] Prototype skill을 runtime dependency로 삼지 않는다.
 
 <!-- key: id=key.work.skill-creation.order.recommended-approach refs=key.section.recommended-approach key.topic.accepted-standard key.output.context-pack key.topic.bounded-worker -->
 
 ## Recommended Approach
 
-S01-S05가 accepted된 뒤 진행한다. Main이 직접 작은 skill files를 만들거나, 명확한
+S01-S07이 accepted된 뒤 진행한다. Main이 직접 작은 skill files를 만들거나, 명확한
 Context Pack을 준비한 뒤 bounded worker에게 위임할 수 있다.
 
 <!-- key: id=key.work.skill-creation.order.context-pack-seed refs=key.output.context-pack key.topic.accepted-standard key.topic.target-path key.boundary.external-skill-forbidden key.topic.read-check -->
 
 ## Context Pack Seed
 
-- 수락된 S01-S05 기준서
+- 수락된 S01-S07 기준서
 - target file path
 - external installed skill 수정 금지
 - verification file read check
@@ -79,7 +84,7 @@ Context Pack을 준비한 뒤 bounded worker에게 위임할 수 있다.
 
 ## Stop Conditions
 
-- S01-S05 기준서가 accepted되지 않았다.
+- S01-S07 기준서가 accepted되지 않았다.
 - skill source 위치가 불명확하다.
 - publish/install 요구가 생긴다.
 
@@ -101,17 +106,18 @@ Forbidden until explicitly allowed:
 
 ## Expected Output
 
-- repo-local `skills/` 아래 네 개 Keystone skill source
+- repo-local `skills/` 아래 다섯 개 Keystone skill source
 
-<!-- key: id=key.work.skill-creation.order.review-points refs=key.section.review-points key.topic.responsibility-boundary key.role.reader key.role.author key.role.clarify key.role.coordinator -->
+<!-- key: id=key.work.skill-creation.order.review-points refs=key.section.review-points key.topic.responsibility-boundary key.role.reader key.role.author key.role.clarify key.role.linker key.role.coordinator -->
 
 ## Review Points
 
 - 각 skill이 자신의 기준서 책임만 포함하는지 확인한다.
-- Reader, Author, Clarify, Coordinator 사이 책임이 섞이지 않는지 확인한다.
+- Reader, Author, Clarify, Linker, Coordinator 사이 책임이 섞이지 않는지 확인한다.
+- 외부 executor가 Keystone runtime dependency로 굳어지지 않는지 확인한다.
 
-<!-- key: id=key.work.skill-creation.order.progress-record refs=key.topic.progress-update key.topic.main-acceptance key.step.s06 -->
+<!-- key: id=key.work.skill-creation.order.progress-record refs=key.topic.progress-update key.topic.main-acceptance key.step.s08 -->
 
 ## Progress Record
 
-S06 완료는 main acceptance 후에만 `key-progress.md`에 기록한다.
+S08 완료는 main acceptance 후에만 `key-progress.md`에 기록한다.

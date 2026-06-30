@@ -25,14 +25,14 @@ Include:
 - `00_docs/works/00_key-index.md`
 - `00_docs/works/r001-bootstrap-keystone/00_key-index.md`
 - `00_docs/works/key-decisions.md`
-- S00-S07에 해당하는 work node
+- R001에 해당하는 work node
 - `00_docs/key-context-map.md`와 README의 active work link 보정
 - Author 기준서의 작업서 생성 표준 보강
 
 Exclude:
 
 - Skill source 생성
-- S01-S07 accepted 처리
+- 후속 planned step accepted 처리
 - `scope.md` 또는 persistent `agent/` 문서 생성
 - `00_docs/`와 README 외 파일 변경
 
@@ -51,7 +51,7 @@ Conditionally allowed:
 <!-- key: id=key.work.document-tree-setup.order.completion-criteria refs=key.doc.work key.topic.verification key.topic.work-sequence -->
 ## Completion Criteria
 
-- [ ] S00-S07 work node가 각각 존재한다.
+- [ ] R001 work node가 각각 존재한다.
 - [ ] 각 work node는 `00_key-index.md`, `key-work-{slug}.md`, `key-progress.md`를 가진다.
 - [ ] 실행 순서는 active round index에서 확인된다.
 - [ ] umbrella work node가 active work로 남아 있지 않다.
@@ -98,7 +98,7 @@ Allowed:
 ## Review Points
 
 - 기준서 구조와 작업 순서가 분리되었는지 확인한다.
-- S01-S07이 아직 accepted로 표시되지 않았는지 확인한다.
+- 후속 planned step이 아직 accepted로 표시되지 않았는지 확인한다.
 - 각 work가 하나의 reviewable goal을 가지는지 확인한다.
 
 <!-- key: id=key.work.document-tree-setup.order.progress-record refs=key.topic.progress-update key.doc.work -->

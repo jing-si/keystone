@@ -59,7 +59,7 @@ Conditionally allowed:
 <!-- key: id=key.work.reader-standard.order.recommended-approach refs=key.role.reader key.doc.standard -->
 ## Recommended Approach
 
-기존 Reader 기준서를 현재 works tree 기준으로 검토한다. 구현은 S06에서 진행한다.
+기존 Reader 기준서를 현재 works tree 기준으로 검토한다. 구현은 Skill Creation 단계에서 진행한다.
 
 <!-- key: id=key.work.reader-standard.order.context-pack-seed refs=key.role.reader key.topic.work-preparation key.topic.document-navigation -->
 ## Context Pack Seed

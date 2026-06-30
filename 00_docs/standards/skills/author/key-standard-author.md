@@ -21,7 +21,7 @@ key:
 
 이 기준서는 `keystone-author`의 상세 계약을 정의한다. `keystone-author`는 수락된
 요청과 결정(6)을 바탕으로 사람이 읽을 수 있는 기준서(3), 작업서(4), 진행 기록(5),
-결정(6) 기록을 만들거나 수정한다.
+결정(6) 기록, Change Set(17)을 만들거나 수정한다.
 
 <!-- key: id=key.standard.skill.author.scope refs=key.role.author key.topic.document-authoring key.topic.work-creation key.topic.impact-review key.topic.artifact-graph -->
 ## 적용 범위
@@ -32,8 +32,9 @@ key:
 4. 수락된 Clarify result를 원천 문서(2)에 적용
 5. Parent-child 기준서 구조화와 index update
 6. Progress update boundary
-7. 아티팩트 그래프(14) 기반 code/test impact candidate 보고
-8. 문서 작성 후 verification과 report contract
+7. Change Set(17) 작성 규칙
+8. 아티팩트 그래프(14) 기반 code/test impact candidate와 Linker report handoff
+9. 문서 작성 후 verification과 report contract
 
 <!-- key: id=key.standard.skill.author.out-of-scope refs=key.role.author key.topic.document-authoring key.topic.skill-contract key.topic.formal-workflow key.topic.external-assist -->
 ## 적용하지 않는 범위
@@ -45,6 +46,7 @@ key:
 5. 승인되지 않은 scope, acceptance criteria, status semantics 변경
 6. 명시적 필요 없이 persistent 파생 에이전트 문서(8) 생성
 7. 외부 보조 스킬(12)을 자동 실행 대상으로 만들기
+8. Artifact relation, impact candidate, stale candidate를 깊게 해석하기
 
 <!-- key: id=key.standard.skill.author.standard-relations refs=key.role.author key.doc.standard key.topic.skill-contract key.standard.subagent -->
 ## 기준 관계
@@ -88,12 +90,15 @@ key:
 5. 작업서(4) step을 Goal unit으로 정리해 coordinator가 Current Step Brief, Context Pack,
    worker handoff, reviewer focus를 도출할 수 있게 해야 한다.
 6. 문서 변경에 따라 index, context map, progress, 결정(6) 기록을 함께 갱신해야 한다.
-7. 문서 변경이 capability, API, code, test artifact에 미칠 후보 영향을 보고해야 한다.
+7. 문서 변경이 capability, API, code, test artifact에 미칠 후보 영향을 Change Set(17)이나
+   Linker handoff seed로 남겨야 한다.
 8. 큰 문서 수정 전에 대상, 범위, 영향 문서, 검증 기준을 Author Edit Contract로 정리해야
    한다.
 9. 승인된 문서 수정 범위 안에서 subagent 기준서의 `docs` lane helper인 `doc-explorer` 또는
    `doc-impact-writer`를 사용할지 판단해야 한다.
 10. 기존 문서 구조가 너무 크거나 흩어져 있어 수락된 범위 안에서 정리해야 한다.
+11. 큰 문서 변경, code 영향이 있는 문서 변경, 여러 artifact에 걸친 변경을 추적 가능한 Change
+    Set(17)으로 정리해야 한다.
 
 <!-- key: id=key.standard.skill.author.non-trigger-condition refs=key.role.author key.topic.skill-contract -->
 ## Non-trigger condition
@@ -122,7 +127,8 @@ Author는 다음 input을 사용할 수 있어야 한다.
 6. 승인된 scope와 acceptance boundary
 7. 현재 repository state와 Git worktree risk
 8. 관련 capability, API, code, test artifact 후보 또는 impact seed
-9. File-writing helper를 직접 사용할 경우 승인된 branch context
+9. 필요한 경우 `keystone-linker` report 또는 Linker handoff seed
+10. File-writing helper를 직접 사용할 경우 승인된 branch context
 
 Input이 부족하고 잘못된 문서 변경으로 이어질 위험이 있으면 Author는 수정하지 않고
 main/user에게 결정(6)을 요청하거나 `keystone-clarify`가 다룰 topic으로 보고해야 한다.
@@ -161,12 +167,13 @@ Author는 작업 mode와 무관하게 다음 순서를 따른다.
 17. 필요한 index, context map, progress, 결정(6) 기록을 함께 검토한다.
 18. 키메타(9)가 있는 경우 같은 `key.id`를 참조하는 문서를 impact candidate로
     검토한다.
-19. 코드 앵커(18) typed relation이나 capability(16)가 있는 경우 관련 code/API/test artifact를 impact
-    candidate로 보고한다.
-20. Code, API, test 수정이 필요하면 직접 수정하지 않고 Coordinator가 조율할 next action으로
+19. 코드 앵커(18) typed relation이나 capability(16)가 있는 경우 관련 code/API/test artifact를
+    직접 확정하지 않고 Linker handoff seed 또는 Linker report requirement로 남긴다.
+20. 큰 변경이나 문서-code-test 동시 영향이 있는 변경은 Change Set(17)을 작성하거나 갱신한다.
+21. Code, API, test 수정이 필요하면 직접 수정하지 않고 Coordinator가 조율할 next action으로
     남긴다.
-21. 문서 link, 용어, 구조, Markdown 형식을 검증한다.
-22. 변경 파일, 적용한 결정(6), 검증 결과, 남은 risk를 보고한다.
+22. 문서 link, 용어, 구조, Markdown 형식을 검증한다.
+23. 변경 파일, 적용한 결정(6), 검증 결과, 남은 risk를 보고한다.
 
 <!-- key: id=key.standard.skill.author.mode-contract refs=key.role.author key.topic.document-authoring key.contract.output -->
 ## Mode contract
@@ -299,6 +306,54 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
 12. 작업서 생성 후 context map, root works index, round index의 link와 status drift를
     확인한다.
 
+<!-- key: id=key.standard.skill.author.change-set-writing-rule refs=key.role.author key.topic.artifact-graph key.topic.impact-review -->
+## Change Set 작성 규칙
+
+큰 문서 변경, code 영향이 있는 문서 변경, 또는 여러 artifact에 걸친 변경은 Change Set(17)을
+가진다. Change Set은 모든 실행을 자동화하는 문서가 아니라, 사람의 의도가 문서, code, test,
+검증, 수락을 지나가는 추적 단위다.
+
+Change Set은 다음 fields를 포함할 수 있다.
+
+1. `change_id`
+2. human intent
+3. accepted decision
+4. changed source documents
+5. affected capability seed
+6. Linker report reference
+7. required artifact candidates
+8. execution packet reference
+9. execution report reference
+10. document sync status
+11. verification result
+12. final acceptance status
+
+예:
+
+```yaml
+change_set:
+  id: key.change.auth.lockout-threshold
+  human_intent:
+    summary: 로그인 실패 잠금 기준을 5회에서 3회로 변경한다.
+  accepted_decisions:
+    - DEC-AUTH-001
+  changed_documents:
+    - 00_docs/standards/security/key-standard-auth.md
+  artifact_seeds:
+    - key.capability.auth.account-lockout
+  linker_report:
+    status: required
+    path:
+  execution_packet:
+    status: pending
+  execution_report:
+    status: pending
+  document_sync:
+    status: pending
+  final_acceptance:
+    status: pending
+```
+
 <!-- key: id=key.standard.skill.author.metadata-writing-impact-review refs=key.role.author key.topic.keystone-metadata key.topic.code-anchor key.topic.impact-review key.topic.artifact-graph -->
 ## 키메타 작성과 artifact impact 검토
 
@@ -313,9 +368,9 @@ Author는 키메타(9)와 코드 앵커(18)를 다음처럼 다룬다.
 7. 같은 `key.refs`가 있어도 자동 수정하지 않는다.
 8. `key.refs`가 없어도 관련 없음으로 단정하지 않고 link, path, heading, keyword도 함께
    확인한다.
-9. 코드 앵커(18) typed relation이 있는 code/API/test artifact는 code/test impact candidate로
-   보고한다.
-10. Capability(16)가 바뀌면 provider, consumer, verifier 후보를 함께 보고한다.
+9. 코드 앵커(18) typed relation이 있는 code/API/test artifact는 Linker handoff seed 또는
+   Linker report requirement로 보고한다.
+10. Capability(16)가 바뀌면 provider, consumer, verifier 후보 탐색이 필요한지 보고한다.
 11. 실제 문서 수정은 승인 범위와 의미 영향이 명확할 때만 수행한다.
 12. Code, config, test artifact와 코드 앵커 수정은 Author가 직접 수행하지 않는다.
 
@@ -328,11 +383,13 @@ Author는 작업 후 다음을 보고해야 한다.
 2. 새로 만든 문서와 연결한 index
 3. 적용한 결정(6) 또는 사용한 가정
 4. 의도적으로 수정하지 않은 관련 문서
-5. Code/API/test impact candidates와 등급
-6. Metadata gap candidates
-7. Author Edit Contract 또는 helper 사용 여부
-8. 실행한 verification
-9. 남은 risk와 다음 권장 작업
+5. Code/API/test impact seed 또는 Linker report 요약
+6. Change Set 변경 또는 생성 여부
+7. Linker report requirement 또는 Linker handoff seed
+8. Metadata gap candidates
+9. Author Edit Contract 또는 helper 사용 여부
+10. 실행한 verification
+11. 남은 risk와 다음 권장 작업
 
 <!-- key: id=key.standard.skill.author.stop-condition refs=key.role.author key.topic.skill-contract key.topic.impact-review key.topic.branch-worktree -->
 ## Stop condition
@@ -374,9 +431,11 @@ Author 기준은 다음 방법으로 검증한다.
    Author Edit Contract를 넘지 않아야 한다.
 9. File-writing helper를 직접 사용할 때 승인된 branch context가 있어야 하고, formal workflow가
    필요하면 Coordinator로 넘겨야 한다.
-10. 문서 변경이 아티팩트 그래프(14)에 미치는 code/test impact candidate를 보고할 수 있어야 한다.
-11. Author는 code/config/test를 직접 수정하지 않아야 한다.
-12. Verification command:
+10. 문서 변경이 아티팩트 그래프(14)에 미치는 Linker handoff seed 또는 Linker report requirement를
+    보고할 수 있어야 한다.
+11. 큰 문서-code-test 영향 변경은 Change Set(17)으로 추적할 수 있어야 한다.
+12. Author는 code/config/test를 직접 수정하지 않아야 한다.
+13. Verification command:
    - `rg --files 00_docs`
    - Author 관련 기준서를 읽어 link와 scope consistency 확인
    - `git diff --check`

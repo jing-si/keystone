@@ -6,6 +6,7 @@ key:
     - key.topic.skill-contract
     - key.doc.standard
     - key.topic.document-system
+    - key.topic.artifact-graph
 ---
 
 # Keystone 스킬별 기준서 색인
@@ -25,9 +26,12 @@ key:
 3. `reader/00_key-index.md`
    - `keystone-reader`의 trigger, mode, read-only boundary, output contract,
      mismatch handling을 정의한다.
-4. `coordinator/00_key-index.md`
-   - `keystone-coordinator`의 Goal assignment, subagent routing, report, review,
-     verification, acceptance flow를 정의한다.
+4. `linker/00_key-index.md`
+   - `keystone-linker`의 artifact discovery, impact analysis, stale review, execution context
+     seed output을 정의한다.
+5. `coordinator/00_key-index.md`
+   - `keystone-coordinator`의 execution packet/report, subagent/executor routing, report,
+     review, verification, acceptance flow를 정의한다.
 
 <!-- key: id=key.standard.skills.index.planned-skill-standards refs=key.topic.skill-contract key.doc.standard -->
 ## 계획된 스킬별 기준서
@@ -38,6 +42,8 @@ key:
 ## 읽기 규칙
 
 1. 전체 정책과 공통 용어는 `../01_key-project-standard.md`를 먼저 따른다.
-2. 스킬별 기준서는 전체 공통 기준서를 반복하지 않고 개별 스킬의 상세 계약만 보강한다.
-3. 전체 공통 기준서와 스킬별 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
+2. Artifact graph 자체의 metadata, relation, stale handling 기준은
+   `../artifacts/00_key-index.md`를 따른다.
+3. 스킬별 기준서는 전체 공통 기준서를 반복하지 않고 개별 스킬의 상세 계약만 보강한다.
+4. 전체 공통 기준서와 스킬별 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 전체 공통 기준서를 임시 우선 기준으로 삼는다.

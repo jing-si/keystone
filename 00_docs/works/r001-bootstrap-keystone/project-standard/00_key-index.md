@@ -28,7 +28,7 @@ risk_level: medium
 <!-- key: id=key.work.project-standard.index.goal refs=key.doc.standard key.doc.source key.topic.skill-contract -->
 ## 목표
 
-공통 용어, source authority, document tree, progress/report status, verification, 네 스킬의
+공통 용어, source authority, document tree, progress/report status, verification, 다섯 스킬의
 상위 역할을 안정적인 parent 기준서로 정리한다.
 
 <!-- key: id=key.work.project-standard.index.source-standards refs=key.doc.source key.doc.standard -->

@@ -11,11 +11,11 @@ key:
 
 # Skill Creation 진행 기록(5)
 
-<!-- key: id=key.work.skill-creation.progress.current-step refs=key.topic.current-step key.topic.work-sequence key.step.s06 -->
+<!-- key: id=key.work.skill-creation.progress.current-step refs=key.topic.current-step key.topic.work-sequence key.step.s08 -->
 
 ## 현재 Step
 
-S06
+S08
 
 <!-- key: id=key.work.skill-creation.progress.last-accepted-step refs=key.topic.main-acceptance key.topic.acceptance-status -->
 
@@ -29,7 +29,7 @@ None
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S06 | planned | pending | S01-S05 수락 후 시작한다 |
+| S08 | planned | pending | S01-S07 수락 후 시작한다 |
 
 <!-- key: id=key.work.skill-creation.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 
@@ -59,4 +59,4 @@ None
 
 ## 다음 권장 작업
 
-S01-S05 기준서가 수락된 뒤 skill source를 생성한다.
+S01-S07 기준서가 수락된 뒤 skill source를 생성한다.

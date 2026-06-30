@@ -11,11 +11,11 @@ key:
 
 # Integration Verification 진행 기록(5)
 
-<!-- key: id=key.work.integration-verification.progress.current-step refs=key.topic.current-step key.topic.work-sequence key.step.s07 -->
+<!-- key: id=key.work.integration-verification.progress.current-step refs=key.topic.current-step key.topic.work-sequence key.step.s09 -->
 
 ## 현재 Step
 
-S07
+S09
 
 <!-- key: id=key.work.integration-verification.progress.last-accepted-step refs=key.topic.main-acceptance key.topic.acceptance-status -->
 
@@ -29,7 +29,7 @@ None
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S07 | planned | pending | S06 수락 후 시작한다 |
+| S09 | planned | pending | S08 수락 후 시작한다 |
 
 <!-- key: id=key.work.integration-verification.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 
@@ -55,8 +55,8 @@ None
 
 - None
 
-<!-- key: id=key.work.integration-verification.progress.next-step refs=key.topic.next-step key.step.s06 key.topic.integration-verification -->
+<!-- key: id=key.work.integration-verification.progress.next-step refs=key.topic.next-step key.step.s08 key.topic.integration-verification -->
 
 ## 다음 권장 작업
 
-S06을 수락한 뒤 통합 검증을 진행한다.
+S08을 수락한 뒤 통합 검증을 진행한다.

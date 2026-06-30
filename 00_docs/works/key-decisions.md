@@ -43,6 +43,7 @@ key:
 - 결정: R001 Bootstrap Keystone round의 작업 순서는 S00 문서 트리 재정비, S01 전체 기준서,
   S02 reader, S03 author, S04 clarify, S05 coordinator, S06 Skill 생성, S07 통합 검증 순서로
   둔다.
+- 후속 결정: `DEC-WORKS-006`이 R001 순서를 S00-S09로 확장한다.
 - 이유: 문서 구조를 먼저 안정화하고, 공통 기준서와 스킬별 기준서를 분리한 뒤 구현과 통합
   검증으로 넘어가기 위해서다.
 
@@ -68,3 +69,25 @@ key:
   `S00`부터 다시 시작한다.
 - 이유: 기준서는 프로젝트의 지속 기준이지만 작업서는 특정 시점의 기준서와 목표를 바탕으로 한
   실행 차수이기 때문이다.
+
+<!-- key: id=key.work.decisions.dec-works-006 refs=key.doc.decision key.topic.artifact-graph key.topic.skill-contract key.topic.work-sequence key.topic.external-executor -->
+## DEC-WORKS-006: Artifact Graph와 Linker를 Keystone 중심 계층으로 승격한다
+
+- 관련 work: Project Standard, Artifact Graph Standard, Linker Standard, Skill Creation,
+  Integration Verification
+- 상태: accepted
+- 결정: Keystone은 단순 문서 CRUD skill 묶음이 아니라, 사람의 의도, 원천 문서(2),
+  capability(16), code artifact, API, test artifact, AI 실행 결과를 문서 기반으로 연결하는
+  project control plane으로 정의한다.
+- 결정: 문서-capability-code-test 연결, impact candidate, stale metadata 후보 탐색은
+  `keystone-linker`가 소유한다.
+- 결정: 코딩 실행은 Keystone이 직접 독점하지 않고 Codex, Superpowers, 수동 실행, 기타
+  executor에 위임할 수 있다. Keystone은 execution context packet과 execution report 회수를
+  관리한다.
+- 결정: 기존 Change Set(17) 개념을 먼저 강화하고, 별도 `key-change-{slug}.md` 문서 타입은
+  실제 사용 필요가 확인된 뒤 도입한다.
+- 결정: `DEC-WORKS-003`의 R001 순서를 확장해 S06 Artifact Graph Standard, S07 Linker
+  Standard를 Skill Creation 전에 추가하고, 기존 Skill Creation과 Integration Verification은 각각
+  S08, S09로 이동한다.
+- 이유: Reader와 Coordinator에 artifact graph 책임을 나누어 넣으면 책임 경계가 흐려지고,
+  기존 계획대로 skill source를 먼저 만든 뒤 재작업할 가능성이 크기 때문이다.

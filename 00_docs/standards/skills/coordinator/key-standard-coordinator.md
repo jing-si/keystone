@@ -24,21 +24,21 @@ key:
 ## 목적
 
 이 기준서는 `keystone-coordinator`의 상세 계약을 정의한다. `keystone-coordinator`는
-main이 supervisor로 남아 있는 상태에서 작업서(4)의 Goal unit을 복구하고, 필요한 context를
-준비하며, role 기반 subagent 작업, report, review, verification, acceptance가 이어지는
-formal execution workflow를 조율한다. 코드 작업은 대표적인 실행 작업이지만, 문서 작업도
-formal workflow가 필요하면 Coordinator가 조율할 수 있다.
+main이 supervisor로 남아 있는 상태에서 작업서(4)의 Goal unit, Reader context brief,
+Linker report, Author Change Set(17)을 execution packet(19)으로 만들고, 외부 executor 또는
+bounded subagent의 execution report(20)를 Keystone workflow로 회수하는 context broker다.
+코드 작업은 대표적인 실행 작업이지만, Coordinator는 코딩 방법론 자체를 독점하지 않는다.
 
 <!-- key: id=key.standard.skill.coordinator.scope refs=key.role.coordinator key.role.subagent key.standard.subagent key.topic.verification key.topic.acceptance key.topic.formal-workflow key.topic.artifact-graph -->
 ## 적용 범위
 
 1. `keystone-coordinator`의 trigger와 non-trigger condition
-2. Current Step Brief와 Context Pack 구성
-3. Subagent 기준서의 lane, role, authority 기반 routing
+2. Current Step Brief, Context Pack, execution packet 구성
+3. Codex, Superpowers, bounded subagent, 사람, 기타 executor routing
 4. Worker handoff boundary와 reviewer focus 도출
-5. Subagent report handling
+5. Execution report와 subagent report handling
 6. Review, verification, repair, escalation, acceptance flow
-7. Change Set(17), artifact impact candidate, reuse discovery, graph validation 조율
+7. Change Set(17), Linker report, reuse discovery, graph validation 조율
 8. Branch/worktree isolation과 merge gate
 9. 진행 상태와 report status update boundary
 10. 파생 에이전트 문서(8) 생성 조건
@@ -55,6 +55,7 @@ formal workflow가 필요하면 Coordinator가 조율할 수 있다.
 7. Implementation, schema, auth/security, generated/codegen, shared architecture 변경을
    main/user decision 없이 자동 worker task로 보내기
 8. 외부 보조 스킬(12)을 automatic 또는 mandatory로 만들기
+9. Artifact relation, impact candidate, stale candidate를 Linker 없이 확정하기
 
 <!-- key: id=key.standard.skill.coordinator.standard-relations refs=key.role.coordinator key.doc.standard key.topic.skill-contract key.standard.subagent key.topic.work-round key.topic.artifact-graph -->
 ## 기준 관계
@@ -78,8 +79,8 @@ formal workflow가 필요하면 Coordinator가 조율할 수 있다.
 ## Skill identity
 
 1. Skill name: `keystone-coordinator`
-2. Primary role: Formal execution workflow, Goal assignment, subagent routing, Change Set
-   coordination, report handling, review, verification, acceptance coordination
+2. Primary role: execution context brokering, Goal assignment, executor routing, Change Set
+   coordination, execution report handling, review, verification, acceptance coordination
 3. Primary user: main agent
 4. Output authority: Coordinator output은 main의 orchestration 판단을 돕는 runtime output이며
    원천 문서(2)를 대체하지 않는다.
@@ -90,10 +91,11 @@ formal workflow가 필요하면 Coordinator가 조율할 수 있다.
 `keystone-coordinator`는 다음 경우에 사용할 수 있다.
 
 1. 작업서(4)의 current step을 Goal unit으로 실행해야 한다.
-2. Main이 subagent 기준서에 따른 lane, role, authority가 분명한 bounded Goal을 subagent에게
-   배정해야 한다.
-3. Current Step Brief, Context Pack, worker handoff boundary, reviewer focus를 구성해야 한다.
-4. Subagent report를 받아 accept, repair, review, verify, escalate 중 다음 결정을 내려야
+2. Main이 execution packet(19)을 Codex, Superpowers, bounded subagent, 사람, 기타 executor 중
+   승인된 경로로 전달해야 한다.
+3. Current Step Brief, Context Pack, execution packet, worker handoff boundary, reviewer
+   focus를 구성해야 한다.
+4. Execution report 또는 subagent report를 받아 accept, repair, review, verify, escalate 중 다음 결정을 내려야
    한다.
 5. 진행 상태와 report status를 분리해 기록해야 한다.
 6. Verification을 기준서(3)에서 추출해 checklist로 만들고 필요하면 verifier Goal을 배정해야
@@ -106,7 +108,8 @@ formal workflow가 필요하면 Coordinator가 조율할 수 있다.
    필요하다.
 10. 여러 main-session branch를 합치거나, 여러 task branch 사이에 file/key/verification overlap이
     있어 repo-integrator 검토가 필요하다.
-11. 문서, code, API, capability, test artifact 변경 후보를 Change Set(17) 단위로 조율해야 한다.
+11. Linker report를 바탕으로 문서, code, API, capability, test artifact 변경 후보를 Change
+    Set(17) 단위로 조율해야 한다.
 
 <!-- key: id=key.standard.skill.coordinator.non-trigger-condition refs=key.role.coordinator key.topic.skill-contract -->
 ## Non-trigger condition
@@ -136,7 +139,8 @@ Coordinator는 다음 input을 사용할 수 있어야 한다.
 7. Stop conditions와 escalation conditions
 8. 현재 repository state와 Git worktree risk
 9. 문서 formal workflow인 경우 Author Edit Contract
-10. 아티팩트 그래프(14)가 관련된 경우 impact seeds, typed relation, artifact candidates, 또는 Change Set(17)
+10. 아티팩트 그래프(14)가 관련된 경우 Linker report, impact seeds, artifact candidates, 또는
+    Change Set(17)
 11. 파일 수정 또는 merge가 필요한 경우 branch context
 12. Integration branch가 관련된 경우 `integration_owner_id`
 
@@ -154,19 +158,18 @@ Coordinator는 다음 순서를 따른다.
 3. 작업서(4)에서 Goal, Scope, Source Context, Completion Criteria, Stop Conditions,
    Verification, Expected Output을 추출한다.
 4. 관련 기준서(3)에서 verification expectation과 forbidden change를 추출한다.
-5. Current work나 관련 기준서에 키메타(9) 또는 코드 앵커(18)가 있으면 같은 `key.id`나 artifact
-   ID를 참조하는
-   문서와 artifact를 Context Pack 후보로 확인한다.
-6. 아티팩트 그래프(14) 후보가 있으면 Change Set(17), impact seed, required/optional/excluded
-   candidates를 정리한다.
+5. Reader context brief와 Author Change Set(17)을 확인한다.
+6. 아티팩트 그래프(14) 후보가 있으면 Linker report를 요구하거나 기존 Linker report에서 impact
+   seed, required/optional/excluded candidates를 확인한다.
 7. Work unit이 subagent-sized이고 scope가 bounded인지 판단한다.
 8. Subagent 기준서에 따라 lane, role, authority를 선택하거나 main override를 반영한다.
 9. 파일 수정이 필요하면 branch context와 worktree risk를 확인한다.
    Branch/worktree provisioning이 필요하면 Main 또는 Coordinator가 task branch와 isolated
    worktree를 준비하고, worker는 준비된 worktree 안에서만 작업하게 한다.
-10. Current Step Brief와 Context Pack을 만든다.
+10. Current Step Brief, Context Pack, execution packet을 만든다.
 11. Worker handoff boundary 또는 reviewer focus를 구성한다.
-12. Subagent report를 받은 뒤 actual state와 diff 또는 문서 output을 확인한다.
+12. Execution report 또는 subagent report를 받은 뒤 actual state와 diff 또는 문서 output을
+    확인한다.
 13. 필요하면 review, verification, repo-integrator Goal을 별도로 배정한다.
 14. Report 결과를 accept, repair, verify, escalate, block 중 하나로 처리한다.
 15. Merge가 포함되면 merge authorization과 final acceptance를 분리한다.
@@ -186,33 +189,96 @@ Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
 3. Change Set brief
    - intent, changed nodes, impact seeds, required candidates, optional candidates, excluded
      scope, verification, acceptance state를 담는다.
-4. Branch context
+4. Execution packet
+   - packet id, executor type, goal, intent summary, source documents, accepted decisions,
+     applicable standards, artifact context, allowed edit scope, forbidden changes,
+     stop conditions, verification, document sync requirement, metadata sync requirement,
+     return report contract를 담는다.
+5. Execution report review
+   - executor type, status, changed files, changed artifact IDs, tests run, verification
+     result, scope check, document sync need, metadata sync need, stale candidates, residual
+     risk를 확인한다.
+6. Branch context
    - `round_id`, `work_id`, `step_id`, `session_id`, `integration_owner_id`, `task_id`,
      base branch, integration branch, session branch, task branch 또는 staging branch,
      worktree path, merge target, forbidden merge targets, base commit,
      `session_head_at_assignment`, `merge_target_head_at_review`, `merge_base`, dirty
      worktree 허용 여부, remote policy, push 허용 여부, commit requirement, 필요한 경우 task
      commit range를 담는다.
-5. Worker handoff
+7. Worker handoff
    - subagent 기준서 기준의 lane, role, authority, primary scope, read scope,
      direct edit scope, conditional edit scope, escalation zone, forbidden changes,
      branch, worktree path, merge target, forbidden merge targets, remote policy,
      commit checkpoint requirement, 임의 branch/worktree 생성 또는 전환 금지를 담는다.
-6. Reviewer brief
+8. Reviewer brief
    - worker goal, completion criteria, changed files 또는 문서 output, known risks,
      verification result, 같은 `key.id`를 참조하는 문서와의 충돌 여부, reviewer focus를
      담는다.
-7. Verification checklist
+9. Verification checklist
    - 기준서-led verification expectation, graph validation, local verification note를 합쳐 만든다.
 
 이 runtime output은 기본적으로 persistent 문서가 아니다. 명시적 필요가 있을 때만 파생
 에이전트 문서(8)로 저장할 수 있다.
 
+<!-- key: id=key.standard.skill.coordinator.execution-packet-contract refs=key.role.coordinator key.output.execution-packet key.output.execution-report -->
+## Execution packet and report contract
+
+Execution packet은 다음 shape을 우선 사용한다.
+
+```yaml
+execution_packet:
+  packet_id:
+  executor_type: codex | superpowers | subagent | human | other
+  goal:
+  intent_summary:
+  source_documents:
+  accepted_decisions:
+  applicable_standards:
+  artifact_context:
+    capabilities:
+    code_candidates:
+    api_candidates:
+    test_candidates:
+    reuse_candidates:
+  allowed_edit_scope:
+  forbidden_changes:
+  stop_conditions:
+  verification:
+  document_sync_required:
+  metadata_sync_required:
+  return_report_contract:
+```
+
+Execution report는 다음 shape을 우선 사용한다.
+
+```yaml
+execution_report:
+  packet_id:
+  executor_type:
+  status: done | done_with_concerns | needs_context | needs_scope_change | blocked
+  changed_files:
+  changed_key_ids:
+  changed_capabilities:
+  tests_run:
+  verification_result:
+  scope_check:
+  forbidden_change_check:
+  document_sync_needed:
+  metadata_sync_needed:
+  stale_candidates:
+  residual_risk:
+  recommended_next_action:
+```
+
+Superpowers 같은 외부 executor는 사용자가 명시적으로 선택했거나 수락된 Keystone 문서가 허용한
+경우에만 사용한다. Keystone은 executor의 내부 코딩 방법론을 소유하지 않고, packet boundary와
+report 회수를 소유한다.
+
 <!-- key: id=key.standard.skill.coordinator.role-routing-contract refs=key.role.coordinator key.role.subagent key.standard.subagent key.topic.work-execution key.topic.keystone-metadata key.topic.artifact-graph key.topic.merge-gate -->
 ## Role routing contract
 
-Role catalog와 기본 authority는 `../../subagents/key-standard-subagents.md`를 따른다.
-Coordinator는 그 catalog 안에서 다음 기준으로 실행 역할을 선택한다.
+Subagent role catalog와 기본 authority는 `../../subagents/key-standard-subagents.md`를 따른다.
+Coordinator는 subagent 또는 외부 executor를 다음 기준으로 선택한다.
 
 1. Explorer
    - read-only 조사, 기존 규칙 중복 확인, 기존 구현/API/component/service/utility/test/화면
@@ -242,6 +308,10 @@ Coordinator는 그 catalog 안에서 다음 기준으로 실행 역할을 선택
 7. Main 직접 처리
    - 작은 local 문서 수정, acceptance 판단, scope 변경 판단, high-risk decision이 필요한
      경우 사용한다.
+8. External executor
+   - Codex, Superpowers, 사람, 기타 executor를 사용할 수 있다. 이 경우 execution packet과
+     execution report contract가 있어야 하며, 외부 executor는 Keystone source authority,
+     acceptance, progress status를 대체하지 않는다.
 
 Subagent 공통 금지와 stop condition은 subagent 기준서를 따른다.
 
@@ -374,8 +444,8 @@ Review와 verification은 다음 순서를 따른다.
 1. Worker output이 scope와 completion criteria 안에 있는지 확인한다.
 2. Existing user change 또는 다른 agent change를 덮어쓸 risk가 있는지 확인한다.
 3. 같은 `key.id`를 참조하는 문서와의 충돌 여부를 reviewer focus 후보로 확인한다.
-4. 아티팩트 그래프(14)가 관련되면 capability reuse, typed relation, 코드 앵커 admission, semantic
-   stale을 reviewer focus 후보로 확인한다.
+4. 아티팩트 그래프(14)가 관련되면 Linker report를 기준으로 capability reuse, typed relation,
+   코드 앵커 admission, semantic stale을 reviewer focus 후보로 확인한다.
 5. Merge가 포함되면 text conflict와 semantic conflict 후보를 분리해 확인한다.
 6. 같은 `key.id`를 여러 branch가 수정하면 repo-integrator 검토 대상으로 본다.
 7. 같은 `key.refs` overlap은 semantic review candidate로 보고하며 자동 block으로 처리하지
@@ -491,9 +561,10 @@ Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청
     삭제를 해야만 진행할 수 있다.
 22. Integration branch가 관련되어 있지만 `integration_owner_id`가 없거나 둘 이상이다.
 23. Assignment 이후 merge target HEAD가 바뀌었지만 새 diff와 semantic overlap 검토가 없다.
-24. 새 reusable code/API/test artifact를 만들려 하지만 reuse discovery 결과가 없다.
-25. 아티팩트 그래프(14) mismatch가 current task 방향을 바꿀 수 있지만 Change Set(17) 또는 impact
-    candidate 정리가 없다.
+24. 새 reusable code/API/test artifact를 만들려 하지만 Linker report 또는 reuse discovery 결과가
+    없다.
+25. 아티팩트 그래프(14) mismatch가 current task 방향을 바꿀 수 있지만 Change Set(17) 또는 Linker
+    report가 없다.
 
 <!-- key: id=key.standard.skill.coordinator.verification refs=key.role.coordinator key.topic.verification key.topic.acceptance key.standard.subagent key.topic.branch-worktree key.topic.merge-gate key.topic.remote-policy key.topic.commit-checkpoint -->
 ## Verification
@@ -501,17 +572,16 @@ Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청
 Coordinator 기준은 다음 방법으로 검증한다.
 
 1. Coordinator contract만 보고 trigger와 non-trigger를 구분할 수 있어야 한다.
-2. 작업서(4) step에서 Current Step Brief와 Context Pack을 만들 수 있어야 한다.
+2. 작업서(4) step에서 Current Step Brief, Context Pack, execution packet을 만들 수 있어야 한다.
 3. Scope를 worker handoff boundary로 변환할 수 있어야 한다.
 4. Review points를 reviewer focus로 변환할 수 있어야 한다.
 5. High-risk work가 자동 worker-routable로 취급되지 않아야 한다.
 6. Progress update가 main acceptance와 worker report status를 혼동하지 않아야 한다.
 7. 문서 formal workflow는 Author Edit Contract 없이 시작되지 않아야 한다.
 8. 파생 에이전트 문서(8)는 기본 생성되지 않아야 한다.
-9. 키메타와 코드 앵커 기반 후보 문서를 Context Pack 후보와 reviewer focus 후보로 사용할 수 있어야
-   한다.
-10. 아티팩트 그래프(14) 후보를 Change Set(17), worker handoff, reviewer focus, verification 후보로
-    변환할 수 있어야 한다.
+9. Linker report를 Context Pack 후보와 reviewer focus 후보로 사용할 수 있어야 한다.
+10. 아티팩트 그래프(14) 후보를 Change Set(17), execution packet, reviewer focus, verification
+    후보로 변환할 수 있어야 한다.
 11. Role catalog와 report status 정의를 반복하지 않고 subagent 기준서를 참조해야 한다.
 12. Branch context를 보고 task branch, worktree, merge target, forbidden merge target을
     구분할 수 있어야 한다.
@@ -523,8 +593,9 @@ Coordinator 기준은 다음 방법으로 검증한다.
 16. Branch context에서 round/work/session/task identity와 assignment/review HEAD drift를
     확인할 수 있어야 한다.
 17. Merge authorization과 final acceptance를 구분할 수 있어야 한다.
-18. Merge 성공과 Keystone acceptance를 구분할 수 있어야 한다.
-19. Verification command:
+18. Execution packet과 execution report contract를 구분할 수 있어야 한다.
+19. Merge 성공과 Keystone acceptance를 구분할 수 있어야 한다.
+20. Verification command:
    - `rg --files 00_docs`
    - Coordinator 관련 기준서를 읽어 link와 scope consistency 확인
    - `git diff --check`

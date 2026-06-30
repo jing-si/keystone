@@ -24,14 +24,14 @@ risk_level: medium
 
 ## 요약
 
-수락된 기준서에 맞춰 네 개 Keystone skill source를 repo-local `skills/` 아래에 생성한다.
+수락된 기준서에 맞춰 다섯 개 Keystone skill source를 repo-local `skills/` 아래에 생성한다.
 
-<!-- key: id=key.work.skill-creation.index.goal refs=key.skill.reader key.skill.author key.skill.clarify key.skill.coordinator key.artifact.skill-md -->
+<!-- key: id=key.work.skill-creation.index.goal refs=key.skill.reader key.skill.author key.skill.clarify key.skill.linker key.skill.coordinator key.artifact.skill-md -->
 
 ## 목표
 
-`keystone-reader`, `keystone-author`, `keystone-clarify`, `keystone-coordinator`의 초기
-`SKILL.md`를 작성한다.
+`keystone-reader`, `keystone-author`, `keystone-clarify`, `keystone-linker`,
+`keystone-coordinator`의 초기 `SKILL.md`를 작성한다.
 
 <!-- key: id=key.work.skill-creation.index.source-standards refs=key.topic.source-standard key.topic.skill-standard key.doc.standard -->
 
@@ -47,9 +47,9 @@ risk_level: medium
 - 작업서(4): `key-work-skill-creation.md`
 - 진행 기록(5): `key-progress.md`
 
-<!-- key: id=key.work.skill-creation.index.current-status refs=key.topic.work-sequence key.topic.status key.step.s06 -->
+<!-- key: id=key.work.skill-creation.index.current-status refs=key.topic.work-sequence key.topic.status key.step.s08 -->
 
 ## 현재 상태
 
 - Status: planned
-- Current step: S06
+- Current step: S08

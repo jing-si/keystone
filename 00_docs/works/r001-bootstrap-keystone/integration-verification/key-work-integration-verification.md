@@ -16,9 +16,9 @@ key:
 
 ## Goal
 
-문서와 네 개 skill source가 하나의 Keystone workflow로 이어지는지 검증한다.
+문서, artifact graph, 다섯 개 skill source가 하나의 Keystone workflow로 이어지는지 검증한다.
 
-<!-- key: id=key.work.integration-verification.order.scope refs=key.section.scope key.role.reader key.role.author key.role.clarify key.role.coordinator key.output.current-step-brief key.boundary.browser-forbidden -->
+<!-- key: id=key.work.integration-verification.order.scope refs=key.section.scope key.role.reader key.role.author key.role.clarify key.role.linker key.role.coordinator key.output.current-step-brief key.output.execution-packet key.boundary.browser-forbidden -->
 
 ## Scope
 
@@ -26,9 +26,14 @@ Include:
 
 - Reader가 active work와 관련 기준서를 찾을 수 있는지 확인
 - Clarify result를 Author가 적용할 수 있는지 확인
+- Author가 Change Set을 만들고 Linker handoff seed를 남길 수 있는지 확인
+- Linker가 문서 변경에서 capability/code/API/test 후보를 찾을 수 있는지 확인
+- Linker가 code/test 변경에서 문서 stale 후보를 찾을 수 있는지 확인
 - Author가 만든 work step을 Coordinator가 복구할 수 있는지 확인
-- Coordinator가 Current Step Brief, Context Pack, review/verification focus를 도출할 수
-  있는지 확인
+- Coordinator가 Current Step Brief, Context Pack, execution packet, review/verification focus를
+  도출할 수 있는지 확인
+- External executor의 execution report를 Keystone workflow로 회수할 수 있는지 확인
+- Metadata 과다 부여를 방지하는지 확인
 
 Exclude:
 
@@ -36,6 +41,7 @@ Exclude:
 - global install
 - unrelated repository cleanup
 - browser or Playwright verification
+- 실제 Superpowers 실행
 
 Conditionally allowed:
 
@@ -48,6 +54,7 @@ Conditionally allowed:
 
 - `00_docs/key-context-map.md`
 - `00_docs/standards/01_key-project-standard.md`
+- `00_docs/standards/artifacts/key-standard-artifact-graph.md`
 - `00_docs/standards/skills/00_key-index.md`
 - `00_docs/works/00_key-index.md`
 - `00_docs/works/r001-bootstrap-keystone/00_key-index.md`
@@ -57,9 +64,14 @@ Conditionally allowed:
 
 ## Completion Criteria
 
-- [ ] Reader, Author, Clarify, Coordinator가 같은 source document model을 사용한다.
+- [ ] Reader, Author, Clarify, Linker, Coordinator가 같은 source document model을 사용한다.
+- [ ] 다섯 skill이 같은 artifact graph model을 사용한다.
 - [ ] 각 skill의 output이 다음 skill의 input으로 연결될 수 있다.
+- [ ] 문서 변경에서 관련 code/test 후보가 나온다.
+- [ ] code/test 변경에서 문서 stale 후보가 나온다.
+- [ ] Coordinator가 external executor용 execution packet과 execution report contract를 만들 수 있다.
 - [ ] Coordinator가 현재 work step을 복구할 수 있다.
+- [ ] Metadata 과다 부여를 방지하는 시나리오가 통과한다.
 - [ ] 검증 결과와 남은 risk가 기록된다.
 
 <!-- key: id=key.work.integration-verification.order.recommended-approach refs=key.section.recommended-approach key.topic.simulation key.topic.fixture key.boundary.approval -->
@@ -69,14 +81,53 @@ Conditionally allowed:
 처음에는 문서 기반 simulation으로 시작한다. 실제 fixture나 install 검증은 필요성이 확인되고
 scope가 승인된 뒤 추가한다.
 
-<!-- key: id=key.work.integration-verification.order.context-pack-seed refs=key.output.context-pack key.topic.skill-source key.step.s01-s05 key.doc.work-order key.doc.progress key.topic.workflow-sequence -->
+<!-- key: id=key.work.integration-verification.order.scenarios refs=key.topic.simulation key.topic.artifact-graph key.output.execution-packet -->
+## Verification Scenarios
+
+Scenario A: 문서 변경에서 code 영향 후보를 찾는다.
+
+1. 사람이 기준서 변경 의도를 말한다.
+2. Clarify가 decision summary와 edit plan을 만든다.
+3. Author가 기준서와 Change Set을 수정한다.
+4. Linker가 capability/code/API/test 후보를 찾는다.
+5. Coordinator가 execution packet을 만든다.
+
+통과 기준: 코드를 직접 수정하지 않아도 관련 code/test 후보가 나온다.
+
+Scenario B: code 변경에서 문서 stale 후보를 찾는다.
+
+1. Execution report에 changed files가 들어온다.
+2. Linker가 관련 기준서, decision, capability, test metadata stale 후보를 찾는다.
+3. Author가 문서 sync 필요 여부를 보고한다.
+
+통과 기준: code/test 변경 후 문서 stale 가능성이 report된다.
+
+Scenario C: external executor를 사용한다.
+
+1. Coordinator가 Superpowers 또는 기타 executor용 execution packet을 만든다.
+2. 실제 external executor 실행은 하지 않는다.
+3. 반환해야 할 execution report contract를 확인한다.
+
+통과 기준: Keystone이 코딩 방법론을 소유하지 않고도 실행 context를 전달할 수 있다.
+
+Scenario D: metadata 과다 부여를 방지한다.
+
+1. 새 local helper function이 생긴 상황을 가정한다.
+2. Linker는 semantic anchor가 아닌 artifact에 metadata 부여를 요구하지 않는다.
+
+통과 기준: semantic anchor가 아닌 artifact에 metadata를 강제하지 않는다.
+
+<!-- key: id=key.work.integration-verification.order.context-pack-seed refs=key.output.context-pack key.topic.skill-source key.step.s01-s07 key.doc.work-order key.doc.progress key.topic.workflow-sequence -->
 
 ## Context Pack Seed
 
-- 네 개 skill source
-- S01-S05 기준서
+- 다섯 개 skill source
+- S01-S07 기준서
 - 현재 work order와 progress
 - 검증할 workflow sequence
+- Artifact Graph 기준서
+- Linker report contract
+- Execution packet/report contract
 
 <!-- key: id=key.work.integration-verification.order.stop-conditions refs=key.section.stop-conditions key.topic.skill-source-missing key.contract.output key.boundary.fixture-approval -->
 
@@ -85,6 +136,7 @@ scope가 승인된 뒤 추가한다.
 - Skill source가 아직 생성되지 않았다.
 - 문서와 skill source가 서로 다른 trigger 또는 output contract를 가진다.
 - fixture나 install 검증이 필요하지만 승인되지 않았다.
+- 문서 기반 simulation만으로 artifact graph 흐름을 검증할 수 없다.
 
 <!-- key: id=key.work.integration-verification.order.verification refs=key.topic.verification key.topic.cross-read key.topic.simulation key.boundary.install-forbidden key.boundary.publish-forbidden key.boundary.browser-forbidden -->
 
@@ -101,6 +153,7 @@ Forbidden until explicitly allowed:
 - global install
 - package publish
 - Playwright/browser verification
+- 실제 external executor 실행
 
 <!-- key: id=key.work.integration-verification.order.expected-output refs=key.contract.output key.topic.integration-verification key.topic.risk-record key.step.s08-candidate -->
 
@@ -108,17 +161,19 @@ Forbidden until explicitly allowed:
 
 - 통합 검증 결과
 - 수정이 필요한 기준서 또는 skill source 목록
-- 다음 단계가 필요하면 S08 후보 제안
+- 다음 단계가 필요하면 S10 후보 제안
 
 <!-- key: id=key.work.integration-verification.order.review-points refs=key.section.review-points key.topic.responsibility-boundary key.topic.current-step key.topic.verification-path -->
 
 ## Review Points
 
-- 네 skill이 서로 책임을 침범하지 않는지 확인한다.
+- 다섯 skill이 서로 책임을 침범하지 않는지 확인한다.
 - 문서에서 current step과 verification path를 복구할 수 있는지 확인한다.
+- Linker와 Coordinator가 artifact 후보 해석과 execution brokering을 분리하는지 확인한다.
+- External executor가 optional executor로만 취급되는지 확인한다.
 
-<!-- key: id=key.work.integration-verification.order.progress-record refs=key.topic.progress-update key.topic.main-acceptance key.step.s07 -->
+<!-- key: id=key.work.integration-verification.order.progress-record refs=key.topic.progress-update key.topic.main-acceptance key.step.s09 -->
 
 ## Progress Record
 
-S07 완료는 main acceptance 후에만 `key-progress.md`에 기록한다.
+S09 완료는 main acceptance 후에만 `key-progress.md`에 기록한다.

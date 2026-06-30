@@ -22,13 +22,19 @@ key:
 ## 프로젝트
 
 이 저장소는 `keystone` 스킬 시스템을 정의하고 구현하기 위한 저장소다. 최종 산출물은
-사람이 읽을 수 있는 원천 문서(2)를 중심 인터페이스로 삼아 사람의 의도, 문서, code, test를
-아티팩트 그래프(14)로 연결하는 독립 스킬들의 집합이다.
+사람이 읽을 수 있는 원천 문서(2)를 중심 인터페이스로 삼아 사람의 의도, 문서, code, test,
+AI 실행 결과를 아티팩트 그래프(14)와 execution packet/report로 연결하는 독립 스킬들의
+집합이다.
 
-1. `keystone-reader`: 기준서(3)와 작업서(4)를 읽고 작업 준비 context를 만든다.
-2. `keystone-author`: 기준서와 작업서를 작성하거나 승인된 범위에서 수정한다.
-3. `keystone-clarify`: 정책, 범위, 문서, 스킬 계약에 관한 결정(6)을 topic 단위로 정리한다.
-4. `keystone-coordinator`: main-supervised subagent workflow를 조율한다.
+1. `keystone-reader`: 기준서(3), 작업서(4), artifact graph 필요 단서를 읽고 context brief를
+   만든다.
+2. `keystone-clarify`: 정책, 범위, 문서, 스킬 계약에 관한 결정(6)을 topic 단위로 정리한다.
+3. `keystone-author`: 기준서, 작업서, 진행 기록, 결정 기록, Change Set(17)을 작성하거나
+   승인된 범위에서 수정한다.
+4. `keystone-linker`: 문서, capability, code, API, test artifact의 연결과 impact/stale 후보를
+   탐색한다.
+5. `keystone-coordinator`: Keystone context를 execution packet으로 만들고 외부 executor의
+   결과를 execution report로 회수한다.
 
 기존 `work-package-doc-architect`와 `subagent-work-coordinator` 스킬은 참고용 prototype이다.
 이들은 최종 runtime dependency가 아니며 새 Keystone 스킬로 대체될 예정이다.
@@ -41,11 +47,13 @@ key:
 | 색인 | `00_docs/standards/00_key-index.md` | 사용 가능한 기준서를 탐색할 때 먼저 읽는다 |
 | 프로젝트 | `00_docs/standards/01_key-project-standard.md` | 프로젝트 공통 규칙, 원천 문서(2) 정책, 아티팩트 그래프(14), 스킬군 역할, coordinator 호환성을 확인할 때 읽는다 |
 | Subagent | `00_docs/standards/subagents/key-standard-subagents.md` | helper/subagent의 lane, role, authority, report status, merge authority를 확인할 때 읽는다 |
+| Artifact Graph | `00_docs/standards/artifacts/key-standard-artifact-graph.md` | metadata, typed relation, locator, stale handling, impact candidate 기준을 확인할 때 읽는다 |
 | 스킬별 | `00_docs/standards/skills/00_key-index.md` | 개별 Keystone 스킬의 상세 기준서를 찾을 때 읽는다 |
 | Reader | `00_docs/standards/skills/reader/key-standard-reader.md` | `keystone-reader`의 trigger, mode, output, read-only boundary를 확인할 때 읽는다 |
 | Author | `00_docs/standards/skills/author/key-standard-author.md` | `keystone-author`의 기준서(3), 작업서(4), progress update boundary를 확인할 때 읽는다 |
 | Clarify | `00_docs/standards/skills/clarify/key-standard-clarify.md` | `keystone-clarify`의 decision collection, reflection, Author handoff를 확인할 때 읽는다 |
-| Coordinator | `00_docs/standards/skills/coordinator/key-standard-coordinator.md` | `keystone-coordinator`의 Goal assignment, routing, branch/worktree isolation, merge gate, report, review, verification, acceptance flow를 확인할 때 읽는다 |
+| Linker | `00_docs/standards/skills/linker/key-standard-linker.md` | `keystone-linker`의 artifact discovery, impact analysis, stale review, execution context seed를 확인할 때 읽는다 |
+| Coordinator | `00_docs/standards/skills/coordinator/key-standard-coordinator.md` | `keystone-coordinator`의 execution packet/report, routing, branch/worktree isolation, merge gate, report, review, verification, acceptance flow를 확인할 때 읽는다 |
 
 <!-- key: id=key.context-map.work-order refs=key.topic.document-system key.doc.source key.topic.work-sequence key.topic.work-round -->
 ## 작업서
@@ -60,6 +68,8 @@ key:
 | Author Standard | `00_docs/works/r001-bootstrap-keystone/author-standard/00_key-index.md` | planned | `keystone-author` 기준서와 작업서 생성 표준 |
 | Clarify Standard | `00_docs/works/r001-bootstrap-keystone/clarify-standard/00_key-index.md` | planned | `keystone-clarify` 기준서 |
 | Coordinator Standard | `00_docs/works/r001-bootstrap-keystone/coordinator-standard/00_key-index.md` | planned | `keystone-coordinator` 기준서 |
+| Artifact Graph Standard | `00_docs/works/r001-bootstrap-keystone/artifact-graph-standard/00_key-index.md` | planned | Artifact Graph 기준서 |
+| Linker Standard | `00_docs/works/r001-bootstrap-keystone/linker-standard/00_key-index.md` | planned | `keystone-linker` 기준서 |
 | Skill Creation | `00_docs/works/r001-bootstrap-keystone/skill-creation/00_key-index.md` | planned | Keystone skill source 생성 |
 | Integration Verification | `00_docs/works/r001-bootstrap-keystone/integration-verification/00_key-index.md` | planned | 통합 검증 |
 
@@ -78,6 +88,9 @@ Keystone 문서는 영어 경로와 설정된 document root(1)를 사용한다. 
     subagents/
       00_key-index.md
       key-standard-subagents.md
+    artifacts/
+      00_key-index.md
+      key-standard-artifact-graph.md
     skills/
       00_key-index.md
       reader/
@@ -89,6 +102,9 @@ Keystone 문서는 영어 경로와 설정된 document root(1)를 사용한다. 
       clarify/
         00_key-index.md
         key-standard-clarify.md
+      linker/
+        00_key-index.md
+        key-standard-linker.md
       coordinator/
         00_key-index.md
         key-standard-coordinator.md
@@ -104,6 +120,14 @@ Keystone 문서는 영어 경로와 설정된 document root(1)를 사용한다. 
       project-standard/
         00_key-index.md
         key-work-project-standard.md
+        key-progress.md
+      artifact-graph-standard/
+        00_key-index.md
+        key-work-artifact-graph-standard.md
+        key-progress.md
+      linker-standard/
+        00_key-index.md
+        key-work-linker-standard.md
         key-progress.md
     ...
 ```
@@ -127,8 +151,10 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 | S03 | author | `keystone-author` 기준서를 정리한다 |
 | S04 | clarify | `keystone-clarify` 기준서를 정리한다 |
 | S05 | coordinator | `keystone-coordinator` 기준서를 정리한다 |
-| S06 | Skill 생성 | 네 개 Keystone skill source를 만든다 |
-| S07 | 통합 검증 | 문서와 skill source의 end-to-end 흐름을 검증한다 |
+| S06 | Artifact Graph | Artifact Graph 기준서를 정리한다 |
+| S07 | linker | `keystone-linker` 기준서를 정리한다 |
+| S08 | Skill 생성 | 다섯 개 Keystone skill source를 만든다 |
+| S09 | 통합 검증 | 문서, artifact graph, skill source의 end-to-end 흐름을 검증한다 |
 
 <!-- key: id=key.context-map.planned-keystone-skills refs=key.topic.skill-contract key.topic.bootstrap -->
 ## 계획된 Keystone 스킬
@@ -138,7 +164,8 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 | `keystone-reader` | planned | 프로젝트를 파악하고 관련 기준서/작업서를 탐색하며 작업 준비 context를 만든다 |
 | `keystone-author` | planned | 기준서와 작업서를 생성하고 승인된 원천 문서(2) 변경을 적용한다 |
 | `keystone-clarify` | planned | 영향도 높은 결정(6)을 topic 단위로 수집하고 Author가 적용할 edit plan을 만든다 |
-| `keystone-coordinator` | planned | role 기반 Goal assignment, report, review, verification, acceptance flow를 조율한다 |
+| `keystone-linker` | planned | 문서, capability, code, API, test artifact의 연결과 impact/stale 후보를 탐색한다 |
+| `keystone-coordinator` | planned | execution packet/report 기반 Goal assignment, report, review, verification, acceptance flow를 조율한다 |
 
 <!-- key: id=key.context-map.optional-workflow-reference refs=key.topic.skill-contract -->
 ## 선택적 워크플로 참고

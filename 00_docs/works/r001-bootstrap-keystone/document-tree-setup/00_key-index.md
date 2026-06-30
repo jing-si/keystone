@@ -26,7 +26,7 @@ risk_level: medium
 <!-- key: id=key.work.document-tree-setup.index.goal refs=key.doc.work key.topic.document-system key.topic.work-sequence -->
 ## 목표
 
-현재 Keystone 작업 구조를 기준서/기능별 work node로 재정비해 이후 S01-S07 작업을 독립적으로
+현재 Keystone 작업 구조를 기준서/기능별 work node로 재정비해 이후 R001 작업을 독립적으로
 검토하고 실행할 수 있게 한다.
 
 <!-- key: id=key.work.document-tree-setup.index.source-standards refs=key.doc.source key.doc.standard key.role.author -->

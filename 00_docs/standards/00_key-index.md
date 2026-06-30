@@ -9,12 +9,13 @@ key:
     - key.topic.skill-contract
     - key.doc.source
     - key.standard.subagent
+    - key.standard.artifact
     - key.topic.work-round
 ---
 
 # 기준서(3) 색인
 
-<!-- key: id=key.standard.index.current-standard refs=key.topic.document-system key.doc.standard key.topic.skill-contract key.standard.subagent -->
+<!-- key: id=key.standard.index.current-standard refs=key.topic.document-system key.doc.standard key.topic.skill-contract key.standard.subagent key.standard.artifact -->
 ## 현재 기준서
 
 1. 전체 공통 기준서: `01_key-project-standard.md`
@@ -26,18 +27,24 @@ key:
      condition, repo-integrator merge authority를 정의한다.
 3. 스킬별 기준서 색인: `skills/00_key-index.md`
    - Keystone 스킬별 child 기준서로 이동하기 위한 색인이다.
-4. Reader 기준서: `skills/reader/key-standard-reader.md`
+4. Artifact Graph 기준서 색인: `artifacts/00_key-index.md`
+   - source document, decision, work, capability, code, API, test artifact의 metadata,
+     relation, locator, stale handling, impact candidate 기준으로 이동하기 위한 색인이다.
+5. Reader 기준서: `skills/reader/key-standard-reader.md`
    - `keystone-reader`의 trigger, mode, read-only boundary, output contract,
      mismatch handling을 정의한다.
-5. Author 기준서: `skills/author/key-standard-author.md`
+6. Author 기준서: `skills/author/key-standard-author.md`
    - `keystone-author`의 기준서(3)와 작업서(4) creation/revision, clarify result 적용,
      progress update boundary를 정의한다.
-6. Clarify 기준서: `skills/clarify/key-standard-clarify.md`
+7. Clarify 기준서: `skills/clarify/key-standard-clarify.md`
    - `keystone-clarify`의 topic-scoped decision collection, reflection, edit plan,
      Author handoff를 정의한다.
-7. Coordinator 기준서: `skills/coordinator/key-standard-coordinator.md`
-   - `keystone-coordinator`의 Goal assignment, subagent routing, report, review,
-     verification, acceptance flow를 정의한다.
+8. Linker 기준서: `skills/linker/key-standard-linker.md`
+   - `keystone-linker`의 artifact discovery, impact analysis, stale review, execution context
+     seed output을 정의한다.
+9. Coordinator 기준서: `skills/coordinator/key-standard-coordinator.md`
+   - `keystone-coordinator`의 execution packet/report, routing, report, review, verification,
+     acceptance flow를 정의한다.
 
 <!-- key: id=key.standard.index.reading-rules refs=key.doc.source key.doc.standard key.topic.document-system key.standard.subagent key.topic.work-round -->
 ## 읽기 규칙
@@ -46,8 +53,10 @@ key:
    `01_key-project-standard.md`를 먼저 읽는다.
 2. Subagent role, report status, merge authority가 필요하면 `subagents/00_key-index.md`를
    읽는다.
-3. 스킬별 상세 계약이 필요하면 `skills/00_key-index.md`에서 해당 child 기준서로 내려간다.
-4. 현재 active work round는 `00_docs/works/00_key-index.md`에서 찾고, round 내부 실행 순서는
+3. 문서와 code/test artifact 연결, impact candidate, stale metadata 판단이 필요하면
+   `artifacts/00_key-index.md`를 읽는다.
+4. 스킬별 상세 계약이 필요하면 `skills/00_key-index.md`에서 해당 child 기준서로 내려간다.
+5. 현재 active work round는 `00_docs/works/00_key-index.md`에서 찾고, round 내부 실행 순서는
    해당 round의 `00_key-index.md`에서 찾는다.
-5. 전체 공통 기준서와 child 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
+6. 전체 공통 기준서와 child 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 전체 공통 기준서를 임시 우선 기준으로 삼는다.
