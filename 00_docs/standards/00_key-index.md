@@ -23,8 +23,9 @@ key:
      에이전트 문서(8), 아티팩트 그래프(14), `standards/`와 `works/` tree, 스킬 역할, verification 정책을
      정의한다.
 2. Subagent 기준서 색인: `subagents/00_key-index.md`
-   - Keystone helper/subagent의 lane, role, authority, report status, 공통 금지와 stop
-     condition, repo-integrator merge authority를 정의한다.
+   - Keystone helper/subagent의 bounded worker model, purpose preset, authority, injected
+     skill contract, report status, single workspace guard, 공통 금지와 stop condition을
+     정의한다.
 3. 스킬별 기준서 색인: `skills/00_key-index.md`
    - Keystone 스킬별 child 기준서로 이동하기 위한 색인이다.
 4. Artifact Graph 기준서 색인: `artifacts/00_key-index.md`
@@ -40,19 +41,19 @@ key:
    - `keystone-clarify`의 topic-scoped decision collection, reflection, edit plan,
      Author handoff를 정의한다.
 8. Linker 기준서: `skills/linker/key-standard-linker.md`
-   - `keystone-linker`의 artifact discovery, impact analysis, stale review, execution context
+   - `keystone-linker`의 artifact discovery, impact analysis, stale review, worker assignment
      seed output을 정의한다.
 9. Coordinator 기준서: `skills/coordinator/key-standard-coordinator.md`
-   - `keystone-coordinator`의 execution packet/report, routing, report, review, verification,
-     acceptance flow를 정의한다.
+   - `keystone-coordinator`의 worker assignment/report, routing, report, review,
+     verification, acceptance flow를 정의한다.
 
 <!-- key: id=key.standard.index.reading-rules refs=key.doc.source key.doc.standard key.topic.document-system key.standard.subagent key.topic.work-round -->
 ## 읽기 규칙
 
 1. Keystone 원천 문서(2)를 변경하거나 Keystone 작업을 준비하기 전에
    `01_key-project-standard.md`를 먼저 읽는다.
-2. Subagent role, report status, merge authority가 필요하면 `subagents/00_key-index.md`를
-   읽는다.
+2. Subagent purpose preset, authority, report status, workspace guard가 필요하면
+   `subagents/00_key-index.md`를 읽는다.
 3. 문서와 code/test artifact 연결, impact candidate, stale metadata 판단이 필요하면
    `artifacts/00_key-index.md`를 읽는다.
 4. 스킬별 상세 계약이 필요하면 `skills/00_key-index.md`에서 해당 child 기준서로 내려간다.

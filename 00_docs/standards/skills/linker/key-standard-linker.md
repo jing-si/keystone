@@ -8,7 +8,7 @@ key:
     - key.topic.impact-review
     - key.topic.keystone-metadata
     - key.topic.code-anchor
-    - key.output.execution-context-seed
+    - key.output.worker-assignment-seed
 ---
 
 # keystone-linker 기준서
@@ -18,19 +18,19 @@ key:
 
 이 기준서는 `keystone-linker`의 상세 계약을 정의한다. `keystone-linker`는 원천 문서(2),
 키메타(9), 코드 앵커(18), repository evidence를 read-only로 조사해 문서, capability(16),
-code, API, test artifact의 연결과 impact/stale 후보를 찾고, Coordinator가 execution
-packet(19)을 만들 수 있는 artifact context seed를 제공한다.
+code, API, test artifact의 연결과 impact/stale 후보를 찾고, Coordinator가 worker
+assignment(19)를 만들 수 있는 artifact context seed를 제공한다.
 
 <!-- key: id=key.standard.skill.linker.scope refs=key.role.linker key.topic.artifact-graph key.topic.impact-review -->
 ## 적용 범위
 
 1. `keystone-linker`의 trigger와 non-trigger condition
-2. Artifact Discovery, Impact Analysis, Stale Review, Execution Context Seed mode
+2. Artifact Discovery, Impact Analysis, Stale Review, Worker Assignment Seed mode
 3. Metadata, code anchor, repository evidence 기반 artifact 후보 탐색
 4. Impact candidate 등급화
 5. Metadata gap과 stale candidate 보고
 6. Reuse candidate와 test candidate 보고
-7. Coordinator execution packet 준비를 위한 output contract
+7. Coordinator worker assignment 준비를 위한 output contract
 
 <!-- key: id=key.standard.skill.linker.out-of-scope refs=key.role.linker key.boundary.read-only -->
 ## 적용하지 않는 범위
@@ -38,7 +38,7 @@ packet(19)을 만들 수 있는 artifact context seed를 제공한다.
 1. 원천 문서(2), code, config, test, generated file 수정
 2. 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록 작성
 3. High-impact decision 질문 수집 또는 수락
-4. Execution packet을 실제 executor에게 배정
+4. Worker assignment를 실제 worker에게 배정
 5. Subagent report acceptance 또는 Main acceptance 결정
 6. Metadata 후보를 자동으로 source에 반영하기
 7. 단순 파일명 검색만으로 충분한 좁은 작업을 불필요하게 artifact graph workflow로 키우기
@@ -61,7 +61,7 @@ packet(19)을 만들 수 있는 artifact context seed를 제공한다.
 
 1. Skill name: `keystone-linker`
 2. Primary role: artifact graph interpretation, impact candidate generation, stale candidate
-   reporting, execution context seed preparation
+   reporting, worker assignment seed preparation
 3. Primary user: main agent, Coordinator, reviewer
 4. Output authority: Linker output은 candidate report이며 원천 문서(2), code, test, Main
    acceptance를 대체하지 않는다.
@@ -75,7 +75,7 @@ packet(19)을 만들 수 있는 artifact context seed를 제공한다.
 2. Code/test 변경이 source document나 decision을 stale하게 만들 수 있다.
 3. 새 기능을 작성하기 전에 기존 capability(16), API, reusable code, test를 찾아야 한다.
 4. Metadata가 오래되었거나 누락되었는지 확인해야 한다.
-5. Coordinator가 execution packet(19)을 만들기 전에 affected artifact 후보가 필요하다.
+5. Coordinator가 worker assignment(19)를 만들기 전에 affected artifact 후보가 필요하다.
 6. Reviewer가 기존 capability 재사용 여부와 metadata stale 여부를 검토해야 한다.
 7. Change Set(17)의 impact seed, required candidates, optional candidates, excluded scope를
    정리해야 한다.
@@ -88,7 +88,7 @@ packet(19)을 만들 수 있는 artifact context seed를 제공한다.
 1. 원천 문서(2)를 직접 작성하거나 수정해야 한다.
 2. Code implementation을 직접 수행해야 한다.
 3. High-impact decision을 질문으로 수집해야 한다.
-4. Execution packet을 실제 executor에게 배정해야 한다.
+4. Worker assignment를 실제 worker에게 배정해야 한다.
 5. Metadata 없이 단순 파일명 검색만으로 충분한 좁은 작업이다.
 6. 민감한 정보, local-only path, private data가 필요하지만 정책이나 승인 범위가 불명확하다.
 
@@ -103,7 +103,7 @@ Linker는 다음 input을 사용할 수 있어야 한다.
 4. 관련 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록
 5. Known `key.id`, `key.refs`, capability(16), API, code, test seed
 6. 필요한 경우 changed documents, changed code files, changed tests, diff summary
-7. 필요한 경우 Change Set(17) 또는 execution packet(19) 준비 목적
+7. 필요한 경우 Change Set(17) 또는 worker assignment(19) 준비 목적
 
 Input이 부족하면 Linker는 추측해서 후보를 확정하지 않고 `risks_and_gaps` 또는
 `NEEDS_CONTEXT` 성격의 recommended next action으로 보고한다.
@@ -166,9 +166,9 @@ Output focus:
 3. Metadata gaps
 4. Verification or reviewer recommendation
 
-### Execution Context Seed Mode
+### Worker Assignment Seed Mode
 
-Coordinator가 execution packet(19)을 만들 수 있도록 artifact candidates, reuse candidates,
+Coordinator가 worker assignment(19)를 만들 수 있도록 artifact candidates, reuse candidates,
 test candidates, stale risks를 정리한다.
 
 Output focus:
@@ -241,8 +241,8 @@ linker_report:
 ## Handoff boundary
 
 1. 문서 metadata 또는 source document 수정이 필요하면 `keystone-author`가 처리한다.
-2. Code/test metadata 수정이나 implementation이 필요하면 `keystone-coordinator`가 execution
-   packet(19)으로 조율한다.
+2. Code/test metadata 수정이나 implementation이 필요하면 `keystone-coordinator`가 worker
+   assignment(19)로 조율한다.
 3. High-impact decision이 필요하면 `keystone-clarify`가 topic을 정리한다.
 4. Current step과 work context가 부족하면 `keystone-reader`가 context brief를 만든다.
 5. Linker report는 후보와 evidence이며 acceptance 또는 수정 권한이 아니다.
@@ -269,7 +269,7 @@ Linker 기준은 다음 방법으로 검증한다.
 1. Linker contract만 보고 trigger와 non-trigger를 구분할 수 있어야 한다.
 2. 네 mode의 output focus가 서로 구분되어야 한다.
 3. Linker가 원천 문서(2), code, config, test를 직접 수정하지 않는다는 경계가 명확해야 한다.
-4. Linker report가 Coordinator execution packet의 artifact context seed로 사용될 수 있어야 한다.
+4. Linker report가 Coordinator worker assignment의 artifact context seed로 사용될 수 있어야 한다.
 5. Mechanical stale과 semantic stale을 구분할 수 있어야 한다.
 6. Candidate 발견이 자동 수정 또는 자동 acceptance로 해석되지 않아야 한다.
 7. Verification command:

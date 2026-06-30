@@ -119,7 +119,7 @@ Reader는 mode와 무관하게 다음 순서를 따른다.
 5. Active round index를 읽어 round 내부 실행 순서와 active work node를 확인한다.
 6. Active work node의 index, 작업서(4), 진행 기록(5)을 읽어 `round_id`, `work_id`,
    `current_step`을 함께 복구한다.
-7. 현재 요청과 관련된 child index만 따라 내려가며 관련 없는 branch를 읽지 않는다.
+7. 현재 요청과 관련된 child index만 따라 내려가며 관련 없는 하위 기준서를 읽지 않는다.
 8. 요청 또는 current work에 관련 키메타(9)가 있으면 같은 `key.id`를 참조하는
    문서를 탐색 후보로 확인한다.
 9. 요청 또는 current work에 capability, API, code, test 단서가 있으면 artifact graph가 필요한지
@@ -146,7 +146,7 @@ Orientation Mode는 project-level overview를 만든다.
    - top-level directory
    - key config/build file
    - expected skill/source directory
-   - Git status summary
+   - workspace status summary
    - 명백한 document-to-repository mismatch signal
 4. Output field:
    - `document_root`
@@ -193,7 +193,7 @@ Navigator Mode는 현재 요청과 관련된 원천 문서(2)를 찾는다.
    - `missing_or_ambiguous_documents`
    - `sources_read`
    - `assumptions`
-4. 금지: 관련 없는 branch 전체를 읽거나, 문서 부재를 조용히 새 문서 생성으로 해결하기
+4. 금지: 관련 없는 문서 tree 전체를 읽거나, 문서 부재를 조용히 새 문서 생성으로 해결하기
 
 <!-- key: id=key.standard.skill.reader.work-prep-mode refs=key.role.reader key.topic.work-preparation key.contract.output key.topic.work-round key.topic.artifact-graph -->
 ### Work Prep Mode

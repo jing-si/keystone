@@ -28,7 +28,7 @@ key:
 5. Code artifact
 6. API artifact
 7. Test artifact
-8. Execution packet과 execution report에서 참조되는 artifact
+8. Worker assignment와 worker report에서 참조되는 artifact
 
 <!-- key: id=key.standard.artifact.graph.out-of-scope refs=key.topic.artifact-graph key.boundary.scope-control -->
 ## 적용하지 않는 범위
@@ -37,7 +37,7 @@ key:
 2. LSP, AST, grep, Sourcegraph류 도구가 더 잘 처리하는 모든 call/reference 관계를 수동
    metadata로 복제하는 것
 3. Metadata만으로 실제 code behavior를 확정하는 것
-4. Metadata relation만으로 자동 수정, 자동 merge, 자동 acceptance를 수행하는 것
+4. Metadata relation만으로 자동 수정이나 자동 acceptance를 수행하는 것
 
 <!-- key: id=key.standard.artifact.graph.standard-relations refs=key.doc.standard key.topic.artifact-graph -->
 ## 기준 관계

@@ -75,7 +75,7 @@ key:
 1. 정책, 범위, 문서 구조, 스킬 계약, cross-document consistency에 영향을 주는 결정(6)이
    필요하다.
 2. 원천 문서(2)를 의미 있게 바꾸기 전에 사용자 의도를 명확히 해야 한다.
-3. Keystone initial setup에서 document root, Git policy, output language policy,
+3. Keystone initial setup에서 document root, tracking policy, output language policy,
    setup storage location을 결정해야 한다.
 4. 문서 변경이 여러 기준서(3), 작업서(4), 진행 기록(5), 결정(6), 파생 에이전트 문서(8)에
    영향을 줄 수 있다.
@@ -103,7 +103,7 @@ key:
 
 Clarify는 한 번에 하나의 topic을 다룬다.
 
-1. 좋은 topic: document root policy, Git policy, Reader trigger boundary,
+1. 좋은 topic: document root policy, tracking policy, Reader trigger boundary,
    output language policy, skill-specific non-trigger condition
 2. 나쁜 topic: "Keystone 전체를 어떻게 할까요"처럼 여러 정책을 한 번에 묶은 질문
 3. Topic이 너무 크면 main은 하위 topic으로 나누어 질문한다.
@@ -200,8 +200,8 @@ Target project에서 Keystone setting이 없거나 불명확하면 Clarify는 in
 
 1. 질문 대상:
    - document root
-   - 기준서(3)와 작업서(4) Git policy
-   - 파생 에이전트 문서(8) Git policy
+   - 기준서(3)와 작업서(4) tracking policy
+   - 파생 에이전트 문서(8) tracking policy
    - Keystone output language policy
    - setup storage location
 2. 기본 storage:

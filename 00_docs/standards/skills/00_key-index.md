@@ -27,10 +27,10 @@ key:
    - `keystone-reader`의 trigger, mode, read-only boundary, output contract,
      mismatch handling을 정의한다.
 4. `linker/00_key-index.md`
-   - `keystone-linker`의 artifact discovery, impact analysis, stale review, execution context
+   - `keystone-linker`의 artifact discovery, impact analysis, stale review, worker assignment
      seed output을 정의한다.
 5. `coordinator/00_key-index.md`
-   - `keystone-coordinator`의 execution packet/report, subagent/executor routing, report,
+   - `keystone-coordinator`의 worker assignment/report, bounded worker routing, report,
      review, verification, acceptance flow를 정의한다.
 
 <!-- key: id=key.standard.skills.index.planned-skill-standards refs=key.topic.skill-contract key.doc.standard -->

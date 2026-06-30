@@ -70,20 +70,20 @@ key:
 - 이유: 기준서는 프로젝트의 지속 기준이지만 작업서는 특정 시점의 기준서와 목표를 바탕으로 한
   실행 차수이기 때문이다.
 
-<!-- key: id=key.work.decisions.dec-works-006 refs=key.doc.decision key.topic.artifact-graph key.topic.skill-contract key.topic.work-sequence key.topic.external-executor -->
+<!-- key: id=key.work.decisions.dec-works-006 refs=key.doc.decision key.topic.artifact-graph key.topic.skill-contract key.topic.work-sequence -->
 ## DEC-WORKS-006: Artifact Graph와 Linker를 Keystone 중심 계층으로 승격한다
 
 - 관련 work: Project Standard, Artifact Graph Standard, Linker Standard, Skill Creation,
   Integration Verification
 - 상태: accepted
 - 결정: Keystone은 단순 문서 CRUD skill 묶음이 아니라, 사람의 의도, 원천 문서(2),
-  capability(16), code artifact, API, test artifact, AI 실행 결과를 문서 기반으로 연결하는
+  capability(16), code artifact, API, test artifact, bounded worker 실행 결과를 문서 기반으로 연결하는
   project control plane으로 정의한다.
 - 결정: 문서-capability-code-test 연결, impact candidate, stale metadata 후보 탐색은
   `keystone-linker`가 소유한다.
-- 결정: 코딩 실행은 Keystone이 직접 독점하지 않고 Codex, Superpowers, 수동 실행, 기타
-  executor에 위임할 수 있다. Keystone은 execution context packet과 execution report 회수를
-  관리한다.
+- 결정: 기본 Coordinator 모델은 별도 실행 위임 계층을 정의하지 않는다. 실행이 필요한 작업은
+  bounded worker assignment와 worker report로 조율하며, 별도 실행 보조 계층은 실제 필요와
+  수락된 기준서가 생긴 뒤 다룬다.
 - 결정: 기존 Change Set(17) 개념을 먼저 강화하고, 별도 `key-change-{slug}.md` 문서 타입은
   실제 사용 필요가 확인된 뒤 도입한다.
 - 결정: `DEC-WORKS-003`의 R001 순서를 확장해 S06 Artifact Graph Standard, S07 Linker
@@ -91,3 +91,23 @@ key:
   S08, S09로 이동한다.
 - 이유: Reader와 Coordinator에 artifact graph 책임을 나누어 넣으면 책임 경계가 흐려지고,
   기존 계획대로 skill source를 먼저 만든 뒤 재작업할 가능성이 크기 때문이다.
+
+<!-- key: id=key.work.decisions.dec-works-007 refs=key.doc.decision key.topic.work-execution key.standard.subagent key.role.coordinator -->
+## DEC-WORKS-007: 기본 Coordinator 실행 모델을 single workspace bounded worker로 복구한다
+
+- 관련 work: Project Standard, Subagent Standard, Coordinator Standard, Author Standard,
+  Context Map, README
+- 상태: accepted
+- 결정: 기본 실행 모델은 single workspace bounded worker orchestration으로 둔다.
+- 결정: `STD-KEYSTONE-034`는 삭제한다. 기본 기준서는 별도 작업 격리 계층이나 통합 절차를
+  다루지 않는다.
+- 결정: role 이름은 worker 종류가 아니라 assignment purpose hint로 낮춘다. 실제 경계는
+  purpose preset, authority, injected skill contract, scope, workspace guard, stop condition,
+  report contract가 정한다.
+- 결정: Worker는 주입된 skill contract 안에서 local planning을 할 수 있지만, 전체 작업서(4)를
+  재해석하거나, scope를 넓히거나, 추가 subagent를 만들거나, Main acceptance와 progress
+  accepted를 대체하지 않는다.
+- 결정: Single workspace에서는 한 번에 하나의 file-writing worker만 허용한다. 기존 사용자
+  변경이나 다른 agent 변경을 덮어쓸 위험이 있으면 worker는 멈추고 보고한다.
+- 이유: 이전 격리 중심 모델은 기본 Coordinator 기준서에 비해 과하고, 지금 단계에서는 main의
+  context 보존, bounded assignment, 명확한 report 회수가 더 중요한 기본 동작이기 때문이다.

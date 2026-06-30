@@ -17,7 +17,7 @@ key:
 ## 문서
 
 1. `key-standard-linker.md`
-   - `keystone-linker`의 artifact discovery, impact analysis, stale review, execution context
+   - `keystone-linker`의 artifact discovery, impact analysis, stale review, worker assignment
      seed mode와 output contract를 정의한다.
 
 <!-- key: id=key.standard.skill.linker.index.parent-standard refs=key.role.linker key.doc.standard key.topic.artifact-graph -->

@@ -1,7 +1,7 @@
 # Keystone
 
-Document-driven AI workflow skills for turning standards and work orders into
-supervised main-agent and role-based subagent execution.
+Document-mediated project control plane for keeping human intent, source
+documents, artifact links, and bounded worker execution aligned.
 
 ## Overview
 
@@ -9,7 +9,7 @@ Keystone is a skill-system project for AI-assisted work management. Its goal is
 to make human-readable source documents the stable foundation for agent work:
 
 ```text
-standards + work orders -> main agent -> role-based subagents
+standards + work orders -> main agent -> bounded worker assignments
 ```
 
 The project separates long-lived policies from task execution details:
@@ -24,14 +24,15 @@ and lets the main agent read only the documents needed for the current task.
 
 ## Planned Skills
 
-Keystone is planned as four independent but cooperating skills:
+Keystone is planned as five independent but cooperating skills:
 
 | Skill | Responsibility |
 |---|---|
 | `keystone-clarify` | Collect high-impact policy, scope, document, and skill-contract decisions by topic before source documents are changed. |
 | `keystone-author` | Create and revise 기준서 and 작업서 as reusable source documents. |
 | `keystone-reader` | Navigate relevant 기준서 and 작업서, orient to a project, and prepare main-agent work context. |
-| `keystone-coordinator` | Assign role-based goals to subagents, receive reports, and keep the main agent in a supervisory role. |
+| `keystone-linker` | Discover document, capability, code, API, and test artifact links and report impact or stale candidates. |
+| `keystone-coordinator` | Turn Keystone context into bounded worker assignments, receive worker reports, and keep the main agent in a supervisory role. |
 
 ## Document Model
 
@@ -85,7 +86,3 @@ Start with:
 The existing `work-package-doc-architect` and `subagent-work-coordinator` skills
 are prototype references for this project. They are not final runtime
 dependencies and are expected to be replaced by Keystone skills.
-
-Superpowers may be used as an explicit supporting workflow for brainstorming,
-planning, TDD, debugging, review, or skill testing, but accepted Keystone source
-documents remain the source of truth.
