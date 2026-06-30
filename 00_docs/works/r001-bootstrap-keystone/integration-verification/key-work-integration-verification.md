@@ -32,6 +32,8 @@ Include:
 - Author가 만든 work step을 Coordinator가 복구할 수 있는지 확인
 - Coordinator가 Current Step Brief, Context Pack, worker assignment, review/verification focus를
   도출할 수 있는지 확인
+- 명시된 외부 코딩 스킬이 Coordinator를 대체하지 않고 worker assignment의 injected skill로
+  들어가는지 확인
 - Worker report를 Keystone workflow로 회수할 수 있는지 확인
 - Metadata 과다 부여를 방지하는지 확인
 
@@ -41,11 +43,12 @@ Exclude:
 - global install
 - unrelated repository cleanup
 - browser or Playwright verification
-- 추가 실행 보조 workflow
+- Coordinator 밖의 추가 실행 보조 workflow
 
 Conditionally allowed:
 
 - 문서 기반 simulation
+- 외부 코딩 스킬 주입 boundary simulation
 - 필요성이 확인된 작은 fixture. 생성 전 위치와 범위를 보고한다.
 
 <!-- key: id=key.work.integration-verification.order.source-context refs=key.section.source-context key.context-map key.work.index key.topic.skill-source -->
@@ -70,6 +73,7 @@ Conditionally allowed:
 - [ ] 문서 변경에서 관련 code/test 후보가 나온다.
 - [ ] code/test 변경에서 문서 stale 후보가 나온다.
 - [ ] Coordinator가 worker assignment와 worker report contract를 만들 수 있다.
+- [ ] 외부 코딩 스킬은 Coordinator replacement가 아니라 injected skill로 해석된다.
 - [ ] Coordinator가 현재 work step을 복구할 수 있다.
 - [ ] Metadata 과다 부여를 방지하는 시나리오가 통과한다.
 - [ ] 검증 결과와 남은 risk가 기록된다.
@@ -80,6 +84,29 @@ Conditionally allowed:
 
 처음에는 문서 기반 simulation으로 시작한다. 실제 fixture나 install 검증은 필요성이 확인되고
 scope가 승인된 뒤 추가한다.
+
+작은 fixture가 필요하다고 판단되면 다음 최소 구조를 후보로 삼는다. 이 구조는 생성 승인 전
+계획 후보이며, 승인 없이 파일을 만들지 않는다.
+
+```text
+fixtures/simple-keystone-project/
+  00_docs/
+    key-context-map.md
+    standards/
+      01_key-project-standard.md
+    works/
+      00_key-index.md
+      r001-demo/
+        00_key-index.md
+        demo-change/
+          00_key-index.md
+          key-work-demo-change.md
+          key-progress.md
+  src/
+    demo_service.ts
+  tests/
+    demo_service.test.ts
+```
 
 <!-- key: id=key.work.integration-verification.order.scenarios refs=key.topic.simulation key.topic.artifact-graph key.contract.output -->
 ## Verification Scenarios
@@ -118,6 +145,25 @@ Scenario D: metadata 과다 부여를 방지한다.
 
 통과 기준: semantic anchor가 아닌 artifact에 metadata를 강제하지 않는다.
 
+Scenario E: 최소 fixture가 필요한 경우의 검증 범위를 제한한다.
+
+1. Reader는 fixture의 active work를 복구한다.
+2. Linker는 fixture의 source/test 후보를 read-only로 보고한다.
+3. Coordinator는 실제 file-writing worker 실행 없이 assignment contract만 만든다.
+
+통과 기준: fixture 검증이 repo-local fixture 범위를 넘지 않고, install/publish/browser 검증으로
+확장되지 않는다.
+
+Scenario F: 외부 코딩 스킬은 Coordinator injected skill로만 사용한다.
+
+1. 사용자가 Keystone 작업 문맥에서 `$superpowers` 같은 외부 코딩 스킬을 명시했다고 가정한다.
+2. Coordinator는 bounded worker assignment를 유지하고 해당 스킬을 `injected_skills`에 넣는다.
+3. Assignment의 authority, scope, forbidden changes, workspace guard, verification,
+   return report contract는 Keystone 기준서를 따른다.
+
+통과 기준: 외부 코딩 스킬이 Coordinator replacement, runtime dependency, scope expansion 근거로
+해석되지 않는다.
+
 <!-- key: id=key.work.integration-verification.order.context-pack-seed refs=key.output.context-pack key.topic.skill-source key.step.s01-s07 key.doc.work-order key.doc.progress key.topic.workflow-sequence -->
 
 ## Context Pack Seed
@@ -129,6 +175,8 @@ Scenario D: metadata 과다 부여를 방지한다.
 - Artifact Graph 기준서
 - Linker report contract
 - Worker assignment/report contract
+- external coding skill injected skill boundary
+- 필요한 경우 승인된 최소 fixture path
 
 <!-- key: id=key.work.integration-verification.order.stop-conditions refs=key.section.stop-conditions key.topic.skill-source-missing key.contract.output key.boundary.fixture-approval -->
 
@@ -136,6 +184,7 @@ Scenario D: metadata 과다 부여를 방지한다.
 
 - Skill source가 아직 생성되지 않았다.
 - 문서와 skill source가 서로 다른 trigger 또는 output contract를 가진다.
+- 외부 코딩 스킬 검증이 Coordinator 밖의 별도 실행 계층을 요구한다.
 - fixture나 install 검증이 필요하지만 승인되지 않았다.
 - 문서 기반 simulation만으로 artifact graph 흐름을 검증할 수 없다.
 
@@ -146,6 +195,7 @@ Scenario D: metadata 과다 부여를 방지한다.
 Allowed:
 
 - `rg --files 00_docs skills`
+- `rg -n "external coding skill|외부 코딩 스킬|injected skill|keystone-default-bounded-worker" 00_docs/standards skills`
 - skill file과 기준서 cross-read
 - 문서 기반 workflow simulation
 
@@ -172,6 +222,7 @@ Forbidden until explicitly allowed:
 - 문서에서 current step과 verification path를 복구할 수 있는지 확인한다.
 - Linker와 Coordinator가 artifact 후보 해석과 bounded assignment brokering을 분리하는지
   확인한다.
+- 외부 코딩 스킬이 Coordinator assignment boundary 안의 injected skill로만 쓰이는지 확인한다.
 - Worker report가 Main acceptance를 대체하지 않는지 확인한다.
 
 <!-- key: id=key.work.integration-verification.order.progress-record refs=key.topic.progress-update key.topic.main-acceptance key.step.s09 -->

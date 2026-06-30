@@ -128,6 +128,33 @@ Linker는 mode와 무관하게 다음 순서를 따른다.
 10. 수정이 필요한 경우 직접 수정하지 않고 Author 또는 Coordinator로 넘길 next action을
     제안한다.
 
+<!-- key: id=key.standard.skill.linker.metadata-parsing refs=key.role.linker key.topic.keystone-metadata key.topic.code-anchor key.topic.artifact-graph -->
+## Metadata parsing rule
+
+Linker는 초기 구현에서 다음 metadata surface를 우선 읽는다.
+
+1. Markdown YAML frontmatter의 `key.id`와 `key.refs`
+2. Markdown heading 바로 위 section-level comment
+   `<!-- key: id=<id> refs=<ref-id> <ref-id> -->`
+3. Code, test, config artifact 안의 `keystone:` line comment
+4. Repository path, symbol, test name, config key 같은 locator evidence
+
+Parsing과 normalization은 다음 기준을 따른다.
+
+1. `key.id`와 code anchor `id`는 stable artifact identity로 보고 locator와 분리한다.
+2. `key.refs`는 탐색 후보 edge로만 사용하고 required impact relation으로 확정하지 않는다.
+3. Code anchor의 `provides`, `uses`, `implements`, `verifies`, `governed_by`, `documents`,
+   `supersedes`, `derived_from`만 초기 typed relation으로 normalize한다.
+4. Unknown relation, malformed metadata, duplicate ID, missing target은 mechanical stale candidate로
+   보고한다.
+5. Import, call, filename, keyword, heading overlap은 observed 또는 inferred evidence로 분리해
+   보고한다.
+6. Confidence는 evidence type을 기준으로 `declared`, `observed`, `inferred`로 우선 구분하고,
+   candidate 등급은 Artifact Graph 기준서의 `required`, `strong_candidate`, `weak_candidate`,
+   `informational`, `excluded`를 따른다.
+7. Parser가 이해하지 못한 metadata는 조용히 버리지 않고 `metadata_gaps` 또는 `risks_and_gaps`에
+   기록한다.
+
 <!-- key: id=key.standard.skill.linker.mode-contract refs=key.role.linker key.contract.output key.topic.artifact-graph -->
 ## Mode contract
 

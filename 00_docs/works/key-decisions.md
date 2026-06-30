@@ -111,3 +111,22 @@ key:
   변경이나 다른 agent 변경을 덮어쓸 위험이 있으면 worker는 멈추고 보고한다.
 - 이유: 이전 격리 중심 모델은 기본 Coordinator 기준서에 비해 과하고, 지금 단계에서는 main의
   context 보존, bounded assignment, 명확한 report 회수가 더 중요한 기본 동작이기 때문이다.
+
+<!-- key: id=key.work.decisions.dec-works-008 refs=key.doc.decision key.topic.skill-contract key.topic.external-assist key.role.coordinator key.standard.subagent -->
+## DEC-WORKS-008: 외부 코딩 스킬은 Coordinator injected skill로 사용한다
+
+- 관련 work: Project Standard, Subagent Standard, Coordinator Standard, Skill Creation,
+  Integration Verification
+- 상태: accepted
+- 결정: Keystone 작업 문맥이 있고 code/config/test 수정 요청이 들어오면 기본 routing은
+  `keystone-coordinator`로 한다.
+- 결정: 사용자가 `superpowers` 같은 외부 코딩 스킬(12)을 명시하면 해당 스킬은 Coordinator를
+  대체하지 않고 worker assignment(19)의 `injected_skills`로 주입한다.
+- 결정: 외부 코딩 스킬이 명시되지 않으면 Coordinator는 `keystone-default-bounded-worker`
+  contract를 사용한다.
+- 결정: 여러 외부 코딩 스킬 후보가 있고 선택에 따라 workflow, verification, risk가 달라질 때만
+  사용자에게 선택지를 제시한다. 매번 선택지를 표시하지 않는다.
+- 결정: 외부 코딩 스킬 주입은 authority를 올리지 않는다. Scope, forbidden changes,
+  workspace guard, verification, report contract는 Coordinator assignment가 정한다.
+- 이유: Keystone은 문서와 bounded assignment를 control plane으로 유지해야 하고, 코딩 방법론은
+  교체 가능한 execution guidance로 주입되어야 하기 때문이다.

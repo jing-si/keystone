@@ -174,6 +174,46 @@ Author는 작업 mode와 무관하게 다음 순서를 따른다.
 22. 문서 link, 용어, 구조, Markdown 형식을 검증한다.
 23. 변경 파일, 적용한 결정(6), 검증 결과, 남은 risk를 보고한다.
 
+Author Edit Contract는 다음 shape을 우선 사용한다.
+
+```yaml
+author_edit_contract:
+  contract_id:
+  accepted_instruction:
+  target_documents:
+    - path:
+      sections:
+      allowed_change:
+  affected_document_candidates:
+    - path:
+      reason:
+      action: edit | inspect_only | exclude
+  forbidden_changes:
+    - scope_change
+    - acceptance_criteria_change
+    - status_semantics_change
+    - code_change
+  progress_update_policy:
+    may_update_progress: true | false
+    forbidden_statuses_before_main_acceptance:
+      - accepted
+      - complete
+  verification:
+    - check_index_links
+    - check_context_map_if_affected
+    - check_decision_record_if_affected
+```
+
+Author Edit Contract는 다음 원칙을 따른다.
+
+1. `target_documents`는 직접 수정이 승인된 원천 문서(2)만 포함한다.
+2. `affected_document_candidates`는 검토 후보이며 자동 수정 권한이 아니다.
+3. `action: edit`은 승인 범위와 의미 영향이 명확한 경우에만 사용한다.
+4. `action: inspect_only`는 related evidence 확인만 허용한다.
+5. `action: exclude`는 현재 범위에서 수정하지 않는 이유를 함께 남긴다.
+6. `progress_update_policy`는 Main acceptance 전 `accepted` 또는 `complete` 갱신 금지를
+   약화하지 않는다.
+
 <!-- key: id=key.standard.skill.author.mode-contract refs=key.role.author key.topic.document-authoring key.contract.output -->
 ## Mode contract
 

@@ -18,8 +18,8 @@ key:
 
 1. `key-standard-subagents.md`
    - Keystone helper/subagent의 bounded worker model, purpose preset, authority,
-     injected skill contract, report status, single workspace guard, 공통 금지와 stop
-     condition을 정의한다.
+     injected skill contract, 외부 코딩 스킬 주입 경계, report status, single workspace guard,
+     공통 금지와 stop condition을 정의한다.
 
 <!-- key: id=key.standard.subagent.index.parent-standard refs=key.role.subagent key.doc.standard key.topic.skill-contract -->
 ## Parent 기준서

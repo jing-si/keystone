@@ -28,6 +28,7 @@ Include:
 - Current Step Brief와 Context Pack 구성
 - subagent 기준서 기반 purpose preset, authority, injected skill contract routing
 - default bounded worker contract
+- 외부 코딩 스킬을 Coordinator injected skill로 선택하는 규칙
 - worker assignment와 worker report contract
 - Main context checkpoint
 - source conflict와 stale work order reason code
@@ -69,6 +70,13 @@ Conditionally allowed:
 - [ ] Purpose preset, authority, injected skill contract는 subagent 기준서를 따른다.
 - [ ] Domain-specific injected skill이 없으면 `keystone-default-bounded-worker` contract를
       사용한다.
+- [ ] Keystone 작업 문맥에서 code/config/test 수정 요청이 들어오면 Coordinator가 기본
+      execution routing으로 사용된다.
+- [ ] 명시된 외부 코딩 스킬은 Coordinator를 대체하지 않고 `injected_skills`로 주입된다.
+- [ ] 외부 코딩 스킬이 명시되지 않으면 매번 선택지를 표시하지 않고 default bounded worker
+      contract를 사용한다.
+- [ ] 여러 외부 코딩 스킬 후보가 있고 선택에 따라 workflow, verification, risk가 달라질 때만
+      main/user 선택을 요청한다.
 - [ ] Scope가 worker handoff boundary로 변환된다.
 - [ ] Worker assignment가 goal, authority, scope, workspace guard, stop condition,
       return report contract를 포함한다.
@@ -96,8 +104,10 @@ Coordinator 역할이나 Main acceptance를 대체하지 않는다.
 
 - `STD-KEYSTONE-032`
 - `STD-KEYSTONE-043`
+- `DEC-WORKS-008`
 - `00_docs/standards/subagents/key-standard-subagents.md`
 - purpose preset, authority, injected skill contract, default bounded worker contract
+- external coding skill injected skill contract
 - Main context checkpoint
 - source conflict reason code
 - single workspace guard
@@ -113,6 +123,9 @@ Coordinator 역할이나 Main acceptance를 대체하지 않는다.
 - high-risk implementation이 main/user decision 없이 필요하다.
 - worker authority, scope, injected skill contract, stop condition이 불명확하다.
 - domain-specific injected skill이 없는데 default bounded worker contract도 없다.
+- 여러 외부 코딩 스킬 후보가 있고 선택에 따라 workflow, verification, risk가 달라지지만
+  main/user 선택이 없다.
+- 명시된 외부 코딩 스킬의 필수 절차가 Coordinator assignment boundary와 충돌한다.
 - accepted decision이 관련 work order나 progress record에 전파되지 않아 current task 방향을
   바꿀 수 있다.
 - file-writing worker가 필요한데 single workspace guard가 없다.
@@ -127,6 +140,7 @@ Allowed:
 
 - `rg -n "Worker assignment|worker_report|single workspace|injected skill|accepted" 00_docs/standards/skills/coordinator/key-standard-coordinator.md`
 - `rg -n "keystone-default-bounded-worker|main_context_checkpoint|source_conflict|stale_work_order|accepted_decision_not_propagated" 00_docs/standards`
+- `rg -n "external coding skill|외부 코딩 스킬|DEC-WORKS-008|injected skill" 00_docs/standards 00_docs/works`
 - `rg -n "branch|worktree|merge gate|remote push|commit checkpoint|repo-integrator|task branch|session branch" 00_docs/standards 00_docs/works`
 - Coordinator 관련 기준서와 작업서의 link와 scope consistency 확인
 
@@ -145,6 +159,10 @@ Allowed:
 - Worker가 전체 작업서(4)를 재해석하거나 scope를 확장하지 않는지 확인한다.
 - Injected skill이 worker authority를 올리지 않는지 확인한다.
 - Default bounded worker contract가 missing skill contract로 해석되지 않는지 확인한다.
+- 명시된 외부 코딩 스킬이 Coordinator replacement가 아니라 injected skill로 해석되는지
+  확인한다.
+- 외부 코딩 스킬이 없을 때 불필요한 선택 질문 없이 default bounded worker contract가
+  사용되는지 확인한다.
 - Main context checkpoint가 accepted decision과 current work identity를 보존하는지 확인한다.
 - 모델 변경 후 old execution term이 stale work order로 남지 않았는지 확인한다.
 - Single workspace guard가 file-writing worker boundary를 충분히 제한하는지 확인한다.

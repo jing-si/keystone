@@ -28,6 +28,7 @@ Include:
 - high-impact topic trigger
 - Plan Mode와 Default Mode
 - reflection과 edit plan
+- decision recording hint
 - initial setup question boundary
 - 단순 오탈자 직접 수정 예외
 
@@ -55,6 +56,8 @@ Conditionally allowed:
 
 - [ ] Clarify가 한 번에 하나의 topic을 다룬다는 점이 명확하다.
 - [ ] 수락된 decision summary와 edit plan을 Author가 적용한다는 경계가 명확하다.
+- [ ] decision recording hint가 global, round, work 범위별 기록 위치를 권장하되 기록 권한으로
+      해석되지 않는다.
 - [ ] 직접 수정 예외가 단순 오탈자로 제한된다.
 - [ ] setup question이 common/global instruction file에 쓰도록 유도하지 않는다.
 
@@ -71,6 +74,7 @@ Clarify는 결정 수집과 적용 계획에 집중한다. 문서 반영은 Auth
 - `STD-KEYSTONE-041`
 - Source authority rule
 - Author handoff boundary
+- decision recording hint
 
 <!-- key: id=key.work.clarify-standard.order.stop-conditions refs=key.section.stop-conditions key.topic.topic-scope key.boundary.approval key.topic.author-handoff -->
 
@@ -78,6 +82,7 @@ Clarify는 결정 수집과 적용 계획에 집중한다. 문서 반영은 Auth
 
 - topic이 여러 high-impact 결정을 동시에 포함한다.
 - 변경 대상 문서나 승인 범위가 불명확하다.
+- 결정 기록 위치가 불명확한데 Clarify가 직접 기록해야 할 것처럼 보인다.
 - Clarify가 Author의 문서 작성 책임을 가져야 할 것처럼 보인다.
 
 <!-- key: id=key.work.clarify-standard.order.verification refs=key.topic.verification key.role.clarify key.topic.standard-verification -->
@@ -87,6 +92,7 @@ Clarify는 결정 수집과 적용 계획에 집중한다. 문서 반영은 Auth
 Allowed:
 
 - `rg -n "Plan Mode|Default Mode|Author handoff" 00_docs/standards/skills/clarify/key-standard-clarify.md`
+- `rg -n "decision_recording_hint|recommended_path|requires_author_update" 00_docs/standards/skills/clarify/key-standard-clarify.md`
 - Clarify 기준서와 Project Standard의 trigger/non-trigger consistency 확인
 
 <!-- key: id=key.work.clarify-standard.order.expected-output refs=key.contract.output key.role.clarify key.doc.standard -->
@@ -101,6 +107,7 @@ Allowed:
 
 - Clarify가 Author 책임을 침범하지 않는지 확인한다.
 - 질문 흐름이 한 topic씩 진행되는지 확인한다.
+- decision recording hint가 Author handoff 후보로만 남는지 확인한다.
 
 <!-- key: id=key.work.clarify-standard.order.progress-record refs=key.topic.progress-update key.topic.main-acceptance key.step.s04 -->
 

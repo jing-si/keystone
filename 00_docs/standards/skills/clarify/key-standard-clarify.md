@@ -171,6 +171,26 @@ Clarify result는 다음을 포함해야 한다.
 8. `stop_conditions`: 적용 중 중단해야 하는 조건
 9. `open_questions`: 이번 topic 밖에 남은 질문
 
+Decision recording hint는 다음 shape을 우선 사용한다.
+
+```yaml
+decision_recording_hint:
+  scope: global | round | work
+  recommended_path:
+  reason:
+  requires_author_update: true | false
+```
+
+판단 기준은 다음을 따른다.
+
+1. 여러 round에 영향을 주는 결정(6)은 `works/key-decisions.md`를 권장한다.
+2. 특정 round 안에서만 유효한 결정(6)은 해당 round의 `key-decisions.md`를 권장한다.
+3. 특정 work node 안에서만 유효한 결정(6)은 해당 work node의 `key-decisions.md`를 권장한다.
+4. 결정 기록 위치가 불명확하면 Clarify는 직접 기록하지 않고 Author handoff에
+   `decision_recording_hint`를 포함한다.
+5. Hint는 기록 권한이 아니며, 실제 원천 문서(2) 반영은 Author 또는 Main이 승인 범위 안에서
+   처리한다.
+
 <!-- key: id=key.standard.skill.clarify.impact-update refs=key.role.clarify key.topic.impact-review key.output.edit-plan key.topic.keystone-metadata key.topic.code-anchor key.topic.artifact-graph -->
 ## Impact update
 

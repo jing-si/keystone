@@ -26,6 +26,7 @@ Include:
 - Linker trigger와 non-trigger
 - Artifact Discovery, Impact Analysis, Stale Review, Worker Assignment Seed mode
 - `linker_report` output contract
+- metadata parsing and normalization rule
 - Author, Reader, Coordinator handoff boundary
 - Metadata gap과 stale candidate 보고
 - Reuse candidate와 test candidate 보고
@@ -58,6 +59,7 @@ Conditionally allowed:
 - [ ] 네 mode의 목적과 output focus가 구분된다.
 - [ ] Linker가 원천 문서(2), code, config, test를 직접 수정하지 않는다는 경계가 명확하다.
 - [ ] `linker_report`가 Coordinator worker assignment의 artifact context seed로 사용될 수 있다.
+- [ ] Markdown key metadata와 code anchor parsing surface가 명확하다.
 - [ ] Metadata gap, mechanical stale, semantic stale 후보가 구분된다.
 - [ ] 후보 발견이 자동 수정이나 자동 acceptance로 해석되지 않는다.
 
@@ -72,6 +74,7 @@ report 회수는 Coordinator 책임으로 남긴다.
 
 - `STD-KEYSTONE-044`
 - Artifact Graph 기준서
+- Metadata parsing rule
 - Reader context brief handoff
 - Author Change Set handoff
 - Coordinator worker assignment seed
@@ -80,6 +83,7 @@ report 회수는 Coordinator 책임으로 남긴다.
 ## Stop Conditions
 
 - Linker가 문서나 code를 직접 수정해야만 설명 가능한 구조가 된다.
+- metadata parsing rule이 required impact relation을 과도하게 확정한다.
 - 후보 등급화가 자동 수정 또는 자동 acceptance로 해석된다.
 - Worker assignment 배정 책임이 Linker로 넘어간다.
 
@@ -89,6 +93,7 @@ report 회수는 Coordinator 책임으로 남긴다.
 Allowed:
 
 - `rg -n "Artifact Discovery|Impact Analysis|Stale Review|linker_report" 00_docs/standards/skills/linker`
+- `rg -n "Metadata parsing rule|key.refs|keystone:|metadata_gaps" 00_docs/standards/skills/linker/key-standard-linker.md`
 - Linker 기준서와 Artifact Graph 기준서의 link와 scope consistency 확인
 
 <!-- key: id=key.work.linker-standard.order.expected-output refs=key.contract.output key.role.linker -->
@@ -101,6 +106,7 @@ Allowed:
 
 - Linker가 Reader나 Coordinator 책임을 흡수하지 않는지 확인한다.
 - Linker report가 후보와 evidence로 남고 수정 권한으로 해석되지 않는지 확인한다.
+- metadata parsing 결과가 declared, observed, inferred evidence를 구분하는지 확인한다.
 
 <!-- key: id=key.work.linker-standard.order.progress-record refs=key.topic.progress-update key.step.s07 -->
 ## Progress Record
