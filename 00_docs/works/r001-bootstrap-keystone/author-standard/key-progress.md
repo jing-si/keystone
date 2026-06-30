@@ -29,7 +29,7 @@ None
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S03 | planned | pending | S02 수락 후 시작한다 |
+| S03 | ready | pending | S02가 수락되어 S03을 시작할 수 있다 |
 
 <!-- key: id=key.work.author-standard.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 

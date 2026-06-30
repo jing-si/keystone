@@ -19,14 +19,14 @@ S02
 <!-- key: id=key.work.reader-standard.progress.last-accepted-step refs=key.topic.progress-update key.topic.acceptance -->
 ## 마지막 수락 Step
 
-None
+S02
 
 <!-- key: id=key.work.reader-standard.progress.step-status refs=key.topic.progress-update key.topic.acceptance -->
 ## Step 상태
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S02 | ready | pending | S01이 수락되어 S02를 시작할 수 있다 |
+| S02 | accepted | accepted | Reader Standard 검토 결과가 수락되었다 |
 
 <!-- key: id=key.work.reader-standard.progress.recent-worker-result refs=key.topic.report key.topic.progress-update -->
 ## 최근 Worker 결과
@@ -51,4 +51,4 @@ None
 <!-- key: id=key.work.reader-standard.progress.next-step refs=key.topic.work-sequence key.role.reader -->
 ## 다음 권장 작업
 
-Reader 기준서를 검토한다.
+S03 Author Standard를 시작한다.

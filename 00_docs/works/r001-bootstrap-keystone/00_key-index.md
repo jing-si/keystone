@@ -23,8 +23,8 @@ round 안의 실행 순서는 이 색인에서 `S00`부터 관리한다.
 |---|---|---|---|---|
 | S00 | Document Tree Setup | `document-tree-setup/00_key-index.md` | accepted | `work-packages/`를 폐기하고 `works/` 기준 작업 트리를 만든다 |
 | S01 | Project Standard | `project-standard/00_key-index.md` | accepted | 전체 공통 기준서를 정리한다 |
-| S02 | Reader Standard | `reader-standard/00_key-index.md` | ready | `keystone-reader` 기준서를 정리한다 |
-| S03 | Author Standard | `author-standard/00_key-index.md` | planned | `keystone-author` 기준서와 작업서 생성 표준을 정리한다 |
+| S02 | Reader Standard | `reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서를 정리한다 |
+| S03 | Author Standard | `author-standard/00_key-index.md` | ready | `keystone-author` 기준서와 작업서 생성 표준을 정리한다 |
 | S04 | Clarify Standard | `clarify-standard/00_key-index.md` | planned | `keystone-clarify` 기준서를 정리한다 |
 | S05 | Coordinator Standard | `coordinator-standard/00_key-index.md` | planned | `keystone-coordinator` 기준서를 정리한다 |
 | S06 | Artifact Graph Standard | `artifact-graph-standard/00_key-index.md` | planned | Artifact Graph 기준서를 정리한다 |
