@@ -10,7 +10,7 @@ key:
     - key.doc.standard
 work_id: artifact-graph-standard
 title: Artifact Graph Standard
-status: planned
+status: in_progress
 owner_lane: main-session
 work_type:
   - documentation
@@ -47,5 +47,5 @@ Artifact Graph의 metadata, typed relation, locator, stale handling, impact cand
 <!-- key: id=key.work.artifact-graph-standard.index.current-status refs=key.topic.work-sequence key.topic.progress-update -->
 ## 현재 상태
 
-- Status: planned
+- Status: in_progress
 - Current step: S06

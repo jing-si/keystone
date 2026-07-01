@@ -26,7 +26,7 @@ None
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S06 | planned | pending | S05 수락 후 시작한다 |
+| S06 | in_progress | pending | S05가 수락되어 Artifact Graph 기준서 작업을 진행 중이다 |
 
 <!-- key: id=key.work.artifact-graph-standard.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 ## 최근 Worker 결과
@@ -48,7 +48,7 @@ None
 
 - Artifact Graph는 완전한 code index가 아니라 semantic relation 계층이어야 한다.
 
-<!-- key: id=key.work.artifact-graph-standard.progress.next-step refs=key.topic.next-step key.step.s05 key.topic.artifact-graph -->
+<!-- key: id=key.work.artifact-graph-standard.progress.next-step refs=key.topic.next-step key.step.s06 key.topic.artifact-graph -->
 ## 다음 권장 작업
 
-S05를 수락한 뒤 Artifact Graph 기준서를 검토한다.
+Artifact Graph 기준서를 검토한다.
