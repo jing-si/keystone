@@ -99,6 +99,11 @@ Artifact Graph source surface는 graph 판단 대상과 실제 수정 권한을 
 | Test anchor | `verifies=...` | Linker | Coordinator |
 | Generated reverse index or cache | derived graph index | Linker가 stale 여부를 판단한다 | 초기에는 직접 수정자 없음 |
 
+API contract가 Keystone source document section으로 표현되면 source document metadata로 보아
+Author가 수정한다. API contract가 OpenAPI file, route contract, RPC contract, schema file,
+code annotation처럼 repository source surface에 있으면 Coordinator가 bounded worker assignment로
+수정한다.
+
 Generated reverse index나 cache가 필요해지면 별도 결정(6)과 bounded workflow를 먼저 둔다.
 
 <!-- key: id=key.standard.artifact.graph.record-model refs=key.topic.artifact-graph key.contract.output -->

@@ -26,7 +26,7 @@ None
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S07 | planned | pending | S06 수락 후 시작한다 |
+| S07 | in_progress | pending | S06과 병행해 Linker 기준서 최종 검토를 진행 중이다 |
 
 <!-- key: id=key.work.linker-standard.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 ## 최근 Worker 결과
@@ -53,4 +53,4 @@ None
 <!-- key: id=key.work.linker-standard.progress.next-step refs=key.topic.next-step key.step.s07 key.role.linker -->
 ## 다음 권장 작업
 
-S06을 수락한 뒤 Linker 기준서의 source surface handoff와 linker_report output contract를 최종 검토한다.
+Linker 기준서의 source surface handoff와 linker_report output contract를 최종 검토한다.

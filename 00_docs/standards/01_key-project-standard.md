@@ -563,8 +563,9 @@ Artifact node(15)의 ID는 artifact가 의미하는 책임과 capability(16)를 
 2. 나쁜 ID는 `key.code.src.services.refund_py.line_142`처럼 path나 line number에 종속된다.
 3. 파일 이동, 함수명 변경, 내부 구현 교체가 있어도 의미와 responsibility가 같으면 기존 ID를
    유지한다.
-4. 의미가 바뀌면 새 ID를 고려하고, replacement 관계는 `supersedes`, `replaced_by`, `aliases`로
-   표현한다.
+4. 의미가 바뀌면 새 ID를 고려하고, source surface의 canonical replacement relation은
+   `supersedes`를 우선 사용한다. `replaced_by`는 generated reverse index에서 파생할 수 있고,
+   `aliases`는 typed relation이 아니라 locator 또는 name migration 보조 metadata로 다룬다.
 5. Locator는 path, symbol, test name, config key, schema name 같은 현재 위치 evidence로
    report나 generated index에 기록한다.
 6. Artifact lifecycle status는 필요할 때 `active`, `deprecated`, `removed`로 표현한다.

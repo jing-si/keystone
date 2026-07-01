@@ -463,7 +463,7 @@ author_patch_report:
       main_acceptance_evidence:
   graph_handoff_result:
     source_document_metadata_applied:
-    code_config_schema_test_anchor_deferred_to_coordinator:
+    code_config_schema_api_test_anchor_deferred_to_coordinator:
     linker_report_required:
   verification:
     commands_or_checks:

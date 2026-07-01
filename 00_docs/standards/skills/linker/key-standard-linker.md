@@ -157,8 +157,8 @@ Parsing과 normalization은 다음 기준을 따른다.
 
 1. `key.id`와 code anchor `id`는 stable artifact identity로 보고 locator와 분리한다.
 2. `key.refs`는 탐색 후보 edge로만 사용하고 required impact relation으로 확정하지 않는다.
-3. Code anchor의 `provides`, `uses`, `implements`, `verifies`, `governed_by`, `documents`,
-   `supersedes`, `derived_from`만 초기 typed relation으로 normalize한다.
+3. Code/config/schema/API/test anchor의 `provides`, `uses`, `implements`, `verifies`,
+   `governed_by`, `documents`, `supersedes`, `derived_from`만 초기 typed relation으로 normalize한다.
 4. Unknown relation, malformed metadata, duplicate ID, missing target은 mechanical stale candidate로
    보고한다.
 5. Import, call, filename, keyword, heading overlap은 observed 또는 inferred evidence로 분리해
@@ -292,7 +292,7 @@ linker_report:
   source_surface_handoffs:
     author:
       - artifact:
-        surface: source_document_frontmatter | section_comment | decision_record
+        surface: source_document_frontmatter | section_comment | decision_record | api_contract_source_section
         recommended_change:
         reason:
     coordinator:
