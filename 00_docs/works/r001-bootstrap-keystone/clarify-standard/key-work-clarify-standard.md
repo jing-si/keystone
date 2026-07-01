@@ -34,9 +34,10 @@ Include:
 
 Exclude:
 
-- 넓은 문서 수정
-- 기준서(3)나 작업서(4) 직접 작성
-- implementation code, config, schema, API, test, generated/codegen artifact
+- Clarify runtime 책임으로 넓은 문서 수정을 수행하게 만들기
+- Clarify runtime 책임으로 기준서(3)나 작업서(4)를 직접 작성하게 만들기
+- Clarify runtime 책임으로 implementation code, config, schema, API, test,
+  generated/codegen artifact를 수정하게 만들기
 
 Conditionally allowed:
 
@@ -60,8 +61,9 @@ Conditionally allowed:
 - [ ] `decision_completeness_check`가 선택/기각 옵션, 영향 문서와 artifact, acceptance 또는
       status 영향, 기록 범위와 사유, Author 적용 가능 여부를 드러낸다.
 - [ ] affected artifact 후보 범위가 capability, code, config, schema, API, test를 포함한다.
-- [ ] decision recording hint가 global, round, work 범위별 기록 위치를 권장하되 기록 권한으로
-      해석되지 않는다.
+- [ ] decision recording hint가 global, round, work 범위별 기록 위치 또는 none/unresolved 상태를
+      표현하되 기록 권한으로 해석되지 않는다.
+- [ ] Author Clarify-Apply 입력이 `decision_recording_hint`를 포함한다.
 - [ ] decision recording hint가 Clarify result의 조건부 필수 output으로 연결되어 있다.
 - [ ] 불충분한 답변은 `author_edit_ready: false`, unresolved `open_questions`, Author-ready
       `edit_plan` 없음으로 보고된다.
@@ -113,6 +115,7 @@ Allowed:
 - `rg -n "decision_completeness_check|author_edit_ready|acceptance_or_status_impact" 00_docs/standards/skills/clarify/key-standard-clarify.md`
 - `rg -n "capability, code, config, schema, API, test|config, schema" 00_docs/standards/skills/clarify/key-standard-clarify.md`
 - `rg -n "decision_recording_hint|recommended_path|requires_author_update" 00_docs/standards/skills/clarify/key-standard-clarify.md`
+- `rg -n "decision_recording_hint|decision_completeness_check|Clarify-Apply" 00_docs/standards/skills/author/key-standard-author.md`
 - `rg -n "author_edit_ready: false|open_questions|Author-ready" 00_docs/standards/skills/clarify/key-standard-clarify.md`
 - `rg -n "unresolved_current_topic|out_of_topic" 00_docs/standards/skills/clarify/key-standard-clarify.md`
 - `rg -n "recording_scope: global|recording_reason|scope: global|none|unresolved" 00_docs/standards/skills/clarify/key-standard-clarify.md`

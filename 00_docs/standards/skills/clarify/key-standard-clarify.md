@@ -209,6 +209,9 @@ affected_documents:
       reason:
 ```
 
+`decision_completeness_check.affected_source_documents`는 `affected_documents`의 요약 또는
+mirror field다. 두 필드가 다르게 해석될 수 있으면 structured `affected_documents`를 우선한다.
+
 Open questions는 다음 shape을 우선 사용한다.
 
 ```yaml
