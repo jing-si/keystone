@@ -18,7 +18,9 @@ key:
 
 1. `key-standard-clarify.md`
    - `keystone-clarify`의 목적, trigger/non-trigger, Plan Mode, Default Mode,
-     reflection, edit plan, impact update, stop condition을 정의한다.
+     decision completeness check, decision recording hint, incomplete result,
+     affected document/artifact 후보, initial setup boundary, impact update,
+     stop condition을 정의한다.
 
 <!-- key: id=key.standard.skill.clarify.index.parent-standard refs=key.role.clarify key.doc.standard key.topic.document-system -->
 ## 상위 기준서

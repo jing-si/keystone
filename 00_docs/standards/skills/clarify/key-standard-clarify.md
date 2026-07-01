@@ -67,6 +67,25 @@ key:
 4. Output authority: Clarify output은 사용자가 수락하기 전까지 원천 문서(2)를 대체하지
    않는다.
 
+<!-- key: id=key.standard.skill.clarify.required-input refs=key.role.clarify key.topic.question-flow key.output.edit-plan key.topic.impact-review -->
+## Required input
+
+Clarify는 다음 input을 사용할 수 있어야 한다.
+
+1. 사용자 요청 또는 main의 current clarification topic
+2. 현재 topic과 관련된 원천 문서(2), 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 후보
+3. Plan Mode 또는 Default Mode를 판단할 수 있는 context
+4. 이미 수락된 decision summary와 edit plan이 있는 경우 그 내용
+5. 변경 대상 원천 문서(2), section, 승인 범위 후보
+6. affected document 후보와 affected artifact 후보
+7. Initial setup topic인 경우 document root, tracking policy, output language policy,
+   setup storage location 후보
+8. 민감 정보, local-only path, common/global instruction file, config write 여부와 관련된
+   risk context
+
+Input이 부족하면 Clarify는 high-impact decision을 추정하지 않고 incomplete result,
+open question, stop condition으로 보고한다.
+
 <!-- key: id=key.standard.skill.clarify.trigger-condition refs=key.role.clarify key.doc.decision key.topic.impact-review -->
 ## Trigger condition
 

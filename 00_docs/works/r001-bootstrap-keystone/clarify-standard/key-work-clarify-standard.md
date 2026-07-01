@@ -58,6 +58,7 @@ Conditionally allowed:
 
 - [ ] Clarify가 한 번에 하나의 topic을 다룬다는 점이 명확하다.
 - [ ] 수락된 decision summary와 edit plan을 Author가 적용한다는 경계가 명확하다.
+- [ ] Required input이 S08 `SKILL.md` Required Input section으로 변환 가능한 수준으로 명확하다.
 - [ ] `decision_completeness_check`가 선택/기각 옵션, 영향 문서와 artifact, acceptance 또는
       status 영향, 기록 범위와 사유, Author 적용 가능 여부를 드러낸다.
 - [ ] affected artifact 후보 범위가 capability, code, config, schema, API, test를 포함한다.
@@ -112,6 +113,7 @@ Clarify는 결정 수집과 적용 계획에 집중한다. 문서 반영은 Auth
 Allowed:
 
 - `rg -n "Plan Mode|Default Mode|Author handoff" 00_docs/standards/skills/clarify/key-standard-clarify.md`
+- `rg -n "## Required input|current clarification topic|risk context" 00_docs/standards/skills/clarify/key-standard-clarify.md`
 - `rg -n "decision_completeness_check|author_edit_ready|acceptance_or_status_impact" 00_docs/standards/skills/clarify/key-standard-clarify.md`
 - `rg -n "capability, code, config, schema, API, test|config, schema" 00_docs/standards/skills/clarify/key-standard-clarify.md`
 - `rg -n "decision_recording_hint|recommended_path|requires_author_update" 00_docs/standards/skills/clarify/key-standard-clarify.md`
