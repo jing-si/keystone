@@ -117,3 +117,7 @@ Start with:
 The existing `work-package-doc-architect` and `subagent-work-coordinator` skills
 are prototype references for this project. They are not final runtime
 dependencies and are expected to be replaced by Keystone skills.
+
+## License
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).

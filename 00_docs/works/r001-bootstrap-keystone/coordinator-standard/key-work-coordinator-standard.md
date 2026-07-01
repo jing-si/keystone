@@ -126,7 +126,8 @@ Coordinator 역할이나 Main acceptance를 대체하지 않는다.
 - work unit이 bounded worker assignment로 자를 수 없다.
 - high-risk implementation이 main/user decision 없이 필요하다.
 - worker authority, scope, injected skill contract, stop condition이 불명확하다.
-- domain-specific injected skill이 없는데 default bounded worker contract도 없다.
+- domain-specific injected skill, 명시된 external coding skill, default bounded worker contract 중
+  어떤 injected skill contract도 사용할 수 없다.
 - 여러 외부 코딩 스킬 후보가 있고 선택에 따라 workflow, verification, risk가 달라지지만
   main/user 선택이 없다.
 - 명시된 외부 코딩 스킬의 필수 절차가 Coordinator assignment boundary와 충돌한다.

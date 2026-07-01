@@ -584,7 +584,8 @@ Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청
 11. Worker가 전체 작업서(4)를 재해석하거나 추가 subagent를 생성해야만 진행할 수 있다.
 12. File-writing worker가 필요한데 single workspace guard가 없다.
 13. 여러 file-writing worker를 동시에 배정해야만 진행할 수 있다.
-14. Default worker contract 또는 domain-specific injected skill contract가 없다.
+14. Default, domain-specific, explicit external coding skill 중 어떤 injected skill contract도
+    assignment에 포함할 수 없다.
 15. Accepted decision이 관련 work order나 progress record에 전파되지 않아 current task 방향을
     바꿀 수 있다.
 16. 새 reusable code/config/schema/API/test artifact를 만들려 하지만 Linker report 또는 reuse

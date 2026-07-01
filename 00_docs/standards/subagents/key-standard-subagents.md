@@ -192,6 +192,7 @@ injected_skill:
     - 제공된 source context와 read scope 사용
     - missing context, missing scope, missing verification 보고
   required_output:
+    - skill_usage
     - scope_check
     - forbidden_change_check
     - verification
