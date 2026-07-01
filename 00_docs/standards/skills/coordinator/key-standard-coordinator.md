@@ -162,7 +162,7 @@ Coordinator는 다음 순서를 따른다.
    seed, required/optional/excluded candidates를 확인한다.
 7. Work unit이 bounded worker assignment로 자를 수 있는지 판단한다.
 8. Subagent 기준서에 따라 purpose preset, authority, injected skill contract를 선택한다.
-9. Code/config/test 수정 요청에서 외부 코딩 스킬(12)이 명시되었으면 Coordinator를 유지한 채
+9. Code/config/schema/test 수정 요청에서 외부 코딩 스킬(12)이 명시되었으면 Coordinator를 유지한 채
    해당 스킬을 injected skill로 주입한다.
 10. Domain-specific 또는 명시된 external coding skill이 없으면 `keystone-default-bounded-worker`
     contract를 선택한다.
@@ -192,9 +192,9 @@ Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
    - intent, changed nodes, impact seeds, required candidates, optional candidates, excluded
      scope, verification, acceptance state를 담는다.
 4. Worker assignment
-   - assignment id, goal, intent summary, purpose, role hint, authority, source documents,
-     accepted decisions, applicable standards, context pack, injected skill contract,
-     scope, forbidden changes, stop conditions, verification, workspace guard,
+   - assignment id, goal, completion criteria, intent summary, purpose, role hint, authority,
+     source documents, accepted decisions, applicable standards, context pack, injected skill
+     contract, scope, forbidden changes, stop conditions, verification, workspace guard,
      main context checkpoint, return report contract를 담는다.
 5. Worker report review
    - status, changed files, changed artifact IDs, verification result, scope check,
@@ -222,15 +222,21 @@ main_context_checkpoint:
     work_id:
     step_id:
   current_user_instruction:
+  progress_state:
+  session_state:
   source_conflicts:
     - document:
       conflict:
       resolved_by:
+  source_conflict_check:
+  stale_work_order_check:
+  accepted_decision_propagation_check:
   preserved_boundaries:
     - main_acceptance_only
     - no_scope_expansion
     - no_child_subagents
     - single_workspace_one_writer
+  acceptance_owner: main
 ```
 
 이 runtime output은 기본적으로 persistent 문서가 아니다. 명시적 필요가 있을 때만 파생
@@ -245,6 +251,7 @@ Worker assignment는 다음 shape을 우선 사용한다.
 worker_assignment:
   assignment_id:
   goal:
+  completion_criteria:
   intent_summary:
   purpose: investigate | document_edit | implement | review | verify
   role_hint:
@@ -370,6 +377,32 @@ worker_report:
   recommended_next_action:
 ```
 
+Worker report review는 다음 shape을 우선 사용한다.
+
+```yaml
+worker_report_review:
+  assignment_id:
+  report_status:
+  actual_state_confirmed: true | false
+  scope_result: within_scope | out_of_scope | unclear
+  forbidden_change_result: none | found | unclear
+  verification_result: pass | fail | not_run | inconclusive
+  source_conflict_result:
+  main_context_preserved: true | false
+  reason_codes:
+  review_required: true | false
+  verification_required: true | false
+  repair_required: true | false
+  escalation_required: true | false
+  coordinator_decision: accept_candidate | repair | review | verify | escalate | block
+  main_acceptance_allowed: true | false
+  residual_risk:
+  next_action:
+```
+
+`accept_candidate`는 Main acceptance가 아니라 Main이 acceptance 판단을 할 수 있는 후보
+상태다.
+
 <!-- key: id=key.standard.skill.coordinator.purpose-routing-contract refs=key.role.coordinator key.role.subagent key.standard.subagent key.topic.work-execution key.topic.keystone-metadata key.topic.artifact-graph -->
 ## Purpose routing contract
 
@@ -430,6 +463,10 @@ workspace_guard:
   file_change_report_required: true
 ```
 
+Read-only `investigate`, `review`, `verify` worker는 file-writing worker와 달리 병렬 후보가 될
+수 있다. 단, Coordinator가 report ordering, source conflict 판단, Main acceptance 판단을
+보존할 수 없으면 순차 실행한다.
+
 <!-- key: id=key.standard.skill.coordinator.report-handling-contract refs=key.role.coordinator key.topic.report key.role.subagent key.standard.subagent -->
 ## Report handling contract
 
@@ -449,6 +486,9 @@ Coordinator는 받은 status를 다음 workflow 결정으로 처리한다.
 
 Report status는 progress status가 아니다. Coordinator는 worker가 `DONE`을 보고해도 actual
 state, scope boundary, verification, residual risk를 확인하기 전에는 accepted로 처리하지 않는다.
+Coordinator는 subagent 기준서의 reason code catalog를 우선 사용한다. 특히 source conflict
+계열은 `source_conflict`, `stale_work_order`, `stale_progress_record`,
+`accepted_decision_not_propagated`를 분리해 review focus와 next action으로 연결한다.
 
 <!-- key: id=key.standard.skill.coordinator.review-verification-flow refs=key.role.coordinator key.topic.verification key.topic.review key.topic.keystone-metadata key.topic.artifact-graph -->
 ## Review and verification flow
@@ -591,6 +631,6 @@ Coordinator 기준은 다음 방법으로 검증한다.
 22. Verification command:
    - `rg --files 00_docs`
    - Coordinator 관련 기준서를 읽어 link와 scope consistency 확인
-   - `rg -n "branch|worktree|merge gate|remote push|commit checkpoint|repo-integrator|task branch|session branch" 00_docs/standards 00_docs/works`
+   - `rg -n "branch|worktree|merge gate|remote push|commit checkpoint|repo-integrator|task branch|session branch" 00_docs/standards 00_docs/works | rg -v 'rg -n "branch\\|worktree'`
    - `rg -n "single workspace|bounded worker|worker assignment|purpose preset|injected skill contract|workspace guard" 00_docs/standards 00_docs/works`
    - `rg -n "external coding skill|외부 코딩 스킬|keystone-default-bounded-worker|injected skill" 00_docs/standards`

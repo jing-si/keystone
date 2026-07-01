@@ -54,6 +54,7 @@ Conditionally allowed:
 
 ## Source Context
 
+- `00_docs/key-context-map.md`
 - `00_docs/standards/01_key-project-standard.md`
 - `00_docs/standards/subagents/key-standard-subagents.md`
 - `00_docs/standards/skills/coordinator/00_key-index.md`
@@ -145,7 +146,7 @@ Allowed:
 - `rg -n "keystone-default-bounded-worker|main_context_checkpoint|source_conflict|stale_work_order|accepted_decision_not_propagated" 00_docs/standards`
 - `rg -n "external coding skill|외부 코딩 스킬|DEC-WORKS-008|injected skill" 00_docs/standards 00_docs/works`
 - `rg -n "requested_scope_change|api_contract|external_skill_scope_conflict|source_authority_change|acceptance_criteria_change" 00_docs/standards/subagents/key-standard-subagents.md`
-- `rg -n "branch|worktree|merge gate|remote push|commit checkpoint|repo-integrator|task branch|session branch" 00_docs/standards 00_docs/works`
+- `rg -n "branch|worktree|merge gate|remote push|commit checkpoint|repo-integrator|task branch|session branch" 00_docs/standards 00_docs/works | rg -v 'rg -n "branch\\|worktree'`
 - Coordinator 관련 기준서와 작업서의 link와 scope consistency 확인
 
 <!-- key: id=key.work.coordinator-standard.order.expected-output refs=key.contract.output key.role.coordinator key.topic.runtime-handoff key.doc.work-order -->

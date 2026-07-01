@@ -29,7 +29,7 @@ None
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S05 | ready | pending | S04가 수락되어 S05를 시작할 수 있다 |
+| S05 | in_progress | pending | Coordinator 기준서의 S05 completion criteria 보강을 진행 중이다 |
 
 <!-- key: id=key.work.coordinator-standard.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 
@@ -53,10 +53,11 @@ None
 
 ## 누적 발견사항
 
-- None
+- `worker_assignment.completion_criteria`, `worker_report_review`, reason code 사용 방식, 검증 명령
+  self-match 제거가 S05 수락 전 보강 후보로 확인되었다.
 
 <!-- key: id=key.work.coordinator-standard.progress.next-step refs=key.topic.next-step key.step.s05 key.role.coordinator -->
 
 ## 다음 권장 작업
 
-Coordinator 기준서를 검토한다.
+S05 보강 결과를 검증하고 Main acceptance 여부를 판단한다.

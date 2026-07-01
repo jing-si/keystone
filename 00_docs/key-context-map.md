@@ -67,7 +67,7 @@ bounded worker 실행 결과를 아티팩트 그래프(14)와 worker assignment/
 | Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서 |
 | Author Standard | `00_docs/works/r001-bootstrap-keystone/author-standard/00_key-index.md` | accepted | `keystone-author` 기준서와 작업서 생성 표준 |
 | Clarify Standard | `00_docs/works/r001-bootstrap-keystone/clarify-standard/00_key-index.md` | accepted | `keystone-clarify` 기준서 |
-| Coordinator Standard | `00_docs/works/r001-bootstrap-keystone/coordinator-standard/00_key-index.md` | ready | `keystone-coordinator` 기준서 |
+| Coordinator Standard | `00_docs/works/r001-bootstrap-keystone/coordinator-standard/00_key-index.md` | in_progress | `keystone-coordinator` 기준서 |
 | Artifact Graph Standard | `00_docs/works/r001-bootstrap-keystone/artifact-graph-standard/00_key-index.md` | planned | Artifact Graph 기준서 |
 | Linker Standard | `00_docs/works/r001-bootstrap-keystone/linker-standard/00_key-index.md` | planned | `keystone-linker` 기준서 |
 | Skill Creation | `00_docs/works/r001-bootstrap-keystone/skill-creation/00_key-index.md` | planned | Keystone skill source 생성 |
