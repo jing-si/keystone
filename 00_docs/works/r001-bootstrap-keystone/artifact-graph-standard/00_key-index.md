@@ -23,8 +23,8 @@ risk_level: medium
 <!-- key: id=key.work.artifact-graph-standard.index.summary refs=key.topic.artifact-graph key.topic.keystone-metadata key.topic.code-anchor -->
 ## 요약
 
-Artifact Graph의 metadata, typed relation, locator, stale handling, impact candidate 기준서를
-정리한다.
+Artifact Graph의 model language, ownership boundary, metadata, typed relation, locator,
+stale/gap handling, impact candidate 기준서를 정리한다.
 
 <!-- key: id=key.work.artifact-graph-standard.index.goal refs=key.topic.artifact-graph key.doc.standard -->
 ## 목표
@@ -37,6 +37,7 @@ Artifact Graph의 metadata, typed relation, locator, stale handling, impact cand
 
 - `00_docs/standards/01_key-project-standard.md`
 - `00_docs/standards/artifacts/key-standard-artifact-graph.md`
+- `00_docs/standards/skills/linker/key-standard-linker.md` (ownership consistency reference)
 
 <!-- key: id=key.work.artifact-graph-standard.index.documents refs=key.doc.work key.topic.progress-update -->
 ## 문서

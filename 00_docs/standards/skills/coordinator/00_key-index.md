@@ -42,7 +42,7 @@ key:
    `STD-KEYSTONE-016`, `STD-KEYSTONE-022`, `STD-KEYSTONE-024`,
    `STD-KEYSTONE-025`, `STD-KEYSTONE-030`, `STD-KEYSTONE-031`,
    `STD-KEYSTONE-032`, `STD-KEYSTONE-033`, `STD-KEYSTONE-043`을 먼저 확인한다.
-2. Artifact graph impact/stale 후보가 필요하면 `../linker/00_key-index.md`를 읽는다.
+2. Artifact graph impact/stale/gap 후보가 필요하면 `../linker/00_key-index.md`를 읽는다.
 3. Subagent purpose preset, authority, report status를 확인해야 하면
    `../../subagents/key-standard-subagents.md`를 읽는다.
 4. Coordinator 구현 또는 상세 계약 검토가 필요하면 `key-standard-coordinator.md`를 읽는다.

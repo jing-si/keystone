@@ -33,7 +33,7 @@ key:
 
 1. Reader 관련 작업을 준비할 때는 `../../01_key-project-standard.md`의 `STD-KEYSTONE-040`을
    먼저 확인한다.
-2. Artifact impact/stale 후보 해석이 필요하면 `../linker/00_key-index.md`를 읽는다.
+2. Artifact impact/stale/gap 후보 해석이 필요하면 `../linker/00_key-index.md`를 읽는다.
 3. Reader 구현 또는 상세 계약 검토가 필요하면 `key-standard-reader.md`를 읽는다.
 4. Reader 기준서가 전체 공통 기준서와 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 전체 공통 기준서를 임시 우선 기준으로 삼는다.

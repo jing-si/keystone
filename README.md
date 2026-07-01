@@ -35,7 +35,7 @@ Keystone is planned as five independent but cooperating skills:
 | `keystone-clarify` | Collect high-impact policy, scope, document, and skill-contract decisions by topic before source documents are changed. |
 | `keystone-author` | Create and revise 기준서 and 작업서 as reusable source documents. |
 | `keystone-reader` | Navigate relevant 기준서 and 작업서, orient to a project, and prepare main-agent work context. |
-| `keystone-linker` | Discover document, capability, code, config, schema, API, and test artifact links and report impact or stale candidates. |
+| `keystone-linker` | Interpret the Artifact Graph read-only, discover document, capability, code, config, schema, API, and test artifact links, and report impact/stale/gap candidates plus handoff seeds. |
 | `keystone-coordinator` | Turn Keystone context into bounded worker assignments, receive worker reports, and keep the main agent in a supervisory role. |
 
 ## Document Model
@@ -87,23 +87,15 @@ This repository currently contains the documentation foundation for the
 Keystone skill-system. The initial repo-local skill source files under `skills/`
 have not been implemented yet.
 
-The active work round is `R001 Bootstrap Keystone`:
+The authoritative current work status is maintained in:
 
-| Step | Work | Status |
-|---|---|---|
-| S00 | Document Tree Setup | accepted |
-| S01 | Project Standard | accepted |
-| S02 | Reader Standard | accepted |
-| S03 | Author Standard | accepted |
-| S04 | Clarify Standard | ready |
-| S05 | Coordinator Standard | planned |
-| S06 | Artifact Graph Standard | planned |
-| S07 | Linker Standard | planned |
-| S08 | Skill Creation | planned |
-| S09 | Integration Verification | planned |
+- [`00_docs/key-context-map.md`](00_docs/key-context-map.md)
+- [`00_docs/works/00_key-index.md`](00_docs/works/00_key-index.md)
+- [`00_docs/works/r001-bootstrap-keystone/00_key-index.md`](00_docs/works/r001-bootstrap-keystone/00_key-index.md)
 
-Next source-document work starts from S04 Clarify Standard. Skill source
-creation is intentionally deferred until the relevant standards are accepted.
+README intentionally does not duplicate active step status so project state
+does not go stale. Skill source creation is intentionally deferred until the
+relevant standards are accepted.
 
 Start with:
 

@@ -31,8 +31,8 @@ bounded worker 실행 결과를 아티팩트 그래프(14)와 worker assignment/
 2. `keystone-clarify`: 정책, 범위, 문서, 스킬 계약에 관한 결정(6)을 topic 단위로 정리한다.
 3. `keystone-author`: 기준서, 작업서, 진행 기록, 결정 기록, Change Set(17)을 작성하거나
    승인된 범위에서 수정한다.
-4. `keystone-linker`: 문서, capability, code, config, schema, API, test artifact의 연결과
-   impact/stale 후보를 탐색한다.
+4. `keystone-linker`: Artifact Graph의 operational interpretation owner로서 문서, capability,
+   code, config, schema, API, test artifact의 연결과 impact/stale/gap 후보를 탐색한다.
 5. `keystone-coordinator`: Keystone context를 worker assignment로 만들고 worker report를
    Keystone workflow로 회수한다.
 
@@ -47,12 +47,12 @@ bounded worker 실행 결과를 아티팩트 그래프(14)와 worker assignment/
 | 색인 | `00_docs/standards/00_key-index.md` | 사용 가능한 기준서를 탐색할 때 먼저 읽는다 |
 | 프로젝트 | `00_docs/standards/01_key-project-standard.md` | 프로젝트 공통 규칙, 원천 문서(2) 정책, 아티팩트 그래프(14), 스킬군 역할, coordinator 호환성을 확인할 때 읽는다 |
 | Subagent | `00_docs/standards/subagents/key-standard-subagents.md` | helper/subagent의 bounded worker model, purpose preset, authority, injected skill contract, report status, workspace guard를 확인할 때 읽는다 |
-| Artifact Graph | `00_docs/standards/artifacts/key-standard-artifact-graph.md` | metadata, typed relation, locator, stale handling, impact candidate 기준을 확인할 때 읽는다 |
+| Artifact Graph | `00_docs/standards/artifacts/key-standard-artifact-graph.md` | graph model, ownership boundary, typed relation, locator, stale/gap handling, impact candidate 기준을 확인할 때 읽는다 |
 | 스킬별 | `00_docs/standards/skills/00_key-index.md` | 개별 Keystone 스킬의 상세 기준서를 찾을 때 읽는다 |
 | Reader | `00_docs/standards/skills/reader/key-standard-reader.md` | `keystone-reader`의 trigger, mode, output, read-only boundary를 확인할 때 읽는다 |
 | Author | `00_docs/standards/skills/author/key-standard-author.md` | `keystone-author`의 기준서(3), 작업서(4), progress update boundary를 확인할 때 읽는다 |
 | Clarify | `00_docs/standards/skills/clarify/key-standard-clarify.md` | `keystone-clarify`의 decision collection, reflection, Author handoff를 확인할 때 읽는다 |
-| Linker | `00_docs/standards/skills/linker/key-standard-linker.md` | `keystone-linker`의 artifact discovery, impact analysis, stale review, worker assignment seed를 확인할 때 읽는다 |
+| Linker | `00_docs/standards/skills/linker/key-standard-linker.md` | `keystone-linker`의 operational graph interpretation, impact analysis, stale/gap review, source surface handoff, worker assignment seed를 확인할 때 읽는다 |
 | Coordinator | `00_docs/standards/skills/coordinator/key-standard-coordinator.md` | `keystone-coordinator`의 worker assignment/report, bounded worker routing, report, review, verification, acceptance flow를 확인할 때 읽는다 |
 
 <!-- key: id=key.context-map.work-order refs=key.topic.document-system key.doc.source key.topic.work-sequence key.topic.work-round -->
@@ -165,7 +165,7 @@ S05 coordinator 기준서는 accepted 상태다.
 | `keystone-reader` | planned | 프로젝트를 파악하고 관련 기준서/작업서를 탐색하며 작업 준비 context를 만든다 |
 | `keystone-author` | planned | 기준서와 작업서를 생성하고 승인된 원천 문서(2) 변경을 적용한다 |
 | `keystone-clarify` | planned | 영향도 높은 결정(6)을 topic 단위로 수집하고 Author가 적용할 edit plan을 만든다 |
-| `keystone-linker` | planned | 문서, capability, code, config, schema, API, test artifact의 연결과 impact/stale 후보를 탐색한다 |
+| `keystone-linker` | planned | Artifact Graph를 read-only로 해석하고 문서, capability, code, config, schema, API, test artifact의 impact/stale/gap 후보와 handoff seed를 보고한다 |
 | `keystone-coordinator` | planned | worker assignment/report 기반 Goal assignment, report, review, verification, acceptance flow를 조율한다 |
 
 <!-- key: id=key.context-map.prototype-skill-reference refs=key.topic.bootstrap key.topic.skill-contract -->

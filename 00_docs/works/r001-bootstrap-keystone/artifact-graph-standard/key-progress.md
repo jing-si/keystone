@@ -47,8 +47,12 @@ None
 ## 누적 발견사항
 
 - Artifact Graph는 완전한 code index가 아니라 semantic relation 계층이어야 한다.
+- Linker는 graph interpretation authority를 갖지만 source edit authority를 갖지 않아야 한다.
+- Metadata gap은 mechanical stale 또는 semantic stale과 분리해 보고해야 한다.
+- S06 graph model language와 S07 Linker operation은 겹치므로 ownership boundary와 handoff surface를 함께 맞춰야 한다.
 
 <!-- key: id=key.work.artifact-graph-standard.progress.next-step refs=key.topic.next-step key.step.s06 key.topic.artifact-graph -->
 ## 다음 권장 작업
 
-Artifact Graph 기준서를 검토한다.
+Artifact Graph와 Linker 기준서의 ownership boundary, relation propagation, stale/gap 처리를 검증하고
+S06 review/acceptance로 넘긴다.

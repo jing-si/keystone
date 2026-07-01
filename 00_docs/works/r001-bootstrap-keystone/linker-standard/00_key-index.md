@@ -23,14 +23,15 @@ risk_level: medium
 <!-- key: id=key.work.linker-standard.index.summary refs=key.role.linker key.topic.artifact-graph key.topic.impact-review -->
 ## 요약
 
-`keystone-linker`의 artifact discovery, impact analysis, stale review, worker assignment seed
-기준서를 정리한다.
+`keystone-linker`의 operational graph interpretation, artifact discovery, impact analysis,
+stale/gap review, worker assignment seed 기준서를 정리한다.
 
 <!-- key: id=key.work.linker-standard.index.goal refs=key.role.linker key.doc.standard key.topic.artifact-graph -->
 ## 목표
 
-Linker가 문서, capability, code, config, schema, API, test artifact의 연결과 impact/stale 후보를
-read-only로 탐색하고 Coordinator에게 worker assignment seed를 넘기는 경계를 명확히 한다.
+Linker가 문서, capability, code, config, schema, API, test artifact의 연결과 impact/stale/gap
+후보를 read-only로 해석하고 Author/Coordinator에게 source surface별 handoff seed를 넘기는
+경계를 명확히 한다.
 
 <!-- key: id=key.work.linker-standard.index.source-standards refs=key.role.linker key.doc.standard -->
 ## 원천 기준서

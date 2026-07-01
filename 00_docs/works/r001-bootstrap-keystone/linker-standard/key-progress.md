@@ -47,8 +47,10 @@ None
 ## 누적 발견사항
 
 - Linker는 artifact graph의 후보 해석과 보고를 담당하되 직접 수정하지 않는다.
+- S06에서 Linker의 operational graph interpretation ownership과 Author/Coordinator handoff boundary를
+  선반영한다. S07에서는 이 output contract와 workflow를 최종 검토한다.
 
-<!-- key: id=key.work.linker-standard.progress.next-step refs=key.topic.next-step key.step.s06 key.role.linker -->
+<!-- key: id=key.work.linker-standard.progress.next-step refs=key.topic.next-step key.step.s07 key.role.linker -->
 ## 다음 권장 작업
 
-S06을 수락한 뒤 Linker 기준서를 검토한다.
+S06을 수락한 뒤 Linker 기준서의 source surface handoff와 linker_report output contract를 최종 검토한다.

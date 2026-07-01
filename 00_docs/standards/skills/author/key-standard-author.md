@@ -32,7 +32,8 @@ key:
 5. Parent-child 기준서 구조화와 index update
 6. Progress update boundary
 7. Change Set(17) 작성 규칙
-8. 아티팩트 그래프(14) 기반 code/config/schema/API/test impact candidate와 Linker report handoff
+8. Linker report 또는 Linker handoff seed를 바탕으로 source document metadata 변경,
+   Change Set(17), document sync candidate를 반영
 9. 문서 작성 후 verification과 report contract
 
 <!-- key: id=key.standard.skill.author.out-of-scope refs=key.role.author key.topic.document-authoring key.topic.skill-contract key.topic.formal-workflow key.topic.external-assist -->
@@ -45,7 +46,7 @@ key:
 5. 승인되지 않은 scope, acceptance criteria, status semantics 변경
 6. 명시적 필요 없이 persistent 파생 에이전트 문서(8) 생성
 7. 외부 보조 스킬(12)을 자동 실행 대상으로 만들기
-8. Artifact relation, impact candidate, stale candidate를 깊게 해석하기
+8. Artifact relation, impact candidate, stale candidate, metadata gap을 깊게 해석하기
 
 <!-- key: id=key.standard.skill.author.standard-relations refs=key.role.author key.doc.standard key.topic.skill-contract key.standard.subagent -->
 ## 기준 관계
@@ -398,24 +399,30 @@ change_set:
 ```
 
 <!-- key: id=key.standard.skill.author.metadata-writing-impact-review refs=key.role.author key.topic.keystone-metadata key.topic.code-anchor key.topic.impact-review key.topic.artifact-graph -->
-## 키메타 작성과 artifact impact 검토
+## 키메타 작성과 Artifact Graph handoff
 
-Author는 키메타(9)와 코드 앵커(18)를 다음처럼 다룬다.
+Author는 source document surface의 키메타(9)를 다음처럼 반영한다. Code/config/schema/API/test
+source surface의 코드 앵커(18)는 Author가 직접 수정하지 않는다.
 
 1. 새 기준서(3)나 작업서(4)를 만들 때 문서 전체 `key.id`를 부여한다.
 2. 관련 문서 탐색에 실제 도움이 되는 경우에만 `key.refs`를 부여한다.
 3. `key.refs`를 붙일 때는 먼저 참조할 기존 `key.id`가 있는지 확인하고, 가능하면 재사용한다.
 4. 문서 전체에 적용되는 metadata는 YAML frontmatter의 `key`에 둔다.
 5. 특정 section에만 적용되는 metadata는 heading 바로 위 Markdown comment에 한 줄로 둔다.
-6. 기준서나 작업서를 수정할 때 같은 `key.id`를 참조하는 문서는 impact candidate로 검토한다.
-7. 같은 `key.refs`가 있어도 자동 수정하지 않는다.
-8. `key.refs`가 없어도 관련 없음으로 단정하지 않고 link, path, heading, keyword도 함께
+6. 문서 metadata 변경이 Artifact Graph 해석을 요구하면 Linker report 또는 Linker handoff seed를
+   요구한다.
+7. Linker가 보고한 source document metadata gap은 승인 범위 안에서 Author가 반영할 수 있다.
+8. Linker가 보고한 code/config/schema/API/test anchor gap은 Author가 직접 수정하지 않고
+   Coordinator next action으로 남긴다.
+9. 기준서나 작업서를 수정할 때 같은 `key.id`를 참조하는 문서는 impact candidate로 검토한다.
+10. 같은 `key.refs`가 있어도 자동 수정하지 않는다.
+11. `key.refs`가 없어도 관련 없음으로 단정하지 않고 link, path, heading, keyword도 함께
    확인한다.
-9. 코드 앵커(18) typed relation이 있는 code/config/schema/API/test artifact는 Linker handoff
+12. 코드 앵커(18) typed relation이 있는 code/config/schema/API/test artifact는 Linker handoff
    seed 또는 Linker report requirement로 보고한다.
-10. Capability(16)가 바뀌면 provider, consumer, verifier 후보 탐색이 필요한지 보고한다.
-11. 실제 문서 수정은 승인 범위와 의미 영향이 명확할 때만 수행한다.
-12. Code, config, schema, API, test artifact와 코드 앵커 수정은 Author가 직접 수행하지 않는다.
+13. Capability(16)가 바뀌면 provider, consumer, verifier 후보 탐색이 필요한지 보고한다.
+14. 실제 문서 수정은 승인 범위와 의미 영향이 명확할 때만 수행한다.
+15. Code, config, schema, API, test artifact와 코드 앵커 수정은 Author가 직접 수행하지 않는다.
 
 <!-- key: id=key.standard.skill.author.output-contract refs=key.role.author key.contract.output -->
 ## Output contract
@@ -432,7 +439,8 @@ Author는 작업 후 다음을 보고해야 한다.
 8. Metadata gap candidates
 9. Author Edit Contract 또는 helper 사용 여부
 10. 실행한 verification
-11. 남은 risk와 다음 권장 작업
+11. Graph handoff result
+12. 남은 risk와 다음 권장 작업
 
 Author patch report는 다음 shape을 우선 사용한다.
 
@@ -453,6 +461,10 @@ author_patch_report:
       before:
       after:
       main_acceptance_evidence:
+  graph_handoff_result:
+    source_document_metadata_applied:
+    code_config_schema_test_anchor_deferred_to_coordinator:
+    linker_report_required:
   verification:
     commands_or_checks:
     result:
@@ -510,7 +522,7 @@ Author 기준은 다음 방법으로 검증한다.
 10. 문서 변경이 아티팩트 그래프(14)에 미치는 Linker handoff seed 또는 Linker report requirement를
     보고할 수 있어야 한다.
 11. 큰 문서-code-test 영향 변경은 Change Set(17)으로 추적할 수 있어야 한다.
-12. Author는 code/config/schema/test를 직접 수정하지 않아야 한다.
+12. Author는 code/config/schema/API/test를 직접 수정하지 않아야 한다.
 13. Verification command:
    - `rg --files 00_docs`
    - Author 관련 기준서를 읽어 link와 scope consistency 확인

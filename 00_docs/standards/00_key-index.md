@@ -30,7 +30,8 @@ key:
    - Keystone 스킬별 child 기준서로 이동하기 위한 색인이다.
 4. Artifact Graph 기준서 색인: `artifacts/00_key-index.md`
    - source document, decision, work, capability, code, config, schema, API, test artifact의 metadata,
-     relation, locator, stale handling, impact candidate 기준으로 이동하기 위한 색인이다.
+     ownership boundary, relation, locator, stale/gap handling, impact candidate 기준으로 이동하기 위한
+     색인이다.
 5. Reader 기준서: `skills/reader/key-standard-reader.md`
    - `keystone-reader`의 trigger, mode, read-only boundary, output contract,
      mismatch handling을 정의한다.
@@ -41,8 +42,8 @@ key:
    - `keystone-clarify`의 topic-scoped decision collection, reflection, edit plan,
      Author handoff를 정의한다.
 8. Linker 기준서: `skills/linker/key-standard-linker.md`
-   - `keystone-linker`의 artifact discovery, impact analysis, stale review, worker assignment
-     seed output을 정의한다.
+   - `keystone-linker`의 operational graph interpretation, artifact discovery, impact analysis,
+     stale/gap review, source surface handoff, worker assignment seed output을 정의한다.
 9. Coordinator 기준서: `skills/coordinator/key-standard-coordinator.md`
    - `keystone-coordinator`의 worker assignment/report, routing, report, review,
      verification, acceptance flow를 정의한다.
@@ -54,8 +55,8 @@ key:
    `01_key-project-standard.md`를 먼저 읽는다.
 2. Subagent purpose preset, authority, report status, workspace guard가 필요하면
    `subagents/00_key-index.md`를 읽는다.
-3. 문서와 code/config/schema/test artifact 연결, impact candidate, stale metadata 판단이 필요하면
-   `artifacts/00_key-index.md`를 읽는다.
+3. 문서와 code/config/schema/API/test artifact 연결, graph ownership boundary, impact candidate,
+   stale/gap 판단이 필요하면 `artifacts/00_key-index.md`를 읽는다.
 4. 스킬별 상세 계약이 필요하면 `skills/00_key-index.md`에서 해당 child 기준서로 내려간다.
 5. 현재 active work round는 `00_docs/works/00_key-index.md`에서 찾고, round 내부 실행 순서는
    해당 round의 `00_key-index.md`에서 찾는다.

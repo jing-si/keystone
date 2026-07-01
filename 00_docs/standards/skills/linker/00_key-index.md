@@ -17,8 +17,9 @@ key:
 ## 문서
 
 1. `key-standard-linker.md`
-   - `keystone-linker`의 artifact discovery, impact analysis, stale review, worker assignment
-     seed mode와 output contract를 정의한다.
+   - `keystone-linker`의 operational graph interpretation, artifact discovery, impact analysis,
+     stale/gap review, source surface handoff, worker assignment seed mode와 output contract를
+     정의한다.
 
 <!-- key: id=key.standard.skill.linker.index.parent-standard refs=key.role.linker key.doc.standard key.topic.artifact-graph -->
 ## Parent 기준서
@@ -26,8 +27,8 @@ key:
 1. `../../01_key-project-standard.md`
    - Keystone 공통 용어, 원천 문서(2) 권위, metadata 상위 원칙, Linker 책임 anchor를 정의한다.
 2. `../../artifacts/key-standard-artifact-graph.md`
-   - Artifact namespace, typed relation, metadata admission, locator, stale handling,
-     impact candidate 기준을 정의한다.
+   - Artifact namespace, ownership boundary, typed relation direction, metadata admission, locator,
+     stale/gap handling, impact candidate 기준을 정의한다.
 
 <!-- key: id=key.standard.skill.linker.index.reading-rules refs=key.role.linker key.doc.standard key.topic.impact-review -->
 ## 읽기 규칙

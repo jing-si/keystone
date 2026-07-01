@@ -130,3 +130,24 @@ key:
   workspace guard, verification, report contract는 Coordinator assignment가 정한다.
 - 이유: Keystone은 문서와 bounded assignment를 control plane으로 유지해야 하고, 코딩 방법론은
   교체 가능한 execution guidance로 주입되어야 하기 때문이다.
+
+<!-- key: id=key.work.decisions.dec-works-009 refs=key.doc.decision key.topic.artifact-graph key.role.linker key.role.author key.role.coordinator -->
+## DEC-WORKS-009: Linker는 Artifact Graph 해석 권위를 가진다
+
+- 관련 work: Artifact Graph Standard, Linker Standard, Author Standard, Coordinator Standard,
+  Skill Creation, Integration Verification
+- 상태: accepted
+- 결정: Artifact Graph의 model language는 Artifact Graph 기준서가 정의한다.
+- 결정: Linker는 Artifact Graph의 operational interpretation owner다. Linker는 source
+  document, 키메타(9), 코드 앵커(18), repository evidence를 read-only로 해석해 graph state,
+  relation evidence, impact candidate, stale candidate, metadata gap, reuse candidate, test
+  candidate를 판단하고 보고한다.
+- 결정: Linker의 graph ownership은 source edit authority를 포함하지 않는다.
+- 결정: Markdown frontmatter `key.id`, `key.refs`, section-level key comment 같은 source
+  document metadata 변경은 Author가 반영한다.
+- 결정: code/config/schema/API/test file 안의 anchor 변경과 implementation 변경은 Coordinator가
+  bounded worker assignment로 조율한다.
+- 결정: Linker report는 evidence와 handoff input이며 자동 수정, 자동 acceptance, Main
+  acceptance를 대체하지 않는다.
+- 이유: graph 판단 권위와 source edit 권한을 분리해야 candidate 발견이 자동 수정 근거로
+  해석되지 않고, Author와 Coordinator의 기존 authority boundary를 유지할 수 있기 때문이다.

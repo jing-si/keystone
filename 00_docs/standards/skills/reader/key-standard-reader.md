@@ -21,7 +21,7 @@ key:
 읽어 프로젝트를 파악하고, 관련 기준서(3), 작업서(4), 진행 기록(5), 결정(6)을 찾아 main이
 다음 작업을 준비할 수 있도록 read-only context brief를 만든다. Reader는 artifact graph가
 필요한지 판단할 수 있지만, capability, code, config, schema, API, test artifact의 깊은
-impact/stale 해석은 `keystone-linker`로 넘긴다.
+impact/stale/gap 해석은 `keystone-linker`로 넘긴다.
 
 <!-- key: id=key.standard.skill.reader.scope refs=key.role.reader key.topic.document-navigation key.topic.work-preparation key.topic.artifact-graph key.contract.output -->
 ## 적용 범위
@@ -307,7 +307,8 @@ Reader는 키메타(9)와 코드 앵커(18)를 관련 문서와 Linker handoff s
 3. `key.refs`나 typed relation이 없어도 관련 없음으로 단정하지 않는다.
 4. Navigator Mode와 Work Prep Mode output에는 사용한 `key.refs`, artifact seed candidate,
    `artifact_graph_needed` 여부를 포함한다.
-5. Artifact relation, impact candidate, stale candidate 등급화는 `keystone-linker`가 담당한다.
+5. Artifact relation, impact candidate, stale candidate, metadata gap 등급화는
+   `keystone-linker`가 담당한다.
 6. Reader가 발견한 inferred relation은 Linker seed candidate이며 자동 수정 근거가 아니다.
 
 <!-- key: id=key.standard.skill.reader.stop-condition refs=key.role.reader key.boundary.read-only key.topic.work-preparation -->
@@ -336,8 +337,8 @@ Reader 기준은 다음 방법으로 검증한다.
    있어야 한다.
 5. 키메타 또는 코드 앵커를 사용한 경우 output에서 사용한 `key.refs`, artifact seed candidate,
    `artifact_graph_needed` 여부를 확인할 수 있어야 한다.
-6. Reader는 아티팩트 그래프(14) 필요성을 보고할 수 있지만 impact/stale 후보를 확정하거나
-   code/config/schema/test를 수정하지 않아야 한다.
+6. Reader는 아티팩트 그래프(14) 필요성을 보고할 수 있지만 impact/stale/gap 후보를 확정하거나
+   code/config/schema/API/test를 수정하지 않아야 한다.
 7. Verification command:
    - `rg --files 00_docs`
    - Reader 관련 기준서를 읽어 link와 scope consistency 확인
