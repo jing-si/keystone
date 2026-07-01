@@ -25,8 +25,8 @@ round 안의 실행 순서는 이 색인에서 `S00`부터 관리한다.
 | S01 | Project Standard | `project-standard/00_key-index.md` | accepted | 전체 공통 기준서를 정리한다 |
 | S02 | Reader Standard | `reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서를 정리한다 |
 | S03 | Author Standard | `author-standard/00_key-index.md` | accepted | `keystone-author` 기준서와 작업서 생성 표준을 정리한다 |
-| S04 | Clarify Standard | `clarify-standard/00_key-index.md` | ready | `keystone-clarify` 기준서를 정리한다 |
-| S05 | Coordinator Standard | `coordinator-standard/00_key-index.md` | planned | `keystone-coordinator` 기준서를 정리한다 |
+| S04 | Clarify Standard | `clarify-standard/00_key-index.md` | accepted | `keystone-clarify` 기준서를 정리한다 |
+| S05 | Coordinator Standard | `coordinator-standard/00_key-index.md` | ready | `keystone-coordinator` 기준서를 정리한다 |
 | S06 | Artifact Graph Standard | `artifact-graph-standard/00_key-index.md` | planned | Artifact Graph 기준서를 정리한다 |
 | S07 | Linker Standard | `linker-standard/00_key-index.md` | planned | `keystone-linker` 기준서를 정리한다 |
 | S08 | Skill Creation | `skill-creation/00_key-index.md` | planned | 다섯 개 Keystone skill source를 만든다 |

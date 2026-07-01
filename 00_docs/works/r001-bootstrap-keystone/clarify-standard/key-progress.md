@@ -21,7 +21,7 @@ S04
 
 ## 마지막 수락 Step
 
-None
+S04
 
 <!-- key: id=key.work.clarify-standard.progress.step-status refs=key.topic.step-status key.topic.work-sequence key.topic.main-acceptance -->
 
@@ -29,7 +29,7 @@ None
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S04 | ready | pending | S03이 수락되어 S04를 시작할 수 있다 |
+| S04 | accepted | accepted | Clarify Standard 검토 결과가 수락되었다 |
 
 <!-- key: id=key.work.clarify-standard.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 
@@ -55,8 +55,8 @@ None
 
 - None
 
-<!-- key: id=key.work.clarify-standard.progress.next-step refs=key.topic.next-step key.step.s04 key.role.clarify -->
+<!-- key: id=key.work.clarify-standard.progress.next-step refs=key.topic.next-step key.step.s05 key.role.coordinator -->
 
 ## 다음 권장 작업
 
-Clarify 기준서를 검토한다.
+S05 Coordinator Standard를 시작한다.

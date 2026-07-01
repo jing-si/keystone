@@ -11,7 +11,7 @@ key:
     - key.topic.acceptance
 work_id: coordinator-standard
 title: Coordinator Standard
-status: planned
+status: ready
 owner_lane: main-session
 work_type:
   - documentation
@@ -53,5 +53,5 @@ verification, single workspace guard, acceptance 기준을 명확히 한다.
 
 ## 현재 상태
 
-- Status: planned
+- Status: ready
 - Current step: S05

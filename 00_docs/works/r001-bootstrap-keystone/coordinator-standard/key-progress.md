@@ -29,7 +29,7 @@ None
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S05 | planned | pending | S04 수락 후 시작한다 |
+| S05 | ready | pending | S04가 수락되어 S05를 시작할 수 있다 |
 
 <!-- key: id=key.work.coordinator-standard.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 
@@ -55,8 +55,8 @@ None
 
 - None
 
-<!-- key: id=key.work.coordinator-standard.progress.next-step refs=key.topic.next-step key.step.s04 key.role.coordinator -->
+<!-- key: id=key.work.coordinator-standard.progress.next-step refs=key.topic.next-step key.step.s05 key.role.coordinator -->
 
 ## 다음 권장 작업
 
-S04를 수락한 뒤 Coordinator 기준서를 검토한다.
+Coordinator 기준서를 검토한다.
