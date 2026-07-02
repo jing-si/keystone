@@ -254,7 +254,7 @@ Capability node는 code symbol보다 안정적인 기능 단위가 필요할 때
 
 다음 조건 중 하나에 해당하면 capability node를 만들 수 있다.
 
-1. 하나의 문서 의도나 결정(6)이 여러 code/test/config/schema artifact에 걸쳐 구현된다.
+1. 하나의 문서 의도나 결정(6)이 여러 code/config/schema/API/test artifact에 걸쳐 구현된다.
 2. 새 기능 작성 전에 reuse 여부를 판단해야 하는 안정적 기능 단위다.
 3. 기준서(3)나 결정(6)이 직접 govern하는 domain behavior다.
 4. 여러 작업서(4)에서 반복 참조될 가능성이 높다.

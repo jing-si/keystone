@@ -183,12 +183,13 @@ graph
   capability를 provide하거나 use하며, test는 capability를 verify한다.
 - 사용 규칙: 새 기능을 만들기 전에는 관련 capability를 먼저 탐색한다.
 
-(17) Change Set(Change Set): 하나의 사람 의도 또는 결정(6)을 문서, code, test 변경 후보와
-검증으로 묶는 변경 단위
+(17) Change Set(Change Set): 하나의 사람 의도 또는 결정(6)을 문서, code/config/schema/API/test
+변경 후보와 검증으로 묶는 변경 단위
 
 - 의미: changed nodes, impact seeds, required/optional candidates, excluded scope,
   verification, acceptance 상태를 함께 담는 구조다.
-- 사용 규칙: 큰 변경이나 문서-code-test 동시 영향이 있는 변경은 Change Set으로 조율한다.
+- 사용 규칙: 큰 변경이나 문서-code/config/schema/API/test 동시 영향이 있는 변경은 Change Set으로
+  조율한다.
 
 (18) 코드 앵커(code anchor): code, test, config artifact 안에서 아티팩트 그래프(14)를 구성하기
 위해 남기는 Keystone annotation
@@ -234,14 +235,14 @@ normative truth다. 다음 문서를 포함한다.
 파생 에이전트 문서(8)는 원천 문서에서 파생되는 runtime 보조 자료다. 원천 문서와 충돌하면
 원천 문서가 우선한다.
 
-문서, code, test의 권위는 다음처럼 구분한다.
+문서, code/config/schema/API/test의 권위는 다음처럼 구분한다.
 
 1. 수락된 기준서(3)와 결정(6)은 intended behavior와 policy의 규범적 권위다.
-2. Code와 config는 현재 실행 상태의 operative evidence다.
+2. Code, config, schema, API contract는 현재 실행 상태 또는 operative contract evidence다.
 3. Test와 verification result는 behavior 검증 evidence다.
-4. 키메타(9)와 코드 앵커(18)는 navigation and relation evidence이며 문서, code, test의 의미를
-   대체하지 않는다.
-5. 원천 문서(2), code, test가 충돌하면 어느 한쪽을 조용히 덮어쓰지 않는다.
+4. 키메타(9)와 코드 앵커(18)는 navigation and relation evidence이며 문서,
+   code/config/schema/API/test의 의미를 대체하지 않는다.
+5. 원천 문서(2), code/config/schema/API/test가 충돌하면 어느 한쪽을 조용히 덮어쓰지 않는다.
 6. 충돌의 원인과 영향 범위를 분석한 뒤 Main 또는 사용자가 변경 방향을 결정한다.
 
 <!-- key: id=key.standard.project.std-keystone-002 refs=key.topic.bootstrap key.doc.source key.topic.skill-contract -->
@@ -711,7 +712,7 @@ Subagent report status 값과 의미는 `standards/subagents/key-standard-subage
 Change Set(17)은 하나의 사람 의도, 결정(6), 또는 work step이 문서, capability(16), code,
 config, schema, API, test artifact에 미치는 영향을 한 변경 단위로 묶는다.
 
-1. Change Set(17)은 큰 변경이나 문서-code-test 동시 영향이 있는 변경에 사용한다.
+1. Change Set(17)은 큰 변경이나 문서-code/config/schema/API/test 동시 영향이 있는 변경에 사용한다.
 2. Change Set(17)은 `intent`, `changed_nodes`, `impact_seeds`, `required_candidates`,
    `optional_candidates`, `excluded`, `verification`, `acceptance`를 포함할 수 있다.
 3. `changed_nodes`는 실제로 바뀐 artifact node(15)다.

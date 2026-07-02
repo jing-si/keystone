@@ -71,7 +71,7 @@ authority를 포함하지 않는다.
    generation, stale/gap candidate reporting, worker assignment seed preparation
 3. Primary user: main agent, Coordinator, reviewer
 4. Output authority: Linker output은 graph interpretation evidence와 handoff seed이며 원천
-   문서(2), code, test, Main acceptance를 대체하지 않는다.
+   문서(2), code/config/schema/API/test, Main acceptance를 대체하지 않는다.
 
 <!-- key: id=key.standard.skill.linker.trigger-condition refs=key.role.linker key.topic.impact-review key.topic.artifact-graph -->
 ## Trigger condition
@@ -210,7 +210,7 @@ Output focus:
 ### Worker Assignment Seed Mode
 
 Coordinator가 worker assignment(19)를 만들 수 있도록 artifact candidates, reuse candidates,
-test candidates, stale risks를 정리한다.
+test candidates, stale/gap risks, document sync candidates, metadata sync risks를 정리한다.
 
 Output focus:
 

@@ -28,7 +28,7 @@ Include:
 - Clarify result를 Author가 적용할 수 있는지 확인
 - Author가 Change Set을 만들고 Linker handoff seed를 남길 수 있는지 확인
 - Linker가 문서 변경에서 capability/code/config/schema/API/test 후보를 찾을 수 있는지 확인
-- Linker가 code/config/schema/test 변경에서 문서 stale 후보를 찾을 수 있는지 확인
+- Linker가 code/config/schema/API/test 변경에서 문서 stale 후보를 찾을 수 있는지 확인
 - Author가 만든 work step을 Coordinator가 복구할 수 있는지 확인
 - Coordinator가 Current Step Brief, Context Pack, worker assignment, review/verification focus를
   도출할 수 있는지 확인
@@ -70,8 +70,8 @@ Conditionally allowed:
 - [ ] Reader, Author, Clarify, Linker, Coordinator가 같은 source document model을 사용한다.
 - [ ] 다섯 skill이 같은 artifact graph model을 사용한다.
 - [ ] 각 skill의 output이 다음 skill의 input으로 연결될 수 있다.
-- [ ] 문서 변경에서 관련 code/config/schema/test 후보가 나온다.
-- [ ] code/config/schema/test 변경에서 문서 stale 후보가 나온다.
+- [ ] 문서 변경에서 관련 code/config/schema/API/test 후보가 나온다.
+- [ ] code/config/schema/API/test 변경에서 문서 stale 후보가 나온다.
 - [ ] Coordinator가 worker assignment와 worker report contract를 만들 수 있다.
 - [ ] 외부 코딩 스킬은 Coordinator replacement가 아니라 injected skill로 해석된다.
 - [ ] Coordinator가 현재 work step을 복구할 수 있다.
@@ -120,7 +120,7 @@ Scenario A: 문서 변경에서 code 영향 후보를 찾는다.
 4. Linker가 capability/code/config/schema/API/test 후보를 찾는다.
 5. Coordinator가 worker assignment를 만든다.
 
-통과 기준: 코드를 직접 수정하지 않아도 관련 code/config/schema/test 후보가 나온다.
+통과 기준: 코드를 직접 수정하지 않아도 관련 code/config/schema/API/test 후보가 나온다.
 
 Scenario B: code 변경에서 문서 stale 후보를 찾는다.
 
@@ -128,7 +128,7 @@ Scenario B: code 변경에서 문서 stale 후보를 찾는다.
 2. Linker가 관련 기준서, decision, capability, test metadata stale 후보를 찾는다.
 3. Author가 문서 sync 필요 여부를 보고한다.
 
-통과 기준: code/config/schema/test 변경 후 문서 stale 가능성이 report된다.
+통과 기준: code/config/schema/API/test 변경 후 문서 stale 가능성이 report된다.
 
 Scenario C: bounded worker assignment를 회수한다.
 
