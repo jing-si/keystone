@@ -112,7 +112,7 @@ fixtures/simple-keystone-project/
 <!-- key: id=key.work.integration-verification.order.scenarios refs=key.topic.simulation key.topic.artifact-graph key.contract.output -->
 ## Verification Scenarios
 
-Scenario A: 문서 변경에서 code 영향 후보를 찾는다.
+Scenario A: 문서 변경에서 artifact 영향 후보를 찾는다.
 
 1. 사람이 기준서 변경 의도를 말한다.
 2. Clarify가 decision summary와 edit plan을 만든다.
@@ -122,7 +122,7 @@ Scenario A: 문서 변경에서 code 영향 후보를 찾는다.
 
 통과 기준: 코드를 직접 수정하지 않아도 관련 code/config/schema/API/test 후보가 나온다.
 
-Scenario B: code 변경에서 문서 stale 후보를 찾는다.
+Scenario B: code/config/schema/API/test 변경에서 문서 stale 후보를 찾는다.
 
 1. Worker report에 changed files가 들어온다.
 2. Linker가 관련 기준서, decision, capability, test metadata stale 후보를 찾는다.
@@ -130,7 +130,20 @@ Scenario B: code 변경에서 문서 stale 후보를 찾는다.
 
 통과 기준: code/config/schema/API/test 변경 후 문서 stale 가능성이 report된다.
 
-Scenario C: bounded worker assignment를 회수한다.
+Scenario C: API contract 변경을 provider 승격 없이 impact 후보로 연결한다.
+
+1. API contract가 변경된 상황을 가정한다.
+2. Linker는 API artifact를 capability provider로 직접 확정하지 않는다.
+3. Linker는 `implements` relation 또는 repository evidence로 implementing code/config/schema
+   후보를 찾는다.
+4. Linker는 implementing artifact가 제공하는 capability와 verifying test를 impact candidate로
+   보고한다.
+5. 문서와 decision stale 후보가 있으면 Author handoff로 분리한다.
+
+통과 기준: API 변경이 문서 stale 후보로 연결되고, API가 기본 capability provider로 승격되지
+않으며, 구현체와 test 후보가 Linker report에 나온다.
+
+Scenario D: bounded worker assignment를 회수한다.
 
 1. Coordinator가 `implement` purpose의 bounded worker assignment를 만든다.
 2. 실제 file-writing worker 실행은 하지 않는다.
@@ -139,14 +152,14 @@ Scenario C: bounded worker assignment를 회수한다.
 통과 기준: Keystone이 Main context를 보존하면서 bounded worker에게 실행 context를 전달하고
 report를 회수할 수 있다.
 
-Scenario D: metadata 과다 부여를 방지한다.
+Scenario E: metadata 과다 부여를 방지한다.
 
 1. 새 local helper function이 생긴 상황을 가정한다.
 2. Linker는 semantic anchor가 아닌 artifact에 metadata 부여를 요구하지 않는다.
 
 통과 기준: semantic anchor가 아닌 artifact에 metadata를 강제하지 않는다.
 
-Scenario E: 최소 fixture가 필요한 경우의 검증 범위를 제한한다.
+Scenario F: 최소 fixture가 필요한 경우의 검증 범위를 제한한다.
 
 1. Reader는 fixture의 active work를 복구한다.
 2. Linker는 fixture의 source/test 후보를 read-only로 보고한다.
@@ -155,7 +168,7 @@ Scenario E: 최소 fixture가 필요한 경우의 검증 범위를 제한한다.
 통과 기준: fixture 검증이 repo-local fixture 범위를 넘지 않고, install/publish/browser 검증으로
 확장되지 않는다.
 
-Scenario F: 외부 코딩 스킬은 Coordinator injected skill로만 사용한다.
+Scenario G: 외부 코딩 스킬은 Coordinator injected skill로만 사용한다.
 
 1. 사용자가 Keystone 작업 문맥에서 `$superpowers` 같은 외부 코딩 스킬을 명시했다고 가정한다.
 2. Coordinator는 bounded worker assignment를 유지하고 해당 스킬을 `injected_skills`에 넣는다.

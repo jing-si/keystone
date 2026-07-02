@@ -438,6 +438,10 @@ Coordinator는 다음 기준으로 purpose를 선택한다.
      승인한 graph handoff seed가 있을 때만 implement assignment의 좁은 하위 case로 다룬다.
    - Worker는 새 graph relation을 자의적으로 확정하지 않는다. 새 relation 결정이 필요하면
      `NEEDS_CONTEXT` 또는 `NEEDS_SCOPE_CHANGE`로 보고한다.
+   - Worker가 기존 유사 기능, duplicate implementation, 또는 module extraction 후보를 발견했고
+     선택에 따라 scope, shared architecture, API/schema/test, acceptance criteria, verification이
+     달라지면 직접 결정하지 않고 `NEEDS_CONTEXT` 또는 `NEEDS_SCOPE_CHANGE`로 보고한다.
+     Coordinator는 필요하면 Linker report 또는 Clarify modularization decision topic으로 넘긴다.
 4. `review`
    - worker output이 completion criteria, scope, risk, regression 가능성 측면에서 검토가
      필요할 때 사용한다. 아티팩트 그래프(14)가 관련되면 semantic stale, 중복 구현, 코드 앵커
@@ -609,9 +613,12 @@ Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청
     discovery 결과가 없다.
 17. 아티팩트 그래프(14) mismatch가 current task 방향을 바꿀 수 있지만 Change Set(17) 또는
     Linker report가 없다.
-18. 외부 코딩 스킬 후보가 여러 개이고 선택에 따라 workflow, verification, risk가 달라지지만
+18. 유사 capability, duplicate implementation, 또는 module extraction 후보가 발견되었고 선택에
+    따라 scope, shared architecture, API/schema/test, acceptance criteria, verification이 달라지지만
+    Clarify decision이나 Main/user 결정(6)이 없다.
+19. 외부 코딩 스킬 후보가 여러 개이고 선택에 따라 workflow, verification, risk가 달라지지만
     main/user 선택이 없다.
-19. 명시된 외부 코딩 스킬의 필수 절차가 Coordinator assignment의 scope, authority,
+20. 명시된 외부 코딩 스킬의 필수 절차가 Coordinator assignment의 scope, authority,
     workspace guard, verification과 충돌한다.
 
 <!-- key: id=key.standard.skill.coordinator.verification refs=key.role.coordinator key.topic.verification key.topic.acceptance key.standard.subagent -->

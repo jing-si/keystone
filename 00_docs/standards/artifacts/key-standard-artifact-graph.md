@@ -52,7 +52,7 @@ key:
    `STD-KEYSTONE-018`, `STD-KEYSTONE-023`, `STD-KEYSTONE-025`, `STD-KEYSTONE-027`,
    `STD-KEYSTONE-044`
 3. 관련 스킬 기준서: `../skills/linker/key-standard-linker.md`
-4. 관련 결정(6): `00_docs/works/key-decisions.md`의 `DEC-WORKS-009`
+4. 관련 결정(6): `00_docs/works/key-decisions.md`의 `DEC-WORKS-009`, `DEC-WORKS-010`
 5. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.
 
@@ -175,6 +175,27 @@ Artifact ID는 path나 line number가 아니라 의미와 책임을 기준으로
 모든 command result를 artifact node로 만들 필요는 없으며, 일회성 검증 결과는 worker report나
 verification note에 둘 수 있다.
 
+<!-- key: id=key.standard.artifact.graph.api-artifact-policy refs=key.topic.artifact-graph key.topic.api key.work.decisions.dec-works-010 -->
+## API artifact policy
+
+API artifact는 first-class artifact지만 기본적으로 capability provider가 아니라 contract artifact로
+본다.
+
+1. `key.api.*`는 외부 또는 내부 caller가 의존하는 API, route, RPC, command/query, message
+   contract, plugin interface 같은 contract를 나타낸다.
+2. Capability는 기본적으로 code/config/schema artifact가 `provides`한다.
+3. Code/config/schema artifact는 API 또는 결정된 contract를 `implements`한다.
+4. Test는 API 또는 capability를 `verifies`할 수 있고, source document는 API 또는 capability를
+   `documents`할 수 있다.
+5. API 변경은 implementing artifact, verifying test, source document, related capability의
+   impact/stale 후보를 만들 수 있다.
+6. API artifact 자체를 capability provider로 보려면 accepted decision 또는 명시된 예외 relation
+   policy가 필요하다.
+7. 예외가 없으면 `provides` relation에 `key.api.* -> key.capability.*`를 기본 허용하지 않는다.
+
+Graph record model의 `api_contract` operative evidence는 operative contract evidence를 뜻하며,
+API artifact가 capability provider라는 뜻은 아니다.
+
 <!-- key: id=key.standard.artifact.graph.typed-relation refs=key.topic.artifact-graph key.topic.code-anchor -->
 ## Typed relation
 
@@ -182,7 +203,7 @@ verification note에 둘 수 있다.
 
 1. `provides`: code/config/schema artifact가 capability를 제공한다.
 2. `uses`: artifact가 다른 capability, API, code artifact를 의미적으로 사용한다.
-3. `implements`: code/schema/config artifact가 API 또는 결정된 contract를 구현한다.
+3. `implements`: code/config/schema artifact가 API 또는 결정된 contract를 구현한다.
 4. `verifies`: test artifact가 capability, API, decision, code behavior를 검증한다.
 5. `governed_by`: artifact가 기준서(3)나 결정(6)의 규칙을 따른다.
 6. `documents`: source document가 artifact를 설명한다.
@@ -202,7 +223,7 @@ Typed relation은 source에서 target으로 읽는다. Reverse relation은 sourc
 |---|---|---|
 | `provides` | code/config/schema artifact -> capability | capability 변경 시 provider는 `required`; provider 변경 시 capability는 `strong_candidate` 이상 |
 | `uses` | artifact -> capability/API/code artifact | target 변경 시 source는 `strong_candidate`; source 변경 시 target은 보통 `informational` |
-| `implements` | code/schema/config -> API/contract/decision | contract 변경 시 implementer는 `required` |
+| `implements` | code/config/schema -> API/contract/decision | contract 변경 시 implementer는 `required` |
 | `verifies` | test -> capability/API/decision/code behavior | target 변경 시 test는 `required` |
 | `governed_by` | artifact -> standard/decision | governing source 변경 시 artifact는 `required` 또는 `strong_candidate` |
 | `documents` | source document/section -> artifact | artifact 변경 시 document는 `strong_candidate`; broad mention은 `key.refs`로 둔다 |

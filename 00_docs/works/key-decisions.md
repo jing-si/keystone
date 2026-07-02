@@ -151,3 +151,19 @@ key:
   acceptance를 대체하지 않는다.
 - 이유: graph 판단 권위와 source edit 권한을 분리해야 candidate 발견이 자동 수정 근거로
   해석되지 않고, Author와 Coordinator의 기존 authority boundary를 유지할 수 있기 때문이다.
+
+<!-- key: id=key.work.decisions.dec-works-010 refs=key.doc.decision key.topic.artifact-graph key.topic.api key.role.linker key.role.coordinator -->
+## DEC-WORKS-010: API artifact는 기본적으로 contract artifact로 해석한다
+
+- 관련 work: Artifact Graph Standard, Linker Standard, Integration Verification
+- 상태: accepted
+- 결정: `key.api.*`는 first-class artifact지만 기본 capability provider가 아니라 API, route,
+  RPC, command/query, message contract, plugin interface 같은 contract artifact로 해석한다.
+- 결정: Capability는 기본적으로 code/config/schema artifact가 `provides`한다.
+- 결정: Code/config/schema artifact는 API 또는 결정된 contract를 `implements`한다.
+- 결정: API 변경은 implementing artifact, verifying test, source document, related capability의
+  impact/stale 후보를 만들 수 있다.
+- 결정: accepted decision 또는 명시된 예외 relation policy가 없으면
+  `key.api.* -> provides -> key.capability.*`를 기본 typed relation으로 확정하지 않는다.
+- 이유: API를 기본 provider로 승격하면 contract, implementation, capability boundary가 흐려져
+  over-linking과 잘못된 impact 후보가 늘 수 있기 때문이다.

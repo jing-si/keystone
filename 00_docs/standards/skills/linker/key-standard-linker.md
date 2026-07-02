@@ -59,7 +59,7 @@ authority를 포함하지 않는다.
    `STD-KEYSTONE-030`, `STD-KEYSTONE-044`
 4. 관련 기준서: `../reader/key-standard-reader.md`, `../author/key-standard-author.md`,
    `../coordinator/key-standard-coordinator.md`
-5. 관련 결정(6): `00_docs/works/key-decisions.md`의 `DEC-WORKS-009`
+5. 관련 결정(6): `00_docs/works/key-decisions.md`의 `DEC-WORKS-009`, `DEC-WORKS-010`
 6. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.
 
@@ -134,7 +134,12 @@ Linker는 mode와 무관하게 다음 순서를 따른다.
 8. Reuse candidate와 test candidate를 분리해 보고한다.
 9. Metadata gap과 stale candidate를 mechanical/semantic으로 분리한다.
 10. Relation direction과 propagation 기본값을 Artifact Graph 기준서에 따라 해석한다.
-11. 수정이 필요한 경우 직접 수정하지 않고 source surface별 handoff owner를 분류해 Author 또는
+11. Reuse, extend, extract shared module, create new 선택에 따라 scope, acceptance criteria,
+    API/schema contract, shared architecture, document consistency, verification이 달라지면
+    `keystone-clarify`의 modularization decision topic을 recommended next action으로 제안한다.
+12. Evidence가 부족해 reuse 또는 modularization 방향을 정할 수 없으면 `investigate_first`
+    성격의 추가 Linker review 또는 Coordinator investigation을 제안한다.
+13. 수정이 필요한 경우 직접 수정하지 않고 source surface별 handoff owner를 분류해 Author 또는
     Coordinator로 넘길 next action을 제안한다.
 
 <!-- key: id=key.standard.skill.linker.metadata-parsing refs=key.role.linker key.topic.keystone-metadata key.topic.code-anchor key.topic.artifact-graph -->
@@ -159,6 +164,8 @@ Parsing과 normalization은 다음 기준을 따른다.
 2. `key.refs`는 탐색 후보 edge로만 사용하고 required impact relation으로 확정하지 않는다.
 3. Code/config/schema/API/test anchor의 `provides`, `uses`, `implements`, `verifies`,
    `governed_by`, `documents`, `supersedes`, `derived_from`만 초기 typed relation으로 normalize한다.
+   단, API anchor의 `provides=key.capability.*`는 API interpretation rule에 따라 예외 근거가
+   있을 때만 provider relation으로 확정한다.
 4. Unknown relation, malformed metadata, duplicate ID, missing target은 mechanical stale candidate로
    보고한다.
 5. Import, call, filename, keyword, heading overlap은 observed 또는 inferred evidence로 분리해
@@ -168,6 +175,22 @@ Parsing과 normalization은 다음 기준을 따른다.
    `informational`, `excluded`를 따른다.
 7. Parser가 이해하지 못한 metadata는 조용히 버리지 않고 `metadata_gaps` 또는 `risks_and_gaps`에
    기록한다.
+
+<!-- key: id=key.standard.skill.linker.api-interpretation refs=key.role.linker key.topic.api key.topic.artifact-graph key.work.decisions.dec-works-010 -->
+## API interpretation rule
+
+Linker는 API artifact를 기본적으로 contract artifact로 해석한다.
+
+1. API seed나 API diff가 들어오면 먼저 `implements` relation과 repository evidence를 통해
+   implementing code/config/schema artifact 후보를 찾는다.
+2. Implementing artifact가 `provides`하는 capability를 affected capability 후보로 보고한다.
+3. API contract 변경은 implementing artifact, verifying test, source document, related
+   capability를 `required` 또는 `strong_candidate` 후보로 올릴 수 있다.
+4. API artifact 자체를 capability provider로 판단하지 않는다.
+5. API anchor에 `provides=key.capability.*`가 있거나 API가 provider처럼 보이면 accepted decision
+   또는 명시된 예외 relation policy를 확인한다.
+6. 예외 근거가 없으면 API provider relation으로 확정하지 않고 `risks_and_gaps` 또는
+   `recommended_next_action`으로 보고한다.
 
 <!-- key: id=key.standard.skill.linker.mode-contract refs=key.role.linker key.contract.output key.topic.artifact-graph -->
 ## Mode contract
@@ -266,6 +289,8 @@ linker_report:
       locator:
       evidence:
       reuse_decision_hint:
+      modularization_decision_needed: true | false
+      modularization_reason:
   metadata_gaps:
     - artifact:
       expected_metadata:
@@ -303,6 +328,12 @@ linker_report:
     main_or_clarify:
       - topic:
         reason:
+        suggested_decision_options:
+          - reuse_existing
+          - extend_existing
+          - extract_shared_module
+          - create_new
+          - investigate_first
   graph_owner_note:
     interpretation_owned_by: keystone-linker
     edit_authority: author_or_coordinator_only
@@ -335,6 +366,9 @@ linker_report:
 5. Linker report는 후보와 evidence이며 acceptance 또는 수정 권한이 아니다.
 6. Linker는 handoff 대상과 recommended change를 graph 관점에서 제안할 수 있지만, Author 또는
    Coordinator의 source edit authority를 대체하지 않는다.
+7. Reuse 또는 modularization 선택이 scope, shared architecture, API/schema/test, document
+   consistency, acceptance criteria, verification에 영향을 주면 Linker는 `keystone-clarify`
+   modularization decision topic을 handoff로 제안한다.
 
 <!-- key: id=key.standard.skill.linker.stop-condition refs=key.role.linker key.boundary.read-only key.topic.impact-review -->
 ## Stop condition

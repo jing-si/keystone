@@ -67,6 +67,8 @@ Conditionally allowed:
 - [ ] `linker_report`가 Coordinator worker assignment의 artifact context seed로 사용될 수 있다.
 - [ ] `linker_report`가 Author, Coordinator, Main/Clarify handoff를 source surface별로 분리한다.
 - [ ] Markdown key metadata와 code anchor parsing surface가 명확하다.
+- [ ] API artifact를 기본 capability provider로 승격하지 않고 implementing artifact를 통해 impact
+      후보를 찾는 규칙이 명확하다.
 - [ ] Metadata gap, mechanical stale, semantic stale 후보가 구분된다.
 - [ ] `candidate_budget`이 적용될 때 `required` 후보를 숨기지 않고 `omitted_summary`로 생략
       근거를 남긴다.
@@ -83,8 +85,10 @@ report 회수는 Coordinator 책임으로 남긴다.
 
 - `STD-KEYSTONE-044`
 - `DEC-WORKS-009`
+- `DEC-WORKS-010`
 - Artifact Graph 기준서
 - Metadata parsing rule
+- API interpretation rule
 - Relation direction and propagation rule
 - Source surface handoff owner
 - Candidate budget과 omitted summary rule

@@ -123,7 +123,7 @@ Author는 다음 input을 사용할 수 있어야 한다.
 2. 설정된 document root(1) 또는 이를 해석하기 위한 project-local setting
 3. 적용할 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록
 4. 필요한 경우 수락된 `keystone-clarify` decision summary, edit plan,
-   decision_completeness_check, decision_recording_hint
+   decision_completeness_check, decision_recording_hint, modularization_decision
 5. 변경할 document section 또는 새 문서의 목적
 6. 승인된 scope와 acceptance boundary
 7. 현재 workspace state와 existing-change risk
@@ -267,6 +267,12 @@ Clarify-Apply Mode는 수락된 Clarify result를 문서에 반영한다.
 7. 다른 문서와 함께 맞춰야 하는 원천 문서(2) 수정은 Clarify가 아니라 Author가 담당한다.
 8. `keystone-clarify`가 명시 승인된 현재 대상 문서의 단순 오탈자만 직접 수정할 수 있다는
    예외는 `key-standard-clarify.md`의 Default Mode contract를 따른다.
+9. 수락된 modularization decision이 있으면 Author는 승인 범위 안에서 관련 기준서(3),
+   작업서(4), 결정(6) 기록, Change Set(17), affected capability seed, Linker report reference,
+   excluded reuse candidate를 반영한다.
+10. Modularization decision이 `investigate_first` 또는 `needs_linker_report`이면 Author는
+    code/config/schema/API/test 수정 지시를 만들지 않고 필요한 Linker 또는 Coordinator
+    investigation을 next action으로 남긴다.
 
 <!-- key: id=key.standard.skill.author.normalize-mode refs=key.role.author key.topic.document-system -->
 ### Normalize Mode
@@ -371,6 +377,7 @@ Change Set은 다음 fields를 포함할 수 있다.
 10. document sync status
 11. verification result
 12. final acceptance status
+13. modularization decision과 excluded reuse candidate
 
 예:
 
