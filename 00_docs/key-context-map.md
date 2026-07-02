@@ -68,8 +68,8 @@ bounded worker 실행 결과를 아티팩트 그래프(14)와 worker assignment/
 | Author Standard | `00_docs/works/r001-bootstrap-keystone/author-standard/00_key-index.md` | accepted | `keystone-author` 기준서와 작업서 생성 표준 |
 | Clarify Standard | `00_docs/works/r001-bootstrap-keystone/clarify-standard/00_key-index.md` | accepted | `keystone-clarify` 기준서 |
 | Coordinator Standard | `00_docs/works/r001-bootstrap-keystone/coordinator-standard/00_key-index.md` | accepted | `keystone-coordinator` 기준서 |
-| Artifact Graph Standard | `00_docs/works/r001-bootstrap-keystone/artifact-graph-standard/00_key-index.md` | in_progress | Artifact Graph 기준서 |
-| Linker Standard | `00_docs/works/r001-bootstrap-keystone/linker-standard/00_key-index.md` | in_progress | `keystone-linker` 기준서 |
+| Artifact Graph Standard | `00_docs/works/r001-bootstrap-keystone/artifact-graph-standard/00_key-index.md` | accepted | Artifact Graph 기준서 |
+| Linker Standard | `00_docs/works/r001-bootstrap-keystone/linker-standard/00_key-index.md` | accepted | `keystone-linker` 기준서 |
 | Skill Creation | `00_docs/works/r001-bootstrap-keystone/skill-creation/00_key-index.md` | planned | Keystone skill source 생성 |
 | Integration Verification | `00_docs/works/r001-bootstrap-keystone/integration-verification/00_key-index.md` | planned | 통합 검증 |
 
@@ -140,9 +140,10 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 <!-- key: id=key.context-map.section refs=key.topic.work-sequence key.topic.document-system key.topic.work-round -->
 ## 현재 작업 단계
 
-현재 active round는 R001 Bootstrap Keystone이고, active work는 S06이다. S07은 S06과 병행해
-in_progress로 검토 중이다. S00 문서 트리 재정비, S01 전체 기준서, S02 reader 기준서,
-S03 author 기준서, S04 clarify 기준서, S05 coordinator 기준서는 accepted 상태다.
+현재 active round는 R001 Bootstrap Keystone이다. S00 문서 트리 재정비, S01 전체 기준서,
+S02 reader 기준서, S03 author 기준서, S04 clarify 기준서, S05 coordinator 기준서,
+S06 Artifact Graph 기준서, S07 linker 기준서는 accepted 상태다. 다음 planned work는 S08 Skill
+Creation이다.
 
 | Step | 제목 | 목적 |
 |---|---|---|

@@ -19,14 +19,14 @@ S07
 <!-- key: id=key.work.linker-standard.progress.last-accepted-step refs=key.topic.main-acceptance key.topic.acceptance-status -->
 ## 마지막 수락 Step
 
-None
+S07
 
 <!-- key: id=key.work.linker-standard.progress.step-status refs=key.topic.step-status key.topic.work-sequence key.topic.main-acceptance -->
 ## Step 상태
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S07 | in_progress | pending | S06과 병행해 Linker 기준서 최종 검토를 진행 중이다 |
+| S07 | accepted | accepted | Linker 기준서 검토 결과가 수락되었다 |
 
 <!-- key: id=key.work.linker-standard.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 ## 최근 Worker 결과
@@ -53,4 +53,4 @@ None
 <!-- key: id=key.work.linker-standard.progress.next-step refs=key.topic.next-step key.step.s07 key.role.linker -->
 ## 다음 권장 작업
 
-Linker 기준서의 source surface handoff와 linker_report output contract를 최종 검토한다.
+S08 Skill Creation을 진행한다.

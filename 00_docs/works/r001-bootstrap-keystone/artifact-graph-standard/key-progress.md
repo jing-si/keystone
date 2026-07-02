@@ -19,14 +19,14 @@ S06
 <!-- key: id=key.work.artifact-graph-standard.progress.last-accepted-step refs=key.topic.main-acceptance key.topic.acceptance-status -->
 ## 마지막 수락 Step
 
-None
+S06
 
 <!-- key: id=key.work.artifact-graph-standard.progress.step-status refs=key.topic.step-status key.topic.work-sequence key.topic.main-acceptance -->
 ## Step 상태
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S06 | in_progress | pending | S05가 수락되어 Artifact Graph 기준서 작업을 진행 중이다 |
+| S06 | accepted | accepted | Artifact Graph 기준서 검토 결과가 수락되었다 |
 
 <!-- key: id=key.work.artifact-graph-standard.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 ## 최근 Worker 결과
@@ -54,5 +54,4 @@ None
 <!-- key: id=key.work.artifact-graph-standard.progress.next-step refs=key.topic.next-step key.step.s06 key.topic.artifact-graph -->
 ## 다음 권장 작업
 
-Artifact Graph와 Linker 기준서의 ownership boundary, relation propagation, stale/gap 처리를 검증하고
-S06 review/acceptance로 넘긴다.
+S08 Skill Creation을 진행한다.

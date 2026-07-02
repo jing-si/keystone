@@ -10,7 +10,7 @@ key:
     - key.doc.standard
 work_id: artifact-graph-standard
 title: Artifact Graph Standard
-status: in_progress
+status: accepted
 owner_lane: main-session
 work_type:
   - documentation
@@ -48,5 +48,5 @@ stale/gap handling, impact candidate 기준서를 정리한다.
 <!-- key: id=key.work.artifact-graph-standard.index.current-status refs=key.topic.work-sequence key.topic.progress-update -->
 ## 현재 상태
 
-- Status: in_progress
+- Status: accepted
 - Current step: S06
