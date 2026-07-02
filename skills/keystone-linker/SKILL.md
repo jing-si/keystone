@@ -214,11 +214,7 @@ linker_report:
       inferred: []
   source_surface_handoffs:
     author: []
-    coordinator:
-      - artifact: skills/keystone-reader/SKILL.md
-        surface: code_anchor
-        recommended_change: none
-        reason: S08 skill source is repo-local implementation, not source document metadata.
+    coordinator: []
     main_or_clarify: []
   graph_owner_note:
     interpretation_owned_by: keystone-linker

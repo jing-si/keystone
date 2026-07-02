@@ -246,6 +246,57 @@ worker_assignment:
     model: single_workspace
     active_file_writer_policy: exclusive
     existing_changes_policy: do_not_overwrite_unlisted_changes
+
+worker_report:
+  assignment_id: s08-skill-source-create
+  status: DONE_WITH_CONCERNS
+  status_reason: SKILL.md files were created, but Main acceptance is still pending.
+  reason_code: main_acceptance_pending
+  purpose: implement
+  authority: bounded_edit
+  goal: Create repo-local Keystone SKILL.md files.
+  scope_summary: Edited only skills/keystone-*/SKILL.md.
+  sources_read:
+    - 00_docs/works/r001-bootstrap-keystone/skill-creation/key-work-skill-creation.md
+  skill_usage:
+    - skill_id: keystone-default-bounded-worker
+      mode: default
+      outputs_used:
+        - assignment-local planning
+      candidates_found: []
+      limits_hit: []
+  changed_files:
+    - skills/keystone-reader/SKILL.md
+    - skills/keystone-author/SKILL.md
+    - skills/keystone-clarify/SKILL.md
+    - skills/keystone-linker/SKILL.md
+    - skills/keystone-coordinator/SKILL.md
+  scope_check: within_scope
+  forbidden_change_check: none
+  verification:
+    result: pass
+  residual_risk: Main acceptance pending.
+  recommended_next_action: Main review and acceptance decision.
+
+worker_report_review:
+  assignment_id: s08-skill-source-create
+  report_status: DONE_WITH_CONCERNS
+  actual_state_confirmed: true
+  scope_result: within_scope
+  forbidden_change_result: none
+  verification_result: pass
+  source_conflict_result: none
+  main_context_preserved: true
+  reason_codes:
+    - main_acceptance_pending
+  review_required: false
+  verification_required: false
+  repair_required: false
+  escalation_required: false
+  coordinator_decision: accept_candidate
+  main_acceptance_allowed: true
+  residual_risk: Main must still decide acceptance before progress becomes accepted.
+  next_action: Main acceptance review.
 ```
 
 ## Boundaries

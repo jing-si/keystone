@@ -97,6 +97,35 @@ reader_output:
   assumptions:
 ```
 
+For navigation, include:
+
+```yaml
+reader_output:
+  mode: navigator
+  request_summary:
+  key_ref_queries:
+  matched_documents:
+    - path:
+      reason:
+  artifact_seed_candidates:
+  key_ref_matched_candidates:
+  artifact_graph_needed:
+  mismatches:
+  active_round:
+  round_id:
+  round_index:
+  work_id:
+  status_sources:
+  status_conflicts:
+  recommended_read_order:
+  why_each_document_matters:
+  missing_or_ambiguous_documents:
+  risks_and_gaps:
+  recommended_next_action:
+  sources_read:
+  assumptions:
+```
+
 For work preparation, include:
 
 ```yaml
@@ -152,7 +181,9 @@ keystone_context_brief:
     - 00_docs/standards/skills/00_key-index.md
   artifact_graph_needed: false
   artifact_seed_candidates: []
-  recommended_next_skill: keystone-coordinator
+  recommended_next_action:
+    skill: keystone-coordinator
+    reason: S08 skill source creation can proceed as a bounded implementation task after source context recovery.
   risks_and_gaps: []
   final_handoff_ready: false
 ```
