@@ -51,7 +51,7 @@ key:
 2. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-006`, `STD-KEYSTONE-007`,
    `STD-KEYSTONE-014`, `STD-KEYSTONE-015`, `STD-KEYSTONE-016`,
    `STD-KEYSTONE-023`, `STD-KEYSTONE-041`, `STD-KEYSTONE-050`,
-   `STD-KEYSTONE-051`, `STD-KEYSTONE-052`
+   `STD-KEYSTONE-045`, `STD-KEYSTONE-046`, `STD-KEYSTONE-051`, `STD-KEYSTONE-052`
 3. 관련 결정(6): `00_docs/works/key-decisions.md`
 4. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.
@@ -144,9 +144,9 @@ Clarify는 한 번에 하나의 topic을 다룬다.
 <!-- key: id=key.standard.skill.clarify.modularization-decision-topic refs=key.role.clarify key.topic.impact-review key.topic.artifact-graph -->
 ## Modularization decision topic
 
-Modularization decision topic은 기존 capability(16), code/config/schema/API/test artifact,
-또는 유사 implementation 후보가 발견되어 reuse, extend, extract shared module, create new,
-investigate first 중 어떤 방향으로 갈지 결정해야 하는 high-impact topic이다.
+Modularization decision topic은 기존 capability(16), output artifact, code/config/schema/API/test
+artifact, 또는 유사 implementation 후보가 발견되어 reuse, extend, extract shared module,
+create new, investigate first 중 어떤 방향으로 갈지 결정해야 하는 high-impact topic이다.
 
 Clarify는 modularization 가능성을 제안할 수 있지만 repository 유사성을 직접 확정하지 않는다.
 유사 기능 후보 발견과 evidence 등급화는 Linker report, Coordinator worker report, reviewer
@@ -265,17 +265,21 @@ Clarify result는 다음을 포함해야 한다.
 4. `working_assumptions`: 이후 작업에서 사용할 가정
 5. `affected_documents`: Author가 검토해야 하는 원천 문서(2). 반드시 수정해야 하는 update
    target, inspect-only 후보, excluded 후보를 구분한다.
-6. `affected_artifact_candidates`: capability, code, config, schema, API, test 영향 후보
+6. `affected_artifact_candidates`: source document, decision, work order가 만들거나 통제하는
+   output artifact 영향 후보. 필요하면 skill source, code, config, schema, API, test,
+   generated file 같은 surface를 함께 표시한다.
 7. `edit_plan`: 문서별 변경 요약. Incomplete result에서는 Author-ready `edit_plan`을 만들지
    않고 누락 사유를 보고한다.
-8. `stop_conditions`: 적용 중 중단해야 하는 조건
-9. `open_questions`: 아직 남은 질문. 현재 topic을 완료하기 위해 필요한
+8. `routing_handoff`: file-changing work로 이어질 때 target surface, 추천 lane, 필요한 report
+   후보. 이 값은 edit authority가 아니라 수정 전 routing decision seed다.
+9. `stop_conditions`: 적용 중 중단해야 하는 조건
+10. `open_questions`: 아직 남은 질문. 현재 topic을 완료하기 위해 필요한
    `unresolved_current_topic`과 이번 topic 밖의 `out_of_topic` 질문을 구분한다.
-10. `decision_completeness_check`: decision이 Author handoff 가능한 수준인지 확인한 결과
-11. `decision_recording_hint`: 수락된 결정(6)을 어디에 기록해야 하는지에 대한 권장 위치와
+11. `decision_completeness_check`: decision이 Author handoff 가능한 수준인지 확인한 결과
+12. `decision_recording_hint`: 수락된 결정(6)을 어디에 기록해야 하는지에 대한 권장 위치와
     이유. Hint는 기록 권한이 아니며, 실제 기록은 Author 또는 Main이 승인 범위 안에서
     처리한다.
-12. `modularization_decision`: modularization topic인 경우 reuse, extend, extract shared module,
+13. `modularization_decision`: modularization topic인 경우 reuse, extend, extract shared module,
     create new, investigate first 중 어떤 방향을 선택했는지와 그 근거. Modularization topic이
     아니면 생략한다.
 
@@ -306,6 +310,18 @@ affected_documents:
 
 `decision_completeness_check.affected_source_documents`는 `affected_documents`의 요약 또는
 mirror field다. 두 필드가 다르게 해석될 수 있으면 structured `affected_documents`를 우선한다.
+
+Routing handoff는 다음 shape을 우선 사용한다.
+
+```yaml
+routing_handoff:
+  target_surfaces:
+    - source_document | skill_source | repository_source | mixed
+  recommended_lanes:
+    - keystone-author | keystone-coordinator | main_direct
+  required_reports:
+    - author_patch_report | worker_assignment | worker_report | main_direct_change_report
+```
 
 Open questions는 다음 shape을 우선 사용한다.
 
@@ -403,6 +419,27 @@ modularization_decision:
 13. `extract_shared_module`을 선택하면 shared architecture, public interface, API/schema/test,
     verification impact를 별도로 보고하고 Coordinator workflow로 넘긴다.
 
+Clarify result가 file-changing work로 이어지면 Main은 `STD-KEYSTONE-046`에 따라
+`keystone_routing_decision`을 남긴 뒤 Author, Coordinator, 또는 Main direct lane으로 분리한다.
+Clarify가 decision summary와 edit plan을 만들었다는 사실은 source document나 skill source 수정
+권한을 대체하지 않는다.
+
+<!-- key: id=key.standard.skill.clarify.user-response refs=key.role.clarify key.contract.output key.topic.skill-contract -->
+## 기본 사용자 응답
+
+Clarify는 `clarify_result`를 agent-facing structured payload로 유지한다. 기본 사용자 응답은
+다음 항목만 짧게 보여준다.
+
+1. 결정할 topic 또는 이미 수락된 decision summary
+2. 선택한 방향과 핵심 rationale
+3. 남은 질문: unresolved current-topic question만 우선 표시
+4. Author-ready 여부와 영향을 받는 주요 원천 문서(2)
+5. 다음 권장 행동: Author 적용, 추가 질문, Linker/Coordinator handoff
+
+Full `clarify_result`는 사용자가 요청하거나 Author handoff, audit/debug, verification evidence에
+필요할 때만 노출한다. Optional `keystone-viewer`는 Clarify result를 audience별 view로 표현할 수
+있지만 decision summary, open question, author-ready 판단을 바꾸지 않는다.
+
 <!-- key: id=key.standard.skill.clarify.impact-update refs=key.role.clarify key.topic.impact-review key.output.edit-plan key.topic.keystone-metadata key.topic.code-anchor key.topic.artifact-graph -->
 ## Impact update
 
@@ -487,6 +524,10 @@ Clarify 기준은 다음 방법으로 검증한다.
    제공 근거를 input으로 사용하고 Clarify가 repository 유사성을 직접 확정하지 않아야 한다.
 8. Modularization 선택지가 reuse, extend, extract shared module, create new, investigate first의
    의미와 handoff boundary를 구분해야 한다.
-9. Verification command:
+9. 기본 사용자 응답은 structured payload를 그대로 노출하지 않고 decision, rationale, open
+   question, affected documents, next action을 요약해야 한다.
+10. File-changing handoff가 있으면 Author, Coordinator, Main direct 중 필요한 routing lane을
+    edit plan 또는 recommended next action에서 분리해야 한다.
+11. Verification command:
    - `rg --files 00_docs`
    - Clarify 관련 기준서를 읽어 link와 scope consistency 확인

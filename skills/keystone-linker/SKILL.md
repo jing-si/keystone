@@ -7,9 +7,9 @@ description: "Use for read-only Artifact Graph interpretation: artifact discover
 
 ## Purpose
 
-Interpret Keystone Artifact Graph evidence read-only. Linker discovers artifact candidates, classifies impact, stale, and metadata gap candidates, reports reuse/test candidates, and prepares source-surface handoffs or worker-assignment seeds.
+Interpret Keystone Artifact Graph evidence read-only. Linker discovers output artifact candidates, classifies impact, stale, and metadata gap candidates, reports reuse/test candidates, and prepares source/output-surface handoffs or worker-assignment seeds.
 
-Source documents, accepted decisions, code/config/schema/API/test source, and verification evidence are the source of truth. Linker output does not replace source documents, source edits, or Main acceptance. Linker owns operational graph interpretation, not source edit authority.
+Source documents, accepted decisions, output artifacts, and verification evidence are the source of truth. Linker output does not replace source documents, source edits, or Main acceptance. Linker owns operational graph interpretation, not source edit authority.
 
 ## Required Source Documents
 
@@ -25,9 +25,9 @@ Read:
 
 Use Linker when:
 
-1. Source document or decision changes may affect code/config/schema/API/test artifacts.
-2. Code/config/schema/API/test changes may make source documents or decisions stale.
-3. Existing capabilities, APIs, reusable code, config, schema, or tests must be found before implementation.
+1. Source document, decision, or work order changes may affect output artifacts.
+2. Output artifact changes may make source documents, decisions, or work orders stale.
+3. Existing capabilities, APIs, reusable code, config, schema, tests, skill sources, or generated artifacts must be found before implementation.
 4. Metadata gaps, mechanical stale, or semantic stale candidates must be reported.
 5. Coordinator needs artifact context, reuse candidates, tests, stale risks, or metadata sync risks before a worker assignment.
 6. Change Set impact seeds and required/optional/excluded candidates must be prepared.
@@ -51,22 +51,32 @@ Require:
 2. Configured document root.
 3. Current work or change intent.
 4. Related source documents, standards, work orders, progress, and decisions.
-5. Known `key.id`, `key.refs`, capability, code, config, schema, API, test, path, symbol, or keyword seeds.
-6. Optional changed documents/files or diff summary.
+5. Known `key.id`, `key.refs`, capability, output artifact, code, config, schema, API, test, path, symbol, or keyword seeds.
+6. Optional changed documents, output artifact files, or diff summary.
 7. Optional Change Set or worker assignment preparation purpose.
 
 ## Workflow
 
 1. Resolve the document root.
 2. Read Artifact Graph and Linker standards.
-3. Split input seeds into document, key metadata, capability, API, code, config, schema, test, path, symbol, and keyword evidence.
+3. Split input seeds into document, decision, work order, key metadata, output artifact, capability, API, code, config, schema, test, path, symbol, and keyword evidence.
 4. Search Keystone metadata and code/config/schema/API/test anchors.
 5. Check repository evidence without modifying files.
 6. Separate declared, observed, and inferred relations.
 7. Grade candidates as `required`, `strong_candidate`, `weak_candidate`, `informational`, or `excluded`.
 8. Separate reuse candidates, test candidates, stale candidates, and metadata gaps.
-9. Interpret source surfaces and handoff owners: Author for source documents, Coordinator for repository source surfaces, Main/Clarify for decisions.
+9. Interpret source/output surfaces and handoff owners: Author for source documents, Main direct or Coordinator for repo-local skill source and other non-source output artifacts, Coordinator for repository source surfaces, Main/Clarify for decisions.
 10. Recommend the next skill without performing edits.
+
+## Routing Gate
+
+Linker is read-only. It reports `source_document | decision | work_order -> output_artifact` relations and stale/gap candidates. `skill_source`, code, config, schema, API, test, and generated files are output artifact surfaces, not the core graph concept. File-changing follow-up requires Main to emit `keystone_routing_decision`; Author handles `source_document`, Main direct or Coordinator handles small non-source output artifacts such as `skill_source`, and Coordinator handles `repository_source`.
+
+## Default User Response
+
+By default, answer users with a concise human-facing brief instead of the full `linker_report`. Include graph interpretation status, required candidates, representative strong candidates, key stale/gap/reuse risks, handoff owners, recommended next action, and key source refs.
+
+Do not silently hide required candidates. If candidate lists are large, summarize counts and representative evidence while keeping full payload availability explicit. Keep `linker_report` as an agent-facing structured payload. Emit the full payload only when the user asks for it, another Keystone skill needs it for handoff, or audit/debug/verification evidence requires it. Optional `keystone-viewer` may render the payload, but it must not change candidate grades, risks, handoff owners, or recommended next action.
 
 ## Output Contract
 
@@ -84,6 +94,11 @@ linker_report:
     required:
     strong_candidates:
     weak_candidates:
+  output_artifact_candidates:
+    required:
+    strong_candidates:
+    weak_candidates:
+    informational:
   code_candidates:
     required:
     strong_candidates:
@@ -149,6 +164,11 @@ linker_report:
         surface: code_anchor | config_anchor | schema_anchor | api_anchor | test_anchor
         recommended_change:
         reason:
+    main_direct_or_coordinator:
+      - artifact:
+        surface: output_artifact | skill_source | generated_file | repository_source
+        recommended_change:
+        reason:
     main_or_clarify:
       - topic:
         reason:
@@ -160,7 +180,7 @@ linker_report:
           - investigate_first
   graph_owner_note:
     interpretation_owned_by: keystone-linker
-    edit_authority: author_or_coordinator_only
+    edit_authority: author_main_direct_or_coordinator_only
   candidate_budget:
     applied: true | false
     truncated:
@@ -179,7 +199,7 @@ linker_report:
 
 ```yaml
 linker_report:
-  request_summary: Check whether an S08 skill source change affects runtime routing.
+  request_summary: Check whether S08 source documents still match their produced skill source output.
   mode: Impact Analysis
   seed_artifacts:
     - key_id: key.work.skill-creation.order
@@ -190,6 +210,16 @@ linker_report:
     required: []
     strong_candidates: []
     weak_candidates: []
+  output_artifact_candidates:
+    required:
+      - artifact: skills/keystone-reader/SKILL.md
+        artifact_kind: skill_source
+        produced_from:
+          - 00_docs/works/r001-bootstrap-keystone/skill-creation/key-work-skill-creation.md
+        reason: S08 work order produces repo-local Keystone skill source outputs.
+    strong_candidates: []
+    weak_candidates: []
+    informational: []
   code_candidates:
     required: []
     strong_candidates: []
@@ -215,10 +245,15 @@ linker_report:
   source_surface_handoffs:
     author: []
     coordinator: []
+    main_direct_or_coordinator:
+      - artifact: skills/keystone-reader/SKILL.md
+        surface: skill_source
+        recommended_change: Align produced skill source output with governing source documents.
+        reason: Skill source is an output artifact produced from S08, not an Author source document.
     main_or_clarify: []
   graph_owner_note:
     interpretation_owned_by: keystone-linker
-    edit_authority: author_or_coordinator_only
+    edit_authority: author_main_direct_or_coordinator_only
   candidate_budget:
     applied: false
   risks_and_gaps: []
@@ -247,6 +282,7 @@ Stop when:
 5. Artifact Graph mismatch could change task direction.
 6. Stale/gap candidates require source authority or acceptance criteria changes.
 7. Direct document or repository edits would be required.
+8. Output artifact stale/gap candidates require edits before a routing decision exists.
 
 ## Verification
 
@@ -257,6 +293,8 @@ Verify Linker behavior by checking:
 3. Mechanical stale, semantic stale, and metadata gaps are separated.
 4. Source surface handoff owners are separated.
 5. Required candidates are not silently omitted.
+6. Default user response summarizes candidates, risks, handoff owners, and next action without dumping the full structured payload.
+7. `skill_source` candidates are reported as output artifact surfaces but never edited by Linker.
 
 Suggested checks:
 

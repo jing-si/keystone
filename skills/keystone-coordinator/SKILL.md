@@ -33,6 +33,7 @@ Use Coordinator when:
 5. Keystone work includes code/config/schema/API/test edits and needs bounded implementation routing.
 6. An external coding skill is explicitly requested and must be injected without replacing Keystone boundaries.
 7. Linker report must be converted into assignment artifact context or review focus.
+8. Repo-local `skills/keystone-*/SKILL.md` changes need delegation, formal review, verification, or workspace guard beyond small Main direct edits.
 
 ## When Not To Use
 
@@ -59,22 +60,34 @@ Require:
 7. Author Edit Contract for document formal workflow.
 8. Explicit external coding skill request, if any.
 9. Single workspace guard for file-writing workers.
+10. `keystone_routing_decision` selecting Coordinator lane for file-changing work.
 
 ## Workflow
 
 1. Recover document root, active round, work ID, and current step.
-2. Extract Goal, Scope, Source Context, Completion Criteria, Stop Conditions, Verification, and Expected Output.
-3. Extract forbidden changes and verification expectations from standards.
-4. Require Linker report when artifact candidates, stale/gap risks, or anchor changes matter.
-5. Decide whether the work can be bounded.
-6. Select purpose preset and authority from subagent standards.
-7. Select injected skill contract. If no domain-specific or explicit external skill applies, use `keystone-default-bounded-worker`.
-8. Keep `injected_skills` non-empty.
-9. If external coding skill is requested, add it as an injected skill. Do not let it replace Coordinator scope, authority, workspace guard, verification, or report contract.
-10. Create worker assignment and workspace guard.
-11. Review returned worker report against actual state, scope, forbidden changes, verification, source conflicts, and main context checkpoint.
-12. Decide next action: accept candidate, repair, review, verify, escalate, or block.
-13. Do not mark progress accepted until Main acceptance conditions are satisfied.
+2. Confirm `keystone_routing_decision` selected Coordinator lane when file-changing work is in scope.
+3. Extract Goal, Scope, Source Context, Completion Criteria, Stop Conditions, Verification, and Expected Output.
+4. Extract forbidden changes and verification expectations from standards.
+5. Require Linker report when artifact candidates, stale/gap risks, or anchor changes matter.
+6. Decide whether the work can be bounded.
+7. Select purpose preset and authority from subagent standards.
+8. Select injected skill contract. If no domain-specific or explicit external skill applies, use `keystone-default-bounded-worker`.
+9. Keep `injected_skills` non-empty.
+10. If external coding skill is requested, add it as an injected skill. Do not let it replace Coordinator scope, authority, workspace guard, verification, or report contract.
+11. Create worker assignment and workspace guard.
+12. Review returned worker report against actual state, scope, forbidden changes, verification, source conflicts, and main context checkpoint.
+13. Decide next action: accept candidate, repair, review, verify, escalate, or block.
+14. Do not mark progress accepted until Main acceptance conditions are satisfied.
+
+## Routing Gate
+
+Coordinator handles file-changing work only after Main selects Coordinator lane in `keystone_routing_decision`. Use Coordinator for repository source changes and for `skill_source` changes that need delegated implementation, formal review, verification, or workspace guard. Small in-scope `skill_source` edits may remain Main direct, but they must emit `main_direct_change_report` outside Coordinator.
+
+## Default User Response
+
+By default, answer users with a concise human-facing brief instead of dumping `worker_assignment`, `worker_report`, or `worker_report_review`. Include workflow decision, goal/scope summary, verification result, Main acceptance readiness, residual risk, and recommended next action.
+
+Keep worker assignment/report payloads as agent-facing runtime contracts. Emit the full payload only when the user asks for it, a worker handoff needs it, or audit/debug/verification evidence requires it. Optional `keystone-viewer` may render the payload, but it must not change scope, authority, verification result, report status, or Main acceptance readiness.
 
 ## Output Contract
 
@@ -83,6 +96,7 @@ Worker assignment:
 ```yaml
 worker_assignment:
   assignment_id:
+  routing_decision_ref:
   goal:
   completion_criteria:
   intent_summary:
@@ -196,6 +210,7 @@ worker_report_review:
 ```yaml
 worker_assignment:
   assignment_id: s08-skill-source-create
+  routing_decision_ref: keystone-routing-s08-skill-source
   goal: Create repo-local Keystone SKILL.md files.
   completion_criteria:
     - five skill directories exist
@@ -322,6 +337,7 @@ Stop when:
 7. A new reusable artifact is needed but no Linker report or reuse discovery exists.
 8. External coding skill requirements conflict with assignment boundaries.
 9. Worker report requires scope, source authority, acceptance criteria, or status semantics changes.
+10. File-changing work has no `keystone_routing_decision` selecting Coordinator lane.
 
 ## Verification
 
@@ -333,6 +349,8 @@ Verify Coordinator behavior by checking:
 4. External coding skill is injected, not a replacement.
 5. Worker `DONE` is not Main acceptance.
 6. Single workspace guard limits file-writing work.
+7. Default user response summarizes workflow decision, scope, verification, risks, and next action without dumping the full structured payload.
+8. Delegated `skill_source` or repository-source changes trace back to a routing decision.
 
 Suggested checks:
 

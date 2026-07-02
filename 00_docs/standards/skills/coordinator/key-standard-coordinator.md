@@ -67,7 +67,7 @@ authority, scope, workspace guard, stop condition, report contract를 정하는 
    `STD-KEYSTONE-018`, `STD-KEYSTONE-020`, `STD-KEYSTONE-022`,
    `STD-KEYSTONE-023`, `STD-KEYSTONE-024`, `STD-KEYSTONE-025`,
    `STD-KEYSTONE-026`, `STD-KEYSTONE-027`, `STD-KEYSTONE-030`, `STD-KEYSTONE-031`,
-   `STD-KEYSTONE-032`, `STD-KEYSTONE-033`, `STD-KEYSTONE-043`
+   `STD-KEYSTONE-032`, `STD-KEYSTONE-033`, `STD-KEYSTONE-043`, `STD-KEYSTONE-045`
 3. 관련 기준서: `../../subagents/key-standard-subagents.md`
 4. 관련 결정(6): `00_docs/works/key-decisions.md`
 5. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
@@ -110,6 +110,9 @@ authority, scope, workspace guard, stop condition, report contract를 정하는 
     anchor edit assignment를 구성해야 한다.
 12. 사용자가 `superpowers` 같은 외부 코딩 스킬(12)을 명시해 해당 workflow를 worker
     assignment에 주입해야 한다.
+13. Repo-local `skills/keystone-*/SKILL.md` 변경이 여러 파일, delegation, formal review,
+    verification, workspace guard, 또는 report handling을 요구해 Main direct lane보다 Coordinator
+    lane이 적합하다.
 
 <!-- key: id=key.standard.skill.coordinator.non-trigger-condition refs=key.role.coordinator key.topic.skill-contract -->
 ## Non-trigger condition
@@ -146,6 +149,7 @@ Coordinator는 다음 input을 사용할 수 있어야 한다.
 13. File-writing worker가 필요한 경우 single workspace guard
 14. Code/config/schema/API/test anchor 변경이 필요한 경우 Linker report의 recommended anchor
     change, affected artifact ID, relation evidence, verification expectation
+15. File-changing work인 경우 `keystone-coordinator` lane을 선택한 `keystone_routing_decision`
 
 Input이 부족하면 Coordinator는 worker를 배정하지 않고 Reader, Author, Clarify, Linker 중
 필요한 다음 작업을 제안하거나 main/user 결정(6)을 요청한다.
@@ -156,29 +160,31 @@ Input이 부족하면 Coordinator는 worker를 배정하지 않고 Reader, Autho
 Coordinator는 다음 순서를 따른다.
 
 1. 설정된 document root(1)와 root works index를 확인한다.
-2. Active round index와 active work node index를 따라 `round_id`, `work_id`, `current_step`과
+2. File-changing work이면 `keystone_routing_decision`이 `keystone-coordinator` lane을 선택했는지
+   확인한다.
+3. Active round index와 active work node index를 따라 `round_id`, `work_id`, `current_step`과
    workflow state를 복구한다.
-3. 작업서(4)에서 Goal, Scope, Source Context, Completion Criteria, Stop Conditions,
+4. 작업서(4)에서 Goal, Scope, Source Context, Completion Criteria, Stop Conditions,
    Verification, Expected Output을 추출한다.
-4. 관련 기준서(3)에서 verification expectation과 forbidden change를 추출한다.
-5. Reader context brief와 Author Change Set(17)을 확인한다.
-6. 아티팩트 그래프(14) 후보가 있으면 Linker report를 요구하거나 기존 Linker report에서 impact
+5. 관련 기준서(3)에서 verification expectation과 forbidden change를 추출한다.
+6. Reader context brief와 Author Change Set(17)을 확인한다.
+7. 아티팩트 그래프(14) 후보가 있으면 Linker report를 요구하거나 기존 Linker report에서 impact
    seed, required/optional/excluded candidates를 확인한다.
-7. Work unit이 bounded worker assignment로 자를 수 있는지 판단한다.
-8. Subagent 기준서에 따라 purpose preset, authority, injected skill contract를 선택한다.
-9. Code/config/schema/API/test 수정 요청에서 외부 코딩 스킬(12)이 명시되었으면 Coordinator를 유지한 채
+8. Work unit이 bounded worker assignment로 자를 수 있는지 판단한다.
+9. Subagent 기준서에 따라 purpose preset, authority, injected skill contract를 선택한다.
+10. Code/config/schema/API/test 수정 요청에서 외부 코딩 스킬(12)이 명시되었으면 Coordinator를 유지한 채
    해당 스킬을 injected skill로 주입한다.
-10. Domain-specific 또는 명시된 external coding skill이 없으면 `keystone-default-bounded-worker`
+11. Domain-specific 또는 명시된 external coding skill이 없으면 `keystone-default-bounded-worker`
     contract를 선택한다.
-11. 여러 coding skill 후보가 있고 선택에 따라 workflow, verification, risk가 달라질 때만
+12. 여러 coding skill 후보가 있고 선택에 따라 workflow, verification, risk가 달라질 때만
     main/user 선택을 요청한다.
-12. File-writing worker가 필요하면 single workspace guard를 설정한다.
-13. Current Step Brief, Context Pack, worker assignment를 만든다.
-14. Worker handoff boundary 또는 reviewer focus를 구성한다.
-15. Worker report(20)를 받은 뒤 actual state와 output을 확인한다.
-16. 필요하면 별도 review 또는 verify assignment를 배정한다.
-17. Report 결과를 accept candidate, repair, verify, escalate, block 중 하나로 처리한다.
-18. Main acceptance 조건이 충족된 경우에만 진행 기록(5)을 갱신한다.
+13. File-writing worker가 필요하면 single workspace guard를 설정한다.
+14. Current Step Brief, Context Pack, worker assignment를 만든다.
+15. Worker handoff boundary 또는 reviewer focus를 구성한다.
+16. Worker report(20)를 받은 뒤 actual state와 output을 확인한다.
+17. 필요하면 별도 review 또는 verify assignment를 배정한다.
+18. Report 결과를 accept candidate, repair, verify, escalate, block 중 하나로 처리한다.
+19. Main acceptance 조건이 충족된 경우에만 진행 기록(5)을 갱신한다.
 
 <!-- key: id=key.standard.skill.coordinator.runtime-output-contract refs=key.role.coordinator key.contract.output key.topic.work-execution key.topic.work-round key.topic.artifact-graph key.standard.subagent -->
 ## Runtime output contract
@@ -246,6 +252,23 @@ main_context_checkpoint:
 이 runtime output은 기본적으로 persistent 문서가 아니다. 명시적 필요가 있을 때만 파생
 에이전트 문서(8)로 저장할 수 있다.
 
+<!-- key: id=key.standard.skill.coordinator.user-response refs=key.role.coordinator key.contract.output key.topic.skill-contract -->
+## 기본 사용자 응답
+
+Coordinator는 worker assignment, worker report, worker report review를 agent-facing runtime
+payload로 유지한다. 기본 사용자 응답은 다음 항목만 짧게 보여준다.
+
+1. 현재 workflow 판단: assign, review, verify, repair, escalate, accept candidate, block
+2. assignment 또는 report의 목표와 scope 요약
+3. verification 결과와 Main acceptance 가능 여부
+4. residual risk와 source/document sync 필요 여부
+5. 다음 권장 행동과 주요 source refs
+
+Full worker assignment/report payload는 사용자가 요청하거나 worker handoff, audit/debug,
+verification evidence에 필요할 때만 노출한다. Optional `keystone-viewer`는 Coordinator runtime
+payload를 사용자-facing view로 표현할 수 있지만 scope, authority, verification, report status,
+Main acceptance readiness를 바꾸지 않는다.
+
 <!-- key: id=key.standard.skill.coordinator.worker-assignment-contract refs=key.role.coordinator key.contract.output key.contract.report -->
 ## Worker assignment and report contract
 
@@ -254,6 +277,7 @@ Worker assignment는 다음 shape을 우선 사용한다.
 ```yaml
 worker_assignment:
   assignment_id:
+  routing_decision_ref:
   goal:
   completion_criteria:
   intent_summary:
@@ -620,6 +644,7 @@ Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청
     main/user 선택이 없다.
 20. 명시된 외부 코딩 스킬의 필수 절차가 Coordinator assignment의 scope, authority,
     workspace guard, verification과 충돌한다.
+21. File-changing work인데 `keystone_routing_decision`이 없거나 Coordinator lane을 선택하지 않았다.
 
 <!-- key: id=key.standard.skill.coordinator.verification refs=key.role.coordinator key.topic.verification key.topic.acceptance key.standard.subagent -->
 ## Verification
@@ -653,7 +678,10 @@ Coordinator 기준은 다음 방법으로 검증한다.
     한다.
 21. 여러 외부 코딩 스킬 후보가 있을 때 매번 묻지 않고 선택이 의미 있게 다른 경우에만
     main/user 선택을 요청해야 한다.
-22. Verification command:
+22. 기본 사용자 응답은 worker assignment/report payload를 그대로 노출하지 않고 workflow 판단,
+    scope, verification, risk, next action을 요약해야 한다.
+23. Delegated `skill_source` 변경은 Coordinator lane으로 worker assignment/report를 남겨야 한다.
+24. Verification command:
    - `rg --files 00_docs`
    - Coordinator 관련 기준서를 읽어 link와 scope consistency 확인
    - `rg -n "branch|worktree|merge gate|remote push|commit checkpoint|repo-integrator|task branch|session branch" 00_docs/standards 00_docs/works | rg -v 'rg -n "branch\\|worktree'`

@@ -167,3 +167,61 @@ key:
   `key.api.* -> provides -> key.capability.*`를 기본 typed relation으로 확정하지 않는다.
 - 이유: API를 기본 provider로 승격하면 contract, implementation, capability boundary가 흐려져
   over-linking과 잘못된 impact 후보가 늘 수 있기 때문이다.
+
+<!-- key: id=key.work.decisions.dec-works-011 refs=key.doc.decision key.topic.skill-contract key.contract.output key.topic.external-assist -->
+## DEC-WORKS-011: Keystone 출력은 사용자 응답과 structured payload를 분리한다
+
+- 관련 work: Project Standard, Skill Creation, Integration Verification
+- 상태: accepted
+- 결정: Keystone skill은 기본 사용자 응답으로 결론, 핵심 근거, 주요 risk, 다음 행동, 주요
+  출처를 짧게 보여준다.
+- 결정: `reader_output`, `clarify_result`, `author_patch_report`, `linker_report`,
+  `worker_assignment`, `worker_report`, `worker_report_review` 같은 structured payload는
+  agent-facing handoff, audit, debugging, verification evidence contract로 유지한다.
+- 결정: Full structured payload는 사용자가 요청했거나 다른 Keystone skill 또는 Main이 handoff
+  input으로 필요로 할 때만 전체 노출한다.
+- 결정: Optional `keystone-viewer`는 presentation/helper skill 후보로 둘 수 있지만, 다섯 core
+  Keystone skill의 mandatory runtime dependency나 모든 output의 필수 filter chain으로 만들지
+  않는다.
+- 결정: Viewer 또는 동등한 presentation layer는 의미 판단, acceptance 판단, risk 제거,
+  recommended next action 변경, source authority 변경, handoff payload 수정을 하지 않는다.
+- 이유: 내부 handoff payload를 사용자에게 그대로 노출하면 응답이 과하고, 사용자-facing view를
+  각 skill에 중복 구현하면 drift와 context 증가가 생기기 때문이다. 기본 출력 정책은 core
+  standard에 두고, 복잡한 렌더링은 optional presentation layer로 분리한다.
+
+<!-- key: id=key.work.decisions.dec-works-012 refs=key.doc.decision key.topic.skill-contract key.topic.work-execution key.topic.skill-source key.contract.report -->
+## DEC-WORKS-012: File-changing work에는 routing decision과 lane별 report가 필요하다
+
+- 관련 work: Project Standard, Skill Creation, Integration Verification
+- 상태: accepted
+- 결정: Main은 `00_docs/**`, `skills/keystone-*/SKILL.md`, code/config/schema/API/test source를
+  수정하기 전에 target surface와 execution lane을 분류하는 `keystone_routing_decision`을 먼저
+  남긴다.
+- 결정: `00_docs/**` 원천 문서(2) 변경은 `keystone-author` lane으로 처리하고
+  `author_patch_report`를 남긴다.
+- 결정: `skills/keystone-*/SKILL.md`는 `skill_source` surface다. 작은 S08 scope 안의 단일 writer
+  수정은 Main direct lane으로 처리할 수 있지만 `main_direct_change_report`를 남긴다. 위임,
+  formal review/verification, workspace conflict, 여러 writer가 필요하면 `keystone-coordinator`
+  lane으로 처리한다.
+- 결정: `source_document`와 `skill_source` 또는 repository source가 함께 바뀌는 mixed 변경은
+  작업서가 combined flow를 명시하지 않는 한 lane별 phase로 분리한다.
+- 결정: 특정 skill 기준서를 읽은 것만으로 그 skill lane을 실행한 것으로 보지 않는다. Lane 실행은
+  routing decision, scope 준수, lane별 report로 판단한다.
+- 이유: `SKILL.md` trigger만으로는 Main이 수정 전에 적절한 lane을 강제 선택하지 못해 Author,
+  Coordinator, Main direct 책임 경계가 흐려질 수 있기 때문이다.
+
+<!-- key: id=key.work.decisions.dec-works-013 refs=key.doc.decision key.topic.artifact-graph key.topic.skill-source key.output.artifact -->
+## DEC-WORKS-013: Artifact Graph는 문서가 만든 output artifact를 중심으로 해석한다
+
+- 관련 work: Artifact Graph Standard, Linker Standard, Skill Creation, Integration Verification
+- 상태: accepted
+- 결정: Artifact Graph의 핵심 relation은 `source_document | decision | work_order -> output_artifact`다.
+- 결정: Skill source, code, config, schema, API, test, generated file은 output artifact의 surface
+  또는 artifact kind이며, graph 대상 여부를 결정하는 1차 기준이 아니다.
+- 결정: `skills/keystone-*/SKILL.md`가 Artifact Graph 대상인 이유는 skill source라는 파일 종류
+  때문이 아니라, S08 작업서와 각 skill 기준서가 요구하고 통제하는 산출물이기 때문이다.
+- 결정: Linker는 output artifact의 stale/gap을 source document, decision, work order와의 relation
+  기준으로 보고하고, 수정은 `keystone_routing_decision`의 surface별 lane으로 넘긴다.
+- 이유: 산출물 종류별로 graph 정책을 늘리면 skill source, code, generated file마다 예외가 생긴다.
+  Keystone에는 문서와 실제 산출물의 연결이 핵심이므로, surface는 edit routing과 locator evidence로
+  다루고 graph 의미는 output artifact relation으로 통일한다.

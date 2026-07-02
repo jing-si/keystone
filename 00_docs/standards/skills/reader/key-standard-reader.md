@@ -51,7 +51,7 @@ impact/stale/gap 해석은 `keystone-linker`로 넘긴다.
    `STD-KEYSTONE-012`, `STD-KEYSTONE-015`, `STD-KEYSTONE-017`,
    `STD-KEYSTONE-018`, `STD-KEYSTONE-020`, `STD-KEYSTONE-023`,
    `STD-KEYSTONE-024`, `STD-KEYSTONE-025`, `STD-KEYSTONE-026`,
-   `STD-KEYSTONE-027`, `STD-KEYSTONE-040`
+   `STD-KEYSTONE-027`, `STD-KEYSTONE-040`, `STD-KEYSTONE-045`, `STD-KEYSTONE-046`
 3. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.
 4. 상세화 범위: 이 기준서는 `STD-KEYSTONE-040`의 Reader 책임을 구현 가능한 수준으로
@@ -127,7 +127,9 @@ Reader는 mode와 무관하게 다음 순서를 따른다.
 10. Reader가 확인한 키메타(9), link, path, heading, keyword는 Linker handoff seed로만 사용하고
     artifact relation을 확정하지 않는다.
 11. 필요한 경우 shallow repository snapshot을 만든다.
-12. output에는 항상 `sources_read`, `assumptions`, `risks_and_gaps`,
+12. File-changing work가 필요하다고 판단하면 Reader가 직접 수정하지 않고
+    `keystone_routing_decision`이 필요하다는 next action을 남긴다.
+13. output에는 항상 `sources_read`, `assumptions`, `risks_and_gaps`,
    `recommended_next_action`을 포함한다.
 
 <!-- key: id=key.standard.skill.reader.mode-contract refs=key.role.reader key.contract.output key.topic.work-preparation -->
@@ -297,6 +299,23 @@ keystone_context_brief:
 `artifact_graph_needed`가 true이면 Reader는 artifact 후보를 확정하지 않고 `keystone-linker`를
 recommended next skill로 제안한다.
 
+<!-- key: id=key.standard.skill.reader.user-response refs=key.role.reader key.contract.output key.topic.skill-contract -->
+## 기본 사용자 응답
+
+Reader는 `reader_output`과 `keystone_context_brief`를 agent-facing structured payload로 유지한다.
+기본 사용자 응답은 다음 항목만 짧게 보여준다.
+
+1. 현재 상태: document root, active round, current work, current step, current status
+2. 핵심 판단: source documents와 repository snapshot에서 확인한 결론
+3. 주요 risk 또는 mismatch: status conflict, stale document, missing context
+4. 다음 권장 행동: Reader, Clarify, Author, Linker, Coordinator 중 필요한 next action
+5. 주요 근거: 핵심 source document 3-5개
+
+Full `reader_output`은 사용자가 요청하거나 Coordinator/Linker handoff, audit/debug,
+verification evidence에 필요할 때만 노출한다. Optional `keystone-viewer`가 제공되면 Reader
+payload를 사용자-facing view로 렌더링할 수 있지만, Reader의 read-only 판단과 recommended
+next action을 바꾸지 않는다.
+
 <!-- key: id=key.standard.skill.reader.metadata-handling refs=key.role.reader key.topic.document-navigation key.topic.keystone-metadata key.topic.code-anchor key.topic.artifact-graph -->
 ## 키메타와 코드 앵커 handling
 
@@ -339,6 +358,10 @@ Reader 기준은 다음 방법으로 검증한다.
    `artifact_graph_needed` 여부를 확인할 수 있어야 한다.
 6. Reader는 아티팩트 그래프(14) 필요성을 보고할 수 있지만 impact/stale/gap 후보를 확정하거나
    code/config/schema/API/test를 수정하지 않아야 한다.
-7. Verification command:
+7. 기본 사용자 응답은 structured payload를 그대로 노출하지 않고 핵심 상태, risk, next action,
+   주요 출처만 요약해야 한다.
+8. File-changing next action은 Author, Coordinator, Main direct lane 중 어느 routing decision이
+   필요한지 드러내야 한다.
+9. Verification command:
    - `rg --files 00_docs`
    - Reader 관련 기준서를 읽어 link와 scope consistency 확인

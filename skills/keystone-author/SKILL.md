@@ -55,22 +55,34 @@ Require:
 5. Applicable standards and work order context.
 6. Accepted Clarify result when relevant.
 7. Linker report or handoff seed when artifact impact is involved.
-8. Workspace state and existing-change risk.
+8. `keystone_routing_decision` selecting `source_document` and `keystone-author` for file-changing work.
+9. Workspace state and existing-change risk.
 
 ## Workflow
 
 1. Resolve the document root.
 2. Read project standard and relevant Author/child standards.
-3. Classify mode: `create`, `revise`, `clarify_apply`, `normalize`, or `progress_update`.
-4. Identify target source documents and sections.
-5. Confirm approved scope and impact boundaries.
-6. If a high-impact decision is missing, stop and recommend Clarify.
-7. For larger edits, write or reconstruct an Author Edit Contract.
-8. Edit only approved source documents.
-9. Check affected indexes, context map, progress, decisions, and Change Set needs.
-10. Use Linker reports for artifact impact or metadata gap evidence; do not perform deep graph interpretation yourself.
-11. If code/config/schema/API/test changes are needed, defer to Coordinator.
-12. Report changed files, no-edit candidates, verification, and residual risk.
+3. Confirm `keystone_routing_decision` selected Author lane for `source_document` changes.
+4. Classify mode: `create`, `revise`, `clarify_apply`, `normalize`, or `progress_update`.
+5. Identify target source documents and sections.
+6. Confirm approved scope and impact boundaries.
+7. If a high-impact decision is missing, stop and recommend Clarify.
+8. For larger edits, write or reconstruct an Author Edit Contract.
+9. Edit only approved source documents.
+10. Check affected indexes, context map, progress, decisions, and Change Set needs.
+11. Use Linker reports for artifact impact or metadata gap evidence; do not perform deep graph interpretation yourself.
+12. If code/config/schema/API/test or repo-local skill source changes are needed, split or defer to the proper lane.
+13. Report changed files, no-edit candidates, verification, and residual risk.
+
+## Routing Gate
+
+Author may edit only Keystone source documents under `00_docs/**` after Main selects Author lane in `keystone_routing_decision`. Reading Author guidance does not count as executing Author lane. If target surfaces include `skill_source` or `repository_source`, split them into Main direct or Coordinator lane and list them as no-edit candidates in `author_patch_report`.
+
+## Default User Response
+
+By default, answer users with a concise human-facing brief instead of the full `author_patch_report`. Include changed source documents, intentional no-edit candidates, verification, residual risk, and recommended next action.
+
+Keep `author_patch_report` and `author_edit_contract` as agent-facing structured payloads. Emit the full payload only when the user asks for it, another Keystone skill needs it for handoff, or audit/debug/verification evidence requires it. Optional `keystone-viewer` may render the payload, but it must not change source authority, progress status, or edit meaning.
 
 ## Output Contract
 
@@ -79,6 +91,7 @@ Report:
 ```yaml
 author_patch_report:
   contract_id:
+  routing_decision_ref:
   edits:
     - path:
       section:
@@ -139,6 +152,7 @@ author_edit_contract:
 ```yaml
 author_patch_report:
   contract_id: author-edit-s08-skill-creation
+  routing_decision_ref: keystone-routing-s08-output-policy
   edits:
     - path: 00_docs/works/r001-bootstrap-keystone/skill-creation/key-work-skill-creation.md
       section: Verification
@@ -179,6 +193,7 @@ Stop when:
 5. The edit requires code/config/schema/API/test changes.
 6. Existing user or agent changes could be overwritten.
 7. Formal reviewer/verifier/report acceptance workflow is needed.
+8. No `keystone_routing_decision` selected Author lane for the source document edit.
 
 ## Verification
 
@@ -189,6 +204,8 @@ Verify Author behavior by checking:
 3. Author Edit Contract completeness.
 4. Progress update boundary and Main acceptance separation.
 5. Linker/Coordinator handoff for Artifact Graph or repository-source edits.
+6. Default user response summarizes changes, verification, risks, and next action without dumping the full structured payload.
+7. `author_patch_report` references the routing decision and does not claim ownership of `skills/keystone-*/SKILL.md`.
 
 Suggested checks:
 

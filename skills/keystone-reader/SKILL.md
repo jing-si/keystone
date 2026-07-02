@@ -67,6 +67,16 @@ If input is insufficient, report `risks_and_gaps`; do not guess and do not edit.
 7. If capability/code/config/schema/API/test impact, stale, or gap analysis is needed, set `artifact_graph_needed: true` and recommend `keystone-linker`.
 8. Include `sources_read`, `assumptions`, `risks_and_gaps`, and `recommended_next_action` in every output.
 
+## Routing Gate
+
+Reader never edits files. If the request shifts from orientation, navigation, or work prep into file-changing work, stop at a recommendation for Main to emit `keystone_routing_decision` and select Author, Coordinator, or Main direct lane. Reading Reader output or a context brief does not execute that lane.
+
+## Default User Response
+
+By default, answer users with a concise human-facing brief instead of the full `reader_output` payload. Include only current status, key finding, top risks or mismatches, recommended next action, and key source refs.
+
+Keep `reader_output` and `keystone_context_brief` as agent-facing structured payloads. Emit the full payload only when the user asks for it, another Keystone skill needs it for handoff, or audit/debug/verification evidence requires it. Optional `keystone-viewer` may render the payload, but it must not change Reader's read-only judgment, risks, or recommended next action.
+
 ## Output Contract
 
 For orientation, include:
@@ -203,7 +213,7 @@ Stop or ask main/user for a decision when:
 1. The document root cannot be resolved.
 2. Active round, current step, completion criteria, or applicable standards cannot be recovered.
 3. Source documents conflict with the current user direction.
-4. The next action requires source document or code edits.
+4. The next action requires source document, skill source, or repository-source edits before a routing decision exists.
 5. Sensitive or local-only paths would be needed without clear policy.
 6. Artifact graph mismatch could change the task direction.
 
@@ -215,6 +225,8 @@ Verify Reader behavior by checking that:
 2. Output is explicitly read-only and does not replace source documents.
 3. Work Prep output can feed Coordinator but keeps `final_handoff_ready: false`.
 4. Artifact graph work is handed off to Linker.
+5. Default user response summarizes status, risks, next action, and key sources without dumping the full structured payload.
+6. File-changing next actions point to `keystone_routing_decision` instead of implying Reader edit authority.
 
 Suggested checks:
 

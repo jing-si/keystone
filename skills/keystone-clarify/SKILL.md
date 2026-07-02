@@ -49,7 +49,7 @@ Require:
 1. Current clarification topic.
 2. Related source documents, standards, work orders, progress records, and decisions.
 3. Mode context: `plan` for question collection or `default` for accepted decision handoff.
-4. Known affected documents and artifact candidates.
+4. Known affected documents and output artifact candidates.
 5. Approved target document/section when preparing Author handoff.
 6. Risk context for sensitive data, local paths, setup config, or common/global instruction files.
 7. Evidence source for modularization decisions.
@@ -60,10 +60,21 @@ Require:
 2. Read the relevant source documents.
 3. If in Plan Mode, ask one focused question at a time and explain tradeoffs.
 4. If the answer is insufficient, return an incomplete result with unresolved current-topic questions.
-5. If sufficient, produce decision summary, rationale, affected documents/artifacts, completeness check, recording hint, and edit plan.
+5. If sufficient, produce decision summary, rationale, affected documents/output artifacts, completeness check, recording hint, and edit plan.
 6. For modularization topics, use only supplied evidence and report selected option or needed investigation.
-7. Hand off source document application to Author.
-8. Hand off implementation, repository-source edits, and worker workflow to Coordinator.
+7. For downstream file-changing work, identify target surfaces and required lanes, but do not perform the edit.
+8. Hand off source document application to Author.
+9. Hand off implementation, repository-source edits, and worker workflow to Coordinator.
+
+## Routing Gate
+
+Clarify can make an author-ready decision or edit plan, but that result is not edit authority. Before files change, Main must emit `keystone_routing_decision` and split `source_document`, `skill_source`, and `repository_source` surfaces into Author, Main direct, or Coordinator lane. If the target surface remains unclear, stop before editing.
+
+## Default User Response
+
+By default, answer users with a concise human-facing brief instead of the full `clarify_result`. Include the topic or decision, rationale, unresolved current-topic questions, author-ready status, affected key documents, and recommended next action.
+
+Keep `clarify_result` as an agent-facing structured payload. Emit the full payload only when the user asks for it, Author needs it for handoff, or audit/debug/verification evidence requires it. Optional `keystone-viewer` may render the payload, but it must not change the decision summary, open questions, or author-ready judgment.
 
 ## Output Contract
 
@@ -90,6 +101,10 @@ clarify_result:
         reason:
   affected_artifact_candidates:
   edit_plan:
+  routing_handoff:
+    target_surfaces:
+    recommended_lanes:
+    required_reports:
   stop_conditions:
   open_questions:
     unresolved_current_topic:
@@ -133,11 +148,25 @@ clarify_result:
     inspect_only_candidates: []
     excluded: []
   affected_artifact_candidates:
-    - skills/keystone-reader/SKILL.md
-    - skills/keystone-author/SKILL.md
+    - artifact: skills/keystone-reader/SKILL.md
+      artifact_kind: skill_source
+      produced_from: 00_docs/works/r001-bootstrap-keystone/skill-creation/key-work-skill-creation.md
+    - artifact: skills/keystone-author/SKILL.md
+      artifact_kind: skill_source
+      produced_from: 00_docs/works/r001-bootstrap-keystone/skill-creation/key-work-skill-creation.md
   edit_plan:
     - Add description quality criteria.
     - Add validation commands for role boundaries.
+  routing_handoff:
+    target_surfaces:
+      - source_document
+      - skill_source
+    recommended_lanes:
+      - keystone-author
+      - main_direct
+    required_reports:
+      - author_patch_report
+      - main_direct_change_report
   open_questions:
     unresolved_current_topic: []
     out_of_topic: []
@@ -150,7 +179,9 @@ clarify_result:
     affected_work_orders:
       - S08
     affected_artifact_candidates:
-      - skills/*/SKILL.md
+      - artifact: skills/*/SKILL.md
+        artifact_kind: skill_source
+        relation: produced_by_s08_work_order
     acceptance_or_status_impact: no accepted status before Main acceptance
     recording_scope: work
     recording_reason: S08-specific generation guidance.
@@ -182,6 +213,7 @@ Stop when:
 5. Sensitive or local-only information may need to be recorded.
 6. Implementation or repository-source edits are required before the decision can be made.
 7. Modularization evidence is insufficient.
+8. Downstream file-changing target surfaces cannot be separated for routing.
 
 ## Verification
 
@@ -190,8 +222,10 @@ Verify Clarify behavior by checking:
 1. Plan Mode and Default Mode are distinct.
 2. Incomplete answers produce `author_edit_ready: false`.
 3. Decision recording hint is a handoff hint, not write authority.
-4. Affected documents and artifacts are separated.
+4. Affected documents and output artifacts are separated.
 5. Modularization decisions use evidence and handoff boundaries.
+6. Default user response summarizes decision, rationale, open questions, affected documents, and next action without dumping the full structured payload.
+7. File-changing handoff separates Author, Coordinator, and Main direct lanes and requires routing before editing.
 
 Suggested checks:
 

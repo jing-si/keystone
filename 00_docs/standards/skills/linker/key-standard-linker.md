@@ -56,10 +56,11 @@ authority를 포함하지 않는다.
 2. Artifact Graph 기준서: `../../artifacts/key-standard-artifact-graph.md`
 3. 상위 규칙: `STD-KEYSTONE-001`, `STD-KEYSTONE-015`, `STD-KEYSTONE-017`,
    `STD-KEYSTONE-018`, `STD-KEYSTONE-023`, `STD-KEYSTONE-025`, `STD-KEYSTONE-027`,
-   `STD-KEYSTONE-030`, `STD-KEYSTONE-044`
+   `STD-KEYSTONE-030`, `STD-KEYSTONE-044`, `STD-KEYSTONE-045`, `STD-KEYSTONE-046`
 4. 관련 기준서: `../reader/key-standard-reader.md`, `../author/key-standard-author.md`,
    `../coordinator/key-standard-coordinator.md`
-5. 관련 결정(6): `00_docs/works/key-decisions.md`의 `DEC-WORKS-009`, `DEC-WORKS-010`
+5. 관련 결정(6): `00_docs/works/key-decisions.md`의 `DEC-WORKS-009`, `DEC-WORKS-010`,
+   `DEC-WORKS-013`
 6. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.
 
@@ -71,17 +72,17 @@ authority를 포함하지 않는다.
    generation, stale/gap candidate reporting, worker assignment seed preparation
 3. Primary user: main agent, Coordinator, reviewer
 4. Output authority: Linker output은 graph interpretation evidence와 handoff seed이며 원천
-   문서(2), code/config/schema/API/test, Main acceptance를 대체하지 않는다.
+   문서(2), output artifact, Main acceptance를 대체하지 않는다.
 
 <!-- key: id=key.standard.skill.linker.trigger-condition refs=key.role.linker key.topic.impact-review key.topic.artifact-graph -->
 ## Trigger condition
 
 `keystone-linker`는 다음 경우에 사용할 수 있다.
 
-1. 기준서(3), 작업서(4), 결정(6) 변경이 code/config/schema/API/test artifact에 영향을 줄 수
-   있다.
-2. Code/config/schema/API/test 변경이 source document나 decision을 stale하게 만들 수 있다.
-3. 새 기능을 작성하기 전에 기존 capability(16), API, reusable code, test를 찾아야 한다.
+1. 기준서(3), 작업서(4), 결정(6) 변경이 산출물(output artifact)에 영향을 줄 수 있다.
+2. Output artifact 변경이 source document, decision, work order를 stale하게 만들 수 있다.
+3. 새 기능이나 산출물을 작성하기 전에 기존 capability(16), API, reusable code, test, skill
+   source, generated artifact 후보를 찾아야 한다.
 4. Metadata가 오래되었거나 누락되었는지 확인해야 한다.
 5. Coordinator가 worker assignment(19)를 만들기 전에 affected artifact 후보가 필요하다.
 6. Reviewer가 기존 capability 재사용 여부와 metadata stale 여부를 검토해야 한다.
@@ -109,8 +110,9 @@ Linker는 다음 input을 사용할 수 있어야 한다.
 2. 설정된 document root(1)
 3. 현재 work 또는 변경 의도
 4. 관련 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록
-5. Known `key.id`, `key.refs`, capability(16), code, config, schema, API, test seed
-6. 필요한 경우 changed documents, changed code/config/schema/API/test files, diff summary
+5. Known `key.id`, `key.refs`, capability(16), output artifact, code, config, schema, API, test seed
+6. 필요한 경우 changed documents, changed output artifact files, changed code/config/schema/API/test
+   files, diff summary
 7. 필요한 경우 Change Set(17) 또는 worker assignment(19) 준비 목적
 
 Input이 부족하면 Linker는 추측해서 후보를 확정하지 않고 `risks_and_gaps` 또는
@@ -124,8 +126,8 @@ Linker는 mode와 무관하게 다음 순서를 따른다.
 1. 설정된 document root(1)를 해석한다.
 2. Artifact Graph 기준서를 읽어 metadata admission, typed relation, stale handling 기준을
    확인한다.
-3. Input seed를 `key.id`, `key.refs`, capability(16), code, config, schema, API, test, path,
-   symbol, keyword로 분리한다.
+3. Input seed를 `key.id`, `key.refs`, source document, decision, work order, output artifact,
+   capability(16), code, config, schema, API, test, path, symbol, keyword로 분리한다.
 4. 키메타(9)와 코드 앵커(18)를 검색한다.
 5. Repository evidence를 함께 확인한다.
 6. Declared relation, observed relation, inferred relation을 구분한다.
@@ -139,8 +141,8 @@ Linker는 mode와 무관하게 다음 순서를 따른다.
     `keystone-clarify`의 modularization decision topic을 recommended next action으로 제안한다.
 12. Evidence가 부족해 reuse 또는 modularization 방향을 정할 수 없으면 `investigate_first`
     성격의 추가 Linker review 또는 Coordinator investigation을 제안한다.
-13. 수정이 필요한 경우 직접 수정하지 않고 source surface별 handoff owner를 분류해 Author 또는
-    Coordinator로 넘길 next action을 제안한다.
+13. 수정이 필요한 경우 직접 수정하지 않고 source/output surface별 handoff owner를 분류해 Author,
+    Main direct, 또는 Coordinator로 넘길 next action을 제안한다.
 
 <!-- key: id=key.standard.skill.linker.metadata-parsing refs=key.role.linker key.topic.keystone-metadata key.topic.code-anchor key.topic.artifact-graph -->
 ## Metadata parsing rule
@@ -197,19 +199,20 @@ Linker는 API artifact를 기본적으로 contract artifact로 해석한다.
 
 ### Artifact Discovery Mode
 
-현재 요청과 관련된 capability(16), code, config, schema, API, test artifact 후보를 찾는다.
+현재 요청과 관련된 capability(16)와 output artifact 후보를 찾는다.
 
 Output focus:
 
 1. Seed artifacts
-2. Affected capabilities
-3. Code/config/schema/API/test candidates
-4. Reuse candidates
-5. Evidence and confidence
+2. Source document, decision, work order가 만드는 output artifact 후보
+3. Affected capabilities
+4. Code/config/schema/API/test/skill/generated surface별 후보
+5. Reuse candidates
+6. Evidence and confidence
 
 ### Impact Analysis Mode
 
-변경된 source document, decision, code/config/schema/API/test diff가 다른 artifact에 줄 영향 후보를 찾는다.
+변경된 source document, decision, work order, output artifact diff가 다른 artifact에 줄 영향 후보를 찾는다.
 
 Output focus:
 
@@ -260,6 +263,11 @@ linker_report:
     required:
     strong_candidates:
     weak_candidates:
+  output_artifact_candidates:
+    required:
+    strong_candidates:
+    weak_candidates:
+    informational:
   code_candidates:
     required:
     strong_candidates:
@@ -325,6 +333,11 @@ linker_report:
         surface: code_anchor | config_anchor | schema_anchor | api_anchor | test_anchor
         recommended_change:
         reason:
+    main_direct_or_coordinator:
+      - artifact:
+        surface: output_artifact | skill_source | generated_file | repository_source
+        recommended_change:
+        reason:
     main_or_clarify:
       - topic:
         reason:
@@ -336,7 +349,7 @@ linker_report:
           - investigate_first
   graph_owner_note:
     interpretation_owned_by: keystone-linker
-    edit_authority: author_or_coordinator_only
+    edit_authority: author_main_direct_or_coordinator_only
   candidate_budget:
     applied: true | false
     truncated:
@@ -355,12 +368,30 @@ linker_report:
 자의적으로 숨기지 않으며, 생략이 필요하면 `omitted_summary`에 evidence type, keyword, path
 범위, 생략 이유를 남긴다.
 
+<!-- key: id=key.standard.skill.linker.user-response refs=key.role.linker key.contract.output key.topic.skill-contract -->
+## 기본 사용자 응답
+
+Linker는 `linker_report`를 agent-facing structured payload로 유지한다. 기본 사용자 응답은 다음
+항목만 짧게 보여준다.
+
+1. 요청 요약과 graph interpretation status
+2. required 후보와 strong candidate의 대표 항목
+3. 주요 stale/gap/reuse risk
+4. source surface별 handoff owner 요약: Author, Coordinator, Main/Clarify
+5. 다음 권장 행동과 주요 근거 문서 또는 artifact
+
+후보가 많으면 required 후보는 숨기지 않고, strong/weak/informational 후보는 count와 대표
+근거로 압축한다. Full `linker_report`는 사용자가 요청하거나 Coordinator/Author handoff,
+audit/debug, verification evidence에 필요할 때만 노출한다. Optional `keystone-viewer`는 Linker
+report를 표현할 수 있지만 candidate 등급, risk, handoff owner, recommended next action을
+바꾸지 않는다.
+
 <!-- key: id=key.standard.skill.linker.handoff refs=key.role.linker key.role.author key.role.coordinator -->
 ## Handoff boundary
 
 1. 문서 metadata 또는 source document 수정이 필요하면 `keystone-author`가 처리한다.
-2. Code/config/schema/API/test metadata 수정이나 implementation이 필요하면 `keystone-coordinator`가 worker
-   assignment(19)로 조율한다.
+2. Repository source output artifact metadata 수정이나 implementation이 필요하면
+   `keystone-coordinator`가 worker assignment(19)로 조율한다.
 3. High-impact decision이 필요하면 `keystone-clarify`가 topic을 정리한다.
 4. Current step과 work context가 부족하면 `keystone-reader`가 context brief를 만든다.
 5. Linker report는 후보와 evidence이며 acceptance 또는 수정 권한이 아니다.
@@ -369,6 +400,10 @@ linker_report:
 7. Reuse 또는 modularization 선택이 scope, shared architecture, API/schema/test, document
    consistency, acceptance criteria, verification에 영향을 주면 Linker는 `keystone-clarify`
    modularization decision topic을 handoff로 제안한다.
+8. Skill source, code, config, schema, API, test는 모두 output artifact의 surface로 보고한다.
+   수정은 surface별 routing decision에 따라 Main direct 또는 Coordinator lane으로 넘긴다.
+9. Handoff가 file-changing work로 이어지면 Main은 `keystone_routing_decision`을 남긴 뒤
+   surface별 lane을 선택한다.
 
 <!-- key: id=key.standard.skill.linker.stop-condition refs=key.role.linker key.boundary.read-only key.topic.impact-review -->
 ## Stop condition
@@ -391,14 +426,18 @@ Linker 기준은 다음 방법으로 검증한다.
 
 1. Linker contract만 보고 trigger와 non-trigger를 구분할 수 있어야 한다.
 2. 네 mode의 output focus가 서로 구분되어야 한다.
-3. Linker가 원천 문서(2), code, config, schema, API, test를 직접 수정하지 않는다는 경계가 명확해야 한다.
+3. Linker가 원천 문서(2)나 output artifact를 직접 수정하지 않는다는 경계가 명확해야 한다.
 4. Linker report가 Coordinator worker assignment의 artifact context seed로 사용될 수 있어야 한다.
 5. Linker의 operational graph interpretation ownership이 source edit authority로 해석되지
    않아야 한다.
 6. Mechanical stale, semantic stale, metadata gap을 구분할 수 있어야 한다.
-7. Source surface별 handoff owner를 Author, Coordinator, Main/Clarify로 분리할 수 있어야 한다.
+7. Source/output surface별 handoff owner를 Author, Main direct, Coordinator, Main/Clarify로 분리할 수 있어야 한다.
 8. Candidate 발견이 자동 수정 또는 자동 acceptance로 해석되지 않아야 한다.
-9. Verification command:
+9. 기본 사용자 응답은 required 후보, 주요 risk, handoff owner, next action을 요약하되 required
+   후보를 조용히 생략하지 않아야 한다.
+10. Skill source 후보는 output artifact surface의 한 종류일 뿐이며, graph model의 핵심은
+    source document, decision, work order가 만드는 산출물과의 relation임을 확인할 수 있어야 한다.
+11. Verification command:
    - `rg --files 00_docs`
    - `rg -n "keystone-linker|linker_report|Artifact Discovery|Impact Analysis|Stale/Gap Review" 00_docs/standards`
    - `rg -n "source_surface_handoffs|graph_interpretation|operational graph interpretation" 00_docs/standards/skills/linker/key-standard-linker.md`
