@@ -30,7 +30,7 @@ authority를 포함하지 않는다.
 
 1. `keystone-linker`의 trigger와 non-trigger condition
 2. Artifact Discovery, Impact Analysis, Stale/Gap Review, Worker Assignment Seed mode
-3. Metadata, code anchor, repository evidence 기반 artifact 후보 탐색
+3. Metadata, code/config/schema/API/test anchor, repository evidence 기반 artifact 후보 탐색
 4. Impact candidate 등급화
 5. Metadata gap과 stale candidate 보고
 6. Reuse candidate와 test candidate 보고
@@ -80,7 +80,7 @@ authority를 포함하지 않는다.
 
 1. 기준서(3), 작업서(4), 결정(6) 변경이 code/config/schema/API/test artifact에 영향을 줄 수
    있다.
-2. Code/config/schema/test 변경이 source document나 decision을 stale하게 만들 수 있다.
+2. Code/config/schema/API/test 변경이 source document나 decision을 stale하게 만들 수 있다.
 3. 새 기능을 작성하기 전에 기존 capability(16), API, reusable code, test를 찾아야 한다.
 4. Metadata가 오래되었거나 누락되었는지 확인해야 한다.
 5. Coordinator가 worker assignment(19)를 만들기 전에 affected artifact 후보가 필요하다.
@@ -110,7 +110,7 @@ Linker는 다음 input을 사용할 수 있어야 한다.
 3. 현재 work 또는 변경 의도
 4. 관련 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록
 5. Known `key.id`, `key.refs`, capability(16), code, config, schema, API, test seed
-6. 필요한 경우 changed documents, changed code files, changed tests, diff summary
+6. 필요한 경우 changed documents, changed code/config/schema/API/test files, diff summary
 7. 필요한 경우 Change Set(17) 또는 worker assignment(19) 준비 목적
 
 Input이 부족하면 Linker는 추측해서 후보를 확정하지 않고 `risks_and_gaps` 또는
@@ -186,7 +186,7 @@ Output focus:
 
 ### Impact Analysis Mode
 
-변경된 source document, decision, code diff, test diff가 다른 artifact에 줄 영향 후보를 찾는다.
+변경된 source document, decision, code/config/schema/API/test diff가 다른 artifact에 줄 영향 후보를 찾는다.
 
 Output focus:
 

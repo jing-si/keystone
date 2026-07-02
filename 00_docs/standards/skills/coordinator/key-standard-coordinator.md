@@ -434,7 +434,7 @@ Coordinator는 다음 기준으로 purpose를 선택한다.
    - edit scope가 명확하고 bounded implementation이 가능한 경우에만 사용한다. 새 기능이나
      method를 만들기 전 reuse discovery를 수행하고, 기존 capability provider 재사용/확장/신규
      생성 판단을 report해야 한다.
-   - Code/config/schema/test anchor 변경도 bounded source edit이므로 Linker report 또는 Main이
+   - Code/config/schema/API/test anchor 변경도 bounded source edit이므로 Linker report 또는 Main이
      승인한 graph handoff seed가 있을 때만 implement assignment의 좁은 하위 case로 다룬다.
    - Worker는 새 graph relation을 자의적으로 확정하지 않는다. 새 relation 결정이 필요하면
      `NEEDS_CONTEXT` 또는 `NEEDS_SCOPE_CHANGE`로 보고한다.

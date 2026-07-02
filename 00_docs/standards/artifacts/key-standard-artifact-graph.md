@@ -130,7 +130,7 @@ artifact_node:
   lifecycle: active | deprecated | removed
   authority:
     intended_behavior: source_document | decision
-    operative_evidence: code | config | schema
+    operative_evidence: code | config | schema | api_contract
     verification_evidence: test | verification_result
 ```
 

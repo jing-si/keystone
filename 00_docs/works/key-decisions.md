@@ -118,7 +118,7 @@ key:
 - 관련 work: Project Standard, Subagent Standard, Coordinator Standard, Skill Creation,
   Integration Verification
 - 상태: accepted
-- 결정: Keystone 작업 문맥이 있고 code/config/schema/test 수정 요청이 들어오면 기본 routing은
+- 결정: Keystone 작업 문맥이 있고 code/config/schema/API/test 수정 요청이 들어오면 기본 routing은
   `keystone-coordinator`로 한다.
 - 결정: 사용자가 `superpowers` 같은 외부 코딩 스킬(12)을 명시하면 해당 스킬은 Coordinator를
   대체하지 않고 worker assignment(19)의 `injected_skills`로 주입한다.
