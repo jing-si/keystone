@@ -54,6 +54,7 @@ Conditionally allowed:
 - S01-S07에서 수락된 기준서
 - `00_docs/standards/01_key-project-standard.md`
 - `00_docs/standards/artifacts/key-standard-artifact-graph.md`
+- `00_docs/standards/subagents/key-standard-subagents.md`
 - 각 skill별 child 기준서
 - Skill creator guidance 또는 현재 platform의 skill format 규칙
 
@@ -65,8 +66,18 @@ Conditionally allowed:
 - [ ] 각 `SKILL.md`는 해당 child 기준서와 일치한다.
 - [ ] 각 `SKILL.md`는 `name`과 `description` frontmatter를 가진다.
 - [ ] Skill description은 trigger/non-trigger 경계를 드러낸다.
+- [ ] Skill source는 원천 문서(2)가 intended behavior와 policy의 권위라는 공통 경계를 포함한다.
+- [ ] `keystone-author`는 repo-local `SKILL.md` 구현 파일 작성자로 설명되지 않는다.
 - [ ] 각 `SKILL.md`는 공통 skeleton의 핵심 section을 가진다.
 - [ ] 각 `SKILL.md`는 해당 skill의 최소 output example 또는 YAML field shape를 가진다.
+- [ ] Reader output example은 `keystone_context_brief`, `recommended_next_action`,
+      `final_handoff_ready: false`를 포함한다.
+- [ ] Clarify output example은 `decision_completeness_check`, `decision_recording_hint`,
+      `affected_documents`, `open_questions`를 포함한다.
+- [ ] Linker output example은 `linker_report`, `source_surface_handoffs`,
+      `graph_interpretation`, `graph_owner_note`, `candidate_budget`을 포함한다.
+- [ ] Coordinator output example은 `worker_assignment`, non-empty `injected_skills`,
+      `worker_report`, `worker_report_review`를 포함한다.
 - [ ] Linker가 artifact graph, impact candidate, stale candidate 책임을 가진다.
 - [ ] Coordinator가 worker assignment와 worker report를 다룬다.
 - [ ] Coordinator가 single workspace bounded worker model을 따른다.
@@ -106,6 +117,21 @@ Conditionally allowed:
 `When To Use`와 `When Not To Use`는 body에도 두되, 실제 trigger 품질을 위해 frontmatter
 `description`에도 핵심 trigger와 non-trigger 경계를 요약한다.
 
+생성 지침은 다음을 따른다.
+
+1. 각 `description`은 해당 스킬의 trigger와 non-trigger를 함께 요약한다.
+2. 모든 `SKILL.md`는 원천 문서(2)와 수락된 결정(6)이 source of truth이며, skill output은
+   Main/user acceptance를 대체하지 않는다고 명시한다.
+3. 기준서와 skill source가 충돌하면 기준서를 임시 권위로 두고 Main/user decision을 요청하도록
+   쓴다.
+4. `keystone-author`는 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록, Change Set(17)을
+   작성하거나 수정하는 스킬로 설명하고, repo-local `skills/*/SKILL.md` 구현 파일 작성은 S08의
+   Main 직접 작업 또는 Coordinator bounded worker 작업으로 구분한다.
+5. `keystone-linker`는 Artifact Graph의 operational interpretation owner이지만 source edit
+   authority가 없다는 점을 반복한다.
+6. `keystone-coordinator`는 외부 코딩 스킬(12)을 runtime dependency나 replacement가 아니라
+   `injected_skills` entry로만 설명한다.
+
 <!-- key: id=key.work.skill-creation.order.recommended-approach refs=key.section.recommended-approach key.topic.accepted-standard key.output.context-pack key.topic.bounded-worker -->
 
 ## Recommended Approach
@@ -139,8 +165,18 @@ Context Pack을 준비한 뒤 bounded worker에게 위임할 수 있다.
 Allowed:
 
 - `rg --files skills`
+- `test -f skills/keystone-reader/SKILL.md`
+- `test -f skills/keystone-author/SKILL.md`
+- `test -f skills/keystone-clarify/SKILL.md`
+- `test -f skills/keystone-linker/SKILL.md`
+- `test -f skills/keystone-coordinator/SKILL.md`
 - `rg -n "^name:|^description:" skills/*/SKILL.md`
-- `rg -n "## Purpose|## Workflow|## Output Contract|## Output Examples|## Stop Conditions|## Verification" skills/*/SKILL.md`
+- `rg -n "## Purpose|## Required Source Documents|## When To Use|## When Not To Use|## Required Input|## Workflow|## Output Contract|## Output Examples|## Boundaries|## Stop Conditions|## Verification|## Related Source Documents" skills/*/SKILL.md`
+- `rg -n "source of truth|source documents|Main acceptance|does not replace" skills/*/SKILL.md`
+- `rg -n "work-package-doc-architect|subagent-work-coordinator|marketplace|global install|publish|package publishing" skills || true`
+- `rg -n "read-only|does not modify|directly modify|Main acceptance|source documents" skills/*/SKILL.md`
+- `rg -n "keystone-default-bounded-worker|injected_skills|single_workspace|worker_assignment|worker_report" skills/keystone-coordinator/SKILL.md`
+- `rg -n "linker_report|source_surface_handoffs|graph_interpretation|graph_owner_note|candidate_budget|metadata_gaps|stale_candidates" skills/keystone-linker/SKILL.md`
 - 생성된 `SKILL.md` 읽기
 
 Forbidden until explicitly allowed:
@@ -161,6 +197,10 @@ Forbidden until explicitly allowed:
 - 각 skill이 자신의 기준서 책임만 포함하는지 확인한다.
 - Reader, Author, Clarify, Linker, Coordinator 사이 책임이 섞이지 않는지 확인한다.
 - Coordinator skill source가 외부 코딩 스킬을 Coordinator replacement로 설명하지 않는지 확인한다.
+- Author skill source가 repo-local skill source implementation을 자기 책임으로 설명하지 않는지
+  확인한다.
+- Linker skill source가 source edit authority 없이 graph interpretation과 handoff seed만
+  제공하는지 확인한다.
 - Prototype skill이나 외부 installed skill이 Keystone runtime dependency로 굳어지지 않는지
   확인한다.
 

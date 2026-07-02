@@ -29,7 +29,7 @@ None
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S08 | planned | pending | S01-S07 수락 후 시작한다 |
+| S08 | reviewing | pending | 다섯 개 repo-local `SKILL.md` 생성 및 로컬 검증을 완료했고 Main acceptance를 기다린다 |
 
 <!-- key: id=key.work.skill-creation.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 
@@ -53,10 +53,15 @@ None
 
 ## 누적 발견사항
 
-- None
+- S08 생성 전 `SKILL.md` frontmatter description, 원천 문서 우선 규칙, Linker/Coordinator
+  output field, runtime dependency 금지 검증을 강화해야 한다.
+- S08 산출물은 `skills/keystone-reader`, `skills/keystone-author`,
+  `skills/keystone-clarify`, `skills/keystone-linker`, `skills/keystone-coordinator`
+  아래의 초기 `SKILL.md`이며, Main acceptance 전까지 accepted로 보지 않는다.
 
 <!-- key: id=key.work.skill-creation.progress.next-step refs=key.topic.next-step key.topic.accepted-standard key.topic.skill-source -->
 
 ## 다음 권장 작업
 
-S01-S07 기준서가 수락된 뒤 skill source를 생성한다.
+Main이 S08 skill source 생성 결과를 검토해 acceptance 여부를 판단한다. 수락 후 S09
+Integration Verification로 이동한다.

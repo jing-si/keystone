@@ -70,7 +70,7 @@ bounded worker 실행 결과를 아티팩트 그래프(14)와 worker assignment/
 | Coordinator Standard | `00_docs/works/r001-bootstrap-keystone/coordinator-standard/00_key-index.md` | accepted | `keystone-coordinator` 기준서 |
 | Artifact Graph Standard | `00_docs/works/r001-bootstrap-keystone/artifact-graph-standard/00_key-index.md` | accepted | Artifact Graph 기준서 |
 | Linker Standard | `00_docs/works/r001-bootstrap-keystone/linker-standard/00_key-index.md` | accepted | `keystone-linker` 기준서 |
-| Skill Creation | `00_docs/works/r001-bootstrap-keystone/skill-creation/00_key-index.md` | planned | Keystone skill source 생성 |
+| Skill Creation | `00_docs/works/r001-bootstrap-keystone/skill-creation/00_key-index.md` | reviewing | Keystone skill source 생성 및 Main 검토 대기 |
 | Integration Verification | `00_docs/works/r001-bootstrap-keystone/integration-verification/00_key-index.md` | planned | 통합 검증 |
 
 <!-- key: id=key.context-map.document-tree-policy refs=key.topic.document-system key.doc.source key.topic.work-round -->
@@ -142,8 +142,8 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 
 현재 active round는 R001 Bootstrap Keystone이다. S00 문서 트리 재정비, S01 전체 기준서,
 S02 reader 기준서, S03 author 기준서, S04 clarify 기준서, S05 coordinator 기준서,
-S06 Artifact Graph 기준서, S07 linker 기준서는 accepted 상태다. 다음 planned work는 S08 Skill
-Creation이다.
+S06 Artifact Graph 기준서, S07 linker 기준서는 accepted 상태다. 현재 active work는 S08 Skill
+Creation이며, 초기 skill source 생성 결과를 Main이 검토할 차례다.
 
 | Step | 제목 | 목적 |
 |---|---|---|
@@ -163,11 +163,11 @@ Creation이다.
 
 | 스킬 | 상태 | 목적 |
 |---|---|---|
-| `keystone-reader` | planned | 프로젝트를 파악하고 관련 기준서/작업서를 탐색하며 작업 준비 context를 만든다 |
-| `keystone-author` | planned | 기준서와 작업서를 생성하고 승인된 원천 문서(2) 변경을 적용한다 |
-| `keystone-clarify` | planned | 영향도 높은 결정(6)을 topic 단위로 수집하고 Author가 적용할 edit plan을 만든다 |
-| `keystone-linker` | planned | Artifact Graph를 read-only로 해석하고 문서, capability, code, config, schema, API, test artifact의 impact/stale/gap 후보와 handoff seed를 보고한다 |
-| `keystone-coordinator` | planned | worker assignment/report 기반 Goal assignment, report, review, verification, acceptance flow를 조율한다 |
+| `keystone-reader` | reviewing | 프로젝트를 파악하고 관련 기준서/작업서를 탐색하며 작업 준비 context를 만든다 |
+| `keystone-author` | reviewing | 기준서와 작업서를 생성하고 승인된 원천 문서(2) 변경을 적용한다 |
+| `keystone-clarify` | reviewing | 영향도 높은 결정(6)을 topic 단위로 수집하고 Author가 적용할 edit plan을 만든다 |
+| `keystone-linker` | reviewing | Artifact Graph를 read-only로 해석하고 문서, capability, code, config, schema, API, test artifact의 impact/stale/gap 후보와 handoff seed를 보고한다 |
+| `keystone-coordinator` | reviewing | worker assignment/report 기반 Goal assignment, report, review, verification, acceptance flow를 조율한다 |
 
 <!-- key: id=key.context-map.prototype-skill-reference refs=key.topic.bootstrap key.topic.skill-contract -->
 ## Prototype 스킬 참고

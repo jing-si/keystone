@@ -29,7 +29,7 @@ round 안의 실행 순서는 이 색인에서 `S00`부터 관리한다.
 | S05 | Coordinator Standard | `coordinator-standard/00_key-index.md` | accepted | `keystone-coordinator` 기준서를 정리한다 |
 | S06 | Artifact Graph Standard | `artifact-graph-standard/00_key-index.md` | accepted | Artifact Graph 기준서를 정리한다 |
 | S07 | Linker Standard | `linker-standard/00_key-index.md` | accepted | `keystone-linker` 기준서를 정리한다 |
-| S08 | Skill Creation | `skill-creation/00_key-index.md` | planned | 다섯 개 Keystone skill source를 만든다 |
+| S08 | Skill Creation | `skill-creation/00_key-index.md` | reviewing | 다섯 개 Keystone skill source를 만들고 Main acceptance를 기다린다 |
 | S09 | Integration Verification | `integration-verification/00_key-index.md` | planned | 문서, artifact graph, skill source의 end-to-end 흐름을 검증한다 |
 
 <!-- key: id=key.work.round.r001-bootstrap-keystone.common-decisions refs=key.doc.decision key.doc.work key.topic.work-round -->

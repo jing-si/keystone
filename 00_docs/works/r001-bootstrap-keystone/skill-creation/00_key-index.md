@@ -10,7 +10,7 @@ key:
     - key.topic.repo-local
 work_id: skill-creation
 title: Skill Creation
-status: planned
+status: reviewing
 owner_lane: main-session
 work_type:
   - implementation
@@ -51,5 +51,5 @@ risk_level: medium
 
 ## 현재 상태
 
-- Status: planned
+- Status: reviewing
 - Current step: S08
