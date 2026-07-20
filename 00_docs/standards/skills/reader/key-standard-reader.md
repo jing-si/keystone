@@ -66,6 +66,17 @@ impact/stale/gap 해석은 `keystone-linker`로 넘긴다.
 4. Output authority: Reader output은 source of truth가 아니며, 원천 문서(2)를 대체하지
    않는다.
 
+<!-- key: id=key.standard.skill.reader.runtime-authority refs=key.role.reader key.topic.runtime-independence key.topic.initialization -->
+## 런타임 권위와 초기화 경계
+
+이 문서는 Keystone 저장소에서 Reader를 개발·검수하기 위한 원천 명세다. 배포된 Reader의
+실행 계약은 설치된 skill package 안에서 완결되어야 하며, 소비 프로젝트의
+`standards/skills/reader/**`를 required input으로 요구하지 않는다.
+
+Keystone 문서가 없는 프로젝트의 code, README와 설정 조사는 Main의 일반 능력에 맡긴다.
+Reader를 직접 호출한 경우에는 파일을 만들지 않고 현재 초기화 상태, 확인 가능한 partial
+orientation, 읽지 못한 Keystone context와 Init 제안을 제공한다.
+
 <!-- key: id=key.standard.skill.reader.trigger-condition refs=key.role.reader key.topic.document-navigation key.topic.work-preparation -->
 ## Trigger condition
 
@@ -101,18 +112,20 @@ Reader는 다음 input을 사용할 수 있어야 한다.
 1. 사용자 요청 또는 main의 current task
 2. 현재 repository root
 3. 현재 instruction context
-4. 설정된 document root(1) 또는 이를 해석하기 위한 project-local setting
+4. 존재하는 경우 설정된 document root(1) 또는 이를 해석하기 위한 project-local setting
 5. 필요한 경우 target mode: Orientation, Navigator, Work Prep
 
-Input이 부족하면 Reader는 추측해서 수정하지 않고 `risks_and_gaps` 또는 stop condition으로
-보고한다.
+Input이나 Keystone 문서가 부족하면 Reader는 추측하거나 파일을 만들지 않고
+`risks_and_gaps`와 초기화 상태를 포함한 partial result를 보고한다.
 
 <!-- key: id=key.standard.skill.reader.common-workflow refs=key.role.reader key.topic.document-navigation key.topic.work-preparation key.topic.work-round key.topic.artifact-graph -->
 ## Common workflow
 
 Reader는 mode와 무관하게 다음 순서를 따른다.
 
-1. 설정된 document root(1)를 `STD-KEYSTONE-010`에 따라 해석한다.
+1. Bootstrap 기준에 따라 초기화 상태와 document root 후보를 확인한다.
+   `uninitialized` 또는 `partial`이면 존재하는 문서만 읽고 partial result와 Init 제안을
+   제공한 뒤, 존재하지 않는 index/work 탐색 step은 건너뛴다.
 2. `key-context-map.md`가 있으면 먼저 읽어 active standards와 active work를 파악한다.
 3. `standards/00_key-index.md` 또는 해당 project의 standards index를 읽는다.
 4. `works/00_key-index.md` 또는 해당 project의 root works index를 읽어 active round를 찾는다.
@@ -127,8 +140,8 @@ Reader는 mode와 무관하게 다음 순서를 따른다.
 10. Reader가 확인한 키메타(9), link, path, heading, keyword는 Linker handoff seed로만 사용하고
     artifact relation을 확정하지 않는다.
 11. 필요한 경우 shallow repository snapshot을 만든다.
-12. File-changing work가 필요하다고 판단하면 Reader가 직접 수정하지 않고
-    `keystone_routing_decision`이 필요하다는 next action을 남긴다.
+12. File-changing work가 필요하다고 판단하면 Reader가 직접 수정하지 않고 Init, Author,
+    Coordinator 또는 Main direct 중 적절한 next action을 남긴다.
 13. output에는 항상 `sources_read`, `assumptions`, `risks_and_gaps`,
    `recommended_next_action`을 포함한다.
 
@@ -316,6 +329,12 @@ verification evidence에 필요할 때만 노출한다. Optional `keystone-viewe
 payload를 사용자-facing view로 렌더링할 수 있지만, Reader의 read-only 판단과 recommended
 next action을 바꾸지 않는다.
 
+사용자-facing 응답을 보내기 전에는 `STD-KEYSTONE-045`의 Payload Disclosure Gate를 적용한다.
+Full payload 요청, handoff, audit/debug, verification evidence 필요성이 없으면 `*_output`,
+`*_result`, `*_report`, `worker_assignment`, `keystone_routing_decision` 원문 block을 기본
+응답에 노출하지 않는다. 기본 응답은 payload 의미를 상태/판단 요약, 대표 근거, 검증 요약,
+남은 risk, 다음 행동, 주요 출처로 압축한다.
+
 <!-- key: id=key.standard.skill.reader.metadata-handling refs=key.role.reader key.topic.document-navigation key.topic.keystone-metadata key.topic.code-anchor key.topic.artifact-graph -->
 ## 키메타와 코드 앵커 handling
 
@@ -335,13 +354,16 @@ Reader는 키메타(9)와 코드 앵커(18)를 관련 문서와 Linker handoff s
 
 Reader는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한다.
 
-1. 설정된 document root(1)를 확신 있게 해석할 수 없다.
-2. active round, current step, completion criteria, applicable standard를 복구할 수 없다.
+1. 복수 document root가 충돌해 read scope 자체를 안전하게 정할 수 없다.
+2. 복구할 active round나 current step이 없다는 사실이 아니라, 서로 충돌하는 상태 출처 때문에
+   current task 방향을 정할 수 없다.
 3. 원천 문서(2)가 현재 사용자 방향과 충돌한다.
 4. 문서 변경이 필요한데 Reader mode가 read-only라 처리할 수 없다.
 5. 민감한 원천 문서(2)나 local-only path를 읽어야 하지만 권한 또는 policy가 불명확하다.
 6. document-to-repository 또는 아티팩트 그래프(14) mismatch가 current task의 방향을 바꿀 수 있다.
-7. 관련 기준서(3) 또는 작업서(4)가 없어서 정상적인 Work Prep output을 만들 수 없다.
+
+관련 기준서(3) 또는 작업서(4)의 단순 부재는 stop condition이 아니다. Reader는 partial
+result와 Init 또는 Author 제안을 제공한다.
 
 <!-- key: id=key.standard.skill.reader.verification refs=key.role.reader key.contract.output key.topic.verification -->
 ## Verification
@@ -360,8 +382,9 @@ Reader 기준은 다음 방법으로 검증한다.
    code/config/schema/API/test를 수정하지 않아야 한다.
 7. 기본 사용자 응답은 structured payload를 그대로 노출하지 않고 핵심 상태, risk, next action,
    주요 출처만 요약해야 한다.
-8. File-changing next action은 Author, Coordinator, Main direct lane 중 어느 routing decision이
-   필요한지 드러내야 한다.
-9. Verification command:
+8. File-changing next action은 필요한 실행 주체를 제안하되 모든 작은 작업에 별도 routing
+   payload를 요구하지 않아야 한다.
+9. 프로젝트 로컬 Reader 기준서가 없어도 설치된 contract와 존재하는 문서만으로 동작해야 한다.
+10. Verification command:
    - `rg --files 00_docs`
    - Reader 관련 기준서를 읽어 link와 scope consistency 확인

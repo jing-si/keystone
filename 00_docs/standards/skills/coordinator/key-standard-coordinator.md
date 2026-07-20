@@ -26,7 +26,7 @@ Keystone workflow로 회수하는 bounded assignment broker다.
 
 Worker assignment와 worker report는 runtime output이며 원천 문서(2)를 대체하지 않는다.
 코드 수정은 대표적인 실행 작업이지만, Coordinator의 책임은 코딩 방법론이 아니라 context,
-authority, scope, workspace guard, stop condition, report contract를 정하는 것이다.
+authority, scope, execution environment boundary, stop condition, report contract를 정하는 것이다.
 
 <!-- key: id=key.standard.skill.coordinator.scope refs=key.role.coordinator key.role.subagent key.standard.subagent key.topic.verification key.topic.acceptance key.topic.formal-workflow key.topic.artifact-graph -->
 ## 적용 범위
@@ -38,7 +38,7 @@ authority, scope, workspace guard, stop condition, report contract를 정하는 
 5. Worker report handling
 6. Review, verification, repair, escalation, acceptance flow
 7. Change Set(17), Linker report, reuse discovery, graph validation 조율
-8. Single workspace guard
+8. Execution environment boundary
 9. 진행 상태와 report status update boundary
 10. 외부 코딩 스킬(12)의 injected skill 선택과 주입
 11. 파생 에이전트 문서(8) 생성 조건
@@ -85,12 +85,23 @@ authority, scope, workspace guard, stop condition, report contract를 정하는 
 4. Output authority: Coordinator output은 main의 orchestration 판단을 돕는 runtime output이며
    원천 문서(2)를 대체하지 않는다.
 
+<!-- key: id=key.standard.skill.coordinator.runtime-authority refs=key.role.coordinator key.topic.runtime-independence key.topic.user-decision -->
+## 런타임 권위와 사용 허락
+
+이 문서는 Keystone 저장소에서 Coordinator를 개발·검수하기 위한 원천 명세다. 배포된
+Coordinator의 실행 계약은 설치된 skill package 안에서 완결되어야 하며, 소비 프로젝트의
+`standards/skills/coordinator/**`를 required input으로 요구하지 않는다.
+
+Coordinator는 영향 범위가 크므로 work scope마다 사용자 허락을 받는다. 사용자가
+`keystone-coordinator`를 직접 호출하면 해당 요청 범위의 허락으로 본다. 같은 범위의 assignment,
+review, repair, verification에는 반복 확인하지 않지만 scope나 risk가 커지면 다시 묻는다.
+
 <!-- key: id=key.standard.skill.coordinator.trigger-condition refs=key.role.coordinator key.topic.work-execution key.role.subagent key.standard.subagent key.topic.author-edit-contract -->
 ## Trigger condition
 
 `keystone-coordinator`는 다음 경우에 사용할 수 있다.
 
-1. 작업서(4)의 current step을 Goal unit으로 실행해야 한다.
+1. 사용자 허락이 있고 작업서(4)의 current step을 Goal unit으로 실행해야 한다.
 2. Main이 bounded worker assignment(19)를 만들어 worker에게 전달해야 한다.
 3. Current Step Brief, Context Pack, worker handoff boundary, reviewer focus를 구성해야 한다.
 4. Worker report(20)를 받아 accept candidate, repair, review, verify, escalate 중 다음 결정을
@@ -104,15 +115,15 @@ authority, scope, workspace guard, stop condition, report contract를 정하는 
    이어지는 formal workflow가 필요하다.
 9. Linker report를 바탕으로 문서, capability, code, config, schema, API, test artifact 변경 후보를 Change
    Set(17) 단위로 조율해야 한다.
-10. Keystone 작업 문맥에서 code/config/schema/API/test 수정 요청이 들어왔고, bounded implementation
-    assignment를 구성해야 한다.
+10. Keystone 작업 문맥에서 code/config/schema/API/test 수정 요청에 대해 Main direct보다
+    위임이 적절하고, 사용자가 bounded implementation assignment를 허락했다.
 11. Linker report가 code/config/schema/API/test anchor gap 또는 stale anchor를 보고했고, bounded
     anchor edit assignment를 구성해야 한다.
-12. 사용자가 `superpowers` 같은 외부 코딩 스킬(12)을 명시해 해당 workflow를 worker
-    assignment에 주입해야 한다.
+12. 현재 work scope의 Coordinator 사용이 허락되었고, 사용자가 `superpowers` 같은 외부 코딩
+    스킬(12)을 명시해 해당 workflow를 worker assignment에 주입해야 한다.
 13. Repo-local `skills/keystone-*/SKILL.md` 변경이 여러 파일, delegation, formal review,
-    verification, workspace guard, 또는 report handling을 요구해 Main direct lane보다 Coordinator
-    lane이 적합하다.
+    verification, execution environment 조율 또는 report handling을 요구해 Main direct보다
+    허락된 Coordinator가 적합하다.
 
 <!-- key: id=key.standard.skill.coordinator.non-trigger-condition refs=key.role.coordinator key.topic.skill-contract -->
 ## Non-trigger condition
@@ -127,6 +138,7 @@ authority, scope, workspace guard, stop condition, report contract를 정하는 
 6. 작업이 high-risk implementation인데 main/user decision 없이 worker에게 보낼 수 없다.
 7. 민감한 정보, local-only path, private data가 포함될 수 있지만 policy가 불명확하다.
 8. 문서 작업인데 Author Edit Contract 또는 승인된 문서 수정 범위가 없다.
+9. 현재 work scope에 대한 사용자 허락이 없다.
 
 <!-- key: id=key.standard.skill.coordinator.required-input refs=key.role.coordinator key.topic.work-execution key.topic.artifact-graph -->
 ## Required input
@@ -146,10 +158,10 @@ Coordinator는 다음 input을 사용할 수 있어야 한다.
     Change Set(17)
 11. Worker에게 주입할 skill contract 후보
 12. 사용자가 명시한 외부 코딩 스킬(12), 또는 선택이 필요한 available coding skill 후보
-13. File-writing worker가 필요한 경우 single workspace guard
+13. 위임 실행에 필요한 사용자 또는 host의 실행 환경 제약
 14. Code/config/schema/API/test anchor 변경이 필요한 경우 Linker report의 recommended anchor
     change, affected artifact ID, relation evidence, verification expectation
-15. File-changing work인 경우 `keystone-coordinator` lane을 선택한 `keystone_routing_decision`
+15. 복수 surface나 권한 경계가 있어 명시적으로 남긴 경우 routing context
 
 Input이 부족하면 Coordinator는 worker를 배정하지 않고 Reader, Author, Clarify, Linker 중
 필요한 다음 작업을 제안하거나 main/user 결정(6)을 요청한다.
@@ -159,9 +171,8 @@ Input이 부족하면 Coordinator는 worker를 배정하지 않고 Reader, Autho
 
 Coordinator는 다음 순서를 따른다.
 
-1. 설정된 document root(1)와 root works index를 확인한다.
-2. File-changing work이면 `keystone_routing_decision`이 `keystone-coordinator` lane을 선택했는지
-   확인한다.
+1. 사용자 허락, 설정된 document root(1)와 root works index를 확인한다.
+2. 복수 surface나 권한 경계가 있으면 필요한 routing context를 확인한다.
 3. Active round index와 active work node index를 따라 `round_id`, `work_id`, `current_step`과
    workflow state를 복구한다.
 4. 작업서(4)에서 Goal, Scope, Source Context, Completion Criteria, Stop Conditions,
@@ -178,7 +189,8 @@ Coordinator는 다음 순서를 따른다.
     contract를 선택한다.
 12. 여러 coding skill 후보가 있고 선택에 따라 workflow, verification, risk가 달라질 때만
     main/user 선택을 요청한다.
-13. File-writing worker가 필요하면 single workspace guard를 설정한다.
+13. 위임 실행의 isolation, worktree, branch, concurrency는 사용자 지시, 주입된 skill과 host
+    환경의 계약을 따른다.
 14. Current Step Brief, Context Pack, worker assignment를 만든다.
 15. Worker handoff boundary 또는 reviewer focus를 구성한다.
 16. Worker report(20)를 받은 뒤 actual state와 output을 확인한다.
@@ -204,7 +216,7 @@ Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
 4. Worker assignment
    - assignment id, goal, completion criteria, intent summary, purpose, role hint, authority,
      source documents, accepted decisions, applicable standards, context pack, injected skill
-     contract, scope, forbidden changes, stop conditions, verification, workspace guard,
+     contract, scope, forbidden changes, stop conditions, verification, execution environment,
      main context checkpoint, return report contract를 담는다.
 5. Worker report review
    - status, changed files, changed artifact IDs, verification result, scope check,
@@ -213,7 +225,7 @@ Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
 6. Worker handoff
    - subagent 기준서 기준의 purpose, role hint, authority, primary scope, read scope,
      direct edit scope, conditional edit scope, escalation zone, forbidden changes,
-     workspace guard를 담는다.
+     execution environment constraints를 담는다.
 7. Reviewer brief
    - worker goal, completion criteria, changed files 또는 문서 output, known risks,
      verification result, 같은 `key.id`를 참조하는 문서와의 충돌 여부, reviewer focus를
@@ -269,15 +281,24 @@ verification evidence에 필요할 때만 노출한다. Optional `keystone-viewe
 payload를 사용자-facing view로 표현할 수 있지만 scope, authority, verification, report status,
 Main acceptance readiness를 바꾸지 않는다.
 
+사용자-facing 응답을 보내기 전에는 `STD-KEYSTONE-045`의 Payload Disclosure Gate를 적용한다.
+Full payload 요청, worker handoff, audit/debug, verification evidence 필요성이 없으면
+`*_output`, `*_result`, `*_report`, `worker_assignment`, `keystone_routing_decision` 원문 block을
+기본 응답에 노출하지 않는다. 기본 응답은 payload 의미를 workflow 판단, scope 요약, 검증 요약,
+Main acceptance readiness, 남은 risk, 다음 행동, 주요 출처로 압축한다.
+
 <!-- key: id=key.standard.skill.coordinator.worker-assignment-contract refs=key.role.coordinator key.contract.output key.contract.report -->
 ## Worker assignment and report contract
 
 Worker assignment는 다음 shape을 우선 사용한다.
 
+`routing_context_ref`는 복수 surface, 권한 경계 또는 audit 요구 때문에 routing context를
+명시적으로 남긴 경우에만 포함한다.
+
 ```yaml
 worker_assignment:
   assignment_id:
-  routing_decision_ref:
+  routing_context_ref:
   goal:
   completion_criteria:
   intent_summary:
@@ -321,7 +342,7 @@ worker_assignment:
   forbidden_changes:
   stop_conditions:
   verification:
-  workspace_guard:
+  execution_environment:
   return_report_contract:
 ```
 
@@ -329,24 +350,22 @@ Worker assignment는 `injected_skills`를 비워 두지 않는다. Domain-specif
 `keystone-default-bounded-worker` contract를 포함해 worker가 적용할 기본 절차와 report 기준을
 명시한다.
 
-Assignment의 goal, purpose, authority, scope, forbidden changes, workspace guard, verification,
+Assignment의 goal, purpose, authority, scope, forbidden changes, execution environment boundary, verification,
 return report contract는 모든 worker에게 적용되는 Keystone 기본 경계다. 외부 코딩 스킬(12)이
 명시된 경우 해당 스킬은 `injected_skills`로 들어가지만 이 기본 경계를 대체하지 않는다.
 
 <!-- key: id=key.standard.skill.coordinator.injected-skill-selection refs=key.role.coordinator key.topic.external-assist key.topic.skill-contract key.standard.subagent -->
 ### Injected skill selection contract
 
-Coordinator는 Keystone 작업 문맥과 code/config/schema/API/test 수정 요청을 분리하지 않는다. Keystone
-작업 문맥이 복구되고 bounded implementation이 가능한 경우, 명시적 `$coordinator` 호출이 없어도
-Coordinator를 기본 execution routing으로 사용한다.
+Coordinator는 사용자가 현재 work scope의 위임을 허락한 경우에만 execution routing을 맡는다.
+작고 명확한 code/config/schema/API/test 수정은 Main direct로 처리할 수 있다.
 
 외부 코딩 스킬(12)은 다음 규칙으로 선택한다.
 
 1. 사용자가 `$coordinator`만 명시하면 Coordinator는 `keystone-default-bounded-worker` contract를
    사용한다.
-2. 사용자가 `$superpowers`처럼 외부 코딩 스킬만 명시하고 Keystone 작업 문맥에서
-   code/config/schema/API/test 수정 요청을 하면 Coordinator를 기본으로 사용하고, 해당 스킬을
-   `injected_skills`에 추가한다.
+2. 사용자가 `$superpowers`처럼 외부 코딩 스킬만 명시한 것은 Coordinator 허락으로 보지 않는다.
+   위임이 필요하면 Main이 Coordinator 사용 여부를 별도로 묻는다.
 3. 사용자가 `$coordinator`와 외부 코딩 스킬을 함께 명시하면 Coordinator와 해당 injected skill을
    함께 사용한다.
 4. 사용자가 외부 코딩 스킬을 명시하지 않으면 Coordinator는 선택지를 매번 표시하지 않고
@@ -357,13 +376,13 @@ Coordinator를 기본 execution routing으로 사용한다.
    Mode가 명시되지 않으면 `coding_guidance`를 사용한다.
 7. 여러 외부 코딩 스킬 후보가 있고 선택에 따라 workflow, verification, risk, required output이
    달라질 때만 main/user에게 선택지를 제시한다.
-8. 사용자가 Coordinator를 사용하지 말라고 명시하면 Keystone source authority, scope,
-   verification, acceptance risk를 검토하고 안전하지 않으면 중단하거나 사용자 결정을 요청한다.
+8. 사용자가 Coordinator를 허락하지 않으면 Main direct로 안전하게 처리 가능한지 판단하고,
+   위임 없이는 범위를 안전하게 수행할 수 없을 때만 중단해 설명한다.
 
 외부 코딩 스킬 주입은 다음 경계를 따른다.
 
 1. Injected skill은 worker authority를 올리지 않는다.
-2. Injected skill은 Coordinator assignment의 goal, scope, forbidden changes, workspace guard,
+2. Injected skill은 Coordinator assignment의 goal, scope, forbidden changes, execution environment boundary,
    verification, return report contract를 바꾸지 않는다.
 3. Injected skill이 assignment scope 밖의 절차, 추가 authority, 추가 subagent, external state,
    publishing, dependency/build system 변경을 요구하면 worker는 `NEEDS_SCOPE_CHANGE` 또는
@@ -480,37 +499,23 @@ Coordinator는 다음 기준으로 purpose를 선택한다.
 
 Subagent 공통 금지와 stop condition은 subagent 기준서를 따른다.
 
-<!-- key: id=key.standard.skill.coordinator.workspace-guard-policy refs=key.role.coordinator key.role.subagent key.standard.subagent key.topic.work-execution -->
-## Single workspace policy
+<!-- key: id=key.standard.skill.coordinator.execution-environment refs=key.role.coordinator key.role.subagent key.standard.subagent key.topic.work-execution -->
+## 실행 환경 경계
 
-기본 실행 모델은 single workspace bounded worker orchestration이다.
+Keystone은 single workspace, worktree, branch, 병렬 worker 수나 integration 전략을 고유 규칙으로
+강제하지 않는다.
 
-1. Coordinator는 한 번에 하나의 file-writing worker만 배정한다.
-2. 이전 file-writing worker report를 처리하기 전에는 다음 file-writing worker를 배정하지 않는다.
-3. Worker는 allowed edit scope 밖의 파일을 수정하지 않는다.
-4. 기존 사용자 변경이나 다른 agent 변경을 정리, 되돌림, 덮어쓸 가능성이 있으면 멈추고
-   보고하게 한다.
-5. 파괴적 workspace 조작은 사용자 또는 Main의 명시 승인 없이는 worker assignment에 포함하지
-   않는다.
-6. Worker report에는 changed files, scope check, forbidden change check, workspace conflicts가
-   포함되어야 한다.
+1. 기본은 Main의 직접 수정이며 위임이 필요할 때만 Coordinator를 사용한다.
+2. 위임된 skill이 worktree나 별도 workspace를 요구하면 그 skill과 host 환경의 계약을 따른다.
+3. Worker는 assignment의 allowed edit scope 밖을 수정하지 않는다.
+4. 기존 사용자 또는 다른 agent 변경을 임의로 정리, 되돌림, 덮어쓰지 않는다.
+5. 실제 충돌을 발견하면 보고하고, 해결 전략이 사용자 판단을 요구할 때만 질문한다.
+6. 파괴적 workspace 조작은 명시적인 사용자 허락 없이 assignment에 포함하지 않는다.
+7. Worker report에는 changed files, scope check, forbidden change check와 발견한 conflict를
+   포함한다.
 
-Workspace guard는 다음 shape을 우선 사용한다.
-
-```yaml
-workspace_guard:
-  model: single_workspace
-  active_file_writer_policy: exclusive
-  allowed_paths:
-  protected_paths:
-  existing_changes_policy: do_not_overwrite_unlisted_changes
-  destructive_workspace_operation_policy: forbidden
-  file_change_report_required: true
-```
-
-Read-only `investigate`, `review`, `verify` worker는 file-writing worker와 달리 병렬 후보가 될
-수 있다. 단, Coordinator가 report ordering, source conflict 판단, Main acceptance 판단을
-보존할 수 없으면 순차 실행한다.
+Read-only 작업의 병렬 여부와 file-writing 작업의 isolation은 사용자 지시, 주입된 skill,
+host capability와 실제 conflict risk를 바탕으로 정한다.
 
 <!-- key: id=key.standard.skill.coordinator.report-handling-contract refs=key.role.coordinator key.topic.report key.role.subagent key.standard.subagent -->
 ## Report handling contract
@@ -627,8 +632,8 @@ Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청
 9. 민감한 정보, local-only path, private data를 worker context에 넣어야 할 수 있다.
 10. 문서 작업인데 Author Edit Contract 없이 무엇을 어떻게 쓸지 결정해야 한다.
 11. Worker가 전체 작업서(4)를 재해석하거나 추가 subagent를 생성해야만 진행할 수 있다.
-12. File-writing worker가 필요한데 single workspace guard가 없다.
-13. 여러 file-writing worker를 동시에 배정해야만 진행할 수 있다.
+12. 위임에 필요한 사용자 허락이나 host 실행 경계를 확인할 수 없다.
+13. 여러 file-writing worker의 변경 충돌을 현재 실행 전략으로 안전하게 관리할 수 없다.
 14. Default, domain-specific, explicit external coding skill 중 어떤 injected skill contract도
     assignment에 포함할 수 없다.
 15. Accepted decision이 관련 work order나 progress record에 전파되지 않아 current task 방향을
@@ -643,8 +648,8 @@ Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청
 19. 외부 코딩 스킬 후보가 여러 개이고 선택에 따라 workflow, verification, risk가 달라지지만
     main/user 선택이 없다.
 20. 명시된 외부 코딩 스킬의 필수 절차가 Coordinator assignment의 scope, authority,
-    workspace guard, verification과 충돌한다.
-21. File-changing work인데 `keystone_routing_decision`이 없거나 Coordinator lane을 선택하지 않았다.
+    execution environment boundary, verification과 충돌한다.
+21. 복수 surface나 권한 경계가 불명확해 assignment scope를 안전하게 만들 수 없다.
 
 <!-- key: id=key.standard.skill.coordinator.verification refs=key.role.coordinator key.topic.verification key.topic.acceptance key.standard.subagent -->
 ## Verification
@@ -663,7 +668,8 @@ Coordinator 기준은 다음 방법으로 검증한다.
 10. 아티팩트 그래프(14) 후보를 Change Set(17), worker assignment, reviewer focus,
     verification 후보로 변환할 수 있어야 한다.
 11. Purpose catalog와 report status 정의를 반복하지 않고 subagent 기준서를 참조해야 한다.
-12. Single workspace guard만 보고 file-writing worker의 배정 가능 여부를 판단할 수 있어야 한다.
+12. Keystone이 특정 workspace/worktree/concurrency 전략을 강제하지 않으면서 기존 변경 보존과
+    assignment scope를 검증할 수 있어야 한다.
 13. Worker assignment와 worker report contract를 구분할 수 있어야 한다.
 14. Worker `DONE`과 Keystone acceptance를 구분할 수 있어야 한다.
 15. Default worker contract가 assignment에 포함되어야 하는 상황을 판단할 수 있어야 한다.
@@ -671,8 +677,8 @@ Coordinator 기준은 다음 방법으로 검증한다.
     preserved boundary가 보존되는지 확인할 수 있어야 한다.
 17. Source conflict, stale work order, stale progress record, accepted decision propagation
     누락을 reason code와 review focus로 분리할 수 있어야 한다.
-18. Keystone 작업 문맥에서 code/config/schema/API/test 수정 요청이 들어오면 Coordinator가 기본
-    routing임을 확인할 수 있어야 한다.
+18. 작은 명확한 code/config/schema/API/test 수정은 Main direct가 가능하고, Coordinator는 사용자
+    허락과 위임 필요가 있을 때만 사용되어야 한다.
 19. 외부 코딩 스킬이 명시되면 Coordinator를 대체하지 않고 injected skill로 들어가야 한다.
 20. 외부 코딩 스킬이 명시되지 않으면 `keystone-default-bounded-worker` contract가 사용되어야
     한다.
@@ -685,5 +691,7 @@ Coordinator 기준은 다음 방법으로 검증한다.
    - `rg --files 00_docs`
    - Coordinator 관련 기준서를 읽어 link와 scope consistency 확인
    - `rg -n "branch|worktree|merge gate|remote push|commit checkpoint|repo-integrator|task branch|session branch" 00_docs/standards 00_docs/works | rg -v 'rg -n "branch\\|worktree'`
-   - `rg -n "single workspace|bounded worker|worker assignment|purpose preset|injected skill contract|workspace guard" 00_docs/standards 00_docs/works`
+   - `rg -n "bounded worker|worker assignment|purpose preset|injected skill contract|execution environment" 00_docs/standards 00_docs/works`
    - `rg -n "external coding skill|외부 코딩 스킬|keystone-default-bounded-worker|injected skill" 00_docs/standards`
+25. 프로젝트 로컬 Coordinator 기준서가 없어도 설치된 contract로 사용자 허락과 assignment
+    경계를 판단할 수 있어야 한다.

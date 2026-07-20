@@ -1,5 +1,6 @@
 ---
 doc_type: progress
+status: superseded
 key:
   id: key.work.integration-verification.progress
   refs:
@@ -29,7 +30,7 @@ None
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S09 | planned | pending | S08 수락 후 시작한다 |
+| S09 | superseded | not_accepted | 시작 전 R002의 새 bootstrap/runtime integration 시나리오로 대체되었다 |
 
 <!-- key: id=key.work.integration-verification.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 
@@ -47,16 +48,18 @@ None
 
 ## 보류 결정
 
-- 실제 fixture project를 만들지, 문서 기반 simulation으로 시작할지 결정한다.
+- None. R002 S01은 문서 기반 시나리오를 사용하고 fixture 구현은 R002 S02에서 판단한다.
 
 <!-- key: id=key.work.integration-verification.progress.findings refs=key.topic.findings key.topic.integration-verification -->
 
 ## 누적 발견사항
 
-- None
+- 빈 프로젝트에서 프로젝트 기준서와 skill별 기준서를 먼저 요구하는 bootstrap 순환 의존을
+  확인했다.
 
 <!-- key: id=key.work.integration-verification.progress.next-step refs=key.topic.next-step key.step.s08 key.topic.integration-verification -->
 
 ## 다음 권장 작업
 
-S08을 수락한 뒤 통합 검증을 진행한다.
+`00_docs/works/r002-bootstrap-runtime-independence/bootstrap-runtime-standard/00_key-index.md`와
+후속 Skill Runtime Implementation으로 이동한다.

@@ -34,7 +34,8 @@ key:
 1. 문서와 code/config/schema/API/test artifact 연결, relation propagation, impact candidate,
    stale/gap 판단이 필요하면 `key-standard-artifact-graph.md`를 읽는다.
 2. Artifact graph 기준은 원천 문서(2) 권위와 Main acceptance 규칙을 대체하지 않는다.
-3. Artifact graph 후보를 실제 변경으로 연결해야 하면 `../skills/linker/00_key-index.md`,
+3. Graph evidence 부재만으로 초기화 실패로 보지 않고 Linker가 fail-soft로 gap을 보고한다.
+4. Artifact graph 후보를 실제 변경으로 연결해야 하면 `../skills/linker/00_key-index.md`,
    `../skills/author/00_key-index.md`, `../skills/coordinator/00_key-index.md`를 함께 확인한다.
-4. Parent 기준서와 이 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의 결정(6)을
+5. Parent 기준서와 이 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의 결정(6)을
    받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.

@@ -1,242 +1,181 @@
 ---
 name: keystone-clarify
-description: "Use for one topic at a time high-impact Keystone policy, scope, document-structure, modularization, or skill-contract decisions and author-ready edit plans. Do not use for routine edits, implementation work, broad document authoring, or worker orchestration."
+description: "Use for exactly one actual high-impact Keystone user decision at a time when project meaning, policy, scope, document authority, conflicting valid choices, or evidence-backed modularization cannot be resolved safely. Return a decision and author-ready handoff to the caller. Do not use for built-in setup defaults, routine edits, document authoring, implementation, repository investigation, or worker orchestration."
 ---
+
+<!-- keystone: id=key.skill.clarify kind=output_artifact artifact_kind=skill_source -->
+<!-- keystone: produced_from=key.work.skill-runtime-implementation.order -->
+<!-- keystone: governed_by=key.standard.project key.standard.skill.clarify -->
 
 # keystone-clarify
 
 ## Purpose
 
-Clarify one high-impact Keystone decision topic at a time and produce an author-ready decision summary and edit plan. Use this skill before source documents are meaningfully changed when policy, scope, structure, skill contract, or modularization choices are unclear.
+Clarify exactly one high-impact user decision topic, then return the accepted decision and a bounded
+handoff so the caller can resume the interrupted Init, Author, Coordinator, or Main flow.
 
-Source documents and accepted decisions are the source of truth. Clarify output does not replace source documents or Main/user acceptance until the decision is accepted and applied by the appropriate owner.
+This installed contract is self-contained. Do not require a consuming-project Clarify standard or
+`standards/skills/clarify/**`. Project source documents and accepted decisions define project meaning
+when they exist. Clarify output is not a source-document edit, implementation, or acceptance result.
 
-## Required Source Documents
+## Use Clarify For
 
-Read the relevant subset:
+Use Clarify only when a real user choice can materially change one of these:
 
-1. `00_docs/standards/01_key-project-standard.md`
-2. `00_docs/standards/skills/clarify/key-standard-clarify.md`
-3. Related Author standard when producing an edit plan.
-4. Related work order, progress record, and decision record.
-5. Linker report, worker report, reviewer finding, or user evidence for modularization topics.
+1. Project purpose, scope, policy, terminology, or authority relationships.
+2. A meaningful source-document or skill-contract direction.
+3. Which of multiple valid document roots is authoritative.
+4. Whether existing documents should be adopted, moved, replaced, or left separate.
+5. A conflict between current user direction and authoritative project documents.
+6. An evidence-backed modularization choice among reuse, extend, extract shared module, create new, or
+   investigate first when the choice changes architecture, scope, API/schema/test obligations, or
+   verification.
+7. Sensitive data handling, destructive migration, external publication or cost, or expansion beyond
+   the delegated scope.
 
-## When To Use
+Do not use Clarify for:
 
-Use Clarify when:
+1. Missing Keystone documents by itself.
+2. Built-in metadata, filenames, index format, basic Context Map shape, internal routing representation,
+   or the absence of project-local skill standards.
+3. A safe default or explicit priority that already resolves the matter.
+4. Routine wording, formatting, or narrowly scoped edits.
+5. Repository investigation, document authoring, implementation, testing, or worker orchestration.
+6. A modularization guess without Linker, worker, reviewer, repository, or user evidence.
 
-1. A high-impact policy, scope, source document, skill-contract, or cross-document consistency decision is needed.
-2. A source document change would be risky without user intent.
-3. Initial Keystone setup needs document root, tracking policy, language policy, or storage decisions.
-4. Existing source documents conflict with the current task direction.
-5. A modularization decision is needed because reuse, extend, extract shared module, create new, or investigate first changes scope or verification.
+## Initialization Boundary
 
-## When Not To Use
+Init may directly ask built-in setup questions such as whether to use the default document root. This
+does not require Clarify. Clarify becomes appropriate only when setup exposes an actual project decision,
+such as conflicting valid roots, existing-document adoption/move/replace, or uncertain project meaning.
 
-Do not use Clarify to:
+After resolving the topic, return the result to Init or Author and let the caller resume automatically;
+do not tell the user to invoke the original skill again.
 
-1. Perform routine edits or formatting.
-2. Create or revise standards or work orders directly.
-3. Implement code/config/schema/API/test changes.
-4. Orchestrate worker assignments or report handling.
-5. Decide repository similarity without evidence from Linker, worker report, reviewer finding, or user input.
-6. Apply unaccepted decisions to source documents.
+Clarify is not tied to a host execution mode or question API. Use the interaction mechanism available in
+the current environment, but never claim to have activated or switched a mode unless the host actually
+did so.
 
-## Required Input
+## Inputs and Evidence
 
-Require:
+Use the current topic, user request, accepted decisions, relevant source documents and work context when
+they exist, known affected surfaces, and risk context. For modularization, require concrete evidence from
+a Linker report, repository finding, worker/reviewer report, or the user.
 
-1. Current clarification topic.
-2. Related source documents, standards, work orders, progress records, and decisions.
-3. Mode context: `plan` for question collection or `default` for accepted decision handoff.
-4. Known affected documents and output artifact candidates.
-5. Approved target document/section when preparing Author handoff.
-6. Risk context for sensitive data, local paths, setup config, or common/global instruction files.
-7. Evidence source for modularization decisions.
+Do not require project-local skill standards. If evidence is insufficient to decide the current topic,
+return it as unresolved rather than inventing project meaning or an Author-ready edit plan.
 
-## Workflow
+## One-Topic Question Flow
 
-1. Confirm the topic is one high-impact decision, not a bundle.
-2. Read the relevant source documents.
-3. If in Plan Mode, ask one focused question at a time and explain tradeoffs.
-4. If the answer is insufficient, return an incomplete result with unresolved current-topic questions.
-5. If sufficient, produce decision summary, rationale, affected documents/output artifacts, completeness check, recording hint, and edit plan.
-6. For modularization topics, use only supplied evidence and report selected option or needed investigation.
-7. For downstream file-changing work, identify target surfaces and required lanes, but do not perform the edit.
-8. Hand off source document application to Author.
-9. Hand off implementation, repository-source edits, and worker workflow to Coordinator.
+1. Reduce the issue to one decision whose alternatives have distinct practical effects.
+2. Present only the evidence necessary to understand that decision.
+3. Ask one focused question and briefly explain the meaningful tradeoffs.
+4. Judge whether the answer is sufficient for this topic.
+5. If not, ask only a targeted follow-up about the same topic.
+6. If the user delegates judgment and accepted standards, repository evidence, or a safe default support
+   one choice, make the bounded recommendation and state its basis.
+7. Once sufficient, summarize the decision, rationale, assumptions, affected documents/artifacts, and
+   any recording or edit handoff.
+8. Return to the caller so the interrupted work resumes.
 
-## Routing Gate
+Do not combine unrelated decisions merely to shorten the conversation. Finish reflection and handoff for
+the current topic before moving to another.
 
-Clarify can make an author-ready decision or edit plan, but that result is not edit authority. Before files change, Main must emit `keystone_routing_decision` and split `source_document`, `skill_source`, and `repository_source` surfaces into Author, Main direct, or Coordinator lane. If the target surface remains unclear, stop before editing.
+## Modularization Decision
 
-## Default User Response
+Treat modularization as a Clarify topic only when evidence shows meaningful duplication or drift risk and
+the choice changes architecture, public contracts, documentation, tests, scope, or verification. Use one
+of these outcomes:
 
-By default, answer users with a concise human-facing brief instead of the full `clarify_result`. Include the topic or decision, rationale, unresolved current-topic questions, author-ready status, affected key documents, and recommended next action.
+- `reuse_existing`
+- `extend_existing`
+- `extract_shared_module`
+- `create_new`
+- `investigate_first`
 
-Keep `clarify_result` as an agent-facing structured payload. Emit the full payload only when the user asks for it, Author needs it for handoff, or audit/debug/verification evidence requires it. Optional `keystone-viewer` may render the payload, but it must not change the decision summary, open questions, or author-ready judgment.
+When evidence is weak, choose `investigate_first` as a recommendation, keep the decision unresolved, and
+hand read-only discovery to Linker or a permitted investigation flow. Clarify does not establish
+repository similarity on its own.
 
-## Output Contract
+## Result Contract
 
-Use:
+For a resolved or unresolved topic, keep enough structure for the caller to resume:
 
 ```yaml
 clarify_result:
   topic:
+  status: resolved | unresolved
   decision_summary:
   rationale:
   working_assumptions:
   affected_documents:
     update_targets:
-      - path:
-        sections:
-        reason:
-        required_change:
     inspect_only_candidates:
-      - path:
-        reason:
-        evidence:
     excluded:
-      - path:
-        reason:
   affected_artifact_candidates:
   edit_plan:
-  routing_handoff:
-    target_surfaces:
-    recommended_lanes:
-    required_reports:
+  optional_routing_context:
   stop_conditions:
   open_questions:
     unresolved_current_topic:
-      - question:
-        reason:
     out_of_topic:
-      - question:
-        reason:
   decision_completeness_check:
     selected_option:
     rejected_options:
-    rationale:
     affected_source_documents:
     affected_work_orders:
-    affected_artifact_candidates:
     acceptance_or_status_impact:
-    recording_scope: global | round | work | none | unresolved
-    recording_reason:
     author_edit_ready: true | false
   decision_recording_hint:
     scope: global | round | work | none | unresolved
     recommended_path:
     reason:
-    requires_author_update: true | false
   modularization_decision:
+  resume:
+    caller:
+    interrupted_step:
+    next_action:
 ```
 
-## Output Examples
+For an unresolved topic, set `author_edit_ready: false`, list only current-topic questions that block the
+decision, and omit an actionable edit plan. Keep unrelated future questions in `out_of_topic`.
 
-```yaml
-clarify_result:
-  topic: S08 SKILL.md trigger boundaries
-  decision_summary: Each skill description must include both trigger and non-trigger boundaries.
-  rationale: Frontmatter description is the primary trigger surface.
-  affected_documents:
-    update_targets:
-      - path: 00_docs/works/r001-bootstrap-keystone/skill-creation/key-work-skill-creation.md
-        sections: [Completion Criteria, Verification]
-        reason: S08 generation guardrail.
-        required_change: Require concrete description and output-shape checks.
-    inspect_only_candidates: []
-    excluded: []
-  affected_artifact_candidates:
-    - artifact: skills/keystone-reader/SKILL.md
-      artifact_kind: skill_source
-      produced_from: 00_docs/works/r001-bootstrap-keystone/skill-creation/key-work-skill-creation.md
-    - artifact: skills/keystone-author/SKILL.md
-      artifact_kind: skill_source
-      produced_from: 00_docs/works/r001-bootstrap-keystone/skill-creation/key-work-skill-creation.md
-  edit_plan:
-    - Add description quality criteria.
-    - Add validation commands for role boundaries.
-  routing_handoff:
-    target_surfaces:
-      - source_document
-      - skill_source
-    recommended_lanes:
-      - keystone-author
-      - main_direct
-    required_reports:
-      - author_patch_report
-      - main_direct_change_report
-  open_questions:
-    unresolved_current_topic: []
-    out_of_topic: []
-  decision_completeness_check:
-    selected_option: strengthen_s08_generation_template
-    rejected_options: []
-    rationale: Prevent runtime trigger collisions.
-    affected_source_documents:
-      - 00_docs/works/r001-bootstrap-keystone/skill-creation/key-work-skill-creation.md
-    affected_work_orders:
-      - S08
-    affected_artifact_candidates:
-      - artifact: skills/*/SKILL.md
-        artifact_kind: skill_source
-        relation: produced_by_s08_work_order
-    acceptance_or_status_impact: no accepted status before Main acceptance
-    recording_scope: work
-    recording_reason: S08-specific generation guidance.
-    author_edit_ready: true
-  decision_recording_hint:
-    scope: work
-    recommended_path: 00_docs/works/r001-bootstrap-keystone/skill-creation/key-work-skill-creation.md
-    reason: Applies to S08 only.
-    requires_author_update: true
-```
+For a resolved non-trivial topic, include the completeness check and a recording hint. The hint does not
+grant write authority. Record cross-round decisions in the project's shared decision record and narrower
+decisions near their round/work when such locations exist. Do not create those records directly.
 
-## Boundaries
+Only include routing context when multiple surfaces, authority boundaries, or audit needs make it useful.
+Document edits go to Author, implementation may remain Main direct, and delegated work goes to
+Coordinator only when the user has permitted Coordinator for that work scope.
 
-1. Clarify handles one topic at a time.
-2. Clarify does not apply non-trivial source document edits directly.
-3. Clarify does not implement repository changes.
-4. Clarify does not orchestrate workers.
-5. Clarify does not infer high-impact decisions from vague delegation.
-6. Clarify does not decide modularization without evidence.
+## Default User Response
 
-## Stop Conditions
+Show one focused question when a decision is unresolved. When resolved, briefly state the decision,
+rationale, affected documents or surfaces, readiness to resume, and next action.
 
-Stop when:
+Keep the full `clarify_result` agent-facing unless the user requests it or handoff, audit, debugging, or
+verification requires it. Apply the Payload Disclosure Gate: do not print raw `*_output`, `*_result`,
+`*_report`, `worker_assignment`, or routing payload blocks by default.
 
-1. The topic contains multiple high-impact decisions.
-2. User answers conflict with each other or source documents.
-3. Target documents or sections are unclear.
-4. The change would alter scope, acceptance criteria, or status semantics without approval.
-5. Sensitive or local-only information may need to be recorded.
-6. Implementation or repository-source edits are required before the decision can be made.
-7. Modularization evidence is insufficient.
-8. Downstream file-changing target surfaces cannot be separated for routing.
+## Boundaries and Stop Conditions
+
+1. Handle one decision topic at a time.
+2. Never edit source documents, config, code, schema, API, tests, generated files, or skill source.
+3. Never orchestrate workers or grant Coordinator permission.
+4. Never manufacture acceptance or infer a high-impact choice from vague input.
+5. Stop the current topic when answers conflict, evidence is insufficient, sensitive information may be
+   recorded, or the choice would exceed delegated scope.
+6. If implementation or investigation must happen before the decision, return an unresolved result and
+   the bounded next action.
 
 ## Verification
 
-Verify Clarify behavior by checking:
+Check that Clarify:
 
-1. Plan Mode and Default Mode are distinct.
-2. Incomplete answers produce `author_edit_ready: false`.
-3. Decision recording hint is a handoff hint, not write authority.
-4. Affected documents and output artifacts are separated.
-5. Modularization decisions use evidence and handoff boundaries.
-6. Default user response summarizes decision, rationale, open questions, affected documents, and next action without dumping the full structured payload.
-7. File-changing handoff separates Author, Coordinator, and Main direct lanes and requires routing before editing.
-
-Suggested checks:
-
-```bash
-rg --files 00_docs
-rg -n "decision_completeness_check|decision_recording_hint|modularization_decision|author_edit_ready" 00_docs/standards/skills/clarify/key-standard-clarify.md
-```
-
-## Related Source Documents
-
-- `00_docs/standards/01_key-project-standard.md`
-- `00_docs/standards/skills/clarify/key-standard-clarify.md`
-- `00_docs/standards/skills/author/key-standard-author.md`
-- `00_docs/standards/skills/linker/key-standard-linker.md`
+1. Runs without a consuming-project `standards/skills/clarify/**` document.
+2. Asks about one actual high-impact decision at a time.
+3. Does not ask about built-in setup mechanics, safe defaults, internal routing, or local skill standards.
+4. Lets Init ask built-in setup questions directly.
+5. Does not claim or depend on Plan Mode or another host mode.
+6. Returns enough decision, completeness, and resume context for Init or Author to continue.
+7. Never edits files and hides structured payloads by default.

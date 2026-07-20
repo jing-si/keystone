@@ -22,7 +22,8 @@ key:
 1. `key-standard-coordinator.md`
    - `keystone-coordinator`의 목적, trigger/non-trigger, Goal assignment, Context Pack,
      worker assignment/report, bounded worker routing, 외부 코딩 스킬 injected skill 선택,
-     report handling, review, verification, acceptance flow를 정의한다.
+     사용자 허락, 실행 환경 경계, report handling, review, verification, acceptance flow를
+     정의한다. 소비 프로젝트 로컬 Coordinator 기준서는 runtime 선행 조건이 아니다.
 
 <!-- key: id=key.standard.skill.coordinator.index.parent-standard refs=key.role.coordinator key.doc.standard key.topic.skill-contract key.standard.subagent -->
 ## Parent 기준서
@@ -32,8 +33,8 @@ key:
      status, worker assignment/report, 기준서-led verification, 파생 에이전트 문서(8) 정책을
      정의한다.
 2. `../../subagents/key-standard-subagents.md`
-   - Subagent purpose preset, authority, injected skill contract, report status, single
-     workspace guard, 외부 코딩 스킬 주입 경계, 공통 금지와 stop condition을 정의한다.
+   - Subagent purpose preset, authority, injected skill contract, report status, 실행 환경 경계,
+     외부 코딩 스킬 주입 경계, 공통 금지와 stop condition을 정의한다.
 
 <!-- key: id=key.standard.skill.coordinator.index.reading-rules refs=key.role.coordinator key.doc.standard key.topic.work-execution -->
 ## 읽기 규칙

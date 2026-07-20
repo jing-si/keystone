@@ -8,6 +8,9 @@ key:
     - key.topic.document-system
     - key.topic.key-prefix
     - key.topic.work-round
+    - key.topic.bootstrap
+    - key.topic.initialization
+    - key.topic.runtime-independence
 ---
 
 # 작업서 결정 기록(6)
@@ -44,6 +47,8 @@ key:
   S02 reader, S03 author, S04 clarify, S05 coordinator, S06 Skill 생성, S07 통합 검증 순서로
   둔다.
 - 후속 결정: `DEC-WORKS-006`이 R001 순서를 S00-S09로 확장한다.
+- 후속 결정: `DEC-WORKS-014`가 accepted S00-S07을 보존하고 미수락 S08-S09를 R002로
+  대체한다.
 - 이유: 문서 구조를 먼저 안정화하고, 공통 기준서와 스킬별 기준서를 분리한 뒤 구현과 통합
   검증으로 넘어가기 위해서다.
 
@@ -111,6 +116,8 @@ key:
   변경이나 다른 agent 변경을 덮어쓸 위험이 있으면 worker는 멈추고 보고한다.
 - 이유: 이전 격리 중심 모델은 기본 Coordinator 기준서에 비해 과하고, 지금 단계에서는 main의
   context 보존, bounded assignment, 명확한 report 회수가 더 중요한 기본 동작이기 때문이다.
+- 후속 결정: `DEC-WORKS-018`이 single workspace와 한 writer 강제를 대체한다. 이 결정은
+  R001 당시의 accepted 이력으로 보존한다.
 
 <!-- key: id=key.work.decisions.dec-works-008 refs=key.doc.decision key.topic.skill-contract key.topic.external-assist key.role.coordinator key.standard.subagent -->
 ## DEC-WORKS-008: 외부 코딩 스킬은 Coordinator injected skill로 사용한다
@@ -130,6 +137,8 @@ key:
   workspace guard, verification, report contract는 Coordinator assignment가 정한다.
 - 이유: Keystone은 문서와 bounded assignment를 control plane으로 유지해야 하고, 코딩 방법론은
   교체 가능한 execution guidance로 주입되어야 하기 때문이다.
+- 후속 결정: `DEC-WORKS-018`이 code 변경의 자동 Coordinator routing을 대체한다. 외부 스킬
+  주입이 authority를 올리지 않는 경계는 유지한다.
 
 <!-- key: id=key.work.decisions.dec-works-009 refs=key.doc.decision key.topic.artifact-graph key.role.linker key.role.author key.role.coordinator -->
 ## DEC-WORKS-009: Linker는 Artifact Graph 해석 권위를 가진다
@@ -151,6 +160,8 @@ key:
   acceptance를 대체하지 않는다.
 - 이유: graph 판단 권위와 source edit 권한을 분리해야 candidate 발견이 자동 수정 근거로
   해석되지 않고, Author와 Coordinator의 기존 authority boundary를 유지할 수 있기 때문이다.
+- 후속 결정: `DEC-WORKS-018`에 따라 code/config/schema/API/test anchor의 작은 명확한 수정은
+  Main direct로도 처리할 수 있고, Coordinator를 사용할 때는 해당 work scope의 허락이 필요하다.
 
 <!-- key: id=key.work.decisions.dec-works-010 refs=key.doc.decision key.topic.artifact-graph key.topic.api key.role.linker key.role.coordinator -->
 ## DEC-WORKS-010: API artifact는 기본적으로 contract artifact로 해석한다
@@ -176,10 +187,17 @@ key:
 - 결정: Keystone skill은 기본 사용자 응답으로 결론, 핵심 근거, 주요 risk, 다음 행동, 주요
   출처를 짧게 보여준다.
 - 결정: `reader_output`, `clarify_result`, `author_patch_report`, `linker_report`,
-  `worker_assignment`, `worker_report`, `worker_report_review` 같은 structured payload는
-  agent-facing handoff, audit, debugging, verification evidence contract로 유지한다.
+  `worker_assignment`, `worker_report`, `worker_report_review`, `keystone_routing_decision`,
+  `main_direct_change_report` 같은 structured payload는 agent-facing handoff, audit,
+  debugging, verification evidence contract로 유지한다.
 - 결정: Full structured payload는 사용자가 요청했거나 다른 Keystone skill 또는 Main이 handoff
   input으로 필요로 할 때만 전체 노출한다.
+- 결정: 기본 사용자 응답 전에는 Payload Disclosure Gate를 적용한다. Full payload 요청,
+  handoff, audit, debugging, verification evidence 필요성이 없으면 `*_output`, `*_result`,
+  `*_report`, `worker_assignment`, `keystone_routing_decision` 원문을 fenced YAML 또는 raw block으로
+  노출하지 않는다.
+- 결정: 기본 사용자 응답은 structured payload 원문 대신 변경 또는 판단 요약, 대상 파일이나 후보 수,
+  검증 결과 요약, 남은 risk, 다음 행동, 주요 출처를 보여준다.
 - 결정: Optional `keystone-viewer`는 presentation/helper skill 후보로 둘 수 있지만, 다섯 core
   Keystone skill의 mandatory runtime dependency나 모든 output의 필수 filter chain으로 만들지
   않는다.
@@ -209,6 +227,8 @@ key:
   routing decision, scope 준수, lane별 report로 판단한다.
 - 이유: `SKILL.md` trigger만으로는 Main이 수정 전에 적절한 lane을 강제 선택하지 못해 Author,
   Coordinator, Main direct 책임 경계가 흐려질 수 있기 때문이다.
+- 후속 결정: `DEC-WORKS-018`이 모든 file-changing work의 mandatory routing ceremony를
+  대체한다. 이 결정은 R001 당시의 accepted 이력으로 보존한다.
 
 <!-- key: id=key.work.decisions.dec-works-013 refs=key.doc.decision key.topic.artifact-graph key.topic.skill-source key.output.artifact -->
 ## DEC-WORKS-013: Artifact Graph는 문서가 만든 output artifact를 중심으로 해석한다
@@ -225,3 +245,98 @@ key:
 - 이유: 산출물 종류별로 graph 정책을 늘리면 skill source, code, generated file마다 예외가 생긴다.
   Keystone에는 문서와 실제 산출물의 연결이 핵심이므로, surface는 edit routing과 locator evidence로
   다루고 graph 의미는 output artifact relation으로 통일한다.
+- 후속 결정: `DEC-WORKS-018`에 따라 routing은 복수 surface, 권한 경계 또는 audit 필요가 있을
+  때만 명시적으로 기록한다.
+
+<!-- key: id=key.work.decisions.dec-works-014 refs=key.doc.decision key.topic.work-round key.topic.bootstrap key.topic.integration-verification -->
+## DEC-WORKS-014: R001 이력을 보존하고 R002 corrective round로 전환한다
+
+- 관련 work: R001 Bootstrap Keystone, R002 Bootstrap and Runtime Independence
+- 상태: accepted
+- 결정: R001의 S00-S07 accepted 이력은 그대로 보존한다.
+- 결정: Review 과정에서 빈 프로젝트의 bootstrap 순환 의존이 발견되었으므로 미수락 상태인
+  S08 Skill Creation과 S09 Integration Verification은 `superseded`로 전환한다.
+- 결정: R002 Bootstrap and Runtime Independence를 유일한 active round로 두고 기준서 개편과
+  후속 skill runtime 구현을 분리한다.
+- 이유: 기존 accepted 의미를 덮어쓰지 않으면서 실제 사용 과정에서 확인한 문제를 별도 작업으로
+  수정하고 이후 작업을 정확히 복구하기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-015 refs=key.doc.decision key.topic.bootstrap key.topic.initialization key.topic.runtime-independence key.role.init -->
+## DEC-WORKS-015: Init과 설치된 skill contract로 순환 의존을 제거한다
+
+- 관련 work: Bootstrap Runtime Standard, Skill Runtime Implementation
+- 상태: accepted
+- 결정: 새 `keystone-init` 계약은 프로젝트 로컬 Keystone 문서 없이 inspect, initialize,
+  repair를 수행할 수 있어야 한다.
+- 결정: 설치된 skill package가 고유 런타임 계약을 소유하고, 소비 프로젝트 문서는 프로젝트
+  내용만 정의한다. 소비 프로젝트의 `standards/skills/**`는 runtime 선행 조건이 아니다.
+- 결정: 새 소비 프로젝트는 R000 Project Foundation에서 작업 복구 scaffold를 만들고 Author가
+  프로젝트 기준서를 작성한다. 기존 accepted Keystone corpus가 있는 프로젝트는 adoption
+  결정으로 현재 document root와 구조를 채택하며 config나 R000을 소급 생성하지 않는다.
+- 결정: 초기화 전 code, README, 설정 조사는 Main의 일반 능력에 맡기고 Reader의 선행 책임으로
+  규정하지 않는다.
+- 이유: 기준서를 만들기 위해 이미 기준서가 필요하다는 순환 의존을 없애면서 Author 중심의
+  문서 모델과 작업 복구 능력을 유지하기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-016 refs=key.doc.decision key.topic.bootstrap key.topic.artifact-graph key.role.linker key.role.coordinator -->
+## DEC-WORKS-016: Keystone은 profile 없이 하나의 운영 모델을 사용한다
+
+- 관련 work: Bootstrap Runtime Standard, Artifact Graph Standard, Linker Standard,
+  Coordinator Standard
+- 상태: accepted
+- 결정: Lite, Standard, Graph, Orchestrated 같은 도입 profile을 두지 않는다.
+- 결정: 기준서와 작업 복구가 중심이며 Artifact Graph와 coordination은 문서와 구현을 연결하는
+  Keystone의 핵심 능력이다.
+- 결정: Graph relation이나 Coordinator 산출물이 아직 없다는 이유만으로 초기화 실패나 낮은
+  profile로 판정하지 않는다.
+- 결정: Linker는 존재하는 evidence만으로 fail-soft report를 제공한다.
+- 이유: 기능을 단계별 제품으로 분리하기보다 하나의 목표를 유지하면서 현재 작업에 필요한
+  능력만 자연스럽게 사용하기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-017 refs=key.doc.decision key.topic.acceptance key.topic.user-decision key.role.author -->
+## DEC-WORKS-017: Main은 위임 범위에서 진행·검증·수락한다
+
+- 관련 work: Project Standard, Bootstrap Runtime Standard, Author Standard, Coordinator Standard
+- 상태: accepted
+- 결정: 별도의 보편적인 사용자 최종 승인 단계는 두지 않는다. Main은 명시된 요청과 기준
+  안에서 작업하고 검증한 뒤 수락한다.
+- 결정: Worker `DONE`은 Main 수락이 아니며 Main이 실제 결과, scope, completion criteria,
+  verification과 residual risk를 확인한다.
+- 결정: 프로젝트 목적·범위, 충돌 대안, 민감 정보, 파괴적 migration, 외부 공개·비용,
+  위임 범위 확장처럼 실제 사용자 판단이 필요한 항목만 별도 User Decision step으로 둔다.
+- 결정: User Decision이 끝나면 원래 Init, Author 또는 Coordinator 흐름을 자동 resume한다.
+- 이유: 이미 검증 가능한 단계까지 반복 승인을 요구하지 않고, 사용자만 결정할 수 있는
+  지점에 질문을 집중하기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-018 refs=key.doc.decision key.topic.work-execution key.topic.skill-contract key.role.linker key.role.coordinator -->
+## DEC-WORKS-018: Routing과 실행 환경은 필요한 경계에서만 명시한다
+
+- 관련 work: Project Standard, Subagent Standard, Author Standard, Linker Standard,
+  Coordinator Standard
+- 상태: accepted
+- 대체: `DEC-WORKS-007`, `DEC-WORKS-008`의 자동 Coordinator routing,
+  `DEC-WORKS-012`의 mandatory routing ceremony
+- 결정: 작은 명확한 작업은 Main이 직접 수정한다. 복수 surface나 권한 경계가 있을 때만
+  routing context를 명시적으로 기록한다.
+- 결정: Linker는 read-only이므로 Main이 별도 사용자 허락 없이 사용할 수 있다.
+- 결정: Coordinator는 work scope마다 사용자 허락을 받는다. 직접 호출은 해당 범위의
+  허락이며 같은 범위의 assignment, review, repair에서는 반복하지 않는다.
+- 결정: Keystone은 single workspace, worktree, branch, writer 수와 integration strategy를
+  강제하지 않는다. 위임된 skill 또는 host 환경이 자기 계약으로 선택할 수 있다.
+- 결정: 위임이 유용하면 Main은 사용자에게 위임 여부를 물을 수 있다. 외부 스킬 주입은
+  assignment authority를 올리지 않는다.
+- 이유: 과도한 routing ceremony와 실행 환경 강제를 제거하면서 scope, 기존 변경 보존과 Main
+  acceptance 경계는 유지하기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-019 refs=key.doc.decision key.topic.work-round key.topic.work-sequence key.topic.bootstrap -->
+## DEC-WORKS-019: Round step은 S01부터 시작하고 R000은 Foundation에 예약한다
+
+- 관련 work: Project Standard, Bootstrap Runtime Standard, Author Standard, R002
+- 상태: accepted
+- 결정: 일반 작업 round와 round 내부 step 번호는 각각 `R001`, `S01`부터 시작한다.
+- 결정: `R000 Project Foundation`은 최초 기준서가 아직 없는 상태에서 기준서를 세우는
+  foundation round임을 나타내기 위해 예약한다. R000 내부 step도 `S01`부터 시작한다.
+- 결정: R002의 Bootstrap Runtime Standard와 Skill Runtime Implementation은 각각 S01과 S02로
+  기록한다.
+- 결정: 이미 수락된 R001의 S00-S09 식별자는 역사 보존을 위해 소급 변경하지 않는다.
+- 이유: 0번 round의 의미적 예외와 일반 실행 순서의 1-based numbering을 분리하기 위해서다.

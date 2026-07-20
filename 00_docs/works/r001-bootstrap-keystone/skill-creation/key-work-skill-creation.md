@@ -1,5 +1,6 @@
 ---
 doc_type: work_order
+status: superseded
 key:
   id: key.work.skill-creation.order
   refs:
@@ -11,6 +12,9 @@ key:
 ---
 
 # Skill Creation 작업서(4)
+
+> Superseded: 이 작업은 Main 수락 전에 bootstrap 순환 의존이 확인되어 R002 Skill Runtime
+> Implementation으로 대체되었다. 아래 내용은 R001 당시의 구현 범위 이력으로 보존한다.
 
 <!-- key: id=key.work.skill-creation.order.goal refs=key.topic.skill-source key.topic.repo-local key.artifact.skill-md key.section.goal -->
 

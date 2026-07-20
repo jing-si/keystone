@@ -1,114 +1,148 @@
 # Keystone
 
-Document-mediated project control plane for keeping human intent, source
-documents, artifact links, and bounded worker execution aligned.
+Keystone is a document-mediated control plane for keeping human intent,
+standards, work recovery, artifact links, and bounded agent execution aligned.
 
-## Overview
-
-Keystone is a skill-system project for AI-assisted work management. Its goal is
-to make human-readable source documents the stable foundation for agent work:
+Human-readable source documents are the authority:
 
 ```text
-standards + work orders + artifact graph -> main agent -> bounded worker assignments
+project foundation -> standards and work orders -> artifact graph -> implementation
 ```
 
-The project separates long-lived policies from task execution details:
+Keystone separates long-lived project meaning from task execution details:
 
-- 기준서 define reusable standards, policies, architecture rules, domain rules,
-  and verification expectations.
-- 작업서 define concrete goals, execution steps, completion criteria,
-  stop/report conditions, and verification paths.
+- 기준서 define reusable policies, architecture, terminology, authority, and
+  verification expectations.
+- 작업서 and progress records make interrupted work recoverable from documents.
+- The Artifact Graph connects documents to code, config, schema, API, and test
+  artifacts without making every missing relation a blocker.
 
-This avoids repeating the same context across dated one-off planning documents
-and lets the main agent read only the documents needed for the current task.
+## Skills
 
-In this repository, `00_docs/` is the bootstrap reference corpus for the future
-Keystone skills. The source documents are written first, then the repo-local
-skills will be generated from those accepted contracts.
-
-## Planned Skills
-
-Keystone is planned as five independent but cooperating skills:
+Keystone consists of six independent, cooperating Codex skills:
 
 | Skill | Responsibility |
 |---|---|
-| `keystone-clarify` | Collect high-impact policy, scope, document, and skill-contract decisions by topic before source documents are changed. |
-| `keystone-author` | Create and revise 기준서 and 작업서 as reusable source documents. |
-| `keystone-reader` | Navigate relevant 기준서 and 작업서, orient to a project, and prepare main-agent work context. |
-| `keystone-linker` | Interpret the Artifact Graph read-only, discover document, capability, code, config, schema, API, and test artifact links, and report impact/stale/gap candidates plus handoff seeds. |
-| `keystone-coordinator` | Turn Keystone context into bounded worker assignments, receive worker reports, and keep the main agent in a supervisory role. |
+| `keystone-init` | Inspect, initialize, or safely repair the minimum Keystone foundation and R000 work recovery scaffold. |
+| `keystone-author` | Create and revise project standards, work orders, progress records, decisions, indexes, and Change Sets. |
+| `keystone-reader` | Read existing Keystone documents, recover active work, and prepare a focused context brief. |
+| `keystone-clarify` | Resolve one actual high-impact user decision at a time, then return control to the caller. |
+| `keystone-linker` | Interpret the Artifact Graph read-only and report impact, stale, gap, reuse, and verification candidates. |
+| `keystone-coordinator` | With user permission for the work scope, delegate bounded work and coordinate report, review, verification, and Main acceptance. |
 
-## Document Model
+Each installed skill package contains its own runtime contract. A consuming
+project does not need project-local `standards/skills/**` files. The documents
+under this repository's `00_docs/standards/skills/**` are development and review
+specifications for Keystone itself.
 
-Keystone source documents are designed for both people and LLMs. Source
-documents remain authoritative; agent-facing packs and handoffs are optional
-derived documents.
+## Local Installation
 
-The default document root is:
+Install or refresh all six skills from this checkout:
 
-```text
-00_docs/
+```bash
+bash ./reinstall-local-keystone-skills.sh
 ```
 
-Future Keystone documents should use English paths and index-based trees:
+The script installs into `${CODEX_HOME}/skills` when `CODEX_HOME` is set and
+otherwise uses `~/.codex/skills`. It validates that all source `SKILL.md` files
+exist, replaces only the six same-named Keystone skill directories, copies the
+current repo-local sources, and verifies the result. Other installed skills are
+not touched.
+
+To install into a different Codex home:
+
+```bash
+CODEX_HOME=/path/to/codex-home bash ./reinstall-local-keystone-skills.sh
+```
+
+Restart Codex after installation so the updated skill definitions are loaded.
+
+## Starting a Project
+
+For a project without Keystone documents, invoke `keystone-init` directly. A
+direct Init request already grants initialization consent; Init does not ask for
+the same consent again. It may ask a concise built-in setup question when a
+real choice remains, such as the document root. The default root is `00_docs`.
 
 ```text
-00_docs/
+$keystone-init Initialize Keystone in this project.
+```
+
+You can also start with an Author request. Author detects the missing foundation,
+asks once whether to initialize, hands the request to Init, and resumes the
+original writing task after initialization.
+
+```text
+$keystone-author Create the initial project standard.
+```
+
+Before Keystone exists, ordinary repository inspection—such as reading code,
+README files, and configuration—belongs to the host AI's normal capabilities.
+Reader does not control or replace that inspection. Once Keystone documents
+exist, Reader uses them to navigate standards and recover work more reliably.
+
+For an existing project, repository evidence can feed R000 and Author. For an
+empty project, Init and Author use only explicit user input and verified facts;
+Clarify is used when project purpose, policy, terminology, or authority requires
+an actual user decision.
+
+## Bootstrap Document Model
+
+Init creates only the bounded foundation scaffold and does not invent or approve
+project meaning:
+
+```text
+.keystone/
+  config.yaml
+00_docs/                       # configurable; this is the default
   key-context-map.md
   standards/
     00_key-index.md
-    01_key-project-standard.md
-    subagents/
-      00_key-index.md
-      key-standard-subagents.md
-    ...
   works/
     00_key-index.md
     key-decisions.md
-    r001-bootstrap-keystone/
+    r000-project-foundation/
       00_key-index.md
-      ...
+      project-foundation/
+        00_key-index.md
+        key-work-project-foundation.md
+        key-progress.md
 ```
 
-Keystone-managed Markdown files use the `key` filename prefix so they can be
-routed to Keystone skills.
+Author creates the initial `standards/01_key-project-standard.md`. Init reaches
+`ready` only after the project standard is accepted and the work state is
+recoverable. Existing files are preserved; partial initialization is repaired
+by adding only missing, non-conflicting scaffold files.
 
-The main document branches are:
+Ordinary work rounds start at `R001`, and steps start at `S01`. `R000` is
+reserved for the exceptional Project Foundation round before standards exist.
 
-| Path | Purpose |
-|---|---|
-| `00_docs/key-context-map.md` | Current project map, active standards, active work round, and read order. |
-| `00_docs/standards/` | Reusable 기준서 for source authority, artifact graph, subagents, and each planned skill. |
-| `00_docs/works/` | 작업서, progress records, and accepted decisions for active work rounds. |
+## Operating Boundaries
 
-## Current Status
+- Source documents remain authoritative; internal handoff payloads are hidden
+  unless they are needed for audit, debugging, or verification.
+- Linker is read-only and may be used without separate permission.
+- Coordinator always requires user permission for its work scope. Directly
+  invoking `keystone-coordinator` counts as that permission.
+- Keystone does not force a worktree, workspace, concurrency, or delegation
+  strategy. The user, host, or injected worker contract chooses the execution
+  environment.
+- Missing graph evidence produces a partial result, not an automatic failure.
 
-This repository currently contains the documentation foundation for the
-Keystone skill-system. The initial repo-local skill source files under `skills/`
-have not been implemented yet.
+## Repository Status and Sources
 
-The authoritative current work status is maintained in:
-
-- [`00_docs/key-context-map.md`](00_docs/key-context-map.md)
-- [`00_docs/works/00_key-index.md`](00_docs/works/00_key-index.md)
-- [`00_docs/works/r001-bootstrap-keystone/00_key-index.md`](00_docs/works/r001-bootstrap-keystone/00_key-index.md)
-
-README intentionally does not duplicate active step status so project state
-does not go stale. Skill source creation is intentionally deferred until the
-relevant standards are accepted.
-
-Start with:
+The R002 standards and all six repo-local skill sources are implemented and
+accepted. The authoritative current state remains in the source documents so
+README status does not become a competing authority:
 
 - [`00_docs/key-context-map.md`](00_docs/key-context-map.md)
 - [`00_docs/standards/01_key-project-standard.md`](00_docs/standards/01_key-project-standard.md)
+- [`00_docs/standards/bootstrap/key-standard-bootstrap.md`](00_docs/standards/bootstrap/key-standard-bootstrap.md)
 - [`00_docs/works/00_key-index.md`](00_docs/works/00_key-index.md)
-- [`00_docs/works/r001-bootstrap-keystone/00_key-index.md`](00_docs/works/r001-bootstrap-keystone/00_key-index.md)
+- [`00_docs/works/r002-bootstrap-runtime-independence/00_key-index.md`](00_docs/works/r002-bootstrap-runtime-independence/00_key-index.md)
 
-## Relationship To Prototype Skills
-
-The existing `work-package-doc-architect` and `subagent-work-coordinator` skills
-are prototype references for this project. They are not final runtime
-dependencies and are expected to be replaced by Keystone skills.
+The older `work-package-doc-architect` and `subagent-work-coordinator` projects
+remain historical prototype references, not runtime dependencies.
 
 ## License
 

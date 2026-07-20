@@ -1,222 +1,137 @@
 ---
 name: keystone-author
-description: "Use to create or revise Keystone source documents, standards, work orders, progress records, decisions, indexes, and Change Sets within an approved scope. Do not use for high-impact clarification, code/config/schema/API/test edits, worker orchestration, or repo-local skill source implementation."
+description: "Create or revise Keystone source documents, standards, work orders, progress records, decisions, indexes, metadata, and Change Sets within a clear scope. Use for direct document requests and accepted Clarify results; hand off initialization when Keystone is absent. Do not use for unresolved user decisions, read-only orientation, code/config/schema/API/test edits, worker orchestration, or skill-source implementation."
 ---
+
+<!-- keystone: id=key.skill.author kind=output_artifact artifact_kind=skill_source -->
+<!-- keystone: produced_from=key.work.skill-runtime-implementation.order -->
+<!-- keystone: governed_by=key.standard.project key.standard.skill.author -->
 
 # keystone-author
 
 ## Purpose
 
-Create or revise Keystone source documents within an approved scope. Author owns standards, work orders, progress records, decision records, source-document metadata, indexes, and Change Sets.
+Create and revise human-readable Keystone source documents within the user's request and accepted decisions. Own standards, work orders, progress records, decision records, source-document metadata, indexes, and Change Sets. Edit source documents only; Main verifies and accepts the result.
 
-Source documents and accepted decisions are the source of truth. Author output does not replace Main/user acceptance. If the requested edit conflicts with source authority, scope, status semantics, or acceptance criteria, stop and ask for a decision.
+This installed contract is self-contained. Never require a consuming project to contain `standards/skills/author/**` or another project-local skill standard. Project documents define project meaning, not Author's runtime behavior.
 
-## Required Source Documents
+## Initialization Gate
 
-Read the minimum relevant set:
+Detect the document root and initialization state before editing:
 
-1. `00_docs/standards/01_key-project-standard.md`
-2. `00_docs/standards/skills/author/key-standard-author.md`
-3. Related child standards for the target document.
-4. Related work order, progress record, and decision record.
-5. Accepted Clarify result when applying a high-impact decision.
-6. Linker report or handoff seed when Artifact Graph impact is involved.
+- `uninitialized`: no resolvable Keystone root or foundation structure.
+- `partial`: only part of the required configuration or document structure exists.
+- `conflicted`: multiple roots or existing-file meanings cannot be reconciled safely.
+- `bootstrapping`: R000 exists and the project standard is being established.
+- `ready`: one authoritative root, accepted project standard, indexes, decisions, and recoverable work exist. An adopted legacy corpus may be ready without retroactive config or R000.
 
-## When To Use
+For `uninitialized` or `partial`, ask once whether to initialize or repair and then continue the original writing request. Do not repeat the question in the same conversation and scope when consent already exists. Preserve the original request, caller, handoff reason, resume point, accepted decisions, and existing-file risks for `keystone-init`.
 
-Use Author when the task requires:
+For `conflicted`, do not choose or overwrite. Send one actual decision topic to Clarify when project meaning or document adoption is at stake. Resume after the decision. If initialization is refused, make no files and explain the current limitation.
 
-1. Creating a standard, work order, progress record, decision record, index, or Change Set.
-2. Revising source documents according to an approved instruction or accepted decision.
-3. Applying an accepted Clarify result to source documents.
-4. Creating or updating source-document metadata such as Markdown frontmatter `key.id`, `key.refs`, or section key comments.
-5. Writing an Author Edit Contract before a larger document edit.
-6. Recording document impact seeds or Linker handoff requirements.
+Before Keystone exists, code, README, configuration, and repository inspection belong to Main's normal capabilities. Accept that evidence as Author input; do not make Reader a prerequisite.
 
-## When Not To Use
+## Required Context
 
-Do not use Author to:
+Use the minimum available context:
 
-1. Ask high-impact clarification questions or accept decisions.
-2. Perform read-only project orientation.
-3. Orchestrate worker assignments, report review, verification, repair, or acceptance flow.
-4. Edit code, config, schema, API, tests, generated files, or code anchors.
-5. Implement repo-local `skills/*/SKILL.md` files. S08 skill source creation is a Main direct task or a Coordinator bounded worker task, not Author source-document authoring.
-6. Change scope, acceptance criteria, source authority, or status semantics without approval.
+1. User request or Main-accepted edit instruction.
+2. Document root or initialization state.
+3. Target document/section or the purpose of a new document.
+4. Applicable project standards, accepted decisions, and existing source documents when present.
+5. Scope, acceptance boundary, workspace state, and existing-change risk.
+6. Accepted Clarify result when a user decision was required.
+7. Linker report or impact seed only when graph interpretation matters.
 
-## Required Input
-
-Require:
-
-1. User request or main-approved edit instruction.
-2. Configured document root.
-3. Target document and section, or purpose of the new source document.
-4. Approved scope and acceptance boundary.
-5. Applicable standards and work order context.
-6. Accepted Clarify result when relevant.
-7. Linker report or handoff seed when artifact impact is involved.
-8. `keystone_routing_decision` selecting `source_document` and `keystone-author` for file-changing work.
-9. Workspace state and existing-change risk.
+A work order and progress record improve recoverability but are not artificial prerequisites for a small, valid, explicit document request. Record routing context only for multiple surfaces, authority boundaries, or real audit/handoff needs.
 
 ## Workflow
 
-1. Resolve the document root.
-2. Read project standard and relevant Author/child standards.
-3. Confirm `keystone_routing_decision` selected Author lane for `source_document` changes.
-4. Classify mode: `create`, `revise`, `clarify_apply`, `normalize`, or `progress_update`.
-5. Identify target source documents and sections.
-6. Confirm approved scope and impact boundaries.
-7. If a high-impact decision is missing, stop and recommend Clarify.
-8. For larger edits, write or reconstruct an Author Edit Contract.
-9. Edit only approved source documents.
-10. Check affected indexes, context map, progress, decisions, and Change Set needs.
-11. Use Linker reports for artifact impact or metadata gap evidence; do not perform deep graph interpretation yourself.
-12. If code/config/schema/API/test or repo-local skill source changes are needed, split or defer to the proper lane.
-13. Report changed files, no-edit candidates, verification, and residual risk.
+1. Detect initialization state and resolve one document root.
+2. Handoff to Init or Clarify when the Initialization Gate requires it, then resume here.
+3. Classify the request as `create`, `revise`, `clarify_apply`, `normalize`, or `progress_update`.
+4. Read only the relevant project standards, decisions, work context, target documents, and indexes.
+5. Confirm that requested targets are Keystone source documents and that the scope is clear. Treat an explicit edit request as authority within its stated scope.
+6. For a large or multi-document change, prepare an Author Edit Contract containing targets, allowed changes, impact candidates, exclusions, forbidden changes, progress policy, and verification. Skip this ceremony for a small unambiguous edit.
+7. If project purpose, scope, policy, terminology, authority, sensitive data, destructive migration, or conflicting valid alternatives require user judgment, hand off exactly one topic to Clarify. Do not ask about built-in metadata, filenames, routing, or safe defaults.
+8. Edit only approved source documents and preserve unrelated user or agent changes.
+9. Check affected indexes, Context Map, decisions, progress, and Change Set needs. A relation is an impact candidate, not automatic edit authority.
+10. Use Linker read-only when artifact relations, stale metadata, or gaps need interpretation. Defer code/config/schema/API/test/skill-source changes to Main direct or a user-permitted Coordinator scope.
+11. Validate links, identifiers, metadata, lifecycle/approval/work-state separation, terminology, and Markdown.
+12. Report changes, intentional exclusions, verification, residual risk, and next action. Main accepts only after checking actual results and verification.
 
-## Routing Gate
+## Document Rules
 
-Author may edit only Keystone source documents under `00_docs/**` after Main selects Author lane in `keystone_routing_decision`. Reading Author guidance does not count as executing Author lane. If target surfaces include `skill_source` or `repository_source`, split them into Main direct or Coordinator lane and list them as no-edit candidates in `author_patch_report`.
+- Keep standards and works in index-based trees under the configured root.
+- Start ordinary rounds at `R001` and every round's steps at `S01`.
+- Reserve `R000 Project Foundation` for the special pre-standard foundation round; its first step is also `S01`.
+- Give each new work node a `00_key-index.md`, `key-work-{slug}.md`, and `key-progress.md` unless an accepted project rule says otherwise.
+- Keep lifecycle (`draft`, `active`, `superseded`, `archived`), approval (`pending`, `accepted`, `rejected` when needed), and work status in separate fields.
+- Do not mark work `accepted` or `complete` before Main acceptance. Worker `DONE` is not Main acceptance.
+- Apply accepted Clarify results without inventing a new decision or expanding their edit plan.
+- Use Change Sets for large changes or document-to-code/test impact that needs traceability.
+- Use `key.refs` for navigation and typed relations for semantic relationships; do not infer automatic propagation.
 
-## Default User Response
+## Boundaries
 
-By default, answer users with a concise human-facing brief instead of the full `author_patch_report`. Include changed source documents, intentional no-edit candidates, verification, residual risk, and recommended next action.
+Do not:
 
-Keep `author_patch_report` and `author_edit_contract` as agent-facing structured payloads. Emit the full payload only when the user asks for it, another Keystone skill needs it for handoff, or audit/debug/verification evidence requires it. Optional `keystone-viewer` may render the payload, but it must not change source authority, progress status, or edit meaning.
+1. Edit implementation code, config, schema, API, tests, generated files, code anchors, or `skills/**`.
+2. Create user decisions, change scope/acceptance/status semantics/source authority, or approve project meaning.
+3. Perform deep Artifact Graph interpretation or orchestrate workers and reports.
+4. Require mandatory routing payloads, project-local Author standards, or a particular workspace/worktree strategy.
+5. Overwrite existing changes or migrate/rename paths without explicit authority.
 
-## Output Contract
+If delegation would help, Main may ask the user. Coordinator requires permission for that work scope; direct Coordinator invocation counts as permission. Linker is read-only and may be used without separate approval.
 
-Report:
+## Handoff and Output
+
+Keep `author_edit_contract` and `author_patch_report` agent-facing. A report may include:
 
 ```yaml
 author_patch_report:
   contract_id:
-  routing_decision_ref:
+  routing_context_ref: # optional
   edits:
     - path:
       section:
       change_type: create | revise | progress_update | decision_record | index_update
       reason:
       source_decision:
-  no_edit_candidates:
-    - path:
-      reason:
-  progress_updates:
-    - path:
-      before:
-      after:
-      main_acceptance_evidence:
+  no_edit_candidates: []
+  progress_updates: []
   graph_handoff_result:
     source_document_metadata_applied:
-    code_config_schema_api_test_anchor_deferred_to_coordinator:
+    output_artifact_changes_deferred:
     linker_report_required:
   verification:
-    commands_or_checks:
+    checks: []
     result:
   residual_risk:
   recommended_next_action:
 ```
 
-When preparing a larger edit, use:
-
-```yaml
-author_edit_contract:
-  contract_id:
-  accepted_instruction:
-  target_documents:
-    - path:
-      sections:
-      allowed_change:
-  affected_document_candidates:
-    - path:
-      reason:
-      action: edit | inspect_only | exclude
-  forbidden_changes:
-    - scope_change
-    - acceptance_criteria_change
-    - status_semantics_change
-    - code_change
-  progress_update_policy:
-    may_update_progress: true
-    forbidden_statuses_before_main_acceptance:
-      - accepted
-      - complete
-  verification:
-    - check_index_links
-    - check_context_map_if_affected
-    - check_decision_record_if_affected
-```
-
-## Output Examples
-
-```yaml
-author_patch_report:
-  contract_id: author-edit-s08-skill-creation
-  routing_decision_ref: keystone-routing-s08-output-policy
-  edits:
-    - path: 00_docs/works/r001-bootstrap-keystone/skill-creation/key-work-skill-creation.md
-      section: Verification
-      change_type: revise
-      reason: Strengthen S08 SKILL.md validation.
-      source_decision: user-approved S08 execution
-  no_edit_candidates:
-    - path: README.md
-      reason: Not required for S08 source generation.
-  graph_handoff_result:
-    source_document_metadata_applied: false
-    code_config_schema_api_test_anchor_deferred_to_coordinator: []
-    linker_report_required: false
-  verification:
-    commands_or_checks:
-      - rg --files 00_docs
-    result: pass
-  residual_risk: Main acceptance still required before progress accepted.
-```
-
-## Boundaries
-
-1. Author edits source documents only.
-2. Author does not edit implementation code, config, schema, API, tests, generated files, or code anchors.
-3. Author does not collect high-impact decisions.
-4. Author does not orchestrate workers or accept worker reports.
-5. Author does not mark progress `accepted` or `complete` before Main acceptance.
-6. Author does not treat repo-local skill implementation files as Author-owned source documents.
+Apply the Payload Disclosure Gate before responding. By default, do not print raw `*_output`, `*_result`, `*_report`, `worker_assignment`, or `keystone_routing_decision` blocks. Summarize changed documents, intentional no-edit candidates, verification, residual risk, next action, and key sources. Show the full payload only when the user requests it or handoff/audit/debug/verification actually needs it.
 
 ## Stop Conditions
 
-Stop when:
+Stop or request the appropriate handoff when:
 
-1. Document root or target section is unclear.
-2. Approved scope is unclear or conflicts with source documents.
-3. A high-impact decision is needed but no accepted Clarify result exists.
-4. The edit would change scope, acceptance criteria, status semantics, or source authority.
-5. The edit requires code/config/schema/API/test changes.
-6. Existing user or agent changes could be overwritten.
-7. Formal reviewer/verifier/report acceptance workflow is needed.
-8. No `keystone_routing_decision` selected Author lane for the source document edit.
+1. The document root, target, edit scope, or source authority remains unclear.
+2. A required user decision or unresolved source conflict affects the edit.
+3. Existing changes could be overwritten.
+4. The task requires non-document surfaces or destructive migration.
+5. Index/progress/decision impact cannot be bounded safely.
+6. Formal delegation is needed but Coordinator permission is absent.
 
 ## Verification
 
-Verify Author behavior by checking:
+Check that:
 
-1. Trigger and non-trigger boundaries.
-2. Source-document-only edit authority.
-3. Author Edit Contract completeness.
-4. Progress update boundary and Main acceptance separation.
-5. Linker/Coordinator handoff for Artifact Graph or repository-source edits.
-6. Default user response summarizes changes, verification, risks, and next action without dumping the full structured payload.
-7. `author_patch_report` references the routing decision and does not claim ownership of `skills/keystone-*/SKILL.md`.
-
-Suggested checks:
-
-```bash
-rg --files 00_docs
-rg -n "author_edit_contract|author_patch_report|graph_handoff_result" 00_docs/standards/skills/author/key-standard-author.md
-```
-
-## Related Source Documents
-
-- `00_docs/standards/01_key-project-standard.md`
-- `00_docs/standards/skills/author/key-standard-author.md`
-- `00_docs/standards/subagents/key-standard-subagents.md`
-- `00_docs/standards/skills/linker/key-standard-linker.md`
+1. The installed contract works without project-local skill standards.
+2. Init handoff preserves and resumes the original request.
+3. Only source documents changed and existing edits were preserved.
+4. Relevant links, indexes, Context Map, identifiers, decisions, and statuses remain consistent.
+5. Rounds and steps follow `R001`/`S01`, with only the R000 foundation exception.
+6. No mandatory routing, host mode, profile, or workspace strategy was introduced.
+7. The default response hides structured payloads while preserving material risks and status.

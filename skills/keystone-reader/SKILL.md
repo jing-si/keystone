@@ -1,243 +1,157 @@
 ---
 name: keystone-reader
-description: "Use for read-only Keystone document orientation, source document navigation, active work/current step recovery, and context brief preparation. Do not use to edit documents, assign workers, accept reports, or perform deep artifact impact/stale/gap analysis."
+description: "Use for read-only orientation and work recovery from existing Keystone documents, including initialization-state reporting, relevant-source navigation, active work/current step recovery, and context brief preparation. Do not use to edit files, inspect an uninitialized repository as a Keystone-specific procedure, assign workers, accept results, or perform deep Artifact Graph impact/stale/gap analysis."
 ---
+
+<!-- keystone: id=key.skill.reader kind=output_artifact artifact_kind=skill_source -->
+<!-- keystone: produced_from=key.work.skill-runtime-implementation.order -->
+<!-- keystone: governed_by=key.standard.project key.standard.skill.reader -->
 
 # keystone-reader
 
 ## Purpose
 
-Prepare read-only Keystone context from source documents. Use this skill to orient to a project, find relevant standards and work orders, recover the active round/current step, and produce a context brief for the main agent.
+Read existing Keystone source documents to orient the main agent, find relevant standards and work
+records, recover active work, and prepare a concise context brief. Remain read-only.
 
-Source documents and accepted decisions are the source of truth. Reader output does not replace source documents, accepted decisions, or Main acceptance. If source documents conflict with repository evidence, report the conflict and recommended next action instead of changing either side.
+This installed contract is self-contained. A consuming project does not need a project-local Reader
+standard or `standards/skills/reader/**`. Project source documents and accepted decisions define project
+meaning when they exist; Reader output does not replace them or Main acceptance.
 
-## Required Source Documents
+## Use Reader For
 
-Read only the documents needed for the request, starting from:
+1. Keystone document orientation and navigation.
+2. Active round, current work, current step, and status-source recovery.
+3. Finding relevant project standards, work orders, progress records, and decisions.
+4. Preparing read-only context before document or implementation work.
+5. Reporting mismatch between Keystone documents and repository evidence.
+6. Determining whether deeper Artifact Graph interpretation should pass to `keystone-linker`.
 
-1. `00_docs/key-context-map.md`
-2. `00_docs/standards/00_key-index.md`
-3. `00_docs/standards/01_key-project-standard.md`
-4. `00_docs/works/00_key-index.md`
-5. Active round index, usually `00_docs/works/r001-bootstrap-keystone/00_key-index.md`
-6. Current work node index, work order, and progress record
-7. Related child standards only when the current request needs them
+Do not use Reader to edit any file, create standards or work records, collect high-impact decisions,
+assign workers, review worker reports, or accept results. Deep artifact impact, stale, reuse, and
+metadata-gap interpretation belongs to Linker.
 
-## When To Use
+## Inputs and Authority
 
-Use Reader when the user or main agent needs:
+Use the user request, repository root, current instructions, available Keystone configuration, and
+existing project documents. Resolve the document root in this order when evidence is available:
 
-1. Project orientation from Keystone documents.
-2. The active work round, current work, current step, or status sources.
-3. Relevant standards, work orders, progress records, or decisions for a request.
-4. A pre-implementation or pre-edit source context brief.
-5. Read-only mismatch reporting between source documents and repository state.
-6. A recommendation for whether Reader, Clarify, Author, Linker, or Coordinator should handle the next step.
+1. Current user instruction.
+2. `.keystone/config.local.yaml`.
+3. `.keystone/config.yaml`.
+4. Explicit project-local agent setting.
+5. A single conflict-free existing document convention.
+6. Default candidate `00_docs`.
 
-## When Not To Use
+Do not require a work order, progress record, Artifact Graph, or local skill standard merely to run.
+Treat absent material as unavailable context, not proof of project failure.
 
-Do not use Reader to:
+## Initialization Boundary
 
-1. Modify source documents, code, config, generated files, progress records, or decisions.
-2. Create or revise standards or work orders.
-3. Collect or accept high-impact decisions.
-4. Assign workers, finalize handoffs, review worker reports, or decide Main acceptance.
-5. Perform deep Artifact Graph impact, stale, or metadata gap analysis. Hand that off to `keystone-linker`.
+Determine state from actual settings and documents rather than a boolean flag:
 
-## Required Input
+- `uninitialized`: no authoritative document root or minimum Keystone structure is discoverable.
+- `bootstrapping`: Init scaffold and R000 exist while the project standard is being established.
+- `partial`: configuration, root, Context Map, standards/works indexes, decision record, project
+  standard, or new-project R000 material exists but required parts are incomplete.
+- `conflicted`: valid roots, settings, or document meanings conflict and cannot be chosen safely.
+- `ready`: one authoritative root, Context Map, standards/works indexes, decision record, and an accepted
+  project standard provide recoverable work context. A new project also has an accepted R000; an adopted
+  legacy corpus may be ready without retroactive config or R000.
 
-Require:
+Before initialization, do not create files and do not claim ownership of ordinary code, README,
+configuration, or repository inspection. Main performs that general investigation without a
+Keystone-specific Reader procedure.
 
-1. User request or main-agent current task.
-2. Repository root.
-3. Current instruction context.
-4. Configured document root or enough context to resolve it.
-5. Optional mode: `orientation`, `navigator`, or `work_prep`.
+If Reader is invoked before `ready`:
 
-If input is insufficient, report `risks_and_gaps`; do not guess and do not edit.
+1. Report the actual state and evidence used.
+2. Provide orientation only from Keystone material that exists.
+3. List Keystone context that could not be recovered.
+4. Suggest `keystone-init inspect`, `initialize`, or `repair` as appropriate.
+5. If the user refuses initialization, make no changes and explain the resulting limits and later Init
+   option.
+
+Missing work/progress records or graph evidence alone do not make the project `partial`. Conflicting
+valid document roots are a real decision topic; Reader reports the conflict without choosing one.
 
 ## Workflow
 
-1. Resolve the configured document root.
-2. Read `key-context-map.md` first when present.
-3. Read standards and works indexes to recover active round and current work.
-4. Read the active work node index, work order, and progress record when current step recovery is needed.
-5. Follow only relevant child-standard indexes.
-6. Use `key.id`, `key.refs`, paths, headings, and keywords as navigation evidence, not automatic edit authority.
-7. If capability/code/config/schema/API/test impact, stale, or gap analysis is needed, set `artifact_graph_needed: true` and recommend `keystone-linker`.
-8. Include `sources_read`, `assumptions`, `risks_and_gaps`, and `recommended_next_action` in every output.
+1. Detect initialization state and resolve or narrow the document-root candidates.
+2. If present, read `key-context-map.md` first.
+3. Follow the project standards and works indexes that actually exist.
+4. For work recovery, read the active round index and current work node's order and progress record.
+5. Follow only child indexes and references relevant to the request.
+6. Treat `key.id`, `key.refs`, typed relations, paths, headings, and keywords as navigation evidence,
+   not edit authority or automatic impact propagation.
+7. When code/config/schema/API/test impact, stale, reuse, or gap analysis must go beyond navigation,
+   recommend Linker and pass the observed seeds without confirming graph conclusions.
+8. Report source conflicts; do not silently prefer documents over operative code or vice versa.
+9. Recommend the next responsible actor without editing or requiring a routing ceremony for a small,
+   already-scoped task.
 
-## Routing Gate
+Use an orientation, navigation, or work-preparation emphasis as the request requires; do not require
+the caller to name a mode.
 
-Reader never edits files. If the request shifts from orientation, navigation, or work prep into file-changing work, stop at a recommendation for Main to emit `keystone_routing_decision` and select Author, Coordinator, or Main direct lane. Reading Reader output or a context brief does not execute that lane.
+## Result Contract
 
-## Default User Response
-
-By default, answer users with a concise human-facing brief instead of the full `reader_output` payload. Include only current status, key finding, top risks or mismatches, recommended next action, and key source refs.
-
-Keep `reader_output` and `keystone_context_brief` as agent-facing structured payloads. Emit the full payload only when the user asks for it, another Keystone skill needs it for handoff, or audit/debug/verification evidence requires it. Optional `keystone-viewer` may render the payload, but it must not change Reader's read-only judgment, risks, or recommended next action.
-
-## Output Contract
-
-For orientation, include:
+Keep the internal result proportional to available evidence. Include:
 
 ```yaml
 reader_output:
-  mode: orientation
+  initialization_state:
   document_root:
+  request_summary:
   project_summary:
-  repository_snapshot:
-  active_document_map:
-  artifact_graph_summary:
   active_round:
-  round_id:
-  round_index:
-  work_id:
+  current_work:
   current_step:
   current_work_status:
   status_sources:
-  status_authority_order:
   status_conflicts:
-  recommended_read_order:
+  matched_documents:
+  unavailable_keystone_context:
+  artifact_graph_needed:
+  artifact_seed_candidates:
   operational_boundaries:
   risks_and_gaps:
   recommended_next_action:
-  keystone_context_brief:
   sources_read:
   assumptions:
 ```
 
-For navigation, include:
+For work preparation, also include Goal, Scope, applicable standards, completion criteria, stop
+conditions, and verification when recoverable. Any handoff remains preparatory; Reader does not create
+a final worker assignment.
 
-```yaml
-reader_output:
-  mode: navigator
-  request_summary:
-  key_ref_queries:
-  matched_documents:
-    - path:
-      reason:
-  artifact_seed_candidates:
-  key_ref_matched_candidates:
-  artifact_graph_needed:
-  mismatches:
-  active_round:
-  round_id:
-  round_index:
-  work_id:
-  status_sources:
-  status_conflicts:
-  recommended_read_order:
-  why_each_document_matters:
-  missing_or_ambiguous_documents:
-  risks_and_gaps:
-  recommended_next_action:
-  sources_read:
-  assumptions:
-```
+## Default User Response
 
-For work preparation, include:
+Give a concise human-facing brief with the initialization/work state, key finding, unavailable context
+or conflict, recommended next action, and key sources. Do not expose the full `reader_output` or context
+brief unless the user requests it or a handoff, audit, debugging, or verification need requires it.
 
-```yaml
-reader_output:
-  mode: work_prep
-  active_round:
-  round_id:
-  work_id:
-  goal:
-  source_context:
-  applicable_standards:
-  impact_seeds:
-  artifact_graph_needed:
-  artifact_seed_candidates:
-  current_step:
-  current_work_status:
-  status_sources:
-  status_authority_order:
-  status_conflicts:
-  scope:
-  completion_criteria:
-  verification:
-  stop_conditions:
-  risks_and_gaps:
-  recommended_next_action:
-  final_handoff_ready: false
-  sources_read:
-  assumptions:
-```
+Apply the Payload Disclosure Gate before responding: do not print raw `*_output`, `*_result`,
+`*_report`, `worker_assignment`, or routing payload blocks by default. Summarize their meaning without
+changing the underlying risks or recommendation.
 
-## Output Examples
+## Boundaries and Stop Conditions
 
-```yaml
-keystone_context_brief:
-  document_root: 00_docs
-  active_round: R001 Bootstrap Keystone
-  current_work: Skill Creation
-  current_step: S08
-  current_work_status: in_progress
-  status_sources:
-    context_map: 00_docs/key-context-map.md
-    root_works_index: 00_docs/works/00_key-index.md
-    active_round_index: 00_docs/works/r001-bootstrap-keystone/00_key-index.md
-    work_progress: 00_docs/works/r001-bootstrap-keystone/skill-creation/key-progress.md
-  status_authority_order:
-    - root_works_index
-    - active_round_index
-    - work_progress
-    - context_map
-  human_intent_summary: Create repo-local Keystone skill source files.
-  applicable_standards:
-    - 00_docs/standards/01_key-project-standard.md
-    - 00_docs/standards/skills/00_key-index.md
-  artifact_graph_needed: false
-  artifact_seed_candidates: []
-  recommended_next_action:
-    skill: keystone-coordinator
-    reason: S08 skill source creation can proceed as a bounded implementation task after source context recovery.
-  risks_and_gaps: []
-  final_handoff_ready: false
-```
-
-## Boundaries
-
-1. Reader is read-only.
-2. Reader may identify artifact graph need, but must not finalize impact/stale/gap candidates.
-3. Reader does not modify source documents or repository artifacts.
-4. Reader does not produce final worker assignments.
-5. Reader does not accept reports or mark progress accepted.
-
-## Stop Conditions
-
-Stop or ask main/user for a decision when:
-
-1. The document root cannot be resolved.
-2. Active round, current step, completion criteria, or applicable standards cannot be recovered.
-3. Source documents conflict with the current user direction.
-4. The next action requires source document, skill source, or repository-source edits before a routing decision exists.
-5. Sensitive or local-only paths would be needed without clear policy.
-6. Artifact graph mismatch could change the task direction.
+1. Never write files or change project state.
+2. Never turn partial navigation evidence into a confirmed Artifact Graph relation.
+3. Never make a high-impact project decision for the user.
+4. Stop and report when conflicting valid roots prevent safe reading.
+5. Stop and report when source conflict or sensitive/local-only access could change the task direction.
+6. Do not stop merely because work records, progress records, graph evidence, or local skill standards
+   are absent; return the useful partial result instead.
 
 ## Verification
 
-Verify Reader behavior by checking that:
+Check that Reader:
 
-1. Trigger and non-trigger boundaries are clear.
-2. Output is explicitly read-only and does not replace source documents.
-3. Work Prep output can feed Coordinator but keeps `final_handoff_ready: false`.
-4. Artifact graph work is handed off to Linker.
-5. Default user response summarizes status, risks, next action, and key sources without dumping the full structured payload.
-6. File-changing next actions point to `keystone_routing_decision` instead of implying Reader edit authority.
-
-Suggested checks:
-
-```bash
-rg --files 00_docs
-rg -n "keystone-reader|Work Prep|final_handoff_ready|artifact_graph_needed" 00_docs/standards
-```
-
-## Related Source Documents
-
-- `00_docs/standards/01_key-project-standard.md`
-- `00_docs/standards/skills/reader/key-standard-reader.md`
-- `00_docs/works/00_key-index.md`
-- `00_docs/works/r001-bootstrap-keystone/00_key-index.md`
+1. Runs without a consuming-project `standards/skills/reader/**` document.
+2. Produces no file changes before or after initialization.
+3. Does not take ownership of general pre-initialization repository inspection.
+4. Reports uninitialized, partial, conflicted, and ready evidence without guessing.
+5. Recovers work when records exist and fails softly when they do not.
+6. Hands deep graph interpretation to Linker.
+7. Hides structured payloads by default.

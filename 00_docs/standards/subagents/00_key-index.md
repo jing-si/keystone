@@ -18,7 +18,7 @@ key:
 
 1. `key-standard-subagents.md`
    - Keystone helper/subagent의 bounded worker model, purpose preset, authority,
-     injected skill contract, 외부 코딩 스킬 주입 경계, report status, single workspace guard,
+     injected skill contract, 외부 코딩 스킬 주입 경계, report status, 실행 환경 경계,
      공통 금지와 stop condition을 정의한다.
 
 <!-- key: id=key.standard.subagent.index.parent-standard refs=key.role.subagent key.doc.standard key.topic.skill-contract -->
@@ -31,7 +31,7 @@ key:
 <!-- key: id=key.standard.subagent.index.reading-rules refs=key.role.subagent key.doc.standard key.topic.work-execution key.standard.subagent -->
 ## 읽기 규칙
 
-1. Subagent purpose preset, authority, report status, workspace guard를 정의하거나 변경할 때는
+1. Subagent purpose preset, authority, report status, 실행 환경 경계를 정의하거나 변경할 때는
    `../01_key-project-standard.md`의 `STD-KEYSTONE-030`, `STD-KEYSTONE-031`,
    `STD-KEYSTONE-032`, `STD-KEYSTONE-043`을 먼저 확인한다.
 2. Coordinator가 어떤 subagent를 선택해야 하는지 검토할 때는

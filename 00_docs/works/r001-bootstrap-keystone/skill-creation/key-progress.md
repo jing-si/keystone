@@ -1,5 +1,6 @@
 ---
 doc_type: progress
+status: superseded
 key:
   id: key.work.skill-creation.progress
   refs:
@@ -29,7 +30,7 @@ None
 
 | Step | Status | Main Acceptance | Notes |
 |---|---|---|---|
-| S08 | reviewing | pending | 다섯 개 repo-local `SKILL.md` 생성 및 로컬 검증을 완료했고 Main acceptance를 기다린다 |
+| S08 | superseded | not_accepted | 빈 프로젝트 bootstrap 순환 의존 finding으로 R002 S02가 대체한다 |
 
 <!-- key: id=key.work.skill-creation.progress.recent-worker-result refs=key.topic.worker-report key.topic.recent-result -->
 
@@ -47,7 +48,7 @@ None
 
 ## 보류 결정
 
-- Skill source만 만들지, 설치/배포 작업을 별도 work로 추가할지 결정한다.
+- None. Packaging/install/publish는 R002 S02 범위 밖이며 필요할 때 별도 결정한다.
 
 <!-- key: id=key.work.skill-creation.progress.findings refs=key.topic.findings key.topic.skill-source -->
 
@@ -63,5 +64,5 @@ None
 
 ## 다음 권장 작업
 
-Main이 S08 skill source 생성 결과를 검토해 acceptance 여부를 판단한다. 수락 후 S09
-Integration Verification로 이동한다.
+`00_docs/works/r002-bootstrap-runtime-independence/skill-runtime-implementation/00_key-index.md`로
+이동한다.

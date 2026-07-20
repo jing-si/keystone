@@ -13,7 +13,7 @@ key:
 # 작업서(4) round 색인
 
 이 색인은 Keystone work round를 찾기 위한 최상위 진입점이다. 각 work round는 특정 시점의
-기준서와 목표를 바탕으로 진행하는 하나의 작업 차수이며, round 안에서 작업 순서는 `S00`부터
+기준서와 목표를 바탕으로 진행하는 하나의 작업 차수이며, round 안에서 작업 순서는 `S01`부터
 다시 시작한다.
 
 <!-- key: id=key.work.index.rounds refs=key.topic.work-round key.doc.work key.topic.work-sequence -->
@@ -21,7 +21,8 @@ key:
 
 | Round | 제목 | 경로 | 상태 | 목적 |
 |---|---|---|---|---|
-| R001 | Bootstrap Keystone | `r001-bootstrap-keystone/00_key-index.md` | active | Keystone 기준 corpus와 초기 스킬 기준서를 만든다 |
+| R001 | Bootstrap Keystone | `r001-bootstrap-keystone/00_key-index.md` | superseded | S00-S07 accepted 이력을 보존하고 미수락 S08-S09를 R002로 이관했다 |
+| R002 | Bootstrap and Runtime Independence | `r002-bootstrap-runtime-independence/00_key-index.md` | accepted | Init, R000과 설치된 skill runtime 독립성을 정의하고 repo source에 구현했다 |
 
 <!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work key.topic.work-round -->
 ## 공통 결정
@@ -44,6 +45,8 @@ key:
 1. Work round folder는 `r{number}-{slug}` 형식을 사용한다.
 2. `r`은 round를 뜻하며, 특정 시점의 기준서와 목표를 바탕으로 진행하는 하나의 작업 차수를
    나타낸다.
-3. 각 round는 `00_key-index.md`를 가지며, round 안의 실행 순서는 `S00`부터 다시 시작한다.
-4. Round 안의 work node는 하나의 reviewable goal을 가져야 한다.
-5. 너무 작은 작업은 별도 work node로 만들지 않고 관련 work의 step으로 흡수한다.
+3. 각 round는 `00_key-index.md`를 가지며, round 안의 실행 순서는 `S01`부터 다시 시작한다.
+4. `R000`은 최초 기준서가 없는 Project Foundation에만 사용한다. 일반 작업 round는 `R001`,
+   일반 step은 `S01`부터 시작한다.
+5. Round 안의 work node는 하나의 reviewable goal을 가져야 한다.
+6. 너무 작은 작업은 별도 work node로 만들지 않고 관련 work의 step으로 흡수한다.

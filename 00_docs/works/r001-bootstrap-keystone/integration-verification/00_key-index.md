@@ -10,7 +10,7 @@ key:
     - key.topic.source-document-model
 work_id: integration-verification
 title: Integration Verification
-status: planned
+status: superseded
 owner_lane: main-session
 work_type:
   - verification
@@ -51,5 +51,8 @@ model을 공유하고 서로의 output을 다음 단계 input으로 사용할 �
 
 ## 현재 상태
 
-- Status: planned
+- Status: superseded
 - Current step: S09
+
+이 검증은 시작되지 않았으며 R002 Bootstrap Runtime Standard의 문서 시나리오와 후속 Skill
+Runtime Implementation 검증으로 대체되었다.

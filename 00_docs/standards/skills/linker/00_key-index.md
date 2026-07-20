@@ -17,9 +17,9 @@ key:
 ## 문서
 
 1. `key-standard-linker.md`
-   - `keystone-linker`의 operational graph interpretation, artifact discovery, impact analysis,
+     - `keystone-linker`의 operational graph interpretation, artifact discovery, impact analysis,
      stale/gap review, source surface handoff, worker assignment seed mode와 output contract를
-     정의한다.
+     정의한다. 소비 프로젝트 로컬 Linker 기준서는 runtime 선행 조건이 아니다.
 
 <!-- key: id=key.standard.skill.linker.index.parent-standard refs=key.role.linker key.doc.standard key.topic.artifact-graph -->
 ## Parent 기준서

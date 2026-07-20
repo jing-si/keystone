@@ -74,6 +74,17 @@ authority를 포함하지 않는다.
 4. Output authority: Linker output은 graph interpretation evidence와 handoff seed이며 원천
    문서(2), output artifact, Main acceptance를 대체하지 않는다.
 
+<!-- key: id=key.standard.skill.linker.runtime-authority refs=key.role.linker key.topic.runtime-independence key.topic.artifact-graph -->
+## 런타임 권위와 호출 경계
+
+이 문서는 Keystone 저장소에서 Linker를 개발·검수하기 위한 원천 명세다. 배포된 Linker의
+실행 계약과 graph 해석 규칙은 설치된 skill package 안에서 완결되어야 하며, 소비 프로젝트의
+`standards/skills/linker/**`를 required input으로 요구하지 않는다.
+
+Linker는 read-only이므로 Main이 필요하다고 판단하면 별도 사용자 허락 없이 사용할 수 있다.
+Artifact Graph evidence가 적거나 없으면 오류나 profile 부족으로 보지 않고 확인 가능한 관계와
+gap을 fail-soft로 보고한다.
+
 <!-- key: id=key.standard.skill.linker.trigger-condition refs=key.role.linker key.topic.impact-review key.topic.artifact-graph -->
 ## Trigger condition
 
@@ -107,9 +118,9 @@ authority를 포함하지 않는다.
 Linker는 다음 input을 사용할 수 있어야 한다.
 
 1. 사용자 요청 또는 main의 current task
-2. 설정된 document root(1)
+2. 존재하는 경우 설정된 document root(1)
 3. 현재 work 또는 변경 의도
-4. 관련 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록
+4. 존재하는 관련 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록
 5. Known `key.id`, `key.refs`, capability(16), output artifact, code, config, schema, API, test seed
 6. 필요한 경우 changed documents, changed output artifact files, changed code/config/schema/API/test
    files, diff summary
@@ -123,9 +134,9 @@ Input이 부족하면 Linker는 추측해서 후보를 확정하지 않고 `risk
 
 Linker는 mode와 무관하게 다음 순서를 따른다.
 
-1. 설정된 document root(1)를 해석한다.
-2. Artifact Graph 기준서를 읽어 metadata admission, typed relation, stale handling 기준을
-   확인한다.
+1. 설정된 document root(1)와 존재하는 graph evidence를 해석한다.
+2. 설치된 Linker contract의 graph 규칙과 존재하는 프로젝트 Artifact Graph policy를 사용해
+   metadata admission, typed relation, stale handling 기준을 확인한다.
 3. Input seed를 `key.id`, `key.refs`, source document, decision, work order, output artifact,
    capability(16), code, config, schema, API, test, path, symbol, keyword로 분리한다.
 4. 키메타(9)와 코드 앵커(18)를 검색한다.
@@ -386,12 +397,19 @@ audit/debug, verification evidence에 필요할 때만 노출한다. Optional `k
 report를 표현할 수 있지만 candidate 등급, risk, handoff owner, recommended next action을
 바꾸지 않는다.
 
+사용자-facing 응답을 보내기 전에는 `STD-KEYSTONE-045`의 Payload Disclosure Gate를 적용한다.
+Full payload 요청, handoff, audit/debug, verification evidence 필요성이 없으면 `*_output`,
+`*_result`, `*_report`, `worker_assignment`, `keystone_routing_decision` 원문 block을 기본
+응답에 노출하지 않는다. 기본 응답은 payload 의미를 graph status, 후보 count와 대표 근거,
+stale/gap risk, handoff owner, 다음 행동, 주요 출처로 압축한다.
+
 <!-- key: id=key.standard.skill.linker.handoff refs=key.role.linker key.role.author key.role.coordinator -->
 ## Handoff boundary
 
 1. 문서 metadata 또는 source document 수정이 필요하면 `keystone-author`가 처리한다.
-2. Repository source output artifact metadata 수정이나 implementation이 필요하면
-   `keystone-coordinator`가 worker assignment(19)로 조율한다.
+2. Repository source output artifact metadata 수정이나 implementation이 필요하면 작은 명확한
+   범위는 Main direct로 처리할 수 있고, 위임이 필요하면 사용자 허락을 받은
+   `keystone-coordinator`가 조율한다.
 3. High-impact decision이 필요하면 `keystone-clarify`가 topic을 정리한다.
 4. Current step과 work context가 부족하면 `keystone-reader`가 context brief를 만든다.
 5. Linker report는 후보와 evidence이며 acceptance 또는 수정 권한이 아니다.
@@ -401,16 +419,15 @@ report를 표현할 수 있지만 candidate 등급, risk, handoff owner, recomme
    consistency, acceptance criteria, verification에 영향을 주면 Linker는 `keystone-clarify`
    modularization decision topic을 handoff로 제안한다.
 8. Skill source, code, config, schema, API, test는 모두 output artifact의 surface로 보고한다.
-   수정은 surface별 routing decision에 따라 Main direct 또는 Coordinator lane으로 넘긴다.
-9. Handoff가 file-changing work로 이어지면 Main은 `keystone_routing_decision`을 남긴 뒤
-   surface별 lane을 선택한다.
+   수정은 Main direct 또는 허락된 Coordinator로 넘긴다.
+9. 복수 surface나 권한 경계가 있을 때만 명시적인 routing context를 남긴다.
 
 <!-- key: id=key.standard.skill.linker.stop-condition refs=key.role.linker key.boundary.read-only key.topic.impact-review -->
 ## Stop condition
 
 Linker는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한다.
 
-1. 설정된 document root(1)를 확신 있게 해석할 수 없다.
+1. 복수 document root가 충돌해 read scope를 안전하게 정할 수 없다.
 2. Seed가 너무 모호해 관련 artifact 후보를 의미 있게 등급화할 수 없다.
 3. 민감한 정보, local-only path, private data가 필요하다.
 4. 후보를 판단하려면 code 실행, build, test execution, 외부 network access가 필요하지만 승인되지
@@ -418,6 +435,8 @@ Linker는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한�
 5. Artifact graph mismatch가 current task 방향을 바꿀 수 있다.
 6. Metadata stale/gap 후보가 source authority 또는 acceptance criteria 변경을 요구한다.
 7. Linker가 직접 문서나 code를 수정해야만 진행할 수 있다.
+
+Graph metadata나 relation의 단순 부재는 stop condition이 아니다.
 
 <!-- key: id=key.standard.skill.linker.verification refs=key.role.linker key.topic.verification key.topic.artifact-graph -->
 ## Verification
@@ -437,7 +456,9 @@ Linker 기준은 다음 방법으로 검증한다.
    후보를 조용히 생략하지 않아야 한다.
 10. Skill source 후보는 output artifact surface의 한 종류일 뿐이며, graph model의 핵심은
     source document, decision, work order가 만드는 산출물과의 relation임을 확인할 수 있어야 한다.
-11. Verification command:
+11. Graph evidence가 없거나 적어도 fail-soft report를 제공하고 소비 프로젝트 로컬 Linker
+    기준서를 요구하지 않아야 한다.
+12. Verification command:
    - `rg --files 00_docs`
    - `rg -n "keystone-linker|linker_report|Artifact Discovery|Impact Analysis|Stale/Gap Review" 00_docs/standards`
    - `rg -n "source_surface_handoffs|graph_interpretation|operational graph interpretation" 00_docs/standards/skills/linker/key-standard-linker.md`

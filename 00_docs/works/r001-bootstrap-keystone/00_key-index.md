@@ -1,5 +1,6 @@
 ---
 doc_type: work_round
+status: superseded
 key:
   id: key.work.round.r001-bootstrap-keystone.index
   refs:
@@ -12,7 +13,9 @@ key:
 
 # R001 Bootstrap Keystone 작업서(4) 색인
 
-이 round는 Keystone 기준 corpus와 초기 스킬 기준서를 만들기 위한 첫 작업 차수다. 작업서
+이 round는 Keystone 기준 corpus와 초기 스킬 기준서를 만든 첫 작업 차수다. S00-S07의
+accepted 이력은 보존한다. 실제 프로젝트 적용 review에서 bootstrap 순환 의존을 발견해
+미수락 S08-S09는 R002로 대체했다. 작업서
 구조는 기준서 tree에 종속되지 않는다. 각 work node는 하나의 reviewable goal을 가지며,
 round 안의 실행 순서는 이 색인에서 `S00`부터 관리한다.
 
@@ -29,8 +32,8 @@ round 안의 실행 순서는 이 색인에서 `S00`부터 관리한다.
 | S05 | Coordinator Standard | `coordinator-standard/00_key-index.md` | accepted | `keystone-coordinator` 기준서를 정리한다 |
 | S06 | Artifact Graph Standard | `artifact-graph-standard/00_key-index.md` | accepted | Artifact Graph 기준서를 정리한다 |
 | S07 | Linker Standard | `linker-standard/00_key-index.md` | accepted | `keystone-linker` 기준서를 정리한다 |
-| S08 | Skill Creation | `skill-creation/00_key-index.md` | reviewing | 다섯 개 Keystone skill source를 만들고 Main acceptance를 기다린다 |
-| S09 | Integration Verification | `integration-verification/00_key-index.md` | planned | 문서, artifact graph, skill source의 end-to-end 흐름을 검증한다 |
+| S08 | Skill Creation | `skill-creation/00_key-index.md` | superseded | 초기 skill source 이력을 보존하고 R002 S02로 대체한다 |
+| S09 | Integration Verification | `integration-verification/00_key-index.md` | superseded | 미완료 검증을 R002의 새 시나리오로 대체한다 |
 
 <!-- key: id=key.work.round.r001-bootstrap-keystone.common-decisions refs=key.doc.decision key.doc.work key.topic.work-round -->
 ## 공통 결정
@@ -47,6 +50,7 @@ round 안의 실행 순서는 이 색인에서 `S00`부터 관리한다.
 4. 이 round 안의 실행 순서는 이 파일의 `실행 순서` 표를 권위로 삼는다.
 5. 각 work의 세부 목표와 검증은 해당 work node의 `key-work-{slug}.md`에서 확인한다.
 6. 각 work의 진행 상태는 해당 work node의 `key-progress.md`에서 확인한다.
+7. 후속 active work는 `../r002-bootstrap-runtime-independence/00_key-index.md`에서 확인한다.
 
 <!-- key: id=key.work.round.r001-bootstrap-keystone.work-creation-rules refs=key.doc.work key.topic.document-system key.topic.work-round -->
 ## 작업서 생성 규칙

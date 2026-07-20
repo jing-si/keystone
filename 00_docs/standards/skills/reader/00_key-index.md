@@ -19,7 +19,7 @@ key:
 1. `key-standard-reader.md`
    - `keystone-reader`의 목적, trigger/non-trigger, required input, mode별 workflow,
      context brief output contract, Linker handoff cue, stop condition, verification을
-     정의한다.
+     정의한다. 소비 프로젝트 로컬 Reader 기준서는 runtime 선행 조건이 아니다.
 
 <!-- key: id=key.standard.skill.reader.index.parent-standard refs=key.role.reader key.doc.standard key.topic.document-system -->
 ## 상위 기준서

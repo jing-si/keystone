@@ -11,6 +11,7 @@ key:
     - key.standard.subagent
     - key.standard.artifact
     - key.topic.work-round
+    - key.standard.bootstrap
 ---
 
 # 기준서(3) 색인
@@ -22,29 +23,34 @@ key:
    - Keystone의 원천 문서(2), 기준서(3), 작업서(4), 진행 기록(5), 결정(6), 파생
      에이전트 문서(8), 아티팩트 그래프(14), `standards/`와 `works/` tree, 스킬 역할, verification 정책을
      정의한다.
-2. Subagent 기준서 색인: `subagents/00_key-index.md`
+2. Bootstrap 기준서 색인: `bootstrap/00_key-index.md`
+   - 런타임 권위 경계, 초기화 상태, R000, User Decision과 Main 수락, handoff/resume,
+     fail-soft를 정의한다.
+3. Subagent 기준서 색인: `subagents/00_key-index.md`
    - Keystone helper/subagent의 bounded worker model, purpose preset, authority, injected
-     skill contract, report status, single workspace guard, 공통 금지와 stop condition을
+     skill contract, report status, 실행 환경 경계, 공통 금지와 stop condition을
      정의한다.
-3. 스킬별 기준서 색인: `skills/00_key-index.md`
+4. 스킬별 기준서 색인: `skills/00_key-index.md`
    - Keystone 스킬별 child 기준서로 이동하기 위한 색인이다.
-4. Artifact Graph 기준서 색인: `artifacts/00_key-index.md`
+5. Artifact Graph 기준서 색인: `artifacts/00_key-index.md`
    - source document, decision, work, capability, code, config, schema, API, test artifact의 metadata,
      ownership boundary, relation, locator, stale/gap handling, impact candidate 기준으로 이동하기 위한
      색인이다.
-5. Reader 기준서: `skills/reader/key-standard-reader.md`
+6. Init 기준서: `skills/init/key-standard-init.md`
+   - `keystone-init`의 inspect/initialize/repair, 고정 scaffold, R000과 resume 계약을 정의한다.
+7. Reader 기준서: `skills/reader/key-standard-reader.md`
    - `keystone-reader`의 trigger, mode, read-only boundary, output contract,
      mismatch handling을 정의한다.
-6. Author 기준서: `skills/author/key-standard-author.md`
+8. Author 기준서: `skills/author/key-standard-author.md`
    - `keystone-author`의 기준서(3)와 작업서(4) creation/revision, clarify result 적용,
      progress update boundary를 정의한다.
-7. Clarify 기준서: `skills/clarify/key-standard-clarify.md`
+9. Clarify 기준서: `skills/clarify/key-standard-clarify.md`
    - `keystone-clarify`의 topic-scoped decision collection, reflection, edit plan,
      Author handoff를 정의한다.
-8. Linker 기준서: `skills/linker/key-standard-linker.md`
+10. Linker 기준서: `skills/linker/key-standard-linker.md`
    - `keystone-linker`의 operational graph interpretation, artifact discovery, impact analysis,
      stale/gap review, source surface handoff, worker assignment seed output을 정의한다.
-9. Coordinator 기준서: `skills/coordinator/key-standard-coordinator.md`
+11. Coordinator 기준서: `skills/coordinator/key-standard-coordinator.md`
    - `keystone-coordinator`의 worker assignment/report, routing, report, review,
      verification, acceptance flow를 정의한다.
 
@@ -53,12 +59,14 @@ key:
 
 1. Keystone 원천 문서(2)를 변경하거나 Keystone 작업을 준비하기 전에
    `01_key-project-standard.md`를 먼저 읽는다.
-2. Subagent purpose preset, authority, report status, workspace guard가 필요하면
+2. 초기화 상태, R000 또는 설치 package와 소비 프로젝트의 권위 경계가 필요하면
+   `bootstrap/00_key-index.md`를 읽는다.
+3. Subagent purpose preset, authority, report status, 실행 환경 경계가 필요하면
    `subagents/00_key-index.md`를 읽는다.
-3. 문서와 code/config/schema/API/test artifact 연결, graph ownership boundary, impact candidate,
+4. 문서와 code/config/schema/API/test artifact 연결, graph ownership boundary, impact candidate,
    stale/gap 판단이 필요하면 `artifacts/00_key-index.md`를 읽는다.
-4. 스킬별 상세 계약이 필요하면 `skills/00_key-index.md`에서 해당 child 기준서로 내려간다.
-5. 현재 active work round는 `00_docs/works/00_key-index.md`에서 찾고, round 내부 실행 순서는
+5. 스킬별 개발 명세가 필요하면 `skills/00_key-index.md`에서 해당 child 기준서로 내려간다.
+6. 현재 active work round는 `00_docs/works/00_key-index.md`에서 찾고, round 내부 실행 순서는
    해당 round의 `00_key-index.md`에서 찾는다.
-6. 전체 공통 기준서와 child 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
+7. 전체 공통 기준서와 child 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 전체 공통 기준서를 임시 우선 기준으로 삼는다.

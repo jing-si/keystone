@@ -27,18 +27,15 @@ key:
 
 1. `keystone-clarify`의 trigger와 non-trigger condition
 2. Topic-scoped question collection
-3. Plan Mode selection UI 또는 동등한 질문 흐름
-4. Reflection, decision summary, edit plan
-5. Default Mode author handoff와 명시 승인된 현재 대상 문서의 단순 오탈자 수정 boundary
-6. Impact update 대상과 stop condition
-7. Initial project setup question contract
+3. Reflection, decision summary, edit plan
+4. Init 또는 Author로의 handoff와 resume
+5. Impact update 대상과 stop condition
 
 <!-- key: id=key.standard.skill.clarify.out-of-scope refs=key.role.clarify key.topic.skill-contract key.topic.external-assist -->
 ## 적용하지 않는 범위
 
-1. 사소한 typo, wording, formatting 질문을 매번 생성하기. 단, 명시 승인된 현재 대상 문서
-   안의 단순 오탈자는 Default Mode 직접 수정 예외로 처리할 수 있다.
-2. 사용자 수락 없이 원천 문서(2), code, config, schema, API, test, generated/codegen artifact 수정
+1. 사소한 typo, wording, formatting 질문을 생성하기
+2. 원천 문서(2), code, config, schema, API, test, generated/codegen artifact 수정
 3. 스킬 구현 파일 작성
 4. 기준서(3)나 작업서(4)를 직접 생성하거나 넓은 범위에서 재작성하기
 5. 외부 보조 스킬(12)을 자동 실행 대상으로 만들기
@@ -67,6 +64,17 @@ key:
 4. Output authority: Clarify output은 사용자가 수락하기 전까지 원천 문서(2)를 대체하지
    않는다.
 
+<!-- key: id=key.standard.skill.clarify.runtime-authority refs=key.role.clarify key.topic.runtime-independence key.topic.user-decision -->
+## 런타임 권위와 질문 경계
+
+이 문서는 Keystone 저장소에서 Clarify를 개발·검수하기 위한 원천 명세다. 배포된 Clarify의
+실행 계약은 설치된 skill package 안에서 완결되어야 하며, 소비 프로젝트의
+`standards/skills/clarify/**`를 required input으로 요구하지 않는다.
+
+Clarify는 실제 사용자 결정만 다룬다. 안전한 기본값, 명시된 우선순위, repository evidence와
+설치된 skill contract로 판단할 수 있는 사항은 질문하지 않는다. 특정 호스트 AI의 내부 mode나
+질문 UI를 계약으로 삼지 않는다.
+
 <!-- key: id=key.standard.skill.clarify.required-input refs=key.role.clarify key.topic.question-flow key.output.edit-plan key.topic.impact-review -->
 ## Required input
 
@@ -74,15 +82,12 @@ Clarify는 다음 input을 사용할 수 있어야 한다.
 
 1. 사용자 요청 또는 main의 current clarification topic
 2. 현재 topic과 관련된 원천 문서(2), 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 후보
-3. Plan Mode 또는 Default Mode를 판단할 수 있는 context
-4. 이미 수락된 decision summary와 edit plan이 있는 경우 그 내용
-5. 변경 대상 원천 문서(2), section, 승인 범위 후보
-6. affected document 후보와 affected artifact 후보
-7. Initial setup topic인 경우 document root, tracking policy, output language policy,
-   setup storage location 후보
-8. 민감 정보, local-only path, common/global instruction file, config write 여부와 관련된
+3. 이미 수락된 decision summary와 edit plan이 있는 경우 그 내용
+4. 변경 대상 원천 문서(2), section, 승인 범위 후보
+5. affected document 후보와 affected artifact 후보
+6. 민감 정보, local-only path, common/global instruction file, config write 여부와 관련된
    risk context
-9. Modularization topic인 경우 Linker report, reuse candidate, worker report, reviewer
+7. Modularization topic인 경우 Linker report, reuse candidate, worker report, reviewer
    finding, 또는 사용자가 제시한 유사 capability나 reusable artifact 근거
 
 Input이 부족하면 Clarify는 high-impact decision을 추정하지 않고 incomplete result,
@@ -96,8 +101,7 @@ open question, stop condition으로 보고한다.
 1. 정책, 범위, 문서 구조, 스킬 계약, cross-document consistency에 영향을 주는 결정(6)이
    필요하다.
 2. 원천 문서(2)를 의미 있게 바꾸기 전에 사용자 의도를 명확히 해야 한다.
-3. Keystone initial setup에서 document root, tracking policy, output language policy,
-   setup storage location을 결정해야 한다.
+3. 복수 document root나 기존 문서 채택·이동·대체처럼 초기화 중 실제 사용자 결정이 필요하다.
 4. 문서 변경이 여러 기준서(3), 작업서(4), 진행 기록(5), 결정(6), 파생 에이전트 문서(8)에
    영향을 줄 수 있다.
 5. current task의 방향이 기존 원천 문서(2)와 충돌한다.
@@ -112,9 +116,7 @@ open question, stop condition으로 보고한다.
 
 `keystone-clarify`는 다음 경우에 사용하지 않는다.
 
-1. 사소한 수정마다 high-impact 질문을 만들기. 단, 명시 승인된 현재 대상 문서 안에서 의미
-   변화와 외부 영향이 객관적으로 없는 단순 오탈자는 Default Mode 직접 수정 예외로 처리할 수
-   있다.
+1. 사소한 수정마다 high-impact 질문을 만들기
 2. 이미 수락된 결정(6)과 대상 문서가 명확해 Author가 처리해야 하는 단일 문서 update
 3. Reader가 수행해야 하는 read-only orientation 또는 document navigation
 4. Author가 수행해야 하는 기준서(3) 또는 작업서(4) 작성 자체
@@ -203,55 +205,30 @@ modularization_question:
     - investigate_first
 ```
 
-<!-- key: id=key.standard.skill.clarify.plan-mode-contract refs=key.role.clarify key.topic.question-flow key.doc.decision -->
-## Plan Mode contract
+<!-- key: id=key.standard.skill.clarify.question-contract refs=key.role.clarify key.topic.question-flow key.doc.decision -->
+## 질문 수집 계약
 
-Plan Mode는 질문과 결정을 수집하는 mode다.
-
-1. 사용 가능한 경우 `request_user_input` 또는 동등한 selection UI를 사용한다.
-2. 한 번에 하나의 focused question을 묻는다.
-3. 질문은 선택지의 tradeoff를 짧게 설명해야 한다.
-4. 사용자가 답하면 해당 답이 topic을 결정하기에 충분한지 판단한다.
-5. 충분하지 않으면 같은 topic에 대해 targeted follow-up을 묻는다.
-6. 사용자의 답이 "알아서 해주세요"처럼 편의상 위임에 그치고 project standard의 명시적
-   default가 없으면 high-impact decision으로 추정하지 않는다.
-7. 답이 충분하지 않은 상태에서 report해야 하면 `author_edit_ready: false`, unresolved
-   `open_questions`, Author-ready `edit_plan` 없음으로 incomplete result를 반환한다.
-8. 충분하면 decision summary, working assumptions, `decision_completeness_check`,
+1. 한 번에 하나의 focused decision topic을 묻는다.
+2. 선택지가 있으면 실제 영향과 tradeoff를 짧게 설명한다.
+3. 사용자가 답하면 해당 답이 현재 topic을 결정하기에 충분한지 판단한다.
+4. 충분하지 않으면 같은 topic에 대해서만 targeted follow-up을 묻는다.
+5. 사용자가 AI에 판단을 위임했고 수락된 기준, repository evidence 또는 안전한 default가 있으면
+   그 근거로 진행할 수 있다.
+6. 답이 충분하지 않으면 `author_edit_ready: false`, unresolved `open_questions`, Author-ready
+   `edit_plan` 없음으로 incomplete result를 반환한다.
+7. 충분하면 decision summary, working assumptions, `decision_completeness_check`,
    `decision_recording_hint`, Author handoff용 edit plan을 만든다.
-9. Plan Mode는 원천 문서(2)를 직접 수정하지 않는다.
+8. Clarify는 원천 문서(2)를 직접 수정하지 않는다.
 
-<!-- key: id=key.standard.skill.clarify.default-mode-contract refs=key.role.clarify key.output.edit-plan key.topic.document-authoring -->
-## Default Mode contract
+<!-- key: id=key.standard.skill.clarify.handoff-resume refs=key.role.clarify key.output.edit-plan key.topic.handoff -->
+## Handoff와 resume
 
-Default Mode는 수락된 clarify result를 바탕으로 Author가 문서 update를 적용할 수 있게
-정리한다. Clarify가 직접 수정할 수 있는 경우는 명시 승인된 현재 대상 문서 안에서 의미 변화와
-다른 문서 영향이 객관적으로 없는 단순 오탈자로 제한한다.
-
-1. 적용 전 조건:
-   - topic이 충분히 결정되어 있다.
-   - 사용자 또는 main session이 decision summary와 edit plan을 수락했다.
-   - 변경 대상 원천 문서(2)와 section이 식별되어 있다.
-2. Author handoff 대상:
-   - Handoff는 자동 실행이 아니며, main 또는 사용자가 `keystone-author` 호출 여부와 적용
-     범위를 결정한다.
-   - 관련 기준서(3)
-   - 관련 작업서(4)
-   - 진행 기록(5)
-   - 결정(6) 기록
-   - `STD-KEYSTONE-016`의 조건을 만족하는 파생 에이전트 문서(8)
-3. Clarify 직접 수정 허용:
-   - 명시 승인된 현재 대상 문서 안의 단순 오탈자
-   - 다른 문서, 기준서(3), 작업서(4), scope, acceptance criteria, status semantics에 영향이
-     없는 단순 오탈자 수정
-4. 금지:
-   - 수락되지 않은 topic을 근거로 문서 수정
-   - 다른 문서와 함께 맞춰야 하는 원천 문서(2) 수정
-   - 기준, 정책, scope, acceptance criteria, status semantics처럼 다른 문서와 함께 맞춰야
-     하는 변경 직접 수정
-   - implementation code, config, schema, API, test, generated/codegen artifact 수정
-   - 승인되지 않은 scope 또는 acceptance criteria 변경
-   - common/global instruction file에 setup result 기록
+1. 완료된 decision result는 Clarify를 요청한 Init, Author, Coordinator 또는 Main에 반환한다.
+2. 호출자는 별도 재호출을 사용자에게 요구하지 않고 중단한 단계에서 원래 요청을 resume한다.
+3. Handoff에는 결정, 근거, working assumptions, 영향을 받는 문서·artifact 후보, 열린 질문,
+   stop condition을 포함한다.
+4. 문서 반영은 Author가, 구현 또는 위임은 Main이나 허락된 Coordinator가 담당한다.
+5. Clarify result는 edit authority나 acceptance를 자동으로 만들지 않는다.
 
 <!-- key: id=key.standard.skill.clarify.reflection-edit-plan refs=key.role.clarify key.output.edit-plan key.doc.decision -->
 ## Reflection and edit plan
@@ -270,8 +247,8 @@ Clarify result는 다음을 포함해야 한다.
    generated file 같은 surface를 함께 표시한다.
 7. `edit_plan`: 문서별 변경 요약. Incomplete result에서는 Author-ready `edit_plan`을 만들지
    않고 누락 사유를 보고한다.
-8. `routing_handoff`: file-changing work로 이어질 때 target surface, 추천 lane, 필요한 report
-   후보. 이 값은 edit authority가 아니라 수정 전 routing decision seed다.
+8. `routing_handoff`: 복수 surface나 권한 경계가 있는 file-changing work의 target surface,
+   추천 주체와 report 후보. 이 값은 edit authority가 아니라 optional routing context다.
 9. `stop_conditions`: 적용 중 중단해야 하는 조건
 10. `open_questions`: 아직 남은 질문. 현재 topic을 완료하기 위해 필요한
    `unresolved_current_topic`과 이번 topic 밖의 `out_of_topic` 질문을 구분한다.
@@ -283,9 +260,9 @@ Clarify result는 다음을 포함해야 한다.
     create new, investigate first 중 어떤 방향을 선택했는지와 그 근거. Modularization topic이
     아니면 생략한다.
 
-High-impact topic, Plan Mode result, 또는 Author handoff가 있는 non-trivial Clarify result는
-`decision_completeness_check`를 포함해야 한다. 현재 case가 단순 오탈자 직접 수정 예외라면
-Clarify는 이 check가 적용되지 않는 이유를 보고한다.
+High-impact topic, User Decision result, 또는 Author handoff가 있는 non-trivial Clarify result는
+`decision_completeness_check`를 포함해야 한다. 단순 오탈자, wording, formatting처럼 실제
+User Decision이 없는 작업은 Clarify의 non-trigger이며 이 output 계약을 적용하지 않는다.
 
 결정(6)을 만들거나 바꾸는 non-trivial Clarify result는 `decision_recording_hint`를 포함해야
 한다. 영구 결정 기록이 필요하지 않으면 Clarify는 기록이 필요하지 않은 이유를 보고한다.
@@ -419,8 +396,9 @@ modularization_decision:
 13. `extract_shared_module`을 선택하면 shared architecture, public interface, API/schema/test,
     verification impact를 별도로 보고하고 Coordinator workflow로 넘긴다.
 
-Clarify result가 file-changing work로 이어지면 Main은 `STD-KEYSTONE-046`에 따라
-`keystone_routing_decision`을 남긴 뒤 Author, Coordinator, 또는 Main direct lane으로 분리한다.
+Clarify result가 file-changing work로 이어지면 Main은 `STD-KEYSTONE-046`에 따라 Author,
+허락된 Coordinator 또는 Main direct로 실행 주체를 분리한다. 복수 surface나 권한 경계가 있을
+때만 routing context를 명시적으로 남긴다.
 Clarify가 decision summary와 edit plan을 만들었다는 사실은 source document나 skill source 수정
 권한을 대체하지 않는다.
 
@@ -439,6 +417,12 @@ Clarify는 `clarify_result`를 agent-facing structured payload로 유지한다. 
 Full `clarify_result`는 사용자가 요청하거나 Author handoff, audit/debug, verification evidence에
 필요할 때만 노출한다. Optional `keystone-viewer`는 Clarify result를 audience별 view로 표현할 수
 있지만 decision summary, open question, author-ready 판단을 바꾸지 않는다.
+
+사용자-facing 응답을 보내기 전에는 `STD-KEYSTONE-045`의 Payload Disclosure Gate를 적용한다.
+Full payload 요청, handoff, audit/debug, verification evidence 필요성이 없으면 `*_output`,
+`*_result`, `*_report`, `worker_assignment`, `keystone_routing_decision` 원문 block을 기본
+응답에 노출하지 않는다. 기본 응답은 payload 의미를 topic/decision 요약, rationale, open
+question, 영향 문서, 다음 행동, 주요 출처로 압축한다.
 
 <!-- key: id=key.standard.skill.clarify.impact-update refs=key.role.clarify key.topic.impact-review key.output.edit-plan key.topic.keystone-metadata key.topic.code-anchor key.topic.artifact-graph -->
 ## Impact update
@@ -464,30 +448,16 @@ Full `clarify_result`는 사용자가 요청하거나 Author handoff, audit/debu
     Author handoff에 분리해 기록한다.
 11. 영향 범위가 불확실하면 문서 수정을 멈추고 사용자 또는 main 결정(6)을 요청한다.
 
-<!-- key: id=key.standard.skill.clarify.initial-setup-question-contract refs=key.role.clarify key.topic.question-flow key.topic.document-system -->
-## Initial setup question contract
+<!-- key: id=key.standard.skill.clarify.initialization-boundary refs=key.role.clarify key.role.init key.topic.question-flow key.topic.initialization -->
+## 초기화 질문 경계
 
-Target project에서 Keystone setting이 없거나 불명확하면 Clarify는 initial setup question을
-다룰 수 있다.
-
-1. 질문 대상:
-   - document root
-   - 기준서(3)와 작업서(4) tracking policy
-   - 파생 에이전트 문서(8) tracking policy
-   - Keystone output language policy
-   - setup storage location
-2. 기본 storage:
-   - shared setting은 `.keystone/config.yaml`
-   - personal, local-only, sensitive override는 `.keystone/config.local.yaml`
-   - Clarify는 setup storage location을 결정하거나 권장할 수 있지만 `.keystone/config.yaml`
-     또는 `.keystone/config.local.yaml`을 직접 생성하거나 수정하지 않는다.
-   - 수락된 setup decision의 실제 기록은 Author, Main, 또는 명시 승인된 project-local setup
-     step이 처리한다.
-3. 금지:
-   - common/global instruction file에 조용히 기록하기
-   - fixture/test step 또는 명시적인 project-local setup 요구 없이 이 Keystone implementation
-     repository에 `.keystone/config.yaml`이 필요하다고 암시하거나 해당 파일을 생성하기
-   - 민감한 값을 사용자 확인 없이 쓰기, track, publish, derive하기
+1. Document root 기본값을 사용할지처럼 내장 초기 설정은 Init이 직접 묻는다.
+2. Keystone 문서가 없다는 사실, 기본 metadata/file/index 형식, skill별 프로젝트 기준서 부재는
+   Clarify topic이 아니다.
+3. 복수의 유효한 root, 기존 문서 채택·이동·대체, 프로젝트 목적·범위·정책처럼 사용자의 의미
+   결정이 필요한 경우만 Clarify가 한 topic씩 다룬다.
+4. 결정 뒤에는 결과를 Init에 반환하고 중단한 초기화를 resume한다.
+5. Clarify는 `.keystone/config.yaml`이나 project source document를 직접 수정하지 않는다.
 
 <!-- key: id=key.standard.skill.clarify.stop-condition refs=key.role.clarify key.topic.skill-contract key.topic.impact-review -->
 ## Stop condition
@@ -513,11 +483,11 @@ Clarify는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한�
 Clarify 기준은 다음 방법으로 검증한다.
 
 1. Clarify contract만 보고 trigger와 non-trigger를 구분할 수 있어야 한다.
-2. Plan Mode와 Default Mode의 책임 차이가 명확해야 한다.
-3. 수락 전에는 원천 문서(2)를 수정하지 않는다는 경계가 명확해야 한다.
+2. 한 topic 질문 수집과 호출자 handoff/resume의 책임 차이가 명확해야 한다.
+3. Clarify는 원천 문서(2)를 수정하지 않는다는 경계가 명확해야 한다.
 4. Reflection과 edit plan만 보고 Author가 문서 update 범위를 판단할 수 있어야 한다.
-5. Initial setup question이 `STD-KEYSTONE-050`, `STD-KEYSTONE-051`,
-   `STD-KEYSTONE-052`과 일관되어야 한다.
+5. 내장 초기 설정 질문은 Init, 실제 사용자 의미 결정은 Clarify라는 경계가
+   `STD-KEYSTONE-050`과 Bootstrap 기준에 일관되어야 한다.
 6. 키메타와 코드 앵커 기반 affected 후보가 있으면 edit plan에서 후보와 실제 반영 여부를
    구분할 수 있어야 한다.
 7. Modularization decision topic은 Linker report, worker report, reviewer finding, 또는 사용자
@@ -526,8 +496,10 @@ Clarify 기준은 다음 방법으로 검증한다.
    의미와 handoff boundary를 구분해야 한다.
 9. 기본 사용자 응답은 structured payload를 그대로 노출하지 않고 decision, rationale, open
    question, affected documents, next action을 요약해야 한다.
-10. File-changing handoff가 있으면 Author, Coordinator, Main direct 중 필요한 routing lane을
-    edit plan 또는 recommended next action에서 분리해야 한다.
+10. File-changing handoff가 있으면 Author, 허락된 Coordinator, Main direct 중 필요한 실행
+    주체를 edit plan 또는 recommended next action에서 분리해야 한다.
 11. Verification command:
    - `rg --files 00_docs`
    - Clarify 관련 기준서를 읽어 link와 scope consistency 확인
+12. 프로젝트 로컬 Clarify 기준서가 없어도 설치된 contract로 한 topic 질문과 resume 결과를
+    제공할 수 있어야 한다.

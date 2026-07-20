@@ -28,7 +28,7 @@ Worker는 원천 문서(2)의 권위나 Main acceptance를 대체하지 않는�
 2. Purpose preset, authority, injected skill contract
 3. Assignment input과 worker report output
 4. Report status 값과 의미
-5. Single workspace guard
+5. 실행 환경 경계와 existing-change 보존
 6. 아티팩트 그래프(14) 기반 reuse discovery, impact review, graph validation 책임
 7. 외부 코딩 스킬의 injected skill 사용 경계
 8. 공통 금지와 stop condition
@@ -284,7 +284,7 @@ external_coding_skill_mode_policy:
 규칙은 다음과 같다.
 
 1. Worker의 기본 경계는 assignment의 goal, purpose, authority, scope, forbidden changes,
-   workspace guard, verification, return report contract가 정한다.
+   execution environment boundary, verification, return report contract가 정한다.
 2. Worker authority는 assignment authority와 injected skill의 `authority_ceiling` 중 더 좁은
    경계를 따른다.
 3. `keystone-linker` 같은 read-only skill을 주입받아 발견한 후보는 evidence일 뿐 edit
@@ -298,7 +298,7 @@ external_coding_skill_mode_policy:
 8. `injected_skills: []`는 worker에게 맡길 절차와 report 기준이 없다는 뜻이므로 기본값으로
    사용하지 않는다.
 9. 외부 코딩 스킬이 명시되면 worker는 해당 스킬의 workflow guidance를 사용할 수 있지만,
-   Coordinator assignment의 scope, forbidden changes, workspace guard, verification,
+   Coordinator assignment의 scope, forbidden changes, execution environment boundary, verification,
    return report contract를 우선한다.
 10. 외부 코딩 스킬이 명시된 경우 `keystone-default-bounded-worker` contract를 중복 주입하지
     않아도 된다. 이 경우에도 assignment의 기본 경계와 return report contract는 항상 적용된다.
@@ -329,38 +329,26 @@ Worker에게 작업을 맡길 때는 최소한 다음을 제공해야 한다.
 11. Stop Conditions
 12. Verification path
 13. 필요한 경우 impact seeds 또는 Change Set(17)
-14. Workspace guard
+14. 사용자 지시, 주입된 skill 또는 host가 제공한 실행 환경 제약
 15. Report status contract
 
 Input이 부족하면 worker는 추측해서 범위를 넓히지 않고 `NEEDS_CONTEXT` 또는 `BLOCKED`로
 보고한다.
 
-<!-- key: id=key.standard.subagent.workspace-guard refs=key.role.subagent key.topic.work-execution key.boundary.approval -->
-## Single workspace guard
+<!-- key: id=key.standard.subagent.execution-environment refs=key.role.subagent key.topic.work-execution key.boundary.approval -->
+## 실행 환경 경계
 
-기본 실행 모델은 single workspace bounded worker orchestration이다.
+Keystone은 single workspace, worktree, branch, 병렬 writer 수나 integration strategy를 강제하지
+않는다. 실제 전략은 사용자 지시, 주입된 skill과 host 환경이 정한다.
 
-1. 한 번에 하나의 file-writing worker만 허용한다.
-2. Coordinator는 이전 file-writing worker report를 처리하기 전 다음 file-writing worker를
-   배정하지 않는다.
-3. Worker는 allowed edit scope 밖의 파일을 수정하지 않는다.
-4. Worker는 기존 사용자 변경이나 다른 agent 변경을 정리, 되돌림, 덮어쓰기 하지 않는다.
-5. 기존 변경과 충돌할 가능성이 있으면 `BLOCKED` 또는 `DONE_WITH_CONCERNS`로 보고한다.
-6. 파괴적 workspace 조작은 사용자 또는 Main의 명시 승인 없이는 금지한다.
-7. Worker report에는 changed files, scope check, forbidden change check가 포함되어야 한다.
-
-Workspace guard는 다음 shape을 우선 사용한다.
-
-```yaml
-workspace_guard:
-  model: single_workspace
-  active_file_writer_policy: exclusive
-  allowed_paths:
-  protected_paths:
-  existing_changes_policy: do_not_overwrite_unlisted_changes
-  destructive_workspace_operation_policy: forbidden
-  file_change_report_required: true
-```
+1. Worker는 allowed edit scope 밖의 파일을 수정하지 않는다.
+2. Worker는 기존 사용자 또는 다른 agent 변경을 임의로 정리, 되돌림, 덮어쓰기 하지 않는다.
+3. 실제 충돌을 발견하면 `BLOCKED` 또는 `DONE_WITH_CONCERNS`로 보고한다.
+4. 파괴적 workspace 조작은 사용자 또는 Main의 명시 허락 없이는 금지한다.
+5. Worktree나 별도 workspace를 쓰는 injected skill은 자기 계약 안에서 선택하되 assignment의
+   authority, scope, verification과 report contract를 지킨다.
+6. Worker report에는 changed files, scope check, forbidden change check와 발견한 conflict가
+   포함되어야 한다.
 
 <!-- key: id=key.standard.subagent.report-status refs=key.role.subagent key.topic.report key.contract.output -->
 ## Report status
@@ -503,7 +491,7 @@ Worker는 다음 상황에서 멈추고 report한다.
     architecture, public interface, dependency, build system 변경이 필요하다.
 12. Existing user change 또는 다른 agent change를 덮어써야만 진행할 수 있다.
 13. 주입된 외부 코딩 스킬의 필수 절차가 assignment의 authority, scope, verification,
-    workspace guard와 충돌한다.
+    execution environment boundary와 충돌한다.
 
 <!-- key: id=key.standard.subagent.verification refs=key.role.subagent key.topic.verification -->
 ## Verification
@@ -522,7 +510,8 @@ Subagent 기준은 다음 방법으로 검증한다.
 8. `implement` worker는 새 구현 전에 reuse discovery 결과를 보고해야 한다.
 9. `review` worker는 semantic stale과 중복 구현 risk를 검토할 수 있어야 한다.
 10. `verify` worker는 graph validation의 mechanical stale을 보고할 수 있어야 한다.
-11. Single workspace guard만 보고 file-writing worker의 배정 가능 여부를 판단할 수 있어야 한다.
+11. 특정 실행 환경을 강제하지 않으면서 assignment scope와 existing-change 보존 여부를 판단할
+    수 있어야 한다.
 12. 외부 코딩 스킬은 Coordinator를 대체하지 않고 injected skill로만 사용되어야 한다.
 13. 외부 코딩 스킬이 요구하는 절차가 assignment boundary를 넘으면 worker가 멈추고 보고해야
     한다.

@@ -1,5 +1,6 @@
 ---
 doc_type: work_order
+status: superseded
 key:
   id: key.work.integration-verification.order
   refs:
@@ -11,6 +12,10 @@ key:
 ---
 
 # Integration Verification 작업서(4)
+
+> Superseded: 이 작업은 실행 전 빈 프로젝트 bootstrap 순환 의존 finding으로 대체되었다.
+> 기존 시나리오와 review 보강 내용은 R001 이력으로 보존하며, R002 Bootstrap Runtime Standard와
+> Skill Runtime Implementation이 새 검증 권위를 가진다.
 
 <!-- key: id=key.work.integration-verification.order.goal refs=key.topic.integration-verification key.topic.keystone-workflow key.topic.skill-source key.section.goal -->
 
@@ -82,6 +87,8 @@ Conditionally allowed:
 - [ ] Metadata 과다 부여를 방지하는 시나리오가 통과한다.
 - [ ] 기본 사용자 응답은 structured payload를 그대로 노출하지 않고 결론, 근거, risk, 다음 행동,
       주요 출처를 요약한다.
+- [ ] Payload Disclosure Gate가 `keystone_routing_decision`, `main_direct_change_report`,
+      `*_output`, `*_result`, `*_report`, `worker_assignment` 원문 노출을 기본 응답에서 차단한다.
 - [ ] Optional `keystone-viewer`는 presentation/helper로만 해석되고 core runtime dependency나
       mandatory filter chain이 되지 않는다.
 - [ ] Mixed surface 변경은 `keystone_routing_decision`으로 `source_document`, `skill_source`,
@@ -202,9 +209,16 @@ Scenario H: 사용자 응답과 structured payload를 분리한다.
    status, risk, recommended next action, acceptance 판단을 바꾸지 않는다.
 5. Coordinator는 viewer summary가 아니라 원래 structured payload 또는 handoff capsule을 input으로
    사용한다.
+6. Negative check: 사용자가 full payload를 요청하지 않았는데 기본 응답에 `reader_output`,
+   `clarify_result`, `author_patch_report`, `linker_report`, `worker_assignment`,
+   `worker_report`, `worker_report_review`, `main_direct_change_report`, 또는
+   `keystone_routing_decision` 원문 YAML을 출력하면 실패로 본다.
+7. 기본 응답은 payload 원문 대신 요약 count, 대표 항목, verification summary, residual risk,
+   full payload availability만 남긴다.
 
 통과 기준: 사용자-facing view가 context를 줄이면서도 source authority, risk, handoff payload,
-Main acceptance 판단을 바꾸지 않는다.
+Main acceptance 판단을 바꾸지 않고, full payload 요청이나 handoff/audit/debug 필요 없이 raw
+structured payload를 노출하지 않는다.
 
 Scenario I: mixed surface 변경은 routing gate를 통과한다.
 
@@ -214,8 +228,11 @@ Scenario I: mixed surface 변경은 routing gate를 통과한다.
 4. Skill source 변경은 작은 S08 scope면 Main direct lane과 `main_direct_change_report`를
    사용하고, delegation이나 formal verification이 필요하면 Coordinator worker assignment를 사용한다.
 5. Linker가 skill source surface의 output artifact stale/gap 후보를 보고할 수 있지만 직접 수정하지 않는다.
+6. 기본 사용자 응답은 routing decision과 report 원문을 출력하지 않고, 선택한 lane, 변경 대상,
+   verification summary, residual risk만 요약한다.
 
-통과 기준: 기준서를 읽은 것만으로 lane 실행을 대체하지 않고, surface별 report가 남는다.
+통과 기준: 기준서를 읽은 것만으로 lane 실행을 대체하지 않고, surface별 report가 남으며, report
+원문은 기본 사용자 응답에 노출되지 않는다.
 
 Scenario J: source document가 만든 output artifact를 추적한다.
 
@@ -264,6 +281,7 @@ Allowed:
 - `rg --files 00_docs skills`
 - `rg -n "external coding skill|외부 코딩 스킬|injected skill|keystone-default-bounded-worker" 00_docs/standards skills`
 - `rg -n "structured payload|Default User Response|keystone-viewer|사용자 응답" 00_docs/standards 00_docs/works skills`
+- `rg -n "Payload Disclosure Gate|main_direct_change_report|keystone_routing_decision|full payload" 00_docs/standards 00_docs/works skills`
 - `rg -n "keystone_routing_decision|main_direct_change_report|routing decision|skill_source" 00_docs/standards 00_docs/works skills`
 - `rg -n "output_artifact|produces|produced_from|artifact_kind" 00_docs/standards 00_docs/works skills`
 - skill file과 기준서 cross-read

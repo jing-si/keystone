@@ -9,6 +9,8 @@ key:
     - key.topic.skill-contract
     - key.topic.key-prefix
     - key.topic.bootstrap
+    - key.topic.initialization
+    - key.topic.runtime-independence
 ---
 
 # Keystone 프로젝트 기준서
@@ -17,7 +19,8 @@ key:
 ## 목적
 
 이 기준서는 Keystone을 문서 기반 project control plane으로 정의하기 위한 프로젝트 공통
-규칙을 정의한다. Keystone의 목표는 사람이 수락한 의도와 결정(6), 원천 문서(2),
+규칙을 정의한다. Keystone의 목표는 Main 또는 필요한 User Decision으로 수락한 의도와
+결정(6), 원천 문서(2),
 capability(16), code, config, schema, API, test artifact, bounded worker 실행 결과를 하나의
 추적 가능한 작업 흐름으로 연결하는 것이다.
 
@@ -35,6 +38,8 @@ worker가 같은 의도와 경계 안에서 작업하도록 context를 제공한
    schema, API, test artifact의 연결과 impact/stale/gap 후보를 보고한다.
 5. `keystone-coordinator`: Keystone context를 bounded worker assignment로 만들고 worker
    report를 Keystone workflow로 회수한다.
+6. `keystone-init`: 새 프로젝트에 R000과 최소 문서 기반을 만들고 프로젝트 기준서 작성
+   흐름을 시작한다.
 
 이 구현 저장소의 현재 기준서(3)와 작업서(4)는 최종 Keystone 스킬이 이미 존재한다고
 가정했을 때 만들어졌을 문서 구조와 계약을 사람이 먼저 작성한 부트스트랩 기준 corpus(10)다.
@@ -50,6 +55,7 @@ worker가 같은 의도와 경계 안에서 작업하도록 context를 제공한
 - 향후 Keystone skill source file
 - Keystone project setting과 target project local setting
 - 문서 읽기, 문서 작성, clarification, coordination workflow
+- 초기화 상태 탐지, R000 Project Foundation과 Init handoff/resume
 - 향후 Keystone coordination 스킬과 호환되어야 하는 작업서 step
 
 <!-- key: id=key.standard.project.out-of-scope refs=key.topic.skill-contract key.topic.external-assist -->
@@ -153,15 +159,16 @@ worker가 같은 의도와 경계 안에서 작업하도록 context를 제공한
   workflow도 외부 보조 스킬에 포함된다.
 - 사용 규칙: 사용자가 명시적으로 호출했거나 수락된 Keystone 기준서(3) 또는 작업서(4)가
   허용한 경우에만 보조 input 또는 injected skill로 사용한다.
-- Coordinator 사용 규칙: Keystone 작업 문맥에서 code/config/schema/API/test 수정 요청이 들어오면
-  Coordinator가 기본 routing을 맡고, 명시된 외부 코딩 스킬은 Coordinator를 대체하지 않고
-  worker assignment(19)의 injected skill contract로 주입한다.
+- Coordinator 사용 규칙: 작은 명확한 code/config/schema/API/test 수정은 Main direct로 처리할
+  수 있다. 사용자가 위임을 허락해 Coordinator를 사용할 때 명시된 외부 코딩 스킬은
+  Coordinator를 대체하지 않고 worker assignment(19)의 injected skill contract로 주입한다.
 
 (13) 작업 round(work round): 특정 시점의 기준서와 목표를 바탕으로 진행하는 작업 차수
 
 - 의미: 기준서 개정, 기능 추가, 기능 변경, 검증처럼 하나의 목적을 가진 작업 묶음이다.
 - 사용 규칙: folder는 `r{number}-{slug}` 형식을 사용한다. `r`은 round를 뜻한다. 각 round
-  안에서는 작업 step을 `S00`부터 다시 번호 매긴다.
+  안에서는 작업 step을 `S01`부터 다시 번호 매긴다. `R000`은 최초 기준서가 아직 없는
+  Project Foundation round를 나타내기 위해 예약한다.
 
 (14) 아티팩트 그래프(artifact graph): 사람의 의도, 원천 문서(2), capability, code, config,
 schema, API, test, verification evidence를 키메타(9), 코드 앵커(18), repository evidence로 연결한 typed
@@ -314,18 +321,20 @@ STD 번호는 작성 순서가 아니라 기준의 성격과 책임 범위를 �
 6. Code/config/schema/test 수정 요청에서 외부 코딩 스킬(12)이 명시되면 Coordinator가 해당 스킬을
    worker assignment(19)의 injected skill로 주입할 수 있다.
 7. 외부 코딩 스킬(12) 주입은 worker authority를 올리지 않으며, scope, forbidden changes,
-   workspace guard, verification, report contract는 Coordinator assignment가 정한다.
+   execution environment boundary, verification, report contract는 Coordinator assignment가 정한다.
 8. 수락 이후에는 Keystone 기준서와 작업서가 최종 권위다.
 
-<!-- key: id=key.standard.project.std-keystone-007 refs=key.doc.source -->
-### STD-KEYSTONE-007: 원천 문서(2) 변경에는 명시적 승인이 필요하다
+<!-- key: id=key.standard.project.std-keystone-007 refs=key.doc.source key.topic.user-decision key.topic.acceptance -->
+### STD-KEYSTONE-007: 위임 범위 안의 변경은 Main이 검증하고 수락한다
 
-1. 기준서, 작업서, scope, acceptance criteria, progress state를 의미 있게 바꾸는 변경은
-   명시적 승인이 필요하다.
-2. 승인된 작업 step 안의 직접 관련 수정은 허용된다.
-3. 승인된 goal, scope, acceptance criteria, status semantics, source authority를 바꾸는
-   변경은 다시 승인이 필요하다.
-4. 미승인 관련 변경은 조용히 적용하지 않고 보고한다.
+1. 명시적인 구현·반영 요청은 요청 범위 안의 변경과 Main 수락 권한을 위임한 것으로 본다.
+2. Main은 확인 가능한 사실과 수락된 기준을 바탕으로 직접 진행하고 completion criteria,
+   scope, verification, residual risk를 확인한 뒤 수락한다.
+3. 프로젝트 목적·범위, 충돌하는 유효 대안, 민감 정보, 파괴적 migration, 외부 공개·비용,
+   위임 범위 확장처럼 실제 사용자 판단이 필요한 경우만 별도 User Decision으로 요청한다.
+4. Worker의 `DONE`이나 스킬 output은 Main 수락을 대체하지 않는다.
+5. 승인된 goal, scope, acceptance criteria, status semantics, source authority 밖으로 확장해야
+   하면 다시 사용자 결정을 받는다.
 
 <!-- key: id=key.standard.project.std-keystone-008 refs=key.topic.document-system key.doc.source -->
 ### STD-KEYSTONE-008: 확장보다 최소 구조가 먼저다
@@ -336,6 +345,16 @@ STD 번호는 작성 순서가 아니라 기준의 성격과 책임 범위를 �
 4. Coordination 문서는 실제 조율 필요가 생길 때만 추가한다.
 5. 파생 에이전트 문서(8)는 `STD-KEYSTONE-016` 조건을 만족할 때만 추가한다.
 
+<!-- key: id=key.standard.project.std-keystone-009 refs=key.topic.bootstrap key.topic.runtime-independence key.topic.skill-contract -->
+### STD-KEYSTONE-009: 설치된 스킬 계약은 소비 프로젝트 문서와 독립적이다
+
+1. 설치된 스킬 패키지는 해당 스킬의 고유 실행 계약을 자체적으로 소유한다.
+2. 소비 프로젝트의 문서는 프로젝트 목적, 정책, 결정, 작업과 artifact evidence를 정의한다.
+3. 소비 프로젝트의 `standards/skills/**`는 런타임 선행 조건이 아니며 Init이 생성하지 않는다.
+4. 이 저장소의 `00_docs/standards/skills/**`는 스킬 개발·검수 원천 명세다.
+5. 초기화 상태와 R000, handoff/resume의 상세 기준은
+   `standards/bootstrap/key-standard-bootstrap.md`를 따른다.
+
 <!-- key: id=key.standard.project.std-keystone-010 refs=key.topic.document-system key.doc.source -->
 ### STD-KEYSTONE-010: Document root resolution은 명시적이고 순서가 있다
 
@@ -345,7 +364,11 @@ STD 번호는 작성 순서가 아니라 기준의 성격과 책임 범위를 �
 2. `.keystone/config.local.yaml`
 3. `.keystone/config.yaml`
 4. 프로젝트 로컬 agent instruction file 안의 명시적 Keystone settings block
-5. 위 설정이 없으면 `00_docs/`
+5. 충돌 없는 기존 문서 관례
+6. 위 설정이 없으면 `00_docs/`
+
+복수 후보가 충돌하면 임의로 선택하지 않는다. 초기 설정 선택이면 Init이 직접 묻고, 기존
+문서의 채택·이동·대체처럼 프로젝트 의미에 영향을 주면 Clarify의 단일 topic으로 넘긴다.
 
 문서 경로는 영어여야 한다. `00_docs/`는 기본 root이지 고정 root가 아니다. 공통 또는 전역
 instruction file은 setup suggestion일 수 있지만, project-local setting으로 수락되기 전에는
@@ -411,12 +434,13 @@ persistent Keystone setting이 아니다.
 6. 문서, capability(16), code, config, schema, API, test artifact의 연결, impact candidate,
    stale metadata 후보, metadata gap 후보 탐색은 `keystone-linker`로 routing한다.
 7. Keystone-managed 작업서(4)의 step 실행, worker assignment/report, report handling, review,
-   verification, acceptance flow는 `keystone-coordinator`로 routing한다.
-8. Keystone 작업 문맥에서 code/config/schema/API/test 수정 요청이 들어오면 명시적 `$coordinator` 호출이
-   없어도 `keystone-coordinator`를 기본 execution routing으로 사용한다.
-9. 같은 요청에서 외부 코딩 스킬(12)이 명시되면 해당 스킬은 `keystone-coordinator`와 함께
-   worker assignment(19)의 injected skill로 사용한다.
-10. 외부 코딩 스킬(12)이 명시되지 않으면 Coordinator는 subagent 기준서의
+   verification, acceptance flow를 위임해야 하고 사용자가 허락하면 `keystone-coordinator`로
+   routing한다.
+8. Keystone 작업 문맥의 작은 명확한 code/config/schema/API/test 수정은 Main direct로 처리할 수
+   있다. 위임이 유용하면 사용자에게 Coordinator 사용 여부를 묻는다.
+9. 사용자가 Coordinator와 외부 코딩 스킬(12)을 함께 허락하면 해당 스킬을 worker
+   assignment(19)의 injected skill로 사용한다.
+10. 허락된 Coordinator 범위에서 외부 코딩 스킬(12)이 명시되지 않으면 subagent 기준서의
    `keystone-default-bounded-worker` contract를 사용한다.
 11. 여러 외부 코딩 스킬 후보가 있고 선택에 따라 workflow, verification, risk가 달라질 때만
    main/user 선택을 요청한다.
@@ -426,9 +450,8 @@ persistent Keystone setting이 아니다.
     않는다.
 14. 외부 보조 스킬(12)은 사용자가 호출했거나 수락된 Keystone 기준서 또는 작업서가 명시적으로
     허용한 경우에만 사용한다.
-15. File-changing work는 `STD-KEYSTONE-046`의 routing decision 없이 시작하지 않는다. 이 규칙은
-    key prefix(11) 문서뿐 아니라 repo-local Keystone skill source와 code/config/schema/API/test
-    source surface에도 적용한다.
+15. File-changing work의 scope와 실행 주체는 판단하되, `STD-KEYSTONE-046`에 따라 복수
+    surface, 권한 경계 또는 audit 필요가 있을 때만 routing context를 명시적으로 기록한다.
 
 <!-- key: id=key.standard.project.std-keystone-015 refs=key.topic.document-system key.doc.source key.topic.keystone-metadata key.topic.code-anchor key.topic.artifact-graph key.topic.work-sequence -->
 ### STD-KEYSTONE-015: Metadata는 원천 문서와 project artifact의 identity/relation을 표현한다
@@ -596,6 +619,20 @@ Generated reverse index나 cache는 source of truth가 아니라 탐색 최적�
 8. `key.refs` topic overlap은 기본적으로 `informational` 또는 `weak_candidate`이며 자동 수정
    대상이 아니다.
 
+<!-- key: id=key.standard.project.std-keystone-019 refs=key.topic.keystone-metadata key.topic.status key.topic.acceptance -->
+### STD-KEYSTONE-019: 문서 lifecycle, approval과 작업 상태를 분리한다
+
+1. 문서 lifecycle은 `draft`, `active`, `superseded`, `archived`를 사용한다.
+2. 문서 approval은 `pending`, `accepted`, 필요한 경우 `rejected`를 사용한다.
+3. `accepted`는 lifecycle이 아니며, 작업 진행 상태·Main 결과 수락·산출물 lifecycle과도
+   별도 namespace다.
+4. 의미 변경은 approval을 `pending`으로 돌린다. 의미 없는 형식 변경은 비의미 변경임을
+   기록하고 기존 approval을 유지할 수 있다.
+5. 새 문서는 YAML frontmatter로 상태를 표현한다. 기존 corpus의 frontmatter를 의미 변경과
+   함께 자동 migration하지 않으며, 상태·승인 metadata migration은 별도 승인 작업으로 다룬다.
+6. 세부 metadata와 기존 문서 호환 규칙은
+   `standards/bootstrap/key-standard-bootstrap.md`를 따른다.
+
 <!-- key: id=key.standard.project.std-keystone-020 refs=key.doc.source key.topic.document-system -->
 ### STD-KEYSTONE-020: 작업은 문서에서 복구 가능해야 한다
 
@@ -648,7 +685,8 @@ Generated reverse index나 cache는 source of truth가 아니라 탐색 최적�
    있으면 code/config/schema/API/test impact candidate로 보고한다.
 3. Code 또는 test 변경이 기준서(3), 작업서(4), 결정(6)에 영향을 줄 수 있으면 document impact
    candidate로 보고한다.
-4. 영향 범위나 의미 변경이 불확실하면 수정 전에 멈추고 사용자에게 묻는다.
+4. 영향 범위나 의미 변경이 불확실하면 수정 전에 멈추고 추가 조사를 한다. 실제 User
+   Decision이 필요한 경우에만 사용자에게 묻는다.
 5. 진행 기록(5)은 main acceptance 없이 accepted 또는 complete로 바꾸지 않는다.
 
 <!-- key: id=key.standard.project.std-keystone-024 refs=key.topic.document-system key.topic.skill-contract key.role.subagent -->
@@ -667,6 +705,7 @@ Progress status 값은 다음과 같다.
 7. `verifying`
 8. `accepted`
 9. `blocked`
+10. `superseded`
 
 Subagent report status 값과 의미는 `standards/subagents/key-standard-subagents.md`를 따른다.
 
@@ -693,7 +732,7 @@ Subagent report status 값과 의미는 `standards/subagents/key-standard-subage
 1. `works/00_key-index.md`는 전체 작업 round(13) 목록과 active round를 관리한다.
 2. 각 작업 round(13)는 `works/r{number}-{slug}/` 아래에 둔다.
 3. `r`은 round를 뜻하며, version이나 revision 번호가 아니라 작업 차수 번호다.
-4. 각 작업 round(13)는 자기 `00_key-index.md`를 가지고, round 안의 실행 순서를 `S00`부터
+4. 각 작업 round(13)는 자기 `00_key-index.md`를 가지고, round 안의 실행 순서를 `S01`부터
    다시 시작한다.
 5. Work node는 작업 round(13) 안에 두며, 기본적으로 `00_key-index.md`,
    `key-work-{slug}.md`, `key-progress.md`를 가진다.
@@ -727,8 +766,8 @@ config, schema, API, test artifact에 미치는 영향을 한 변경 단위로 �
 8. 문서에서 시작한 변경은 capability(16), API, code, test를 후보로 찾는다.
 9. Code에서 시작한 변경은 capability(16), API, test, 기준서(3), 결정(6)을 후보로 찾는다.
 10. Test에서 시작한 변경은 capability(16), API, code, acceptance criteria를 후보로 찾는다.
-11. Candidate 발견은 수정 허가가 아니다. Coordinator가 scope, authority, workspace guard,
-    verification을 기준으로 후속 workflow를 조율한다.
+11. Candidate 발견은 수정 허가가 아니다. Main이 scope, authority, verification을 기준으로
+    직접 처리하거나, 사용자 허락이 있으면 Coordinator가 후속 workflow를 조율한다.
 12. Final acceptance 전에는 Change Set(17)의 acceptance 상태를 accepted로 보지 않는다.
 
 <!-- key: id=key.standard.project.std-keystone-030 refs=key.topic.skill-contract key.topic.formal-workflow key.topic.acceptance -->
@@ -742,9 +781,10 @@ Main은 Keystone 작업의 최종 판단 지점이다. 스킬의 책임과 실�
 3. Main은 작업을 스킬이나 bounded helper/subagent에게 맡길 수 있지만, 맡기기 전에 goal,
    context, 범위, 중단 조건을 분명히 해야 한다.
 4. 맡겨진 역할은 받은 범위 밖으로 작업을 넓히거나 전체 작업서(4)를 재해석하지 않는다.
-5. Report, review, verification, acceptance가 이어지는 formal workflow는 Coordinator가
-   조율한다.
-6. 작업 결과의 최종 수락은 Main 또는 사용자가 한다.
+5. Report, review, verification, acceptance가 이어지는 formal workflow를 위임하고 사용자가
+   허락하면 Coordinator가 조율한다.
+6. 작업 결과의 최종 수락은 Main이 한다. `STD-KEYSTONE-007`의 User Decision이 필요한
+   경우에만 사용자 판단을 먼저 받는다.
 
 <!-- key: id=key.standard.project.std-keystone-031 refs=key.topic.skill-contract -->
 ### STD-KEYSTONE-031: Main agent는 supervisor다
@@ -760,11 +800,11 @@ Main agent는 context를 보존하고 supervisor로 동작해야 한다.
 7. Final acceptance decision을 내린다.
 
 <!-- key: id=key.standard.project.std-keystone-032 refs=key.topic.skill-contract key.topic.formal-workflow key.role.subagent key.standard.subagent -->
-### STD-KEYSTONE-032: 실행자는 bounded worker assignment로 제한한다
+### STD-KEYSTONE-032: 위임된 실행자는 bounded worker assignment로 제한한다
 
-Helper 또는 subagent 운영은 속도보다 책임 경계가 우선이다. 실행자는 bounded worker
-assignment(19) 안에서만 동작한다. Purpose preset, authority, injected skill contract, report
-status, 공통 금지는 `standards/subagents/key-standard-subagents.md`를 따른다.
+Main은 작고 명확한 작업을 직접 수행할 수 있다. Helper 또는 subagent에게 위임할 때는
+bounded worker assignment(19)를 사용한다. Purpose preset, authority, injected skill contract,
+report status, 공통 금지는 `standards/subagents/key-standard-subagents.md`를 따른다.
 
 1. Main, Author, Coordinator는 ad hoc runtime role을 만들지 않는다.
 2. Role은 worker 종류가 아니라 assignment의 purpose hint다.
@@ -800,17 +840,21 @@ work preparation, context brief 생성을 지원한다. Reader는 아티팩트 �
 Reader의 mode, workflow, output field, stop condition의 상세 계약은
 `skills/reader/key-standard-reader.md`를 따른다.
 
-<!-- key: id=key.standard.project.std-keystone-041 refs=key.topic.skill-contract key.doc.source -->
-### STD-KEYSTONE-041: Clarify는 topic-scoped이고 mode-aware다
+초기화 전에는 Main이 일반 repository 조사 능력으로 code, README와 설정을 읽는다. 이 조사를
+Reader의 선행 책임이나 Keystone 전용 절차로 강제하지 않는다. Keystone 문서가 존재할 때
+Reader가 그 문서를 바탕으로 더 나은 navigation과 work recovery를 제공한다.
+
+<!-- key: id=key.standard.project.std-keystone-041 refs=key.topic.skill-contract key.doc.source key.topic.user-decision -->
+### STD-KEYSTONE-041: Clarify는 실제 User Decision을 한 topic씩 다룬다
 
 `keystone-clarify`는 topic-scoped high-impact 결정(6)을 수집하고, 수락된 decision summary와
 edit plan을 바탕으로 `keystone-author`가 관련 원천 문서(2)를 업데이트할 수 있게 준비한다.
 상세 계약은 `skills/clarify/key-standard-clarify.md`를 따른다.
 
-1. Plan Mode: 한 topic에 필요한 질문과 결정(6)을 수집한다.
-2. Default Mode: 수락된 decision summary와 edit plan을 Author가 적용할 수 있게 정리한다.
-3. 직접 수정 예외: 다른 문서에 영향이 없는 현재 대상 문서의 단순 오탈자만 직접 수정할 수
-   있다.
+1. 안전한 기본값, 명시된 우선순위, repository evidence로 정할 수 있는 사항은 질문하지 않는다.
+2. 질문이 필요하면 한 번에 하나의 실제 결정 topic만 다룬다.
+3. 결정이 충분하면 호출자에게 결과를 반환하고 중단한 Init 또는 Author 흐름을 resume한다.
+4. 특정 호스트의 내부 실행 mode나 질문 UI를 Clarify 계약으로 만들지 않는다.
 
 <!-- key: id=key.standard.project.std-keystone-042 refs=key.topic.skill-contract key.doc.source -->
 ### STD-KEYSTONE-042: Author는 승인된 원천 문서(2) 작성을 담당한다
@@ -826,14 +870,16 @@ edit plan을 바탕으로 `keystone-author`가 관련 원천 문서(2)를 업데
 3. Clarify result 적용: 수락된 decision summary와 edit plan을 관련 원천 문서에 반영한다.
 4. Author Edit Contract: 큰 문서 수정은 대상, 범위, 영향 문서, 검증 기준을 먼저 정리한다.
 5. Bounded doc helper: 승인 범위가 명확하면 `investigate` 또는 `document_edit` worker 도움을
-   받을 수 있으며, purpose preset과 authority는 subagent 기준서를 따른다. File-writing helper를
-   직접 사용할 때는 single workspace guard가 먼저 준비되어야 한다.
+   받을 수 있으며, purpose preset과 authority는 subagent 기준서를 따른다. 실행 isolation과
+   concurrency 전략은 사용자 지시, 주입된 skill, host 환경에 맡긴다.
 6. Change Set: 큰 문서 변경, code/config/schema/API/test 영향이 있는 문서 변경, 여러 artifact에 걸친 변경은
    추적 가능한 Change Set(17)으로 정리한다.
 7. Impact candidates: 문서 변경이 capability(16), code, config, schema, API, test artifact에 영향을 줄 수
-   있으면 Linker report나 impact seed로 남기고, 실제 code 수정은 Coordinator workflow로
-   넘긴다.
+   있으면 Linker report나 impact seed로 남긴다. 실제 code 수정은 Main direct로 처리하거나
+   위임 허락이 있으면 Coordinator로 넘긴다.
 8. Progress update: main acceptance 전에는 accepted 또는 complete로 표시하지 않는다.
+9. Initialization: `uninitialized` 또는 `partial`이면 Init handoff 후 원래 Author 요청으로
+   resume한다.
 
 <!-- key: id=key.standard.project.std-keystone-043 refs=key.topic.skill-contract key.contract.output key.contract.report key.role.coordinator -->
 ### STD-KEYSTONE-043: Coordinator는 bounded worker assignment broker다
@@ -852,8 +898,11 @@ Coordinator는 코딩 방법론 자체를 독점하지 않는다. 외부 코딩 
 4. Worker report handling: report status를 progress status와 분리해 처리한다.
 5. Review/verification: Linker report, worker report, 기준서-led verification을 기준으로
    review와 verification을 조율한다.
-6. Workspace guard: single workspace에서 한 번에 하나의 file-writing worker만 배정한다.
-7. Acceptance: main acceptance 조건을 만족한 뒤에만 진행 기록(5)을 accepted로 바꿀 수 있다.
+6. Permission: work scope마다 사용자 허락을 받는다. 직접 Coordinator 호출은 해당 요청 범위의
+   허락이며, 같은 범위의 assignment/review/repair에서 반복하지 않는다.
+7. Execution strategy: worktree, branch, workspace, concurrency는 Keystone이 강제하지 않는다.
+   주입된 skill이나 host가 자기 계약으로 선택할 수 있다.
+8. Acceptance: main acceptance 조건을 만족한 뒤에만 진행 기록(5)을 accepted로 바꿀 수 있다.
 
 <!-- key: id=key.standard.project.std-keystone-044 refs=key.topic.skill-contract key.topic.artifact-graph key.role.linker -->
 ### STD-KEYSTONE-044: Linker는 artifact relation과 impact/stale/gap 후보를 해석한다
@@ -871,8 +920,10 @@ graph의 해석과 후보 보고를 소유하지만 원천 문서(2)나 산출�
 3. Stale/gap review: locator, relation, metadata gap, semantic mismatch 후보를 보고한다.
 4. Worker assignment seed: Coordinator가 worker assignment(19)를 만들 수 있게 artifact context와
    reuse/test/stale/gap 후보를 정리한다.
-5. Handoff: 문서 metadata 수정은 Author에게, output artifact 수정은 surface별 routing decision에
-   따라 Main direct 또는 Coordinator workflow로 넘긴다.
+5. Handoff: 문서 metadata 수정은 Author에게, output artifact 수정은 Main direct 또는 사용자
+   허락을 받은 Coordinator로 넘긴다.
+6. Invocation: Linker는 read-only이므로 Main이 필요하다고 판단하면 별도 사용자 승인 없이
+   사용할 수 있다. Graph evidence가 적으면 확인 가능한 범위와 gap을 fail-soft로 보고한다.
 
 <!-- key: id=key.standard.project.std-keystone-045 refs=key.topic.skill-contract key.contract.output key.topic.external-assist -->
 ### STD-KEYSTONE-045: 사용자 응답과 structured payload는 분리한다
@@ -881,123 +932,68 @@ Keystone skill output은 사람이 읽는 기본 응답과 agent-facing structur
 
 1. 기본 사용자 응답은 결론, 핵심 근거, 주요 risk, 다음 행동, 주요 출처를 짧게 보여준다.
 2. `reader_output`, `clarify_result`, `author_patch_report`, `linker_report`,
-   `worker_assignment`, `worker_report`, `worker_report_review` 같은 structured payload는
-   handoff, audit, debugging, verification evidence를 위한 agent-facing contract다.
+   `worker_assignment`, `worker_report`, `worker_report_review`, `keystone_routing_decision`,
+   `main_direct_change_report` 같은 structured payload는 handoff, audit, debugging,
+   verification evidence를 위한 agent-facing contract다.
 3. Structured payload는 사용자가 요청했거나, 다른 Keystone skill 또는 Main이 handoff input으로
    필요로 하거나, audit/debug 목적으로 필요할 때만 전체를 노출한다.
-4. 기본 사용자 응답은 structured payload의 semantic content에서 파생되어야 하며, 별도 판단으로
+4. Payload Disclosure Gate: 기본 사용자 응답을 만들기 전에 다음 질문을 확인한다.
+   - 사용자가 full payload를 명시적으로 요청했는가?
+   - handoff, audit, debugging, verification evidence에 원문 payload가 실제로 필요한가?
+   - 원문 payload가 필요하다면 그 이유를 사용자 응답 또는 handoff context에 짧게 밝혔는가?
+   - 위 조건이 아니면 `*_output`, `*_result`, `*_report`, `worker_assignment`,
+     `keystone_routing_decision` 원문을 fenced block이나 YAML block으로 노출하지 않았는가?
+5. 기본 사용자 응답은 structured payload의 semantic content에서 파생되어야 하며, 별도 판단으로
    risk, recommended next action, source authority, acceptance status를 바꾸지 않는다.
-5. 사용자 응답이 후보나 risk를 줄여 보여줄 때는 required item을 조용히 제거하지 않고 요약
+6. 사용자 응답이 후보나 risk를 줄여 보여줄 때는 required item을 조용히 제거하지 않고 요약
    count, 대표 항목, full payload availability를 남긴다.
-6. Optional presentation/helper skill인 `keystone-viewer`는 structured payload를 audience와
+7. 기본 사용자 응답은 structured payload 원문 대신 변경 또는 판단 요약, 대상 파일이나 후보 수,
+   검증 결과 요약, 남은 risk, 다음 행동, 주요 출처를 보여준다. Full payload는 요청 시 제공할 수
+   있음을 필요한 경우 한 문장으로만 남긴다.
+8. Optional presentation/helper skill인 `keystone-viewer`는 structured payload를 audience와
    detail level에 맞게 렌더링할 수 있지만 core runtime dependency가 아니며, 의미 판단,
    source authority, handoff payload, acceptance status를 바꾸지 않는다.
-7. `keystone-viewer` 또는 동등한 presentation layer는 필요할 때만 사용한다. 모든 Keystone
+9. `keystone-viewer` 또는 동등한 presentation layer는 필요할 때만 사용한다. 모든 Keystone
    output이 반드시 viewer를 통과해야 하는 mandatory filter chain으로 만들지 않는다.
 
 <!-- key: id=key.standard.project.std-keystone-046 refs=key.topic.skill-contract key.topic.work-execution key.topic.skill-source key.contract.report -->
-### STD-KEYSTONE-046: File-changing work는 Keystone routing decision을 먼저 남긴다
+### STD-KEYSTONE-046: Routing은 필요한 경계에서만 명시적으로 기록한다
 
-Main은 Keystone-managed file 또는 repo-local Keystone skill source를 수정하기 전에 target
-surface를 분류하고 execution lane을 선택하는 `keystone_routing_decision`을 먼저 남긴다. 이
-결정 없이 file-changing work를 시작하지 않는다.
+Main은 요청의 target surface와 적절한 실행 주체를 판단하지만, 모든 작은 변경에 별도 routing
+문서나 사용자 질문을 요구하지 않는다.
 
-Target surface는 다음처럼 분류한다.
+1. `source_document`: `00_docs/**` 원천 문서는 Author가 담당한다.
+2. `skill_source`: `skills/keystone-*/SKILL.md`는 이번 저장소의 구현 산출물이며 작은 변경은
+   Main direct로 처리할 수 있다.
+3. `repository_source`: code, config, schema, API, test, generated/codegen source는 작은 범위가
+   명확하면 Main direct로 처리할 수 있다.
+4. `mixed`: 복수 surface나 권한 경계가 있으면 phase를 분리하거나 routing을 명시적으로 기록한다.
+5. High-impact 프로젝트 결정이 필요하면 Clarify, graph 해석이 필요하면 Linker를 사용한다.
+6. Coordinator는 위임, 여러 작업자, formal review/verification처럼 coordination이 실제로
+   필요하고 사용자가 해당 work scope를 허락한 경우에만 사용한다.
+7. 명시적인 사용자 요청으로 lane과 scope가 충분히 정해졌으면 routing 자체를 Clarify topic이나
+   추가 승인 질문으로 만들지 않는다.
+8. `keystone_routing_decision`, `main_direct_change_report`, lane별 report는 handoff, audit,
+   debugging, verification에 실제 필요할 때만 내부 structured payload로 남긴다.
+9. Structured payload를 남겨도 `STD-KEYSTONE-045`에 따라 기본 사용자 응답에는 원문을 노출하지
+   않고 선택한 주체, 범위, 검증과 residual risk만 요약한다.
+10. 특정 skill 기준서를 읽은 것만으로 해당 skill을 실행했다고 보지 않는다.
 
-1. `source_document`: `00_docs/**` 아래 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록,
-   context map 같은 원천 문서(2)
-2. `skill_source`: `skills/keystone-*/SKILL.md` 같은 repo-local Keystone skill source
-3. `repository_source`: code, config, schema, API, test, generated/codegen source
-4. `mixed`: 둘 이상의 target surface를 함께 바꾸는 요청
-
-Routing 규칙은 다음을 따른다.
-
-1. `source_document` 변경은 `keystone-author` lane으로 처리하고 `author_patch_report`를 남긴다.
-2. High-impact policy, scope, document structure, skill contract 결정이 필요하면 수정 전에
-   `keystone-clarify`를 사용한다.
-3. Artifact impact, stale, metadata gap, reuse 해석이 필요하면 `keystone-linker`를 사용한다.
-4. `repository_source` 변경은 `keystone-coordinator` lane으로 처리한다.
-5. `skill_source` 변경은 원천 문서(2) 수정이 아니므로 Author lane이 아니다. S08처럼 명시된
-   scope 안의 작은 단일 writer 수정은 Main direct lane으로 처리하고 `main_direct_change_report`를
-   남긴다. 여러 writer, workspace conflict, formal review/verification, delegation이 필요하면
-   `keystone-coordinator` lane으로 처리한다.
-6. `mixed` 변경은 작업서가 명시적으로 combined flow를 허용하지 않는 한 surface별 lane으로
-   분리한다.
-7. Lane이 불명확하면 수정 전에 중단하고 Reader, Clarify, Linker, 또는 사용자 결정으로 context를
-   보강한다.
-8. 특정 skill 기준서를 읽은 것만으로 해당 lane을 실행한 것으로 보지 않는다. Lane 실행은
-   routing decision, 실제 scope 준수, lane별 report로 확인한다.
-
-Routing decision은 다음 shape을 우선 사용한다.
-
-```yaml
-keystone_routing_decision:
-  request_summary:
-  current_work:
-    round_id:
-    work_id:
-    step_id:
-  target_surfaces:
-    - source_document | skill_source | repository_source | mixed
-  selected_lanes:
-    - keystone-reader
-    - keystone-clarify
-    - keystone-author
-    - keystone-linker
-    - keystone-coordinator
-    - main_direct
-  lane_plan:
-    - lane:
-      target_paths:
-      allowed_change:
-      required_report:
-      reason:
-  not_using:
-    - skill:
-      reason:
-  stop_conditions:
-  main_acceptance_required: true
-```
-
-Main direct skill source 변경 report는 다음 shape을 우선 사용한다.
-
-```yaml
-main_direct_change_report:
-  change_id:
-  reason_for_main_direct:
-  current_work:
-    round_id:
-    work_id:
-    step_id:
-  target_surface: skill_source
-  changed_files:
-  source_context_used:
-  boundary_checks:
-    author_not_used_because:
-    coordinator_not_used_because:
-    no_source_document_authority_change: true | false
-    no_main_acceptance_update: true | false
-  verification:
-    commands_or_checks:
-    result:
-  residual_risk:
-  recommended_next_action:
-```
-
-<!-- key: id=key.standard.project.std-keystone-050 refs=key.topic.document-system key.doc.source -->
-### STD-KEYSTONE-050: Initial project setup은 Keystone config에 기록한다
+<!-- key: id=key.standard.project.std-keystone-050 refs=key.topic.document-system key.doc.source key.topic.initialization -->
+### STD-KEYSTONE-050: Init은 config와 R000으로 프로젝트 기반을 만든다
 
 이 규칙은 완성된 Keystone 스킬을 사용하는 target project에서의 동작을 설명한다. 이 구현
 저장소는 fixture 또는 test step이 명시적으로 요구하지 않는 한 `.keystone/config.yaml`이
 필요하지 않다.
 
-Target project에서 initial setup은 다음을 다룬다.
+Target project에서 Init은 다음을 다룬다.
 
 1. document root
 2. 기준서(3)와 작업서(4) tracking policy
 3. 파생 에이전트 문서(8) tracking policy
 4. Keystone output language policy
 5. setup storage location
+6. R000 Project Foundation과 원래 요청의 resume context
 
 기본 shared config 예시는 다음과 같다.
 
@@ -1009,23 +1005,24 @@ derived_agent_docs_tracking_policy: ignore
 output_language_policy: dominant_conversation_language
 ```
 
+Init은 고정 scaffold와 R000 template까지만 직접 만들고, 프로젝트 의미를 담은 기준서는
+Author가 작성한다. 상태 탐지, write authority와 `ready` 판정은
+`standards/bootstrap/key-standard-bootstrap.md`와
+`standards/skills/init/key-standard-init.md`를 따른다.
+
 <!-- key: id=key.standard.project.std-keystone-051 refs=key.doc.source key.topic.document-system -->
 ### STD-KEYSTONE-051: 원천 문서(2) tracking policy는 명시적이다
 
-Target project의 initial setup에서 Keystone은 다음 선택지를 제공해야 한다.
+Target project는 기준서, 작업서, Context Map과 결정 기록의 tracking policy를 명시한다.
+Keystone의 기본 정책은 작업 복구에 필요한 공유 원천 문서를 함께 추적하는 것이다.
 
-1. 기준서와 작업서를 모두 track
-2. 기준서만 track
-3. 둘 다 track하지 않음
-4. document change마다 묻기
-
-기본 정책은 다음과 같다.
-
-1. 파생 에이전트 문서(8)는 명시 승인 전까지 source tracking 대상에 포함하지 않는다.
+1. 파생 에이전트 문서(8)는 명시 필요 전까지 source tracking 대상에 포함하지 않는다.
 2. `.keystone/config.yaml`은 shared project policy이며 기본적으로 source tracking 대상이다.
 3. `.keystone/config.local.yaml`은 local/private override이며 기본적으로 source tracking 대상에
    포함하지 않는다.
 4. 민감한 내용은 쓰기, track, publish, derive 전에 사용자 확인이 필요하다.
+5. 프로젝트 정책이 기본 tracking을 바꾸더라도 기준서와 현재 작업을 복구할 권위 위치는
+   명확해야 한다.
 
 <!-- key: id=key.standard.project.std-keystone-052 refs=key.topic.document-system -->
 ### STD-KEYSTONE-052: Output language policy는 Keystone artifact에만 적용한다
@@ -1038,60 +1035,69 @@ Target project의 initial setup에서 Keystone은 다음 선택지를 제공해�
    external tool, non-Keystone skill에는 적용하지 않는다.
 
 <!-- key: id=key.standard.project.std-keystone-053 refs=key.topic.skill-contract -->
-### STD-KEYSTONE-053: Skill source는 저장소에 둔다
+### STD-KEYSTONE-053: Skill source는 저장소에서 구현한다
 
-이 저장소는 다섯 개 Keystone 스킬의 source of truth다.
+이 저장소는 여섯 개 Keystone 스킬 계약의 개발 원천이다.
 
 1. Reader skill: `skills/keystone-reader`
 2. Author skill: `skills/keystone-author`
 3. Clarify skill: `skills/keystone-clarify`
 4. Linker skill: `skills/keystone-linker`
 5. Coordinator skill: `skills/keystone-coordinator`
+6. Init skill: 후속 R002 구현에서 `skills/keystone-init`으로 추가한다.
 
-초기 배포 형태는 repo-local skill source이며, publish/install은 별도 승인이 있을 때만 다룬다.
+현재 다섯 skill source는 R001 산출 이력이며 R002 runtime independence 계약과 일치하도록 후속
+구현해야 한다. 이번 기준서 개편에서는 `skills/**`를 수정하지 않는다. 초기 배포 형태는
+repo-local skill source이며, publish/install은 별도 요청이 있을 때만 다룬다.
 
 <!-- key: id=key.standard.project.expected-behavior refs=key.doc.source key.topic.document-system key.topic.skill-contract key.topic.bootstrap -->
 ## 기대 동작
 
-1. Project orientation
+1. Project initialization
+   - Init은 새 프로젝트에 R000과 고정 scaffold를 만들고 Author가 프로젝트 기준서를 작성할
+     수 있게 한다.
+   - 초기화 전 repository 조사는 Main의 일반 능력에 맡기며 Reader를 선행 조건으로 요구하지
+     않는다.
+2. Project orientation
    - Main agent는 `key-context-map.md`를 확인해 active standards와 active work를 찾는다.
    - 현재 active work round는 `00_docs/works/00_key-index.md`에서 찾고, round 내부 실행
      순서는 해당 round의 `00_key-index.md`에서 찾는다.
-2. Document reading
+3. Document reading
    - Reader는 관련 기준서와 작업서만 읽고, 관련 없는 하위 기준서를 불러오지 않으며, 필요한
      context brief를 만든다.
-3. Document authoring
+4. Document authoring
    - Author는 승인된 범위 안에서 원천 문서(2)와 Change Set(17)을 작성하거나 수정한다.
-4. Clarification
+5. Clarification
    - Clarify는 high-impact decision topic을 하나씩 정리하고 Author 적용 계획을 만든다.
-5. Artifact linking
+6. Artifact linking
    - Linker는 문서, capability(16), code, config, schema, API, test artifact의 영향 후보,
      stale 후보, metadata gap 후보를 read-only로 보고한다.
-6. Work execution
+7. Work execution
    - Coordinator는 작업서 step과 Linker report를 worker assignment(19)로 만들고 worker
-     report(20)를 Keystone workflow로 회수한다.
-7. Supporting workflow
+     report(20)를 Keystone workflow로 회수한다. Work scope별 사용자 허락이 있을 때만
+     Coordinator를 사용한다.
+8. Supporting workflow
    - 외부 보조 스킬(12)은 명시적 supporting workflow로만 사용할 수 있다.
    - Optional `keystone-viewer` 같은 presentation/helper skill은 structured payload를
      사용자-facing view로 렌더링할 수 있지만 core skill의 의미 판단이나 handoff contract를
      대체하지 않는다.
-8. Bootstrap verification
-   - 현재 Keystone 원천 문서(2)는 부트스트랩 기준 corpus(10)로 사용되며, 후속 Skill Creation과
-     Integration Verification에서 구현된 스킬이 같은 문서 모델을 재생산하거나 유지할 수 있는지
-     검증한다.
+9. Bootstrap verification
+   - 현재 Keystone 원천 문서(2)는 부트스트랩 기준 corpus(10)로 사용되며, R002 Skill Runtime
+     Implementation과 아홉 통합 시나리오에서 구현된 스킬이 같은 문서 모델을 재생산하거나
+     유지할 수 있는지 검증한다.
 
 <!-- key: id=key.standard.project.forbidden-without-approval refs=key.doc.source key.topic.document-system key.topic.skill-contract -->
-## 승인 없이 금지되는 변경
+## User Decision 없이 금지되는 변경
 
 1. Keystone 스킬 시스템 goal의 의미 변경
-2. 다섯 개 계획된 Keystone 스킬을 승인 없이 합치기
+2. 여섯 개 Keystone 스킬 계약을 사용자 결정 없이 합치기
 3. Prototype skill을 최종 runtime dependency로 취급하기
 4. 완료되지 않은 high-impact clarification topic을 근거로 원천 문서(2) 수정하기
-5. 승인 없이 document root, active work round, active work tree 변경하기
+5. 위임 범위 밖에서 document root, active work round, active work tree 변경하기
 6. common/global instruction file에 Keystone setup result 쓰기
 7. 민감한 원천 문서(2)를 승인 없이 track, publish, derive하기
 8. Keystone output language가 관련 없는 작업을 override하게 하기
-9. 외부 보조 스킬(12)을 자동 호출하기
+9. 사용자 허락 없이 Coordinator나 위임용 외부 보조 스킬(12)을 호출하기
 10. 파생 에이전트 문서(8)를 원천 문서로 취급하기
 11. Main acceptance 전에 work를 accepted 또는 complete로 표시하기
 12. 승인 없이 API contract, schema, auth/security, generated/codegen, shared architecture로
@@ -1101,7 +1107,7 @@ Target project의 initial setup에서 Keystone은 다음 선택지를 제공해�
 ## Escalation 조건
 
 1. 원천 문서(2)가 현재 사용자 방향과 충돌한다.
-2. 다섯 스킬 사이 경계가 불명확하다.
+2. 여섯 스킬 사이 경계가 불명확하다.
 3. high-impact clarification topic을 확신 있게 해결할 수 없다.
 4. document root, tracking policy, output language policy를 안전하게 추론할 수 없다.
 5. work unit을 reviewable output이 있는 명확한 goal로 배정할 수 없다.
@@ -1115,15 +1121,17 @@ Target project의 initial setup에서 Keystone은 다음 선택지를 제공해�
 ## 관련 active work
 
 - `00_docs/works/00_key-index.md`
-- `00_docs/works/r001-bootstrap-keystone/00_key-index.md`
+- `00_docs/works/r002-bootstrap-runtime-independence/00_key-index.md`
 
 <!-- key: id=key.standard.project.child-standards refs=key.topic.skill-contract key.topic.document-system -->
 ## 관련 child 기준서
 
 - `00_docs/standards/subagents/key-standard-subagents.md`
+- `00_docs/standards/bootstrap/key-standard-bootstrap.md`
 - `00_docs/standards/skills/reader/key-standard-reader.md`
 - `00_docs/standards/skills/author/key-standard-author.md`
 - `00_docs/standards/skills/clarify/key-standard-clarify.md`
 - `00_docs/standards/skills/linker/key-standard-linker.md`
 - `00_docs/standards/skills/coordinator/key-standard-coordinator.md`
+- `00_docs/standards/skills/init/key-standard-init.md`
 - `00_docs/standards/artifacts/key-standard-artifact-graph.md`

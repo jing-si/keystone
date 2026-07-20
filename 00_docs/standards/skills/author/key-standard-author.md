@@ -77,6 +77,17 @@ key:
 4. Output authority: Author가 수정한 원천 문서(2)는 사용자 또는 main이 수락한 범위 안에서
    권위를 가진다.
 
+<!-- key: id=key.standard.skill.author.runtime-authority refs=key.role.author key.topic.runtime-independence key.topic.initialization -->
+## 런타임 권위와 초기화 경계
+
+이 문서는 Keystone 저장소에서 Author를 개발·검수하기 위한 원천 명세다. 배포된 Author의
+실행 계약은 설치된 skill package 안에서 완결되어야 하며, 소비 프로젝트의
+`standards/skills/author/**`를 required input으로 요구하지 않는다.
+
+Author는 Keystone 문서 작성의 핵심 스킬이다. `uninitialized` 또는 `partial`을 발견하면
+사용자에게 초기화 또는 repair 후 계속할지 한 번 확인하고 Init handoff 뒤 원래 작성 요청으로
+resume한다. 같은 대화와 범위에서 이미 동의했다면 반복 확인하지 않는다.
+
 <!-- key: id=key.standard.skill.author.trigger-condition refs=key.role.author key.topic.document-authoring key.topic.work-creation key.topic.author-edit-contract key.topic.doc-helper key.standard.subagent -->
 ## Trigger condition
 
@@ -120,7 +131,7 @@ key:
 Author는 다음 input을 사용할 수 있어야 한다.
 
 1. 사용자 요청 또는 main이 수락한 edit instruction
-2. 설정된 document root(1) 또는 이를 해석하기 위한 project-local setting
+2. 존재하는 설정된 document root(1), 또는 Init handoff에 필요한 초기화 상태
 3. 적용할 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록
 4. 필요한 경우 수락된 `keystone-clarify` decision summary, edit plan,
    decision_completeness_check, decision_recording_hint, modularization_decision
@@ -129,9 +140,8 @@ Author는 다음 input을 사용할 수 있어야 한다.
 7. 현재 workspace state와 existing-change risk
 8. 관련 capability, code, config, schema, API, test artifact 후보 또는 impact seed
 9. 필요한 경우 `keystone-linker` report 또는 Linker handoff seed
-10. File-writing helper를 직접 사용할 경우 single workspace guard
-11. `source_document` target surface와 `keystone-author` lane을 선택한
-    `keystone_routing_decision`
+10. 위임이 필요한 경우 사용자 허락과 실행 환경이 제공하는 isolation/concurrency 조건
+11. 복수 surface나 권한 경계가 있어 명시적으로 남긴 경우 routing context
 
 Input이 부족하고 잘못된 문서 변경으로 이어질 위험이 있으면 Author는 수정하지 않고
 main/user에게 결정(6)을 요청하거나 `keystone-clarify`가 다룰 topic으로 보고해야 한다.
@@ -141,31 +151,30 @@ main/user에게 결정(6)을 요청하거나 `keystone-clarify`가 다룰 topic�
 
 Author는 작업 mode와 무관하게 다음 순서를 따른다.
 
-1. `STD-KEYSTONE-010`에 따라 설정된 document root(1)를 해석한다.
+1. 초기화 상태와 설정된 document root(1)를 확인한다. `uninitialized` 또는 `partial`이면
+   동의를 한 번 확인하고 Init handoff 뒤 이 workflow로 resume한다.
 2. 관련 parent 기준서와 child 기준서를 읽어 적용 규칙을 확인한다.
 3. 요청이 create, revise, clarify-apply, normalize, progress update 중 무엇인지 정한다.
 4. 변경 대상 원천 문서(2)와 section을 식별한다.
-5. `keystone_routing_decision`이 `source_document` target surface와 `keystone-author` lane을
-   선택했는지 확인한다. Author 기준서를 읽은 것만으로 Author lane 실행으로 보지 않는다.
+5. 대상이 원천 문서인지 확인한다. 복수 surface나 권한 경계가 있으면 필요한 routing context를
+   명시적으로 남긴다.
 6. 승인 범위와 impact update 대상이 명확한지 확인한다.
 7. High-impact 결정(6)이 부족하면 문서 수정을 멈추고 main/user에게 결정(6)을 요청하거나
    `keystone-clarify`가 다룰 topic으로 보고한다.
 8. 변경이 큰 경우 Author Edit Contract로 대상 문서, section, 승인 범위, 영향 문서, 검증
    기준을 정리한다.
-8. 현재 대상 문서 안의 단순 오탈자처럼 의미 변화와 외부 영향이 객관적으로 없는 수정은
+9. 현재 대상 문서 안의 단순 오탈자처럼 의미 변화와 외부 영향이 객관적으로 없는 수정은
    직접 처리할 수 있다.
-9. 승인된 변경이 현재 문서 또는 영향이 명확한 소수 문서에 국한되면 Author가 직접 수정할
+10. 승인된 변경이 현재 문서 또는 영향이 명확한 소수 문서에 국한되면 Author가 직접 수정할
    수 있다.
-10. 영향 후보가 여러 원천 문서(2)에 걸치거나 수정 누락 시 문서 간 불일치가 생길 수 있으면
+11. 영향 후보가 여러 원천 문서(2)에 걸치거나 수정 누락 시 문서 간 불일치가 생길 수 있으면
     `investigate` worker로 후보를 조사하거나 `document_edit` worker 사용 여부를 판단한다.
-11. `document_edit` worker는 Author Edit Contract 안에서 필요한 관련 문서만 수정한다. 연결된
+12. `document_edit` worker는 Author Edit Contract 안에서 필요한 관련 문서만 수정한다. 연결된
     문서라는 이유만으로 모두 수정하지 않는다.
-12. File-writing helper를 직접 사용할 때는 Main 또는 Author가 single workspace guard를 먼저
-    준비해야 한다.
-13. Author가 직접 helper를 쓰는 경우는 하나의 bounded writer, 승인된 Author Edit Contract,
-    formal reviewer/verifier 없음 조건을 모두 만족해야 한다.
-14. Reviewer/verifier, 여러 writer, workspace conflict, formal report acceptance가 필요하면
-    Author Edit Contract를 Coordinator에 넘긴다.
+13. 위임이 유용하면 사용자에게 위임 여부를 물을 수 있다. 허락되면 실행 isolation,
+    worktree와 concurrency는 주입된 skill 또는 host 환경의 계약을 따른다.
+14. Reviewer/verifier, 여러 작업자 또는 formal report acceptance가 필요하면 Author Edit
+    Contract를 Coordinator에 넘길 수 있으며 Coordinator 허락 범위를 확인한다.
 15. Helper를 사용하더라도 subagent 기준서의 공통 경계를 따르며 report acceptance,
     reviewer/verifier orchestration, progress accepted 처리는 소유하지 않는다.
 16. 승인된 범위 안에서만 원천 문서(2)를 수정한다.
@@ -175,8 +184,8 @@ Author는 작업 mode와 무관하게 다음 순서를 따른다.
 19. 코드 앵커(18) typed relation이나 capability(16)가 있는 경우 관련 code/config/schema/API/test
     artifact를 직접 확정하지 않고 Linker handoff seed 또는 Linker report requirement로 남긴다.
 20. 큰 변경이나 문서-code-test 동시 영향이 있는 변경은 Change Set(17)을 작성하거나 갱신한다.
-21. Code, config, schema, API, test 수정이 필요하면 직접 수정하지 않고 Coordinator가 조율할 next action으로
-    남긴다.
+21. Code, config, schema, API, test 수정이 필요하면 직접 수정하지 않고 Main direct 또는 사용자
+    허락을 받은 Coordinator가 처리할 next action으로 남긴다.
 22. 문서 link, 용어, 구조, Markdown 형식을 검증한다.
 23. 변경 파일, 적용한 결정(6), 검증 결과, 남은 risk를 보고한다.
 
@@ -269,8 +278,8 @@ Clarify-Apply Mode는 수락된 Clarify result를 문서에 반영한다.
 5. 적용 중 충돌이 발견되면 중단하고 main/user 결정(6)을 요청한다.
 6. 적용 후 필요한 경우 결정(6) 기록과 진행 기록(5)을 갱신한다.
 7. 다른 문서와 함께 맞춰야 하는 원천 문서(2) 수정은 Clarify가 아니라 Author가 담당한다.
-8. `keystone-clarify`가 명시 승인된 현재 대상 문서의 단순 오탈자만 직접 수정할 수 있다는
-   예외는 `key-standard-clarify.md`의 Default Mode contract를 따른다.
+8. Clarify는 원천 문서를 직접 수정하지 않는다. 단순 오탈자는 Main 또는 Author가 현재 위임
+   범위 안에서 처리한다.
 9. 수락된 modularization decision이 있으면 Author는 승인 범위 안에서 관련 기준서(3),
    작업서(4), 결정(6) 기록, Change Set(17), affected capability seed, Linker report reference,
    excluded reuse candidate를 반영한다.
@@ -346,7 +355,8 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
 1. 작업서는 기준서 tree에 종속되지 않는다.
 2. 작업서는 작업 round 단위로 묶는다.
 3. Work round folder는 `r{number}-{slug}` 형식을 사용한다. `r`은 round를 뜻한다.
-4. 각 round 안의 실행 순서는 `S00`부터 다시 시작한다.
+4. 각 round 안의 실행 순서는 `S01`부터 다시 시작한다. `R000`은 최초 기준서가 없는
+   Project Foundation round 이름으로만 예약한다.
 5. 기준서별, 기능별, 구현 단계별, 검증 단계별로 독립 work를 만들 수 있다.
 6. 각 work는 하나의 reviewable goal을 가져야 한다.
 7. 작업서는 관련 기준서(3)를 참조하지만, 기준서 안에 실행 순서를 박지 않는다.
@@ -452,14 +462,14 @@ Author는 작업 후 다음을 보고해야 한다.
 10. 실행한 verification
 11. Graph handoff result
 12. 남은 risk와 다음 권장 작업
-13. 적용한 `keystone_routing_decision` 또는 그 요약
+13. 복수 surface나 권한 경계가 있어 기록한 경우 routing context 요약
 
 Author patch report는 다음 shape을 우선 사용한다.
 
 ```yaml
 author_patch_report:
   contract_id:
-  routing_decision_ref:
+  routing_context_ref:
   edits:
     - path:
       section:
@@ -491,8 +501,8 @@ author_patch_report:
    남긴 문서다.
 3. `source_decision`은 수락된 결정(6), 승인된 edit instruction, 또는 명시한 working assumption을
    가리킨다.
-4. `routing_decision_ref`는 수정 전 Main이 남긴 `keystone_routing_decision` 또는 그 요약을
-   가리킨다.
+4. `routing_context_ref`는 복수 surface나 권한 경계가 있어 Main이 명시적으로 남긴 경우에만
+   포함한다.
 
 <!-- key: id=key.standard.skill.author.user-response refs=key.role.author key.contract.output key.topic.skill-contract -->
 ## 기본 사용자 응답
@@ -510,14 +520,20 @@ Full `author_patch_report` 또는 `author_edit_contract`는 사용자가 요청�
 verification evidence에 필요할 때만 노출한다. Optional `keystone-viewer`는 Author report를
 표현할 수 있지만 원천 문서 변경 의미, source authority, progress status를 바꾸지 않는다.
 
+사용자-facing 응답을 보내기 전에는 `STD-KEYSTONE-045`의 Payload Disclosure Gate를 적용한다.
+Full payload 요청, handoff, audit/debug, verification evidence 필요성이 없으면 `*_output`,
+`*_result`, `*_report`, `worker_assignment`, `keystone_routing_decision` 원문 block을 기본
+응답에 노출하지 않는다. 기본 응답은 payload 의미를 변경 요약, no-edit 후보, 검증 요약,
+남은 risk, 다음 행동, 주요 출처로 압축한다.
+
 <!-- key: id=key.standard.skill.author.stop-condition refs=key.role.author key.topic.skill-contract key.topic.impact-review key.standard.subagent -->
 ## Stop condition
 
 Author는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한다.
 
-1. 설정된 document root(1)를 확신 있게 해석할 수 없다.
+1. 복수 document root가 충돌해 Init 또는 Clarify로도 안전하게 해소할 수 없다.
 2. 변경 대상 문서나 section이 불명확하다.
-3. `keystone_routing_decision`이 없거나 Author lane을 선택하지 않았다.
+3. 대상 surface가 불명확하거나 원천 문서 밖의 변경이 섞여 있는데 경계를 분리할 수 없다.
 4. 승인된 요청과 기존 원천 문서(2)가 충돌한다.
 5. High-impact 결정(6)이 필요한데 수락된 Clarify result가 없다.
 6. Scope, acceptance criteria, progress status semantics를 바꿔야 할 수 있다.
@@ -528,9 +544,9 @@ Author는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한�
 10. 관련 index, progress, 결정(6) 기록에 미치는 영향이 불확실하다.
 11. Reviewer, verifier, formal report acceptance가 필요한 workflow로 커진다.
 12. 외부 보조 workflow를 automatic 또는 mandatory로 바꾸는 결과가 된다.
-13. File-writing helper를 직접 사용해야 하지만 single workspace guard가 없다.
+13. 위임 허락이나 실행 환경 경계 없이 helper 작업이 필요하다.
 14. Helper 작업에 reviewer/verifier, 여러 writer, workspace conflict, formal report acceptance가
-    필요하다.
+    필요하지만 Coordinator 사용 허락이 없다.
 15. 문서 변경이 code/config/schema/API/test artifact 수정을 요구한다.
 
 <!-- key: id=key.standard.skill.author.verification refs=key.role.author key.topic.verification key.topic.document-authoring key.standard.subagent -->
@@ -549,16 +565,18 @@ Author 기준은 다음 방법으로 검증한다.
    검토했는지 확인할 수 있어야 한다.
 8. `investigate` 또는 `document_edit` worker를 사용해도 subagent 기준서, 승인 범위,
    Author Edit Contract를 넘지 않아야 한다.
-9. File-writing helper를 직접 사용할 때 single workspace guard가 있어야 하고, formal workflow가
-   필요하면 Coordinator로 넘겨야 한다.
+9. 위임 시 사용자 허락과 주입된 skill/host 실행 경계를 보존하고, formal workflow가 필요하면
+   허락된 Coordinator 범위로 넘겨야 한다.
 10. 문서 변경이 아티팩트 그래프(14)에 미치는 Linker handoff seed 또는 Linker report requirement를
     보고할 수 있어야 한다.
 11. 큰 문서-code-test 영향 변경은 Change Set(17)으로 추적할 수 있어야 한다.
 12. Author는 code/config/schema/API/test를 직접 수정하지 않아야 한다.
-13. Source document 변경에는 수정 전 `keystone_routing_decision`과 수정 후 `author_patch_report`가
-    있어야 한다.
+13. Source document 변경은 Author 책임으로 수행하고 결과, 검증과 residual risk를 추적할 수
+    있어야 한다. 별도 routing payload는 복수 surface나 audit 필요가 있을 때만 요구한다.
 14. 기본 사용자 응답은 structured payload를 그대로 노출하지 않고 변경 요약, 검증, risk,
     next action을 요약해야 한다.
 15. Verification command:
    - `rg --files 00_docs`
    - Author 관련 기준서를 읽어 link와 scope consistency 확인
+16. 프로젝트 로컬 Author 기준서가 없어도 설치된 contract로 Init handoff와 문서 작성을
+    수행할 수 있어야 한다.

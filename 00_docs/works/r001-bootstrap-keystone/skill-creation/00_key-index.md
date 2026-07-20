@@ -10,7 +10,7 @@ key:
     - key.topic.repo-local
 work_id: skill-creation
 title: Skill Creation
-status: reviewing
+status: superseded
 owner_lane: main-session
 work_type:
   - implementation
@@ -51,5 +51,8 @@ risk_level: medium
 
 ## 현재 상태
 
-- Status: reviewing
+- Status: superseded
 - Current step: S08
+
+R001의 초기 skill source는 이력으로 보존하지만 Main이 수락하지 않았다. R002의 runtime
+independence 기준에 맞춘 후속 구현이 이 work를 대체한다.

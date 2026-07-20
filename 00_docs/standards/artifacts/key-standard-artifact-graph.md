@@ -79,14 +79,14 @@ acceptance authority로 나눈다.
      있는지 read-only로 보고할 수 있다.
    - 산출물의 종류가 skill source인지 code인지보다, 어떤 원천 문서나 작업서에서 만들어졌고 어떤
      기준의 지배를 받는지가 graph 판단의 우선 기준이다.
-5. Coordinator는 repository source surface 변경을 조율한다.
-   - Code anchor, config anchor, schema anchor, repository API contract anchor, test anchor,
-     implementation edit은 bounded worker assignment로 처리한다.
+5. Repository source surface 변경은 Main이 처리한다.
+   - 작은 명확한 변경은 Main direct로 처리할 수 있다. 위임이 필요하고 사용자가 허락한 경우
+     Coordinator가 bounded worker assignment로 조율한다.
 6. Repo-local Keystone skill source는 output artifact의 한 surface일 수 있지만 원천 문서(2)가
    아니다.
-   - Skill source 수정은 S08 같은 명시 scope 안의 Main direct lane 또는 Coordinator bounded
-     worker assignment로 처리한다.
-7. Main 또는 사용자는 최종 수락 책임을 가진다.
+   - Skill source 수정은 명시 scope 안의 Main direct 또는 사용자 허락을 받은 Coordinator
+     assignment로 처리한다.
+7. Main은 최종 수락 책임을 가진다.
    - Linker report는 evidence와 handoff input이며 직접 수정 권한, 자동 수정 근거, 자동
      acceptance, Main acceptance가 아니다.
 
@@ -104,19 +104,31 @@ Artifact Graph는 source relation과 output artifact surface를 구분한다. Gr
 | Decision record | `DEC-*` | Linker가 impact를 해석하고 Clarify 또는 Main이 결정을 보강한다 | Author |
 | Work order output declaration | completion criteria, expected output, target path | Linker | Author |
 | Output artifact: skill source | `skills/keystone-*/SKILL.md` | Linker | Main direct for small approved scope, otherwise Coordinator |
-| Output artifact: repository source | code, config, schema, API, test, generated/codegen source | Linker | Coordinator |
-| Output artifact: document artifact | generated or maintained Markdown artifact outside source authority | Linker | Author, Main direct, or Coordinator by routing decision |
-| Code anchor | `keystone: id=...`, `provides=...` | Linker | Coordinator |
-| Config anchor | config key anchor, feature flag metadata | Linker | Coordinator |
-| Schema anchor | DB, message, validation schema anchor | Linker | Coordinator |
-| API contract anchor | OpenAPI, RPC contract, route contract anchor | Linker | Coordinator for repository contract, Author for source document section |
-| Test anchor | `verifies=...` | Linker | Coordinator |
+| Output artifact: repository source | code, config, schema, API, test, generated/codegen source | Linker | Main direct 또는 허락된 Coordinator |
+| Output artifact: document artifact | generated or maintained Markdown artifact outside source authority | Linker | Author, Main direct, or permitted Coordinator |
+| Code anchor | `keystone: id=...`, `provides=...` | Linker | Main direct 또는 허락된 Coordinator |
+| Config anchor | config key anchor, feature flag metadata | Linker | Main direct 또는 허락된 Coordinator |
+| Schema anchor | DB, message, validation schema anchor | Linker | Main direct 또는 허락된 Coordinator |
+| API contract anchor | OpenAPI, RPC contract, route contract anchor | Linker | Main direct/허락된 Coordinator for repository contract, Author for source document section |
+| Test anchor | `verifies=...` | Linker | Main direct 또는 허락된 Coordinator |
 | Generated reverse index or cache | derived graph index | Linker가 stale 여부를 판단한다 | 초기에는 직접 수정자 없음 |
 
 API contract가 Keystone source document section으로 표현되면 source document metadata로 보아
 Author가 수정한다. API contract가 OpenAPI file, route contract, RPC contract, schema file,
-code annotation처럼 repository source surface에 있으면 Coordinator가 bounded worker assignment로
+code annotation처럼 repository source surface에 있으면 Main direct 또는 허락된 Coordinator가
 수정한다.
+
+<!-- key: id=key.standard.artifact.graph.fail-soft refs=key.topic.artifact-graph key.topic.initialization key.role.linker -->
+## 핵심 능력과 fail-soft
+
+Artifact Graph는 Keystone의 핵심 능력이지만 모든 프로젝트가 첫날부터 모든 relation과 anchor를
+가져야 한다는 뜻은 아니다.
+
+1. Graph metadata 부재만으로 초기화 상태를 `partial`이나 실패로 만들지 않는다.
+2. Linker는 존재하는 문서, relation, code anchor와 repository evidence만으로 graph를 해석한다.
+3. Evidence가 부족하면 `metadata gap`과 검사 불가능 항목을 확정 오류와 구분해 보고한다.
+4. Gap 보고는 자동 수정, Coordinator 호출, 사용자 질문이나 작업 중단을 의미하지 않는다.
+5. 프로젝트가 발전하면서 기준서와 산출물의 의미 있는 연결부터 점진적으로 추가한다.
 
 Generated reverse index나 cache가 필요해지면 별도 결정(6)과 bounded workflow를 먼저 둔다.
 
@@ -403,7 +415,7 @@ Impact candidate는 다음 등급으로 보고한다.
 5. `excluded`: 현재 scope에서 제외한다는 이유가 있다.
 
 Candidate 발견은 수정 허가가 아니다. 실제 변경은 승인 범위, source authority, artifact
-authority, Coordinator workflow를 따른다.
+authority를 따르고, 위임이 필요하면 사용자 허락을 받은 Coordinator를 사용한다.
 
 <!-- key: id=key.standard.artifact.graph.generated-index refs=key.topic.artifact-graph key.doc.derived-agent key.boundary.scope-control -->
 ## Generated graph index policy
@@ -420,7 +432,8 @@ Generated reverse index나 graph cache는 source of truth가 아니다.
 <!-- key: id=key.standard.artifact.graph.simulation-cases refs=key.topic.integration-verification key.topic.artifact-graph key.topic.verification -->
 ## Simulation cases for later integration verification
 
-S09 Integration Verification은 최소한 다음 case를 사용해 Artifact Graph model을 검증한다.
+R002 Bootstrap Runtime Standard와 후속 Skill Runtime Implementation은 최소한 다음 case를 사용해
+Artifact Graph model을 검증한다.
 
 1. Document-driven behavior change
    - Standard section changes.
@@ -456,7 +469,8 @@ Artifact Graph 기준은 다음 방법으로 검증한다.
 7. Mechanical stale, semantic stale, metadata gap을 구분할 수 있어야 한다.
 8. Impact candidate 등급이 자동 수정 또는 자동 acceptance로 해석되지 않아야 한다.
 9. Generated graph index가 source of truth나 Linker write target으로 해석되지 않아야 한다.
-10. Verification command:
+10. Graph evidence 부재가 초기화 실패나 자동 Coordinator 호출로 해석되지 않아야 한다.
+11. Verification command:
    - `rg --files 00_docs`
    - `rg -n "key.capability|key.code|key.config|key.schema|key.api|key.test|keystone-linker" 00_docs/standards`
    - `rg -n "Artifact Graph ownership boundary|Metadata gap|Relation direction|Generated graph index" 00_docs/standards/artifacts/key-standard-artifact-graph.md`
