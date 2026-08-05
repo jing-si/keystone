@@ -1,8 +1,10 @@
 ---
 doc_type: standard
+created_at: "2026-07-20"
 status: active
 approval:
   state: accepted
+  accepted_at: "2026-08-05"
   accepted_by: main
 key:
   id: key.standard.bootstrap
@@ -14,6 +16,7 @@ key:
     - key.topic.user-decision
     - key.topic.acceptance
     - key.topic.work-recovery
+    - key.topic.temporal-metadata
 ---
 
 # Keystone Bootstrap 및 런타임 독립성 기준서
@@ -55,6 +58,8 @@ Keystone의 기준은 다음 세 층으로 나눈다.
      fail-soft, 초기화 상태 탐지와 handoff/resume 같은 고유 실행 계약을 소유한다.
    - 핵심 실행 계약은 설치된 `SKILL.md`만으로 완결되어야 한다. 상세 schema, template,
      validator는 같은 패키지의 `references/`, `assets/`, `scripts/`에 둘 수 있다.
+   - Acceptance finalization core validator는 새 스킬이 아니라 `keystone-author/scripts/`의
+     bundled artifact로 제공하며 설치 시 Author package와 함께 복사한다.
 2. 소비 프로젝트의 Keystone 문서
    - 프로젝트 목적, 범위, 용어, architecture, domain policy, document root, 프로젝트 고유
      승인 규칙, 결정, 작업, 진행 상태와 Artifact Graph evidence를 정의한다.
@@ -181,7 +186,7 @@ AI가 확인하고 검증할 수 있는 단계는 Main이 위임 범위 안에�
 5. Coordinator는 사용 허락 자체가 User Decision인 예외다. 한 work scope에 한 번 받고,
    같은 범위의 assignment, review, repair에는 반복하지 않는다.
 
-<!-- key: id=key.standard.bootstrap.metadata-status refs=key.topic.keystone-metadata key.topic.status key.topic.acceptance -->
+<!-- key: id=key.standard.bootstrap.metadata-status refs=key.topic.keystone-metadata key.topic.temporal-metadata key.topic.status key.topic.acceptance -->
 ## 문서 metadata와 상태
 
 Bootstrap과 이후 운영에서 YAML frontmatter는 문서 단위 identity와 상태의 기본 표현이다.
@@ -189,6 +194,7 @@ Bootstrap과 이후 운영에서 YAML frontmatter는 문서 단위 identity와 �
 ```yaml
 ---
 doc_type: standard
+created_at: "2026-07-23"
 status: draft
 approval:
   state: pending
@@ -205,12 +211,26 @@ key:
 4. `accepted`는 문서 lifecycle이 아니라 approval state다.
 5. `active` 문서는 Main 또는 필요한 User Decision에서 나온 추적 가능한 acceptance 근거가
    있어야 한다.
-6. 의미가 바뀌면 approval을 `pending`으로 돌린다. 의미 없는 형식 변경은 그 사실을 기록하고
-   기존 approval을 유지할 수 있다.
-7. `key.refs`는 탐색용 일반 참조이며 자동 영향 전파가 아니다. `governed_by`, `depends_on`,
+6. 새 원천 문서의 `created_at`은 최초 생성일을 `YYYY-MM-DD`로 기록하고 이후 수정하지 않는다.
+7. `approval.state: accepted`에는 현재 의미가 수락된 날짜인 `accepted_at: YYYY-MM-DD`가
+   있어야 한다. 의미가 바뀌면 approval을 `pending`으로 돌리고 현재 `accepted_at`을 제거한 뒤,
+   다시 수락할 때 새 수락일을 기록한다.
+8. 의미 없는 형식 변경은 그 사실을 기록하고 기존 approval과 `accepted_at`을 유지할 수 있다.
+9. 승인일과 실제 효력 시작일이 다를 때만 `effective_from: YYYY-MM-DD`를 사용할 수 있다.
+   문서가 대체된 날짜를 별도로 추적할 필요가 있을 때만 `superseded_at: YYYY-MM-DD`를 사용한다.
+10. 문서 전체의 일반적인 `updated_at`은 사용하지 않는다. 오탈자·서식 변경까지 의미 변경처럼
+    보이게 하고 Git 이력과 중복되기 때문이다.
+11. 결정 기록의 새 결정에는 `결정일: YYYY-MM-DD`를 둔다. 과거 결정을 나중에 기록한 경우에만
+    `기록일`, 대체 시점을 별도로 보존할 필요가 있을 때만 `대체일`을 추가한다.
+12. 문서·결정의 거버넌스 날짜는 `YYYY-MM-DD`를 기본으로 한다. 실행 event의 정확한 순서가
+    필요한 별도 기록만 ISO 8601 timestamp와 명시적 timezone을 사용한다.
+13. 날짜가 최신이라는 이유만으로 문서나 결정의 권위가 올라가지 않는다. lifecycle,
+    approval과 `supersedes` 같은 typed relation이 권위와 대체 관계를 결정한다.
+14. `key.refs`는 탐색용 일반 참조이며 자동 영향 전파가 아니다. `governed_by`, `depends_on`,
    `supersedes`, `derived_from` 등은 typed relation으로 구분한다.
-8. 새 Bootstrap 문서는 이 형식을 적용한다. 기존 corpus의 metadata migration은 별도 승인
-   작업으로 남기며, 검사할 수 없는 항목은 오류와 구분해 보고한다.
+15. 새 Bootstrap 문서는 이 형식을 적용한다. 기존 corpus의 날짜를 추측하지 않으며, repository
+    history 등으로 확인 가능한 날짜만 근거를 검증한 뒤 별도 승인된 migration에서 반영한다.
+    검사할 수 없는 날짜는 오류가 아니라 미확인 legacy metadata로 보고한다.
 
 <!-- key: id=key.standard.bootstrap.fail-soft refs=key.topic.initialization key.topic.artifact-graph key.boundary.read-only -->
 ## Fail-soft
@@ -223,6 +243,17 @@ key:
 6. Coordinator: 사용자 허락이 없으면 자동 호출하지 않고 Main direct 또는 허락 요청을 제안한다.
 7. 기존 문서 충돌: 덮어쓰지 않고 `conflicted`와 결정 topic을 보고한다.
 8. 구현 작업: 기준 부재가 실제 방향이나 안전성에 영향을 줄 때만 중단한다.
+
+<!-- key: id=key.standard.bootstrap.dependency-compatibility refs=key.topic.artifact-graph key.topic.work-sequence key.topic.work-recovery -->
+## Dependency compatibility
+
+1. Structured `key.relations.depends_on`/`work_gates`를 우선하고 legacy HTML `depends_on`은
+   structured metadata가 없을 때만 compatibility evidence로 읽는다.
+2. Legacy work-level dependency는 source 시작을 자동 차단하지 않고 completion gate 후보로
+   보고한다.
+3. Init은 프로젝트 의미를 추정해 dependency/gate를 생성하지 않고, Reader/Linker는
+   없거나 모호한 target을 fail-soft로 보고한다.
+4. Dependency evaluation은 initialization state, lifecycle, approval, work status를 대체하지 않는다.
 
 <!-- key: id=key.standard.bootstrap.verification refs=key.topic.verification key.topic.initialization -->
 ## Verification

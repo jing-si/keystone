@@ -1,5 +1,6 @@
 ---
 doc_type: standard
+approval: {state: accepted, accepted_at: "2026-08-05", accepted_by: main}
 key:
   id: key.standard.skill.linker
   refs:
@@ -19,11 +20,12 @@ key:
 이 기준서는 `keystone-linker`의 상세 계약을 정의한다. `keystone-linker`는 원천 문서(2),
 키메타(9), 코드 앵커(18), repository evidence를 read-only로 조사해 문서, capability(16),
 code, config, schema, API, test artifact의 연결과 impact/stale/gap 후보를 찾고, Coordinator가 worker
-assignment(19)를 만들 수 있는 artifact context seed를 제공한다.
+assignment(19)를 만들 수 있는 artifact context seed를 제공하며 graph-relevant change에는 exact
+canonical mutation과 synchronization transaction proposal을 만든다.
 
-Linker는 Artifact Graph의 operational interpretation owner다. 이 ownership은 graph state,
-relation evidence, impact candidate, stale candidate, metadata gap 판단 권위이며 source edit
-authority를 포함하지 않는다.
+Linker는 Artifact Graph의 유일한 canonical mutation decision owner다. 이 ownership은 graph
+state, relation evidence, 후보 판단과 artifact ID, capability node, relation, provenance, locator,
+lifecycle, replacement mutation의 결정을 포함하지만 source edit authority는 전혀 포함하지 않는다.
 
 <!-- key: id=key.standard.skill.linker.scope refs=key.role.linker key.topic.artifact-graph key.topic.impact-review -->
 ## 적용 범위
@@ -60,7 +62,7 @@ authority를 포함하지 않는다.
 4. 관련 기준서: `../reader/key-standard-reader.md`, `../author/key-standard-author.md`,
    `../coordinator/key-standard-coordinator.md`
 5. 관련 결정(6): `00_docs/works/key-decisions.md`의 `DEC-WORKS-009`, `DEC-WORKS-010`,
-   `DEC-WORKS-013`
+   `DEC-WORKS-013`, `DEC-WORKS-024`
 6. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.
 
@@ -81,7 +83,7 @@ authority를 포함하지 않는다.
 실행 계약과 graph 해석 규칙은 설치된 skill package 안에서 완결되어야 하며, 소비 프로젝트의
 `standards/skills/linker/**`를 required input으로 요구하지 않는다.
 
-Linker는 read-only이므로 Main이 필요하다고 판단하면 별도 사용자 허락 없이 사용할 수 있다.
+Linker는 source surface에 대해 read-only이므로 Main이 필요하다고 판단하면 별도 사용자 허락 없이 사용할 수 있다.
 Artifact Graph evidence가 적거나 없으면 오류나 profile 부족으로 보지 않고 확인 가능한 관계와
 gap을 fail-soft로 보고한다.
 
@@ -154,6 +156,10 @@ Linker는 mode와 무관하게 다음 순서를 따른다.
     성격의 추가 Linker review 또는 Coordinator investigation을 제안한다.
 13. 수정이 필요한 경우 직접 수정하지 않고 source/output surface별 handoff owner를 분류해 Author,
     Main direct, 또는 Coordinator로 넘길 next action을 제안한다.
+14. Graph-relevant delta이면 evidence admission을 적용해 canonical mutation을 결정하고 exact
+    per-surface patch, baseline digest, attestation 요구를 가진 synchronization proposal을 만든다.
+15. Surface owner 결과를 받은 뒤 source를 다시 읽어 graph를 재구성하고 validator evidence와
+    함께 transaction state를 판정한다. Linker는 어느 단계에서도 patch를 직접 적용하지 않는다.
 
 <!-- key: id=key.standard.skill.linker.metadata-parsing refs=key.role.linker key.topic.keystone-metadata key.topic.code-anchor key.topic.artifact-graph -->
 ## Metadata parsing rule
@@ -168,25 +174,58 @@ Linker는 초기 구현에서 다음 metadata surface를 우선 읽는다.
    ## Example section
    ```
 
-3. Code, config, schema, API, test artifact 안의 `keystone:` line comment
-4. Repository path, symbol, test name, config key 같은 locator evidence
+3. Markdown heading·list item 바로 위의 item-level comment와 table row 첫 번째 cell 안의 compact
+   item comment
+
+   ```markdown
+   <!-- key: id=key.rule.example.independent-rule supersedes=key.rule.example.old-rule -->
+   - Independently replaceable rule
+
+   | <!-- key: id=key.acceptance.example.contract verifies=key.claim.example.contract --> `AC-01` | expected result |
+   ```
+
+4. Code, config, schema, API, test artifact 안의 `keystone:` line comment
+5. Repository path, heading, visible item ID, symbol, test name, config key 같은 locator evidence
 
 Parsing과 normalization은 다음 기준을 따른다.
 
 1. `key.id`와 code anchor `id`는 stable artifact identity로 보고 locator와 분리한다.
 2. `key.refs`는 탐색 후보 edge로만 사용하고 required impact relation으로 확정하지 않는다.
-3. Code/config/schema/API/test anchor의 `provides`, `uses`, `implements`, `verifies`,
-   `governed_by`, `documents`, `supersedes`, `derived_from`만 초기 typed relation으로 normalize한다.
+3. Document item은 부모 document와 section의 `governed_by`, source authority와 lifecycle을
+   상속할 수 있지만 `id`와 `supersedes`는 상속하지 않는다.
+4. Decision의 일부만 대체되면 decision document 전체가 아니라 declared `key.claim.*`
+   relation을 impact seed로 사용한다. Claim metadata가 없으면 부분 대체를 확정하지 않고
+   metadata gap으로 보고한다.
+5. Code/config/schema/API/test anchor와 document item의 `provides`, `uses`, `implements`, `verifies`,
+   `governed_by`, `documents`, `supersedes`, `derived_from`, `depends_on`만 초기 typed relation으로
+   normalize한다.
    단, API anchor의 `provides=key.capability.*`는 API interpretation rule에 따라 예외 근거가
    있을 때만 provider relation으로 확정한다.
-4. Unknown relation, malformed metadata, duplicate ID, missing target은 mechanical stale candidate로
+6. Output artifact의 `authority.produced_from` 또는 동등한 declared provenance를 읽으면
+   target source document·decision·work order에서 output artifact로 향하는 `produces` edge를
+   generated/inferred evidence로 파생한다. `produced_from`을 typed relation으로 normalize하거나
+   source surface에 역방향 relation을 중복 기록하지 않는다.
+7. `produced_from` target이 없거나 유효한 source로 해석되지 않으면 unresolved provenance
+   또는 metadata gap으로 보고하고 `derived_from`으로 추정하지 않는다.
+8. `legacy_terms`는 typed relation으로 만들지 않는다. Replacement 또는 removed item의 검색
+   seed로 사용하고, active/pending 권위 item의 일치 항목과 archived/rejected/history evidence를
+   구분해 semantic stale, informational 또는 excluded candidate로 분류한다.
+9. Progress나 verification evidence가 legacy term 제거를 완료했다고 선언했는데 active source
+   item에 같은 표현이 남아 있으면 semantic stale candidate로 보고한다.
+10. Unknown relation, malformed metadata, duplicate ID, missing target은 mechanical stale candidate로
    보고한다.
-5. Import, call, filename, keyword, heading overlap은 observed 또는 inferred evidence로 분리해
+11. Import, call, filename, keyword, heading overlap은 observed 또는 inferred evidence로 분리해
    보고한다.
-6. Confidence는 evidence type을 기준으로 `declared`, `observed`, `inferred`로 우선 구분하고,
+12. `revised_by`는 revision-history evidence로 탐색할 수 있지만 typed relation으로
+    normalize하지 않는다. 이 field만으로 authority, impact propagation, `supersedes`,
+    `produces`, `governed_by`를 파생하지 않는다.
+13. `revised_by` evidence가 공식 의미를 필요로 하면 적합한 typed relation, decision,
+    Change Set 또는 revision record 후보로 handoff한다. Target 누락·의미 모호성은
+    informational 또는 unknown revision evidence로 보고하고 relation error로 단정하지 않는다.
+14. Confidence는 evidence type을 기준으로 `declared`, `observed`, `inferred`로 우선 구분하고,
    candidate 등급은 Artifact Graph 기준서의 `required`, `strong_candidate`, `weak_candidate`,
    `informational`, `excluded`를 따른다.
-7. Parser가 이해하지 못한 metadata는 조용히 버리지 않고 `metadata_gaps` 또는 `risks_and_gaps`에
+15. Parser가 이해하지 못한 metadata는 조용히 버리지 않고 `metadata_gaps` 또는 `risks_and_gaps`에
    기록한다.
 
 <!-- key: id=key.standard.skill.linker.api-interpretation refs=key.role.linker key.topic.api key.topic.artifact-graph key.work.decisions.dec-works-010 -->
@@ -256,6 +295,38 @@ Output focus:
 3. Required tests
 4. Metadata sync risks
 5. Document sync candidates
+
+### Graph Synchronization Mode
+
+Graph-relevant `document_delta | artifact_delta`에서 canonical mutation을 결정하고 source owner가
+attest/apply할 exact patch transaction을 제안한다. Trigger는 lifecycle을 자동 시작하지만 current
+scope, Coordinator permission, worker assignment 또는 acceptance를 자동 생성하지 않는다.
+
+1. Delta locator와 각 source의 UTF-8 raw-byte SHA-256 baseline을 수집한다.
+2. `declared` evidence는 admissible로, `observed` evidence는 surface-owner `confirm` 조건으로
+   수용하며 `inferred` evidence는 mutation에서 제외한다.
+3. Capability-first로 node/relation을 정규화한다. Capability가 별도 안정 의미를 만들지 않는
+   단일 schema constraint나 특정 policy implementation만 bounded direct item→artifact 예외로
+   허용하고 이유를 기록한다.
+4. Artifact Graph 기준서의 canonical node/relation/provenance/locator/lifecycle schema와 relation
+   direction을 사용한다.
+5. Markdown metadata, safe language anchor 또는 `<source>.keystone.json` companion 중 해당
+   surface의 canonical representation을 골라 exact patch를 만든다. 중앙 registry를 만들지 않는다.
+6. Attestation이 모두 `confirm`이고 baseline이 유효할 때만 apply handoff를 ready로 만든다.
+7. Apply 후 source를 cache 없이 재구성하고 mutation과 일치하는지 비교한다. Derived cache는
+   선택적·비권위이며 source mismatch 시 폐기한다.
+8. Orphan relation, removed target을 향한 active relation, unresolved locator와 duplicate ID를
+   mechanical failure로 보고한다. Retired ID의 history/provenance reference는 허용한다.
+
+Output focus:
+
+1. Input deltas and graph relevance
+2. Canonical mutations and evidence admission
+3. Exact surface patches and baseline digests
+4. Required surface-owner attestations
+5. Transaction state and resumable apply results
+6. Reconstruction and mechanical validation evidence
+7. Current transaction completeness and separate project coverage debt
 
 <!-- key: id=key.standard.skill.linker.output-contract refs=key.role.linker key.contract.output key.topic.impact-review -->
 ## Output contract
@@ -359,7 +430,7 @@ linker_report:
           - create_new
           - investigate_first
   graph_owner_note:
-    interpretation_owned_by: keystone-linker
+    canonical_mutation_decided_by: keystone-linker
     edit_authority: author_main_direct_or_coordinator_only
   candidate_budget:
     applied: true | false
@@ -373,6 +444,44 @@ linker_report:
   recommended_next_action:
     skill:
     reason:
+  graph_synchronization:
+    schema_version: 1
+    transaction_id:
+    graph_relevance:
+      relevant: true | false
+      disposition: required | not_applicable | deferred
+      reason:
+    input_deltas:
+      - kind: document_delta | artifact_delta
+        source_surface:
+        baseline_digest: sha256:<64-lowercase-hex> | absent
+    canonical_mutations:
+      - operation: add | update | remove
+        entity: node | relation
+        before:
+        after:
+        evidence: declared | observed
+        direct_relation_reason:
+    surface_patches:
+      - patch_id:
+        owner: author | main | coordinator
+        surface: document_metadata | code_anchor | config_anchor | schema_anchor | api_anchor | test_anchor | companion_metadata
+        target_path:
+        baseline_digest: sha256:<64-lowercase-hex> | absent
+        exact_patch:
+        required: true | false
+    attestations:
+      - patch_id:
+        decision: confirm | reject | needs_revision
+        evidence:
+    apply_results:
+      - patch_id:
+        result: applied | failed | stale_baseline
+        resulting_digest:
+    transaction_state: proposed | awaiting_attestation | ready_to_apply | applying | partially_applied | verified | conflicted | failed
+    reconstruction:
+    mechanical_validation:
+    coverage_debt: []
 ```
 
 `candidate_budget`은 후보가 많아 output을 줄였을 때만 사용한다. Linker는 `required` 후보를
@@ -411,7 +520,7 @@ stale/gap risk, handoff owner, 다음 행동, 주요 출처로 압축한다.
    범위는 Main direct로 처리할 수 있고, 위임이 필요하면 사용자 허락을 받은
    `keystone-coordinator`가 조율한다.
 3. High-impact decision이 필요하면 `keystone-clarify`가 topic을 정리한다.
-4. Current step과 work context가 부족하면 `keystone-reader`가 context brief를 만든다.
+4. Active/실행 가능 Step과 work context가 부족하면 `keystone-reader`가 context brief를 만든다.
 5. Linker report는 후보와 evidence이며 acceptance 또는 수정 권한이 아니다.
 6. Linker는 handoff 대상과 recommended change를 graph 관점에서 제안할 수 있지만, Author 또는
    Coordinator의 source edit authority를 대체하지 않는다.
@@ -439,6 +548,16 @@ Linker는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한�
 Graph metadata나 relation의 단순 부재는 stop condition이 아니다.
 
 <!-- key: id=key.standard.skill.linker.verification refs=key.role.linker key.topic.verification key.topic.artifact-graph -->
+<!-- key: id=key.standard.skill.linker.dependency-interpretation refs=key.role.linker key.topic.artifact-graph key.topic.work-sequence -->
+## Dependency interpretation
+
+1. Linker는 `depends_on`을 source -> target semantic relation으로 정규화하고 `work_gates`를
+   relation과 분리된 execution evidence로 해석한다.
+2. Relation target, gate scope/condition, legacy conflict, duplicate/self/invalid step을 검증하고
+   cycle은 expanded event graph evidence가 있을 때만 확정한다.
+3. Dependency 판정을 work status mutation, automatic assignment/cancellation/acceptance로 바꾸지 않는다.
+4. Graph evidence가 부족하면 `unknown`/`unresolvable`과 필요한 Author/Main handoff를 보고한다.
+
 ## Verification
 
 Linker 기준은 다음 방법으로 검증한다.
@@ -447,7 +566,7 @@ Linker 기준은 다음 방법으로 검증한다.
 2. 네 mode의 output focus가 서로 구분되어야 한다.
 3. Linker가 원천 문서(2)나 output artifact를 직접 수정하지 않는다는 경계가 명확해야 한다.
 4. Linker report가 Coordinator worker assignment의 artifact context seed로 사용될 수 있어야 한다.
-5. Linker의 operational graph interpretation ownership이 source edit authority로 해석되지
+5. Linker의 canonical graph mutation decision ownership이 source edit authority로 해석되지
    않아야 한다.
 6. Mechanical stale, semantic stale, metadata gap을 구분할 수 있어야 한다.
 7. Source/output surface별 handoff owner를 Author, Main direct, Coordinator, Main/Clarify로 분리할 수 있어야 한다.

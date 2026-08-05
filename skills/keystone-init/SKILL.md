@@ -6,6 +6,7 @@ description: "Inspect, initialize, or repair Keystone in a project that has no u
 <!-- keystone: id=key.skill.init kind=output_artifact artifact_kind=skill_source -->
 <!-- keystone: produced_from=key.work.skill-runtime-implementation.order -->
 <!-- keystone: governed_by=key.standard.project key.standard.bootstrap key.standard.skill.init -->
+<!-- keystone: derived_from=key.work.decisions.dec-works-020 -->
 
 # keystone-init
 
@@ -42,7 +43,7 @@ Inspect actual files and settings; never trust a single `initialized` flag.
 - `conflicted`: root candidates, existing paths, settings, or user instructions conflict and cannot be merged safely.
 - `ready`: one authoritative root is resolvable; Context Map, standards/works indexes, decisions, an accepted project standard, and recoverable work exist; no required User Decision remains open.
 
-An existing accepted Keystone corpus may be adopted as `ready` without retroactively creating config or R000 when one root and active work are recoverable. Missing Artifact Graph relations, Linker reports, Coordinator outputs, or project-local skill standards never make the state `partial`.
+An existing accepted Keystone corpus may be adopted as `ready` without retroactively creating config or R000 when one root and active work are recoverable. Missing Artifact Graph relations, document-item or claim metadata, Linker reports, Coordinator outputs, or project-local skill standards never make the state `partial`.
 
 ## Document Root
 
@@ -77,6 +78,10 @@ R000 means the exceptional foundation round before standards exist. Its first an
 
 Create neutral draft/pending templates containing purpose, scope, source evidence, User Decision candidates, completion criteria, verification, and resume context. Do not create or fill `<document_root>/standards/01_key-project-standard.md`; Author owns project meaning. Do not approve project meaning or mark R000 accepted.
 
+Scaffold templates may use stable section or item metadata where the fixed template already defines an independently recoverable work step or acceptance item. Do not require exhaustive `key.rule.*`, `key.claim.*`, or `key.acceptance.*` coverage, invent project-specific item IDs, migrate existing item metadata, or treat missing item metadata as a bootstrap defect. Item-level admission and source metadata repair belong to Author after project meaning is available; stale/gap interpretation belongs to read-only Linker.
+
+Give every newly created Markdown scaffold document an immutable `created_at: "YYYY-MM-DD"` using the actual creation date. Keep draft/pending approval free of `accepted_at`; Author records it only after Main or an authorized user accepts the current meaning. If Init records an actual decision, include `결정일: YYYY-MM-DD`. Do not add a general `updated_at`.
+
 ## Workflow
 
 1. Inspect repository state, settings, root candidates, scaffold, and existing-change risk.
@@ -84,14 +89,18 @@ Create neutral draft/pending templates containing purpose, scope, source evidenc
 3. Resolve safe built-in settings or ask Init's own concise setup question when needed.
 4. Handoff one semantic conflict or User Decision topic to Clarify only when necessary, then resume.
 5. For `uninitialized`, create only missing fixed scaffold files and R000 templates.
-6. For `partial`, preserve all existing files and repair only missing non-conflicting scaffold.
+6. For `partial`, preserve all existing files and dates, and repair only missing non-conflicting scaffold. Never replace `created_at` with the repair date or infer a missing legacy date.
 7. Record verified repository facts and user instructions as R000 evidence; Main performs ordinary pre-Keystone code/README/config inspection.
 8. Handoff project-standard drafting to Author with evidence and accepted decisions.
 9. After Author returns, Main verifies and accepts the project standard when no User Decision remains.
 10. Validate actual files, links, statuses, document root, R000 recovery, and project-standard acceptance before reporting `ready`.
 11. Resume the original skill, request, and exact interrupted step automatically.
 
-Initialization and repair are idempotent: never overwrite an existing file unconditionally, duplicate valid scaffold, move existing documents, perform broad normalization, or migrate metadata automatically. Preserve user and other-agent changes.
+Initialization and repair are idempotent: never overwrite an existing file unconditionally, duplicate valid scaffold, move existing documents, perform broad normalization, or migrate document, section, item, or claim metadata automatically. Preserve user and other-agent changes.
+
+Do not invent project-specific `depends_on` targets or `work_gates` in the fixed R000 scaffold. During
+repair, report missing or conflicting dependency targets as recovery risks without creating future IDs,
+rewriting relations, or changing work status. Dependency gaps alone do not change initialization state.
 
 ## Handoff and Output
 
@@ -146,4 +155,7 @@ Verify that:
 4. R000 and its first step are `R000`/`S01`, and project-standard authoring stayed with Author.
 5. No project-local skill standards, profiles, mandatory routing payloads, or host-mode claims were introduced.
 6. `ready` includes accepted project meaning and recoverable work, not merely file existence.
-7. The original request and caller resume automatically after initialization.
+7. New scaffold documents have their actual creation date, pending documents omit `accepted_at`, and repair preserves existing dates without speculative backfill.
+8. The original request and caller resume automatically after initialization.
+9. Missing document-item or claim metadata did not change initialization state, and no exhaustive item metadata was invented or migrated.
+10. Project-specific dependencies and gates were not inferred or created, and dependency gaps did not mutate initialization state.

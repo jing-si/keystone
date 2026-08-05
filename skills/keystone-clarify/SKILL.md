@@ -62,6 +62,11 @@ Use the current topic, user request, accepted decisions, relevant source documen
 they exist, known affected surfaces, and risk context. For modularization, require concrete evidence from
 a Linker report, repository finding, worker/reviewer report, or the user.
 
+When available evidence identifies stable document-item or claim IDs, preserve them in the result. If a
+decision replaces only part of an earlier decision or rule, identify the affected claim and the retained
+meaning separately; do not describe a partial replacement as document-level or whole-decision
+supersession. Clarify may carry Linker evidence but does not infer missing graph relations on its own.
+
 Do not require project-local skill standards. If evidence is insufficient to decide the current topic,
 return it as unresolved rather than inventing project meaning or an Author-ready edit plan.
 
@@ -110,10 +115,23 @@ clarify_result:
   working_assumptions:
   affected_documents:
     update_targets:
+      - path:
+        item_or_claim_ids:
+        partial_supersession:
+          superseding_id:
+          superseded_ids:
+          retained_meaning:
+        reason:
+        required_change:
     inspect_only_candidates:
     excluded:
   affected_artifact_candidates:
   edit_plan:
+    - path:
+      target_item_or_claim_ids:
+      relation_changes:
+      legacy_term_review:
+      required_change:
   optional_routing_context:
   stop_conditions:
   open_questions:
@@ -139,6 +157,11 @@ clarify_result:
 
 For an unresolved topic, set `author_edit_ready: false`, list only current-topic questions that block the
 decision, and omit an actionable edit plan. Keep unrelated future questions in `out_of_topic`.
+
+Item or claim IDs in this result are Author handoff locators, not edit authority. Include relation changes
+such as `supersedes` only when the accepted decision or supplied Linker evidence establishes them. For a
+partial supersession, name the new and old claim IDs, state what meaning remains authoritative, and add
+legacy-term review when former names or identifiers may remain in active items.
 
 For a resolved non-trivial topic, include the completeness check and a recording hint. The hint does not
 grant write authority. Record cross-round decisions in the project's shared decision record and narrower
@@ -167,6 +190,8 @@ verification requires it. Apply the Payload Disclosure Gate: do not print raw `*
    recorded, or the choice would exceed delegated scope.
 6. If implementation or investigation must happen before the decision, return an unresolved result and
    the bounded next action.
+7. Never convert a document-level impact guess into an item/claim relation without accepted decision or
+   Linker evidence.
 
 ## Verification
 
@@ -179,3 +204,5 @@ Check that Clarify:
 5. Does not claim or depend on Plan Mode or another host mode.
 6. Returns enough decision, completeness, and resume context for Init or Author to continue.
 7. Never edits files and hides structured payloads by default.
+8. Preserves affected item/claim IDs and represents partial supersession without retiring unaffected
+   meaning.

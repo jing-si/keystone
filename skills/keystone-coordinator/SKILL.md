@@ -63,7 +63,7 @@ Do not use Coordinator when:
 
 ## Fail-Soft Recovery
 
-Do not invent an active round, work ID, current step, source authority, or acceptance criteria.
+Do not invent an active round, work ID, active Step, source authority, or acceptance criteria.
 
 When context cannot be recovered, do not create a worker assignment. Report what is missing and recommend the narrowest next action:
 
@@ -89,25 +89,88 @@ Before assigning a worker, recover or establish:
 8. Existing user or agent changes that must be preserved.
 9. Injected skill contract.
 10. Execution constraints supplied by the user, injected skill, or host.
+11. Pre-implementation Linker graph context and any pending graph transaction when implementation or
+    anchor meaning is graph-relevant.
 
 Include `routing_context_ref` only when multiple surfaces, an authority boundary, or an audit requirement makes an explicit routing record useful. Do not require a routing payload for ordinary assignments.
 
 ## Workflow
 
 1. Confirm permission for the current work scope.
-2. Recover the document root, active round, work ID, current step, and workflow state when Keystone-managed work is claimed.
+2. Recover the document root, active round, work ID, all equal `active_steps`, recorded `early_work`,
+   and workflow state when Keystone-managed work is claimed. Never collapse multiple active Steps into
+   a primary Step, and never treat early work as activation.
 3. Extract Goal, Scope, Source Context, Completion Criteria, Stop Conditions, Verification, and Expected Output.
 4. Extract forbidden changes and accepted decisions from available project sources.
-5. Use a Linker report when artifact relations, impact candidates, stale/gap risks, reuse candidates, or anchor changes materially affect the assignment.
-6. Decide whether delegation is useful and whether the work can be bounded. Return to Main direct when it is not.
-7. Select a purpose and authority: `investigate/read_only`, `document_edit/bounded_edit`, `implement/bounded_edit`, `review/review_only`, or `verify/verification`.
-8. Select an injected skill contract. Use `keystone-default-bounded-worker` when no domain-specific or explicitly requested external skill applies.
-9. Keep `injected_skills` non-empty for every actual worker assignment.
-10. Record only execution constraints supplied by the user, injected skill, or host; do not choose an isolation or concurrency strategy on Keystone's behalf.
-11. Create the bounded assignment and deliver it to the worker.
-12. Inspect the returned report and actual state for scope, forbidden changes, verification, source conflicts, and preserved Main context.
-13. Choose the next action: accept candidate, repair, review, verify, escalate, or block.
-14. Let Main make the acceptance decision; update progress to accepted only after that decision.
+5. Recover dependency evaluations for every assigned or active Step and work completion. Keep semantic
+   `depends_on` relations separate from `work_gates`; use structured evidence before legacy HTML.
+6. Use a Linker report when artifact relations, impact candidates, stale/gap risks, reuse candidates, or anchor changes materially affect the assignment.
+   Preserve its document-item and claim IDs, partial-supersession boundaries, legacy-term stale candidates,
+   and metadata-gap classification without reinterpreting them.
+7. Decide whether delegation is useful and whether the work can be bounded. Return to Main direct when it is not.
+8. Select a purpose and authority: `investigate/read_only`, `document_edit/bounded_edit`, `implement/bounded_edit`, `review/review_only`, or `verify/verification`.
+9. Select an injected skill contract. Use `keystone-default-bounded-worker` when no domain-specific or explicitly requested external skill applies.
+10. Keep `injected_skills` non-empty for every actual worker assignment.
+11. Record only execution constraints supplied by the user, injected skill, or host; do not choose an isolation or concurrency strategy on Keystone's behalf.
+12. Create the bounded assignment and deliver it to the worker.
+13. Inspect the returned report and actual state for scope, forbidden changes, verification, source conflicts, and preserved Main context.
+14. When item-level metadata is in scope, reconcile changed item/claim IDs, metadata sync, legacy-term
+    findings, and required verification closure against the supplied Linker or Author handoff.
+15. Choose the next action: accept candidate, repair, review, verify, escalate, or block.
+16. Let Main make the acceptance decision. After that decision, route the accepted Step evidence to
+    Author's `acceptance_finalize` runtime automatically; do not wait for another user command.
+
+A required active-Step gate in `waiting` state blocks that Step's implement assignment, but may allow
+bounded `investigate` or `verify` work. Treat optional gates and work-completion gates according to their
+declared scope. Route `unresolvable`, `invalid`, and `unknown` to Main, Author repair, or Linker evidence;
+never use dependency evaluation alone to mutate progress, cancel work, or grant acceptance.
+
+When an accepted Step's required `finalization.state` is not `complete` or explicitly `waived`, block
+only the same Work's next implement assignment, transition to `in_progress`, next-Step Main acceptance,
+and Work closure. Continue independent Work, equal active Steps, finalization repair, investigation,
+review, and verification. Coordinator does not run source edits, reinterpret validator diagnostics as
+acceptance, or mark finalization complete.
+
+## Artifact Delta and Graph Synchronization
+
+Within an already permitted implementation scope, collect an `artifact_delta` when a worker or Main
+direct changes repository behavior, artifact meaning, or an anchor. Main direct uses the same contract
+without creating an assignment. A graph-relevant delta automatically invokes Linker synchronization;
+this does not create Coordinator permission, widen scope, raise worker authority, or grant acceptance.
+A safe `not_required` assessment for a non-relevant delta records a concrete reason outside the
+canonical delta and maps to finalization `not_applicable`.
+
+```yaml
+artifact_delta:
+  kind: artifact_delta
+  source_surface:
+  changed_locators: []
+  semantic_summary:
+  baseline_digest: sha256:<64-lowercase-hex> | absent
+  graph_relevant: true | false
+graph_attestations:
+  - patch_id:
+    owner: main | coordinator
+    decision: confirm | reject | needs_revision
+    evidence:
+graph_apply_results:
+  - patch_id:
+    result: applied | failed | stale_baseline
+    resulting_digest:
+    evidence:
+```
+
+Linker alone decides canonical mutations and exact patches. Coordinator or Main attests only the
+repository patch it owns; document metadata patches go to Author. A confirmed patch may be assigned or
+applied only inside the existing approved scope and after its raw-byte SHA-256 baseline is rechecked.
+Never write a stale baseline. Preserve each result and partial success as `partially_applied`.
+
+Resume verifies recorded resulting digests for successful patches and baselines for remaining patches,
+without blind reapplication. Rejected or revision-needed attestations and stale baselines are
+`conflicted`; failed apply is `failed`. Linker creates a new attempt with a new transaction ID and
+current baselines. Coordinator may prepare `accept_candidate`, but only Linker reconstruction plus the
+bundled mechanical validator can make the transaction `verified`; Main retains acceptance and Author
+retains finalization authority.
 
 ## Execution Environment
 
@@ -193,6 +256,15 @@ worker_assignment:
     test_candidates:
     document_sync_candidates:
     metadata_sync_risks:
+    affected_item_or_claim_ids:
+    partial_supersession_boundaries:
+    legacy_term_stale_candidates:
+    metadata_gaps:
+    dependency_status:
+    active_step_gates:
+    work_completion_gates:
+    graph_transaction_ref:
+    allowed_graph_patch_ids:
   main_context_checkpoint:
   injected_skills:
     - skill_id:
@@ -210,10 +282,18 @@ worker_assignment:
   forbidden_changes:
   stop_conditions:
   verification:
+    required_closure:
+      - target_item_or_claim_id:
+        expectation:
+        evidence_required:
   execution_environment:
     constraints:
     supplied_by: user | injected_skill | host | combined
   return_report_contract:
+    artifact_delta:
+    graph_attestations:
+    graph_apply_results:
+    graph_resume_evidence:
 ```
 
 Use `main_context_checkpoint` to preserve global intent, accepted decisions, current work identity, source conflicts, scope boundaries, and Main acceptance ownership across handoffs.
@@ -239,7 +319,13 @@ worker_report:
       limits_hit:
   changed_files:
   changed_key_ids:
+  changed_item_or_claim_ids:
   changed_capabilities:
+  artifact_delta:
+  graph_attestations:
+  graph_apply_results:
+  graph_transaction_state:
+  graph_resume_evidence:
   local_decisions:
     - decision:
       reason:
@@ -249,6 +335,11 @@ worker_report:
   verification:
   document_sync_needed:
   metadata_sync_needed:
+  legacy_term_findings:
+  verification_closure:
+    - target_item_or_claim_id:
+      result: pass | fail | not_run | inconclusive
+      evidence:
   source_conflicts:
   main_context_checkpoint_check:
   workspace_conflicts:
@@ -266,6 +357,14 @@ worker_report_review:
   scope_result: within_scope | out_of_scope | unclear
   forbidden_change_result: none | found | unclear
   verification_result: pass | fail | not_run | inconclusive
+  item_metadata_result: pass | fail | not_applicable | inconclusive
+  legacy_term_stale_result: pass | fail | not_applicable | inconclusive
+  verification_closure_complete: true | false
+  graph_sync_result:
+  graph_transaction_state:
+  graph_reconstruction_result: pass | fail | not_run | inconclusive
+  graph_mechanical_validation_result: pass | fail | not_run | inconclusive
+  graph_transaction_complete: true | false
   source_conflict_result:
   main_context_preserved: true | false
   reason_codes:
@@ -342,10 +441,14 @@ Review every worker report against actual state, not just its claimed status.
 2. Confirm that no forbidden or unrelated change occurred.
 3. Confirm verification results or record why verification was unavailable.
 4. Confirm that existing changes and Main context were preserved.
-5. Separate source conflicts, stale work orders, stale progress records, and unpropagated accepted decisions.
-6. Assign separate review or verification only when it materially improves confidence.
-7. Use `accept_candidate` only when Main can make an informed acceptance decision.
-8. Leave acceptance to Main. Worker `DONE`, Coordinator review, and successful verification do not independently accept work.
+5. For item-level work, confirm changed item/claim IDs, partial-supersession boundaries, metadata sync,
+   and legacy-term findings against Linker or Author evidence; do not interpret the graph independently.
+6. Require closure evidence for each assigned item/claim verification target before treating verification
+   as complete.
+7. Separate source conflicts, stale work orders, stale progress records, and unpropagated accepted decisions.
+8. Assign separate review or verification only when it materially improves confidence.
+9. Use `accept_candidate` only when Main can make an informed acceptance decision.
+10. Leave acceptance to Main. Worker `DONE`, Coordinator review, and successful verification do not independently accept work.
 
 ## Default User Response
 
@@ -378,8 +481,10 @@ Stop assignment or continuation when:
 6. `injected_skills` would be empty.
 7. A new reusable artifact needs reuse discovery or Linker evidence that is unavailable.
 8. An injected skill conflicts with assignment authority, scope, execution constraints, verification, or report contract.
-9. A report requires source authority, acceptance criteria, status semantics, or meaningful scope/risk changes.
-10. Host constraints or concurrent edits make the assignment unsafe.
+9. Item/claim scope, partial-supersession meaning, or legacy-term stale classification requires graph
+   interpretation not supplied by Linker or an accepted Author handoff.
+10. A report requires source authority, acceptance criteria, status semantics, or meaningful scope/risk changes.
+11. Host constraints or concurrent edits make the assignment unsafe.
 
 Apply fail-soft recovery instead of inventing missing context. Ask the user only when an actual decision or permission boundary remains.
 
@@ -398,3 +503,11 @@ Verify Coordinator behavior by checking:
 9. Existing changes are preserved and conflicts are reported.
 10. Worker `DONE` remains distinct from Main acceptance.
 11. Default user responses hide structured payloads while preserving decisions, scope, verification, risks, and next action.
+12. Item/claim IDs, legacy-term stale risks, metadata sync, and per-target verification closure survive
+    assignment, report, and review without Coordinator inventing graph conclusions.
+13. Required waiting gates block only their declared implement scope, while unresolved evaluations cause
+    no automatic status mutation, assignment, cancellation, or acceptance.
+14. Graph-relevant repository deltas automatically reach Linker without creating permission, scope,
+    assignment, acceptance, or status authority.
+15. Worker/Main reports preserve owner attestations, apply results, partial resume evidence, and the
+    distinction between Coordinator accept-candidate readiness and Linker-verified graph closure.

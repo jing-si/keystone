@@ -1,5 +1,11 @@
 ---
 doc_type: standard
+created_at: "2026-05-31"
+status: active
+approval:
+  state: accepted
+  accepted_at: "2026-08-05"
+  accepted_by: main
 key:
   id: key.standard.project
   refs:
@@ -11,6 +17,7 @@ key:
     - key.topic.bootstrap
     - key.topic.initialization
     - key.topic.runtime-independence
+    - key.topic.temporal-metadata
 ---
 
 # Keystone 프로젝트 기준서
@@ -34,8 +41,9 @@ worker가 같은 의도와 경계 안에서 작업하도록 context를 제공한
 2. `keystone-clarify`: 사람의 high-impact 의도와 결정(6)을 topic 단위로 정리한다.
 3. `keystone-author`: 수락된 결정(6)과 범위 안에서 원천 문서(2)와 Change Set(17)을 작성하거나
    수정한다.
-4. `keystone-linker`: Artifact Graph를 read-only로 해석해 문서, capability(16), code, config,
-   schema, API, test artifact의 연결과 impact/stale/gap 후보를 보고한다.
+4. `keystone-linker`: Source surface를 read-only로 조사해 Artifact Graph를 해석하고 문서,
+   capability(16), code, config, schema, API, test artifact의 canonical graph mutation과
+   impact/stale/gap 후보를 결정한다.
 5. `keystone-coordinator`: Keystone context를 bounded worker assignment로 만들고 worker
    report를 Keystone workflow로 회수한다.
 6. `keystone-init`: 새 프로젝트에 R000과 최소 문서 기반을 만들고 프로젝트 기준서 작성
@@ -103,9 +111,9 @@ worker가 같은 의도와 경계 안에서 작업하도록 context를 제공한
 - 사용 규칙: 작업 round(13) 안의 work node와 step으로 작성하며, coordinator가 Current Step
   Brief와 Context Pack을 복구할 수 있게 작성한다.
 
-(5) 진행 기록(progress record): 현재 step과 workflow 상태를 복구하는 문서
+(5) 진행 기록(progress record): 활성 step들과 workflow 상태를 복구하는 문서
 
-- 의미: 현재 step, step status, main acceptance, 최근 report와 보류 결정을 담는 원천 문서
+- 의미: `active_steps`, step status, main acceptance, `early_work`, 최근 report와 보류 결정을 담는 원천 문서
 - 사용 규칙: worker `DONE`만으로 accepted 또는 complete로 표시하지 않는다.
 
 (6) 결정(decision): 수락된 정책 또는 설계 선택
@@ -475,9 +483,17 @@ test의 의미나 실제 동작을 대체하지 않는다.
    기준은 `standards/artifacts/key-standard-artifact-graph.md`를 따른다.
 9. 문서, capability(16), code, config, schema, API, test artifact의 impact/stale/gap 후보 해석은
    `keystone-linker` 기준서를 따른다.
-10. Artifact Graph의 operational interpretation은 Linker가 소유한다. 이 ownership은 graph
-    state와 candidate 판단 권위이며, source document 또는 code/config/schema/API/test source edit
-    authority를 포함하지 않는다.
+10. Artifact Graph의 canonical mutation 결정은 Linker만 소유한다. Linker는 graph state와
+    candidate를 해석하고 artifact ID, capability node, relation, provenance, locator, lifecycle,
+    replacement의 생성·변경·폐기를 canonical mutation으로 결정하지만 source document 또는
+    code/config/schema/API/test source를 직접 쓰지 않는다.
+11. Author는 `document_delta`와 canonical mutation을 대조해 문서 의미·문서 metadata patch를
+    `confirm | reject | needs_revision`으로 attestation하고 승인된 exact patch를 적용한다.
+12. Main direct 또는 허락된 Coordinator는 `artifact_delta`와 canonical mutation을 대조해
+    repository 의미·anchor patch를 attestation하고 승인된 exact patch를 적용한다. Validator는
+    기계적 진단만 하며 mutation, scope, acceptance 또는 source write를 결정하지 않는다.
+13. Main/User만 work scope와 acceptance를 결정한다. Graph-relevant 변경 trigger는
+    synchronization lifecycle을 자동 시작하지만 scope를 넓히거나 Coordinator 허락을 만들지 않는다.
 
 Keystone 작업은 문서 탐색, impact review, context brief, worker assignment, review,
 verification을 준비할 때 키메타(9), 코드 앵커(18), repository evidence를 함께 사용한다.
@@ -488,8 +504,8 @@ verification을 준비할 때 키메타(9), 코드 앵커(18), repository eviden
 2. 기준서(3)는 최상위 기준서에서 시작해 필요한 child 기준서로 내려간다.
 3. 작업서(4)는 최상위 work index에서 시작해 active work round와 active work node 또는
    명시된 work node로 내려간다.
-4. Current work node 안에서는 node index, 작업서(4), 진행 기록(5)을 함께 읽어 현재 step과
-   실행 범위를 복구한다.
+4. Active work node 안에서는 node index, 작업서(4), 진행 기록(5)을 함께 읽어 0개 이상의
+   `active_steps`와 실행 범위를 복구한다.
 5. 결정(6) 기록, 범위 문서(7), 파생 에이전트 문서(8), 키메타와 코드 앵커로 발견한 후보는 위
    순서를 보강하는 추가 evidence로 읽는다.
 6. Capability(16)는 문서와 code를 직접 1:1로 묶기보다 기준서가 govern하고 code가 provide/use
@@ -498,8 +514,8 @@ verification을 준비할 때 키메타(9), 코드 앵커(18), repository eviden
    함께 사용한다.
 8. 사용자가 특정 step이나 work를 직접 지정하면 해당 work node를 찾을 수 있지만, 실행 판단은
    적용 가능한 기준서(3)를 함께 읽은 뒤에 한다.
-9. `key.topic.current-step`으로 표시된 문맥은 `key.topic.next-step` 같은 후속 참고 문맥보다
-   우선한다.
+9. Legacy `key.topic.current-step`은 단일 권위 포인터로 사용하지 않고 실제 step status와
+   `active_steps`를 대조할 compatibility evidence로만 읽는다.
 10. 문서 frontmatter의 `key.refs`는 section-level `key.refs`보다 넓은 관련성을 나타낸다.
 
 이 저장소에서 사용하는 controlled vocabulary namespace는 다음을 우선 허용한다.
@@ -619,8 +635,8 @@ Generated reverse index나 cache는 source of truth가 아니라 탐색 최적�
 8. `key.refs` topic overlap은 기본적으로 `informational` 또는 `weak_candidate`이며 자동 수정
    대상이 아니다.
 
-<!-- key: id=key.standard.project.std-keystone-019 refs=key.topic.keystone-metadata key.topic.status key.topic.acceptance -->
-### STD-KEYSTONE-019: 문서 lifecycle, approval과 작업 상태를 분리한다
+<!-- key: id=key.standard.project.std-keystone-019 refs=key.topic.keystone-metadata key.topic.temporal-metadata key.topic.status key.topic.acceptance -->
+### STD-KEYSTONE-019: 문서 lifecycle, approval, 시간 metadata와 작업 상태를 분리한다
 
 1. 문서 lifecycle은 `draft`, `active`, `superseded`, `archived`를 사용한다.
 2. 문서 approval은 `pending`, `accepted`, 필요한 경우 `rejected`를 사용한다.
@@ -628,9 +644,16 @@ Generated reverse index나 cache는 source of truth가 아니라 탐색 최적�
    별도 namespace다.
 4. 의미 변경은 approval을 `pending`으로 돌린다. 의미 없는 형식 변경은 비의미 변경임을
    기록하고 기존 approval을 유지할 수 있다.
-5. 새 문서는 YAML frontmatter로 상태를 표현한다. 기존 corpus의 frontmatter를 의미 변경과
-   함께 자동 migration하지 않으며, 상태·승인 metadata migration은 별도 승인 작업으로 다룬다.
-6. 세부 metadata와 기존 문서 호환 규칙은
+5. 새 원천 문서는 YAML frontmatter에 최초 생성일 `created_at`을 기록하고, 현재 의미가
+   수락되면 `approval.accepted_at`을 기록한다.
+6. `created_at`은 변경 이력이 아니라 문서가 처음 생성된 날짜이며 이후 수정하지 않는다.
+   `approval.accepted_at`은 현재 의미의 수락일이며 lifecycle 또는 작업 상태를 대체하지 않는다.
+7. 결정 기록의 새 결정에는 결정이 확정된 `결정일`을 기록한다. 날짜가 최신이라는 사실만으로
+   더 높은 권위를 갖지 않으며, 권위와 대체 관계는 상태와 typed relation으로 판단한다.
+8. 새 문서는 YAML frontmatter로 상태와 시간 metadata를 표현한다. 기존 corpus의
+   frontmatter를 의미 변경과 함께 자동 migration하지 않으며, 상태·승인 metadata migration은
+   별도 승인 작업으로 다룬다.
+9. 세부 날짜 형식, 선택적 효력·대체 날짜와 기존 문서 호환 규칙은
    `standards/bootstrap/key-standard-bootstrap.md`를 따른다.
 
 <!-- key: id=key.standard.project.std-keystone-020 refs=key.doc.source key.topic.document-system -->
@@ -640,13 +663,17 @@ Generated reverse index나 cache는 source of truth가 아니라 탐색 최적�
 복구할 수 있어야 한다.
 
 1. active work round
-2. 현재 step
+2. 0개 이상의 활성 step과 각 status source
 3. goal
 4. completion criteria
 5. applicable standards
 6. expected scope
 7. risks
 8. verification
+
+`active_steps`는 Step 상태를 복제하지 않는 참조 목록이며 우선순위나 대표 Step을 강제하지 않는다.
+정식 상태 전이 없이 미래 Step 일부가 먼저 처리되면 대상 Step에 `early_work`로 원인, 처리 범위,
+남은 범위와 `status_effect: none`을 기록한다.
 
 <!-- key: id=key.standard.project.std-keystone-021 refs=key.topic.document-system key.topic.skill-contract -->
 ### STD-KEYSTONE-021: 작업서는 goal assignment를 위해 작업을 나눈다
@@ -907,12 +934,14 @@ Coordinator는 코딩 방법론 자체를 독점하지 않는다. 외부 코딩 
 <!-- key: id=key.standard.project.std-keystone-044 refs=key.topic.skill-contract key.topic.artifact-graph key.role.linker -->
 ### STD-KEYSTONE-044: Linker는 artifact relation과 impact/stale/gap 후보를 해석한다
 
-`keystone-linker`는 Artifact Graph의 operational interpretation owner다. Linker는 read-only로
+`keystone-linker`는 Artifact Graph의 canonical mutation decision owner다. Linker는 source를 read-only로
 원천 문서(2), 결정(6), 작업서(4), 키메타(9), 코드 앵커(18), repository evidence를 함께 사용해
 문서가 만들거나 통제하는 output artifact와 그 영향 후보를 탐색한다. Output artifact는
 skill source, code, config, schema, API, test, generated file, 문서 산출물 같은 surface를 가질
 수 있지만, Linker의 1차 관심사는 `문서/결정/작업서 -> 산출물` 관계다. Linker는 artifact
-graph의 해석과 후보 보고를 소유하지만 원천 문서(2)나 산출물을 직접 수정하지 않는다.
+graph의 해석·후보 보고와 exact canonical mutation 결정을 소유하지만 원천 문서(2)나 산출물을
+직접 수정하지 않는다. Surface owner attestation과 baseline 검증 없이는 mutation을 적용하거나
+`verified`로 판정하지 않는다.
 
 1. Artifact discovery: 현재 요청과 관련된 capability와 output artifact 후보를 찾는다.
 2. Impact analysis: 문서, 결정(6), 작업서(4), output artifact diff가 다른 artifact에 줄 영향
@@ -922,7 +951,7 @@ graph의 해석과 후보 보고를 소유하지만 원천 문서(2)나 산출�
    reuse/test/stale/gap 후보를 정리한다.
 5. Handoff: 문서 metadata 수정은 Author에게, output artifact 수정은 Main direct 또는 사용자
    허락을 받은 Coordinator로 넘긴다.
-6. Invocation: Linker는 read-only이므로 Main이 필요하다고 판단하면 별도 사용자 승인 없이
+6. Invocation: Linker는 source-write authority가 없으므로 Main이 필요하다고 판단하면 별도 사용자 승인 없이
    사용할 수 있다. Graph evidence가 적으면 확인 가능한 범위와 gap을 fail-soft로 보고한다.
 
 <!-- key: id=key.standard.project.std-keystone-045 refs=key.topic.skill-contract key.contract.output key.topic.external-assist -->
@@ -1113,15 +1142,66 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
 5. work unit을 reviewable output이 있는 명확한 goal로 배정할 수 없다.
 6. 문서 변경의 impact 범위가 불명확하다.
 7. high-risk implementation이 필요하다.
-8. 현재 step, completion criteria, applicable standard를 복구할 수 없다.
+8. active/실행 가능 Step, completion criteria, applicable standard를 복구할 수 없다.
 9. 기존 사용자 또는 다른 agent 변경을 덮어쓸 risk가 있다.
 10. verification을 실행할 수 없거나 실패 원인이 불명확하다.
+
+<!-- key: id=key.standard.project.std-keystone-054 refs=key.topic.artifact-graph key.topic.work-sequence key.topic.work-recovery key.topic.verification -->
+### STD-KEYSTONE-054: Dependency 의미 관계와 work gate를 분리한다
+
+1. `key.relations.depends_on`은 source artifact/work가 target artifact/work에 의미적으로 의존함을
+   나타내는 source -> target typed relation이며 자동 status mutation이나 scheduling 명령이 아니다.
+2. `work_gates`는 dependency target의 조건이 source의 어느 step 또는 work completion에
+   적용되는지 표현하는 execution contract다.
+3. Legacy work-level `depends_on`에 명시적 gate가 없으면 source 시작을 차단하지 않고
+   work completion gate 후보로 해석한다.
+4. Dependency 판정은 `satisfied`, `waiting`, `unresolvable`, `invalid`, `unknown`을 사용하고
+   lifecycle, approval, work status와 분리한다.
+5. Structured metadata과 legacy HTML이 함께 있으면 structured metadata를 우선하고 충돌을 보고한다.
+6. Missing target, duplicate, self-reference, invalid step은 `invalid` 또는 `unresolvable`로 분리하고
+   dependency만으로 work status를 바꾸거나 worker를 자동 할당·취소하지 않는다.
+7. Step gate cycle은 work node만이 아니라 source/target step과 completion event를 펼친
+   expanded event graph에서 판정해 false cycle을 피한다.
+8. 상세 schema, cancelled/superseded target과 compatibility 판정은 Artifact Graph 기준서를 따른다.
+
+<!-- key: id=key.standard.project.std-keystone-055 refs=key.topic.acceptance key.topic.progress-update key.topic.verification key.topic.work-recovery -->
+### STD-KEYSTONE-055: Acceptance finalization은 기존 상태 체계를 보강한다
+
+1. Main acceptance는 현재 처리한 Step의 기존 progress status를 `accepted`로 전이한다.
+2. Finalization은 새 progress/work/lifecycle/approval 상태가 아니라 기존 Progress 또는 Change Set의
+   `finalization.state: pending | in_progress | complete | waived` 하위 상태다.
+3. 현재 Step 수용 후 해당 Step과 상태를 집계·노출하는 Work, Round, root index, Context Map을
+   평가한다. 상위 소유자는 자체 완료 조건을 충족할 때만 상태를 전이한다.
+4. 형제·미래 Step은 선작업이 있어도 상태를 바꾸지 않고 `early_work`만 기록한다.
+5. `active_steps`는 0개 이상의 동등한 Step 참조를 허용하며 상태를 복제하지 않는다.
+6. Author는 기존 Impact, Change Set과 Linker evidence로 영향 후보를 계산하고 각 후보에
+   `updated`, `no_change`, `historical`, `out_of_scope`, `clarification_required`,
+   `integration_gate` disposition과 근거를 남긴다.
+7. Required finalization이 complete가 아니면 동일 work의 다음 implement 상태 전이를 차단하지만
+   다른 work와 read-only 조사에는 자동 확장하지 않는다.
+8. Validator는 Author package의 bundled diagnostic script이며 기계적 정합성만 검사한다.
+   문서 수정, 의미 판단, acceptance와 finalization 완료 전이를 수행하지 않는다.
+
+<!-- key: id=key.standard.project.std-keystone-056 refs=key.topic.artifact-graph key.topic.finalization key.topic.verification key.role.linker key.role.author key.role.coordinator -->
+### STD-KEYSTONE-056: Graph synchronization은 acceptance finalization을 additive하게 확장한다
+
+1. 문서 또는 repository 의미 변경이 graph-relevant이면 현재 Progress 또는 Change Set에
+   `graph_sync.required: true`와 disposition을 기록하고 synchronization transaction을 시작한다.
+2. Disposition은 최소 `required | not_applicable | deferred`를 사용한다. `not_applicable`과
+   `deferred`에는 근거가 필요하며 required transaction은 `verified` evidence가 있어야
+   finalization을 `complete`로 만들 수 있다.
+3. Verified evidence는 transaction ID, attestation 결과, baseline digest 확인, 모든 required
+   surface apply 결과, Linker reconstruction 결과와 mechanical validator 결과를 가리킨다.
+4. Required graph sync가 미완료여도 이미 이루어진 Main acceptance를 취소하거나 기존 work
+   status를 되돌리지 않는다. 다만 동일 acceptance의 finalization `complete` 전이는 차단한다.
+5. 이 확장은 R004의 accepted 문서·진행 기록을 소급 수정하지 않고 이후 finalization runtime에
+   additive하게 적용한다.
 
 <!-- key: id=key.standard.project.active-work refs=key.topic.document-system key.topic.work-round -->
 ## 관련 active work
 
 - `00_docs/works/00_key-index.md`
-- `00_docs/works/r002-bootstrap-runtime-independence/00_key-index.md`
+- `00_docs/works/r005-artifact-graph-synchronization/00_key-index.md`
 
 <!-- key: id=key.standard.project.child-standards refs=key.topic.skill-contract key.topic.document-system -->
 ## 관련 child 기준서

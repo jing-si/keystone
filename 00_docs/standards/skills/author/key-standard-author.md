@@ -1,5 +1,11 @@
 ---
 doc_type: standard
+created_at: "2026-06-10"
+status: active
+approval:
+  state: accepted
+  accepted_at: "2026-08-05"
+  accepted_by: main
 key:
   id: key.standard.skill.author
   refs:
@@ -11,6 +17,7 @@ key:
     - key.topic.impact-review
     - key.topic.progress-update
     - key.topic.artifact-graph
+    - key.topic.temporal-metadata
 ---
 
 # keystone-author 기준서
@@ -34,7 +41,8 @@ key:
 7. Change Set(17) 작성 규칙
 8. Linker report 또는 Linker handoff seed를 바탕으로 source document metadata 변경,
    Change Set(17), document sync candidate를 반영
-9. 문서 작성 후 verification과 report contract
+9. 새 문서, 현재 의미의 승인과 결정 기록에 temporal metadata를 적용
+10. 문서 작성 후 verification과 report contract
 
 <!-- key: id=key.standard.skill.author.out-of-scope refs=key.role.author key.topic.document-authoring key.topic.skill-contract key.topic.formal-workflow key.topic.external-assist -->
 ## 적용하지 않는 범위
@@ -56,7 +64,7 @@ key:
    `STD-KEYSTONE-006`, `STD-KEYSTONE-007`, `STD-KEYSTONE-008`,
    `STD-KEYSTONE-010`, `STD-KEYSTONE-011`, `STD-KEYSTONE-012`,
    `STD-KEYSTONE-013`, `STD-KEYSTONE-015`, `STD-KEYSTONE-016`,
-   `STD-KEYSTONE-017`, `STD-KEYSTONE-018`,
+   `STD-KEYSTONE-017`, `STD-KEYSTONE-018`, `STD-KEYSTONE-019`,
    `STD-KEYSTONE-020`, `STD-KEYSTONE-021`, `STD-KEYSTONE-022`,
    `STD-KEYSTONE-023`, `STD-KEYSTONE-024`, `STD-KEYSTONE-025`,
    `STD-KEYSTONE-027`, `STD-KEYSTONE-030`, `STD-KEYSTONE-032`, `STD-KEYSTONE-042`,
@@ -250,6 +258,8 @@ Create Mode는 새 원천 문서(2)를 만든다.
 8. Parent 기준서는 상세 규칙을 반복하지 않고 feature 이름, 짧은 설명, child link를 둔다.
 9. Child 기준서는 trigger, non-trigger, input, output, workflow, verification, stop
    condition을 구현 가능한 수준으로 작성한다.
+10. 새 원천 문서에는 생성 시점의 `created_at`을 기록하고 이후 revision에서 바꾸지 않는다.
+11. 새 결정 기록에는 결정이 확정된 `결정일`을 기록한다.
 
 <!-- key: id=key.standard.skill.author.revise-mode refs=key.role.author key.topic.document-authoring key.topic.impact-review -->
 ### Revise Mode
@@ -262,6 +272,10 @@ Revise Mode는 기존 원천 문서(2)를 수정한다.
 4. 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록 사이에 영향이 있으면
    `STD-KEYSTONE-023`에 따라 함께 검토한다.
 5. 의미 변경이 불확실하면 수정하지 않고 보고한다.
+6. 의미가 바뀌면 approval을 `pending`으로 돌리고 현재 `approval.accepted_at`을 제거한다.
+   Main이 변경 결과를 다시 수락하면 새 `accepted_at`을 기록한다.
+7. 의미 없는 형식 변경은 근거를 기록하고 기존 approval과 `accepted_at`을 유지할 수 있다.
+8. 일반적인 `updated_at`은 추가하거나 갱신하지 않는다.
 
 <!-- key: id=key.standard.skill.author.clarify-apply-mode refs=key.role.author key.role.clarify key.topic.document-authoring -->
 ### Clarify-Apply Mode
@@ -277,6 +291,7 @@ Clarify-Apply Mode는 수락된 Clarify result를 문서에 반영한다.
 4. Edit plan 밖의 scope나 acceptance criteria는 바꾸지 않는다.
 5. 적용 중 충돌이 발견되면 중단하고 main/user 결정(6)을 요청한다.
 6. 적용 후 필요한 경우 결정(6) 기록과 진행 기록(5)을 갱신한다.
+   새 결정을 기록한다면 수락된 결정의 `결정일`을 함께 기록한다.
 7. 다른 문서와 함께 맞춰야 하는 원천 문서(2) 수정은 Clarify가 아니라 Author가 담당한다.
 8. Clarify는 원천 문서를 직접 수정하지 않는다. 단순 오탈자는 Main 또는 Author가 현재 위임
    범위 안에서 처리한다.
@@ -315,7 +330,7 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
    - 의미 변화 없는 formatting
 3. Main acceptance 없이 작업을 complete 또는 accepted로 표시하지 않는다.
 4. Worker `DONE`만으로 진행 상태를 완료로 바꾸지 않는다.
-5. Acceptance state, status semantics, current step이 바뀌면 명시적으로 보고한다.
+5. Acceptance state, status semantics, `active_steps`가 바뀌면 명시적으로 보고한다.
 6. Progress update가 작업서(4)의 scope나 completion criteria를 바꾸면 중단한다.
 
 <!-- key: id=key.standard.skill.author.section refs=key.role.author key.doc.standard key.topic.document-authoring -->
@@ -367,8 +382,68 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
 11. 결정(6) 기록은 여러 round에 영향을 주면 `works/key-decisions.md`에, 특정 round에만
     영향을 주면 해당 round의 `key-decisions.md`에, 특정 work node에만 영향을 주면 해당 work
     node의 `key-decisions.md`에 둔다.
-12. 작업서 생성 후 context map, root works index, round index의 link와 status drift를
+12. 새 결정에는 `결정일: YYYY-MM-DD`를 기록하며 날짜만으로 결정 우선순위를 판단하지 않는다.
+13. 작업서 생성 후 context map, root works index, round index의 link와 status drift를
     확인한다.
+
+<!-- key: id=key.standard.skill.author.acceptance-finalization refs=key.role.author key.topic.acceptance key.topic.progress-update key.topic.verification -->
+## Acceptance finalization
+
+1. Main acceptance 직후 현재 Step의 Progress 또는 Change Set에 finalization 필요성을 판정한다.
+2. 새 상태 체계를 만들지 않고 `required`와 `state: pending | in_progress | complete | waived`를 기록한다.
+3. 현재 Step, Work node, Round, root index, Context Map과 관련 Standard·Decision·Change Set을
+   영향 후보로 검토하되, 형제·미래 Step 상태를 변경하지 않는다.
+4. 미래 Step 선작업은 대상 Step에 `early_work`로 원인, 처리 범위, 남은 범위와
+   `status_effect: none`을 기록한다.
+5. 모든 후보에 disposition과 근거를 남긴 후 bundled validator를 실행한다.
+6. Validator는 `skills/keystone-author/scripts/`의 package-local artifact가 소유하며 외부 Python
+   dependency 없이 설치 package 안에서 실행 가능해야 한다.
+7. Required 기계 검사가 실패하거나 실행되지 않으면 `complete`로 전이하지 않는다. 적용할
+   기계 검사가 없으면 `not_applicable` evidence를 허용한다.
+8. Author만 승인된 범위의 원천 문서를 수정한다. Validator와 hook은 진단만 수행한다.
+9. Graph-relevant change에는 `graph_sync.required`와 `required | not_applicable | deferred`
+   disposition 및 근거를 기록한다. Required이면 verified transaction evidence 없이는
+   finalization을 `complete`로 전이하지 않는다.
+10. 미완료 graph sync는 Main acceptance를 취소하거나 progress를 되돌리지 않는다. R004의
+    accepted 문서·기록을 수정하지 않고 이후 finalization에 additive하게 적용한다.
+
+<!-- key: id=key.standard.skill.author.graph-synchronization refs=key.role.author key.role.linker key.topic.artifact-graph key.topic.keystone-metadata key.topic.change-set -->
+## Document delta와 graph synchronization
+
+1. Author가 승인 범위에서 문서 의미나 독립 metadata item을 변경하면 path, locator, semantic
+   summary와 raw-byte SHA-256 baseline을 가진 `document_delta`를 만든다.
+2. Graph-relevant delta는 Linker synchronization을 자동 시작한다. 이 trigger는 Author scope를
+   넓히거나 Coordinator permission, acceptance를 만들지 않는다.
+3. Linker만 canonical node/relation/provenance/locator/lifecycle mutation을 결정한다. Author는
+   새 typed relation을 독자적으로 확정하거나 Linker mutation을 재해석하지 않는다.
+4. Author는 Linker가 제안한 자기 surface의 exact patch를 문서 의미와 대조하고 patch별로
+   `confirm | reject | needs_revision`과 evidence를 반환한다. 다른 surface를 attest하지 않는다.
+5. `confirm`된 required patch만 apply한다. Apply 직전 source의 UTF-8 raw bytes SHA-256이
+   `baseline_digest`와 다르면 쓰지 않고 `stale_baseline`을 반환한다.
+6. Apply 결과는 `applied | failed | stale_baseline`과 resulting digest를 기록한다. 일부 성공은
+   숨기지 않고 transaction을 `partially_applied`로 복구 가능하게 남긴다.
+7. Rename/move에서 의미가 같으면 stable ID를 유지하고 locator만 바꾼다. 의미 변경·removal은
+   Linker의 replacement/lifecycle mutation과 history evidence를 따른다.
+8. Legacy metadata는 읽기 호환하되 새 metadata와 의미 변경된 metadata만 canonical form으로
+   수렴한다. 기존 corpus를 bulk migration하지 않는다.
+9. Author write 뒤 Linker가 source를 재구성하고 validator가 기계 검사를 할 때까지 Author는
+   transaction을 `verified`나 finalization `complete`로 선언하지 않는다.
+
+```yaml
+document_delta:
+  source_surface:
+  changed_locators: []
+  semantic_summary:
+  baseline_digest: sha256:<64-lowercase-hex> | absent
+graph_attestations:
+  - patch_id:
+    decision: confirm | reject | needs_revision
+    evidence:
+graph_apply_results:
+  - patch_id:
+    result: applied | failed | stale_baseline
+    resulting_digest:
+```
 
 <!-- key: id=key.standard.skill.author.change-set-writing-rule refs=key.role.author key.topic.artifact-graph key.topic.impact-review -->
 ## Change Set 작성 규칙
@@ -392,6 +467,21 @@ Change Set은 다음 fields를 포함할 수 있다.
 11. verification result
 12. final acceptance status
 13. modularization decision과 excluded reuse candidate
+14. `graph_sync.required`, disposition과 근거
+15. graph transaction ID와 `proposed | awaiting_attestation | ready_to_apply | applying |
+    partially_applied | verified | conflicted | failed` state
+16. `document_delta`, 관련 `artifact_delta` reference와 source별 baseline digest
+17. Linker가 결정한 canonical mutation과 exact surface patch reference
+18. surface owner attestation과 apply result
+19. reconstruction·mechanical validation evidence와 resume point
+20. current transaction completeness와 별도 project coverage debt
+
+Pending graph transaction은 optional Change Set 유무와 관계없이 현재 work의 Progress에서 복구할
+수 있어야 한다. Progress에는 최소 `graph_sync.required`, disposition, transaction ID와 state,
+input delta와 required patch reference, attestation/apply result reference, reconstruction·mechanical
+validation evidence, current transaction completeness, coverage debt, 마지막 성공 event와 resume
+point를 기록한다. 전체 mutation이나 patch body는 Linker transaction artifact를 참조할 수 있지만
+Progress의 locator만으로 그 artifact와 다음 미완료 action을 찾을 수 있어야 한다.
 
 예:
 
@@ -429,21 +519,34 @@ source surface의 코드 앵커(18)는 Author가 직접 수정하지 않는다.
 2. 관련 문서 탐색에 실제 도움이 되는 경우에만 `key.refs`를 부여한다.
 3. `key.refs`를 붙일 때는 먼저 참조할 기존 `key.id`가 있는지 확인하고, 가능하면 재사용한다.
 4. 문서 전체에 적용되는 metadata는 YAML frontmatter의 `key`에 둔다.
-5. 특정 section에만 적용되는 metadata는 heading 바로 위 Markdown comment에 한 줄로 둔다.
-6. 문서 metadata 변경이 Artifact Graph 해석을 요구하면 Linker report 또는 Linker handoff seed를
+5. 문서 identity·상태·시간 metadata인 `doc_type`, `created_at`, `status`, `approval`, 선택적
+   `effective_from`과 `superseded_at`은 YAML frontmatter의 top-level에 둔다.
+6. 특정 section에만 적용되는 metadata는 heading 바로 위 Markdown comment에 한 줄로 둔다.
+7. 문서 metadata 변경이 Artifact Graph 해석을 요구하면 Linker report 또는 Linker handoff seed를
    요구한다.
-7. Linker가 보고한 source document metadata gap은 승인 범위 안에서 Author가 반영할 수 있다.
-8. Linker가 보고한 code/config/schema/API/test anchor gap은 Author가 직접 수정하지 않고
+8. Linker가 보고한 source document metadata gap은 승인 범위 안에서 Author가 반영할 수 있다.
+9. Linker가 보고한 code/config/schema/API/test anchor gap은 Author가 직접 수정하지 않고
    Coordinator next action으로 남긴다.
-9. 기준서나 작업서를 수정할 때 같은 `key.id`를 참조하는 문서는 impact candidate로 검토한다.
-10. 같은 `key.refs`가 있어도 자동 수정하지 않는다.
-11. `key.refs`가 없어도 관련 없음으로 단정하지 않고 link, path, heading, keyword도 함께
+10. 기준서나 작업서를 수정할 때 같은 `key.id`를 참조하는 문서는 impact candidate로 검토한다.
+11. 같은 `key.refs`가 있어도 자동 수정하지 않는다.
+12. `key.refs`가 없어도 관련 없음으로 단정하지 않고 link, path, heading, keyword도 함께
    확인한다.
-12. 코드 앵커(18) typed relation이 있는 code/config/schema/API/test artifact는 Linker handoff
+13. 코드 앵커(18) typed relation이 있는 code/config/schema/API/test artifact는 Linker handoff
    seed 또는 Linker report requirement로 보고한다.
-13. Capability(16)가 바뀌면 provider, consumer, verifier 후보 탐색이 필요한지 보고한다.
-14. 실제 문서 수정은 승인 범위와 의미 영향이 명확할 때만 수행한다.
-15. Code, config, schema, API, test artifact와 코드 앵커 수정은 Author가 직접 수행하지 않는다.
+14. Capability(16)가 바뀌면 provider, consumer, verifier 후보 탐색이 필요한지 보고한다.
+15. 실제 문서 수정은 승인 범위와 의미 영향이 명확할 때만 수행한다.
+16. Code, config, schema, API, test artifact와 코드 앵커 수정은 Author가 직접 수행하지 않는다.
+
+<!-- key: id=key.standard.skill.author.dependency-writing refs=key.role.author key.topic.artifact-graph key.topic.work-sequence key.topic.verification -->
+## Dependency and work gate 작성
+
+1. Author는 수용된 의존성 결정만 `key.relations.depends_on`과 `work_gates`로 작성하고
+   step dependency·acceptance gate를 임의로 만들지 않는다.
+2. Gate의 `dependency`가 declared target을 가리키는지, `steps` ID가 존재하는지,
+   `steps`/`work_completion` 중 하나 이상이 있는지, duplicate/self-reference를 검증한다.
+3. Structured metadata와 legacy HTML을 함께 쓰지 않고 migration 중 둘 다 있으면
+   structured 우선과 충돌을 명시한다.
+4. Dependency 판정으로 progress/work status, assignment, cancellation 또는 acceptance를 자동 수정하지 않는다.
 
 <!-- key: id=key.standard.skill.author.output-contract refs=key.role.author key.contract.output -->
 ## Output contract
@@ -580,3 +683,6 @@ Author 기준은 다음 방법으로 검증한다.
    - Author 관련 기준서를 읽어 link와 scope consistency 확인
 16. 프로젝트 로컬 Author 기준서가 없어도 설치된 contract로 Init handoff와 문서 작성을
     수행할 수 있어야 한다.
+17. 새 문서의 `created_at`, accepted 문서의 현재 `approval.accepted_at`, 새 결정의 `결정일`과
+    optional temporal field가 Bootstrap 기준과 일치해야 한다.
+18. 기존 문서 날짜를 추측하거나 일반 `updated_at`을 추가하지 않아야 한다.

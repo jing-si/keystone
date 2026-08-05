@@ -1,0 +1,241 @@
+"""Pure synchronization transaction state transitions and verification."""
+
+from dataclasses import dataclass, replace
+from typing import Mapping, Sequence, Tuple
+
+from .model import (
+    ApplicationResult,
+    ApplicationStatus,
+    AttestationDecision,
+    Diagnostic,
+    GraphSnapshot,
+    GraphTransaction,
+    MutationEntity,
+    MutationOperation,
+    Severity,
+    SurfaceAttestation,
+    TransactionState,
+    patch_owner_matches_surface,
+)
+
+
+@dataclass(frozen=True)
+class AttemptHistory:
+    current: GraphTransaction
+    prior_attempts: Tuple[GraphTransaction, ...] = ()
+
+
+def _require(transaction: GraphTransaction, *states: TransactionState) -> None:
+    if transaction.state not in states:
+        allowed = ", ".join(state.value for state in states)
+        raise ValueError("transaction must be %s" % allowed)
+
+
+def _required_patches(transaction: GraphTransaction):
+    return tuple(patch for patch in transaction.surface_patches if patch.required)
+
+
+def _require_patch_invariants(transaction: GraphTransaction) -> None:
+    if any(not patch_owner_matches_surface(patch.owner, patch.surface, patch.target_path)
+           for patch in transaction.surface_patches):
+        raise ValueError("patch owner does not own the described surface")
+    if transaction.canonical_mutations and not _required_patches(transaction):
+        raise ValueError("graph-changing transaction requires at least one required patch")
+
+
+def _mutation_surface(mutation):
+    value = mutation.after if mutation.after is not None else mutation.before
+    if mutation.entity == MutationEntity.NODE:
+        return value.locator.path, value.provenance.surface
+    locator = value.provenance.locator
+    return (locator.path if locator else None), value.provenance.surface
+
+
+def _observed_link_sets(transaction: GraphTransaction):
+    links = []
+    for mutation in transaction.canonical_mutations:
+        if mutation.evidence.value != "observed":
+            continue
+        path, surface = _mutation_surface(mutation)
+        matches = frozenset(
+            patch.patch_id for patch in transaction.surface_patches
+            if path and patch.target_path == path
+            and (surface is None or patch.surface.value == surface)
+        )
+        links.append(matches)
+    return tuple(links)
+
+
+def begin_attestation(transaction: GraphTransaction) -> GraphTransaction:
+    _require(transaction, TransactionState.PROPOSED)
+    _require_patch_invariants(transaction)
+    return replace(transaction, state=TransactionState.AWAITING_ATTESTATION)
+
+
+def record_attestation(transaction: GraphTransaction,
+                       attestation: SurfaceAttestation) -> GraphTransaction:
+    _require(transaction, TransactionState.AWAITING_ATTESTATION)
+    _require_patch_invariants(transaction)
+    patches = {patch.patch_id: patch for patch in transaction.surface_patches}
+    patch = patches.get(attestation.patch_id)
+    if patch is None:
+        raise ValueError("attestation references unknown patch")
+    if patch.owner != attestation.owner:
+        raise ValueError("attestation owner does not own patch surface")
+    if any(item.patch_id == attestation.patch_id for item in transaction.attestations):
+        raise ValueError("patch already attested")
+    attestations = transaction.attestations + (attestation,)
+    if attestation.decision in (AttestationDecision.REJECT, AttestationDecision.NEEDS_REVISION):
+        return replace(transaction, attestations=attestations, state=TransactionState.CONFLICTED)
+    confirmed = {item.patch_id for item in attestations
+                 if item.decision == AttestationDecision.CONFIRM}
+    required = {patch.patch_id for patch in _required_patches(transaction)}
+    observed_admitted = all(bool(options & confirmed)
+                            for options in _observed_link_sets(transaction))
+    state = (TransactionState.READY_TO_APPLY if required <= confirmed and observed_admitted
+             else TransactionState.AWAITING_ATTESTATION)
+    return replace(transaction, attestations=attestations, state=state)
+
+
+def begin_application(transaction: GraphTransaction,
+                      current_digests: Mapping[str, str]) -> GraphTransaction:
+    _require(transaction, TransactionState.READY_TO_APPLY)
+    _require_patch_invariants(transaction)
+    stale = []
+    for patch in _required_patches(transaction):
+        if current_digests.get(patch.patch_id) != patch.baseline_digest:
+            stale.append(ApplicationResult(patch.patch_id, ApplicationStatus.STALE_BASELINE,
+                                           evidence="current digest differs from patch baseline"))
+    if stale:
+        return replace(transaction, apply_results=transaction.apply_results + tuple(stale),
+                       state=TransactionState.CONFLICTED)
+    return replace(transaction, state=TransactionState.APPLYING)
+
+
+def record_application(transaction: GraphTransaction,
+                       result: ApplicationResult) -> GraphTransaction:
+    _require(transaction, TransactionState.APPLYING)
+    _require_patch_invariants(transaction)
+    patches = {patch.patch_id: patch for patch in transaction.surface_patches}
+    if result.patch_id not in patches:
+        raise ValueError("application result references unknown patch")
+    if any(item.patch_id == result.patch_id for item in transaction.apply_results):
+        raise ValueError("patch is already applied or already has a result")
+    results = transaction.apply_results + (result,)
+    if result.result == ApplicationStatus.FAILED:
+        return replace(transaction, apply_results=results, state=TransactionState.FAILED)
+    if result.result == ApplicationStatus.STALE_BASELINE:
+        return replace(transaction, apply_results=results, state=TransactionState.CONFLICTED)
+    if not result.resulting_digest:
+        raise ValueError("applied result requires resulting_digest")
+    applied_ids = {item.patch_id for item in results if item.result == ApplicationStatus.APPLIED}
+    required_ids = {patch.patch_id for patch in _required_patches(transaction)}
+    state = (TransactionState.APPLYING if required_ids <= applied_ids
+             else TransactionState.PARTIALLY_APPLIED)
+    return replace(transaction, apply_results=results, state=state)
+
+
+def resume_application(transaction: GraphTransaction,
+                       current_digests: Mapping[str, str]) -> GraphTransaction:
+    _require(transaction, TransactionState.PARTIALLY_APPLIED)
+    _require_patch_invariants(transaction)
+    applied = {result.patch_id: result for result in transaction.apply_results
+               if result.result == ApplicationStatus.APPLIED}
+    for patch_id, result in applied.items():
+        if current_digests.get(patch_id) != result.resulting_digest:
+            return replace(transaction, state=TransactionState.CONFLICTED)
+    for patch in _required_patches(transaction):
+        if patch.patch_id not in applied and current_digests.get(patch.patch_id) != patch.baseline_digest:
+            stale = ApplicationResult(patch.patch_id, ApplicationStatus.STALE_BASELINE,
+                                      evidence="remaining patch baseline is stale")
+            return replace(transaction, apply_results=transaction.apply_results + (stale,),
+                           state=TransactionState.CONFLICTED)
+    return replace(transaction, state=TransactionState.APPLYING)
+
+
+def _intended_snapshot(transaction: GraphTransaction, baseline: GraphSnapshot) -> GraphSnapshot:
+    nodes = {node.id: node for node in baseline.nodes}
+    relations = {(relation.source, relation.relation, relation.target): relation
+                 for relation in baseline.relations}
+    for mutation in transaction.canonical_mutations:
+        if mutation.entity == MutationEntity.NODE:
+            identity = (mutation.after or mutation.before).id
+            if mutation.operation == MutationOperation.REMOVE:
+                nodes.pop(identity, None)
+            else:
+                nodes[identity] = mutation.after
+        else:
+            value = mutation.after or mutation.before
+            identity = (value.source, value.relation, value.target)
+            if mutation.operation == MutationOperation.REMOVE:
+                relations.pop(identity, None)
+            else:
+                relations[identity] = mutation.after
+    ordered_nodes = tuple(sorted(nodes.values(), key=lambda node: (node.id, node.locator.path)))
+    ordered_relations = tuple(sorted(
+        relations.values(),
+        key=lambda relation: (relation.source, relation.relation.value, relation.target,
+                              relation.evidence.value, relation.lifecycle.value),
+    ))
+    return GraphSnapshot(ordered_nodes, ordered_relations, baseline.schema_version)
+
+
+def _normalized_snapshot(snapshot: GraphSnapshot) -> GraphSnapshot:
+    return GraphSnapshot(
+        tuple(sorted(snapshot.nodes, key=lambda node: (node.id, node.locator.path))),
+        tuple(sorted(snapshot.relations,
+                     key=lambda relation: (relation.source, relation.relation.value,
+                                           relation.target, relation.evidence.value,
+                                           relation.lifecycle.value))),
+        snapshot.schema_version,
+    )
+
+
+def finalize_transaction(transaction: GraphTransaction,
+                         reconstruction: GraphSnapshot,
+                         mechanical_validation: Sequence[Diagnostic],
+                         current_digests: Mapping[str, str],
+                         *, baseline_snapshot: GraphSnapshot) -> GraphTransaction:
+    _require(transaction, TransactionState.APPLYING)
+    _require_patch_invariants(transaction)
+    required = {patch.patch_id for patch in _required_patches(transaction)}
+    confirms = {item.patch_id for item in transaction.attestations
+                if item.decision == AttestationDecision.CONFIRM}
+    applied = {item.patch_id: item for item in transaction.apply_results
+               if item.result == ApplicationStatus.APPLIED}
+    if not required <= confirms or not required <= set(applied):
+        raise ValueError("all required patches must be confirmed and applied before verification")
+    for patch_id in required:
+        if current_digests.get(patch_id) != applied[patch_id].resulting_digest:
+            return replace(transaction, reconstruction=reconstruction,
+                           mechanical_validation=tuple(mechanical_validation),
+                           state=TransactionState.CONFLICTED)
+    intended = _intended_snapshot(transaction, baseline_snapshot)
+    if _normalized_snapshot(reconstruction) != intended:
+        return replace(transaction, reconstruction=reconstruction,
+                       mechanical_validation=tuple(mechanical_validation),
+                       state=TransactionState.CONFLICTED)
+    if any(item.severity == Severity.ERROR for item in mechanical_validation):
+        return replace(transaction, reconstruction=reconstruction,
+                       mechanical_validation=tuple(mechanical_validation),
+                       state=TransactionState.FAILED)
+    return replace(transaction, reconstruction=reconstruction,
+                   mechanical_validation=tuple(mechanical_validation),
+                   state=TransactionState.VERIFIED)
+
+
+def new_attempt(history: AttemptHistory, revised: GraphTransaction) -> AttemptHistory:
+    _require(history.current, TransactionState.CONFLICTED, TransactionState.FAILED)
+    if revised.state != TransactionState.PROPOSED:
+        raise ValueError("new attempt must start proposed")
+    if revised.transaction_id == history.current.transaction_id:
+        raise ValueError("new attempt requires a new transaction ID")
+    prior_baselines = {patch.target_path: patch.baseline_digest
+                       for patch in history.current.surface_patches}
+    new_baselines = {patch.target_path: patch.baseline_digest for patch in revised.surface_patches}
+    if (history.current.state == TransactionState.CONFLICTED
+            and prior_baselines == new_baselines):
+        raise ValueError("new attempt requires at least one new baseline")
+    clean = replace(revised, attestations=(), apply_results=(), reconstruction=None,
+                    mechanical_validation=(), state=TransactionState.PROPOSED)
+    return AttemptHistory(clean, history.prior_attempts + (history.current,))

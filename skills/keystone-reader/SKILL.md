@@ -1,6 +1,6 @@
 ---
 name: keystone-reader
-description: "Use for read-only orientation and work recovery from existing Keystone documents, including initialization-state reporting, relevant-source navigation, active work/current step recovery, and context brief preparation. Do not use to edit files, inspect an uninitialized repository as a Keystone-specific procedure, assign workers, accept results, or perform deep Artifact Graph impact/stale/gap analysis."
+description: "Use for read-only orientation and work recovery from existing Keystone documents, including initialization-state reporting, relevant-source navigation, active work/active steps recovery, and context brief preparation. Do not use to edit files, inspect an uninitialized repository as a Keystone-specific procedure, assign workers, accept results, or perform deep Artifact Graph impact/stale/gap analysis."
 ---
 
 <!-- keystone: id=key.skill.reader kind=output_artifact artifact_kind=skill_source -->
@@ -21,7 +21,7 @@ meaning when they exist; Reader output does not replace them or Main acceptance.
 ## Use Reader For
 
 1. Keystone document orientation and navigation.
-2. Active round, current work, current step, and status-source recovery.
+2. Active round, current work, zero-or-more equal active Steps, early work, and status-source recovery.
 3. Finding relevant project standards, work orders, progress records, and decisions.
 4. Preparing read-only context before document or implementation work.
 5. Reporting mismatch between Keystone documents and repository evidence.
@@ -80,15 +80,25 @@ valid document roots are a real decision topic; Reader reports the conflict with
 1. Detect initialization state and resolve or narrow the document-root candidates.
 2. If present, read `key-context-map.md` first.
 3. Follow the project standards and works indexes that actually exist.
-4. For work recovery, read the active round index and current work node's order and progress record.
+4. For work recovery, read the active round index and every referenced active Work node's order and
+   progress record. Treat a singular `current_step` claim as stale/conflicting evidence, not authority.
 5. Follow only child indexes and references relevant to the request.
-6. Treat `key.id`, `key.refs`, typed relations, paths, headings, and keywords as navigation evidence,
-   not edit authority or automatic impact propagation.
+6. Treat document, section, and item-level `key.id`, `key.refs`, typed relations, visible row labels,
+   paths, headings, and keywords as navigation evidence, not edit authority or automatic impact
+   propagation. Item IDs may narrow a matched section, decision claim, acceptance criterion, or table row.
 7. When code/config/schema/API/test impact, stale, reuse, or gap analysis must go beyond navigation,
-   recommend Linker and pass the observed seeds without confirming graph conclusions.
+   recommend Linker and pass the observed document/item IDs and locators as handoff seeds without
+   confirming graph conclusions, supersession closure, legacy-term status, or inheritance validity.
 8. Report source conflicts; do not silently prefer documents over operative code or vice versa.
 9. Recommend the next responsible actor without editing or requiring a routing ceremony for a small,
    already-scoped task.
+
+For work recovery, read structured `key.relations.depends_on` and `work_gates` before legacy HTML
+dependency evidence. Separate gates that apply to each active Step from work-completion gates. Report
+each dependency as `satisfied`, `waiting`, `unresolvable`, `invalid`, or `unknown`, with its target,
+condition evidence, and blocking scope. Treat missing, cancelled, superseded, conflicting, or
+insufficiently evidenced targets as fail-soft risks; never mutate work status or assign work from the
+evaluation.
 
 Use an orientation, navigation, or work-preparation emphasis as the request requires; do not require
 the caller to name a mode.
@@ -104,12 +114,17 @@ reader_output:
   request_summary:
   project_summary:
   active_round:
-  current_work:
-  current_step:
+  active_works: []
+  active_steps: []
+  early_work: []
   current_work_status:
+  dependency_status:
+  active_step_gates:
+  work_completion_gates:
   status_sources:
   status_conflicts:
   matched_documents:
+  matched_item_seeds:
   unavailable_keystone_context:
   artifact_graph_needed:
   artifact_seed_candidates:
@@ -138,10 +153,13 @@ changing the underlying risks or recommendation.
 
 1. Never write files or change project state.
 2. Never turn partial navigation evidence into a confirmed Artifact Graph relation.
-3. Never make a high-impact project decision for the user.
-4. Stop and report when conflicting valid roots prevent safe reading.
-5. Stop and report when source conflict or sensitive/local-only access could change the task direction.
-6. Do not stop merely because work records, progress records, graph evidence, or local skill standards
+3. Never interpret an item ID, `supersedes`, inherited field, or `legacy_terms` occurrence as proof of
+   authority, impact, stale state, removal completeness, or a metadata gap; pass it to Linker when that
+   interpretation matters.
+4. Never make a high-impact project decision for the user.
+5. Stop and report when conflicting valid roots prevent safe reading.
+6. Stop and report when source conflict or sensitive/local-only access could change the task direction.
+7. Do not stop merely because work records, progress records, graph evidence, or local skill standards
    are absent; return the useful partial result instead.
 
 ## Verification
@@ -154,4 +172,7 @@ Check that Reader:
 4. Reports uninitialized, partial, conflicted, and ready evidence without guessing.
 5. Recovers work when records exist and fails softly when they do not.
 6. Hands deep graph interpretation to Linker.
-7. Hides structured payloads by default.
+7. Uses item IDs and their locators only to narrow navigation or prepare handoff seeds, without deciding
+   partial supersession, inheritance, legacy-term stale status, or metadata gaps.
+8. Hides structured payloads by default.
+9. Recovers structured and legacy dependencies with explicit evaluation and scope without changing work state.

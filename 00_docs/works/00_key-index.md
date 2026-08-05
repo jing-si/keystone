@@ -10,7 +10,7 @@ key:
     - key.doc.source
 ---
 
-# 작업서(4) round 색인
+# 작업서(5) round 색인
 
 이 색인은 Keystone work round를 찾기 위한 최상위 진입점이다. 각 work round는 특정 시점의
 기준서와 목표를 바탕으로 진행하는 하나의 작업 차수이며, round 안에서 작업 순서는 `S01`부터
@@ -23,6 +23,9 @@ key:
 |---|---|---|---|---|
 | R001 | Bootstrap Keystone | `r001-bootstrap-keystone/00_key-index.md` | superseded | S00-S07 accepted 이력을 보존하고 미수락 S08-S09를 R002로 이관했다 |
 | R002 | Bootstrap and Runtime Independence | `r002-bootstrap-runtime-independence/00_key-index.md` | accepted | Init, R000과 설치된 skill runtime 독립성을 정의하고 repo source에 구현했다 |
+| R003 | Dependency and Work Gate | `r003-dependency-work-gate/00_key-index.md` | accepted | `depends_on`과 단계별 실행 gate를 정의하고 관련 skill runtime 계약에 구현했다 |
+| R004 | Acceptance Finalization | `r004-acceptance-finalization/00_key-index.md` | accepted | Main acceptance를 문서 정합성과 executable validator로 종료한다 |
+| R005 | Artifact Graph Synchronization | `r005-artifact-graph-synchronization/00_key-index.md` | accepted | 기준서와 실제 산출물을 capability-first graph synchronization lifecycle로 연결했다 |
 
 <!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work key.topic.work-round -->
 ## 공통 결정
@@ -34,7 +37,7 @@ key:
 
 1. 프로젝트 전체 방향은 `00_docs/key-context-map.md`를 먼저 읽는다.
 2. 공통 기준과 용어는 `00_docs/standards/01_key-project-standard.md`를 따른다.
-3. 현재 active round는 이 파일의 `Work rounds` 표를 권위로 삼는다.
+3. 현재 active round가 있으면 이 파일의 `Work rounds` 표를 권위로 삼는다. 현재 active round는 없다.
 4. Round 내부 실행 순서는 해당 round의 `00_key-index.md`에서 확인한다.
 5. 각 work의 세부 목표와 검증은 해당 work node의 `key-work-{slug}.md`에서 확인한다.
 6. 각 work의 진행 상태는 해당 work node의 `key-progress.md`에서 확인한다.

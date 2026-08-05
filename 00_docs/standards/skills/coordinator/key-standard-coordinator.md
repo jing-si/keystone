@@ -1,5 +1,6 @@
 ---
 doc_type: standard
+approval: {state: accepted, accepted_at: "2026-08-05", accepted_by: main}
 key:
   id: key.standard.skill.coordinator
   refs:
@@ -101,7 +102,7 @@ review, repair, verification에는 반복 확인하지 않지만 scope나 risk�
 
 `keystone-coordinator`는 다음 경우에 사용할 수 있다.
 
-1. 사용자 허락이 있고 작업서(4)의 current step을 Goal unit으로 실행해야 한다.
+1. 사용자 허락이 있고 작업서(4)의 active 또는 실행 가능 Step을 Goal unit으로 실행해야 한다.
 2. Main이 bounded worker assignment(19)를 만들어 worker에게 전달해야 한다.
 3. Current Step Brief, Context Pack, worker handoff boundary, reviewer focus를 구성해야 한다.
 4. Worker report(20)를 받아 accept candidate, repair, review, verify, escalate 중 다음 결정을
@@ -133,7 +134,7 @@ review, repair, verification에는 반복 확인하지 않지만 scope나 risk�
 1. 원천 문서(2)의 작성 기준, 수정 범위, 영향 문서 판단이 주된 작업이다.
 2. 사용자가 high-impact policy, scope, 문서 구조, 스킬 계약을 먼저 결정해야 한다.
 3. 현재 요청과 관련된 기준서(3)와 작업서(4)를 read-only로 찾기만 하면 된다.
-4. Current step, completion criteria, applicable standard를 복구할 수 없다.
+4. Active/실행 가능 Step, completion criteria, applicable standard를 복구할 수 없다.
 5. Work unit이 bounded worker assignment로 나뉘지 않았다.
 6. 작업이 high-risk implementation인데 main/user decision 없이 worker에게 보낼 수 없다.
 7. 민감한 정보, local-only path, private data가 포함될 수 있지만 policy가 불명확하다.
@@ -148,7 +149,7 @@ Coordinator는 다음 input을 사용할 수 있어야 한다.
 1. 사용자 요청 또는 main의 current task
 2. 설정된 document root(1)
 3. 관련 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록
-4. Current step 또는 이를 복구하기 위한 active round와 active work state
+4. Active steps 또는 이를 복구하기 위한 active round와 active work state
 5. Completion criteria와 verification expectation
 6. Included, excluded, conditional work scope
 7. Stop conditions와 escalation conditions
@@ -173,7 +174,7 @@ Coordinator는 다음 순서를 따른다.
 
 1. 사용자 허락, 설정된 document root(1)와 root works index를 확인한다.
 2. 복수 surface나 권한 경계가 있으면 필요한 routing context를 확인한다.
-3. Active round index와 active work node index를 따라 `round_id`, `work_id`, `current_step`과
+3. Active round index와 active work node index를 따라 `round_id`, `work_id`, `active_steps`와
    workflow state를 복구한다.
 4. 작업서(4)에서 Goal, Scope, Source Context, Completion Criteria, Stop Conditions,
    Verification, Expected Output을 추출한다.
@@ -191,7 +192,7 @@ Coordinator는 다음 순서를 따른다.
     main/user 선택을 요청한다.
 13. 위임 실행의 isolation, worktree, branch, concurrency는 사용자 지시, 주입된 skill과 host
     환경의 계약을 따른다.
-14. Current Step Brief, Context Pack, worker assignment를 만든다.
+14. 선택한 Step의 Step Brief, Context Pack, worker assignment를 만든다.
 15. Worker handoff boundary 또는 reviewer focus를 구성한다.
 16. Worker report(20)를 받은 뒤 actual state와 output을 확인한다.
 17. 필요하면 별도 review 또는 verify assignment를 배정한다.
@@ -203,8 +204,8 @@ Coordinator는 다음 순서를 따른다.
 
 Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
 
-1. Current Step Brief
-   - `round_id`, `work_id`, `step_id`, current step, Goal, completion criteria, applicable
+1. Step Brief
+   - `round_id`, `work_id`, `step_id`, active step set, Goal, completion criteria, applicable
      standards, excluded work, expected edit area, verification, known risks,
      `main_context_checkpoint`를 담는다.
 2. Context Pack
@@ -540,6 +541,47 @@ Coordinator는 subagent 기준서의 reason code catalog를 우선 사용한다.
 계열은 `source_conflict`, `stale_work_order`, `stale_progress_record`,
 `accepted_decision_not_propagated`를 분리해 review focus와 next action으로 연결한다.
 
+<!-- key: id=key.standard.skill.coordinator.graph-synchronization refs=key.role.coordinator key.role.linker key.topic.artifact-graph key.topic.verification key.topic.change-set -->
+## Artifact delta와 graph synchronization
+
+1. Coordinator는 허락된 assignment에서 repository implementation 또는 anchor 의미 변경을
+   발견하면 worker report로 `artifact_delta`를 수집한다. Main direct는 같은 contract를 직접
+   수행할 수 있다.
+2. Delta는 source surface, changed locator, semantic summary와 target source의 UTF-8 raw-byte
+   SHA-256 baseline을 가진다. Graph-relevant delta는 Linker synchronization을 자동 시작하지만
+   current scope, Coordinator permission, worker authority 또는 acceptance를 자동 확대하지 않는다.
+3. Linker만 canonical graph mutation과 exact per-surface patch를 결정한다. Coordinator/Main과
+   worker는 relation을 독자적으로 확정하거나 Linker proposal을 재해석하지 않는다.
+4. Repository surface owner는 자기 implementation 의미와 exact patch를 대조해 patch별
+   `confirm | reject | needs_revision`과 evidence를 반환한다. Source document patch는 Author에게
+   남기며 Coordinator가 attest하거나 적용하지 않는다.
+5. Coordinator는 `confirm`된 scope 안의 patch만 bounded assignment로 적용한다. Apply 직전
+   baseline mismatch면 source를 쓰지 않고 `stale_baseline`을 반환한다.
+6. Worker report는 patch별 `applied | failed | stale_baseline`, resulting digest와 partial apply
+   evidence를 보존한다. 일부 적용된 transaction은 `partially_applied`로 resume하며 이미 적용된
+   patch를 blindly 재적용하지 않는다.
+7. Linker reconstruction과 mechanical validator가 모두 통과하기 전에는 Coordinator review를
+   accept candidate로 만들 수 있어도 transaction `verified`나 finalization `complete`를 선언하지 않는다.
+8. Validator는 diagnostic-only이며 patch 생성·적용, scope, attestation, acceptance를 소유하지 않는다.
+9. Project coverage debt와 current transaction completeness를 분리해 report에 보존한다. Scope 밖
+   legacy gap은 debt로 남기며 bulk metadata migration assignment를 자동 만들지 않는다.
+
+```yaml
+artifact_delta:
+  source_surface:
+  changed_locators: []
+  semantic_summary:
+  baseline_digest: sha256:<64-lowercase-hex> | absent
+graph_attestations:
+  - patch_id:
+    decision: confirm | reject | needs_revision
+    evidence:
+graph_apply_results:
+  - patch_id:
+    result: applied | failed | stale_baseline
+    resulting_digest:
+```
+
 <!-- key: id=key.standard.skill.coordinator.review-verification-flow refs=key.role.coordinator key.topic.verification key.topic.review key.topic.keystone-metadata key.topic.artifact-graph -->
 ## Review and verification flow
 
@@ -621,7 +663,7 @@ Acceptance 후에만 진행 기록(5)을 `accepted` 또는 해당 project의 완
 
 Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한다.
 
-1. Current step, completion criteria, applicable standard를 복구할 수 없다.
+1. Active/실행 가능 Step, completion criteria, applicable standard를 복구할 수 없다.
 2. Work unit이 bounded worker assignment로 자를 수 없다.
 3. Scope boundary, direct edit scope, forbidden change가 불명확하다.
 4. High-risk implementation이 main/user decision 없이 필요하다.
@@ -652,6 +694,17 @@ Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청
 21. 복수 surface나 권한 경계가 불명확해 assignment scope를 안전하게 만들 수 없다.
 
 <!-- key: id=key.standard.skill.coordinator.verification refs=key.role.coordinator key.topic.verification key.topic.acceptance key.standard.subagent -->
+<!-- key: id=key.standard.skill.coordinator.dependency-sequencing refs=key.role.coordinator key.topic.work-sequence key.topic.work-execution -->
+## Dependency sequencing
+
+1. Coordinator는 각 active/실행 가능 Step gate를 assignment 순서 제안에 사용하고 work completion gate를
+   acceptance readiness에서 별도로 확인한다.
+2. Required gate가 `waiting`이면 해당 step implement assignment를 만들지 않지만
+   `investigate`/`verify`와 optional gate 작업은 scope에 따라 제안할 수 있다.
+3. `unresolvable`, `invalid`, `unknown`은 자동 status mutation·assignment·cancellation이 아니라
+   Main/user decision, Author repair 또는 Linker evidence의 next action으로 연결한다.
+4. Coordinator는 dependency 판정만으로 progress를 `blocked`로 바꾸거나 work를 수용하지 않는다.
+
 ## Verification
 
 Coordinator 기준은 다음 방법으로 검증한다.

@@ -84,7 +84,7 @@ orientation, 읽지 못한 Keystone context와 Init 제안을 제공한다.
 
 1. 프로젝트의 현재 문서 구조와 활성 작업을 파악해야 한다.
 2. 현재 요청과 관련된 기준서(3), 작업서(4), 진행 기록(5)을 찾아야 한다.
-3. 사용자가 "run the next step"처럼 현재 step 복구가 필요한 요청을 한다.
+3. 사용자가 "run active steps" 또는 "run the next step"처럼 활성·실행 가능 Step 복구가 필요한 요청을 한다.
 4. main이 구현이나 문서 수정을 시작하기 전에 관련 source context를 준비해야 한다.
 5. document-to-repository mismatch를 read-only로 확인하고 보고해야 한다.
 6. Linker, Author, Clarify, Coordinator 중 다음에 호출할 skill을 판단할 context가 필요하다.
@@ -131,7 +131,7 @@ Reader는 mode와 무관하게 다음 순서를 따른다.
 4. `works/00_key-index.md` 또는 해당 project의 root works index를 읽어 active round를 찾는다.
 5. Active round index를 읽어 round 내부 실행 순서와 active work node를 확인한다.
 6. Active work node의 index, 작업서(4), 진행 기록(5)을 읽어 `round_id`, `work_id`,
-   `current_step`을 함께 복구한다.
+   `active_steps`, `early_work`와 실행 가능 Step 후보를 함께 복구한다.
 7. 현재 요청과 관련된 child index만 따라 내려가며 관련 없는 하위 기준서를 읽지 않는다.
 8. 요청 또는 current work에 관련 키메타(9)가 있으면 같은 `key.id`를 참조하는
    문서를 탐색 후보로 확인한다.
@@ -173,7 +173,8 @@ Orientation Mode는 project-level overview를 만든다.
    - `round_id`
    - `round_index`
    - `work_id`
-   - `current_step`
+   - `active_steps`
+   - `early_work`
    - `current_work_status`
    - `status_sources`
    - `status_authority_order`
@@ -240,7 +241,8 @@ Work Prep Mode는 main이 다음 작업을 실행하거나 subagent handoff를 �
    - `artifact_seed_candidates`
    - `key_ref_queries`
    - `key_ref_matched_candidates`
-   - `current_step`
+   - `active_steps`
+   - `early_work`
    - `current_work_status`
    - `status_sources`
    - `status_authority_order`
@@ -285,7 +287,8 @@ keystone_context_brief:
   document_root:
   active_round:
   current_work:
-  current_step:
+  active_steps:
+  early_work:
   current_work_status:
   status_sources:
     context_map:
@@ -318,7 +321,7 @@ recommended next skill로 제안한다.
 Reader는 `reader_output`과 `keystone_context_brief`를 agent-facing structured payload로 유지한다.
 기본 사용자 응답은 다음 항목만 짧게 보여준다.
 
-1. 현재 상태: document root, active round, current work, current step, current status
+1. 현재 상태: document root, active round, current work, active steps와 status sources
 2. 핵심 판단: source documents와 repository snapshot에서 확인한 결론
 3. 주요 risk 또는 mismatch: status conflict, stale document, missing context
 4. 다음 권장 행동: Reader, Clarify, Author, Linker, Coordinator 중 필요한 next action
@@ -355,7 +358,7 @@ Reader는 키메타(9)와 코드 앵커(18)를 관련 문서와 Linker handoff s
 Reader는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한다.
 
 1. 복수 document root가 충돌해 read scope 자체를 안전하게 정할 수 없다.
-2. 복구할 active round나 current step이 없다는 사실이 아니라, 서로 충돌하는 상태 출처 때문에
+2. 복구할 active round나 active step이 없다는 사실이 아니라, 서로 충돌하는 상태 출처 때문에
    current task 방향을 정할 수 없다.
 3. 원천 문서(2)가 현재 사용자 방향과 충돌한다.
 4. 문서 변경이 필요한데 Reader mode가 read-only라 처리할 수 없다.
@@ -366,6 +369,16 @@ Reader는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한�
 result와 Init 또는 Author 제안을 제공한다.
 
 <!-- key: id=key.standard.skill.reader.verification refs=key.role.reader key.contract.output key.topic.verification -->
+<!-- key: id=key.standard.skill.reader.dependency-recovery refs=key.role.reader key.topic.work-recovery key.topic.work-sequence -->
+## Dependency recovery
+
+1. Reader는 각 active/실행 가능 Step에 적용되는 gate와 전체 work completion gate를 분리해 복구한다.
+2. 각 dependency를 `satisfied`, `waiting`, `unresolvable`, `invalid`, `unknown`으로 보고하고
+   target locator, condition evidence, blocking 적용 범위를 함께 보여준다.
+3. Structured metadata를 우선하고 legacy conflict, missing/cancelled/superseded target은
+   fail-soft risk로 보고한다.
+4. Reader는 dependency 판정으로 work status를 바꾸거나 worker를 할당하지 않는다.
+
 ## Verification
 
 Reader 기준은 다음 방법으로 검증한다.
@@ -373,7 +386,7 @@ Reader 기준은 다음 방법으로 검증한다.
 1. Reader contract만 보고 trigger와 non-trigger를 구분할 수 있어야 한다.
 2. Mode별 output field가 `STD-KEYSTONE-040`의 상위 Reader 책임과 일관되어야 한다.
 3. Reader output은 원천 문서(2)를 대체하거나 수정하지 않아야 한다.
-4. Work Prep Mode output은 coordinator가 `round_id`, `work_id`, `current_step`을 가진
+4. Work Prep Mode output은 coordinator가 `round_id`, `work_id`, `active_steps`를 가진
    final handoff를 만들기 전 단계로 사용할 수
    있어야 한다.
 5. 키메타 또는 코드 앵커를 사용한 경우 output에서 사용한 `key.refs`, artifact seed candidate,

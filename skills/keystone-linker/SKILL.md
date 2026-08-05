@@ -1,6 +1,6 @@
 ---
 name: keystone-linker
-description: "Use for read-only Artifact Graph interpretation: artifact discovery, impact analysis, stale/gap review, reuse/test candidates, source-surface handoff seeds, and worker-assignment artifact context. Do not use to edit source documents, code/config/schema/API/test, make final decisions, or assign workers."
+description: "Use for Artifact Graph interpretation and graph-relevant document or artifact deltas: discovery, impact, stale/gap review, reuse/test candidates, canonical mutation planning, source-surface handoffs, and worker context. Do not use to edit source surfaces, make user decisions, or assign workers."
 ---
 
 <!-- keystone: id=key.skill.linker kind=output_artifact artifact_kind=skill_source -->
@@ -11,11 +11,14 @@ description: "Use for read-only Artifact Graph interpretation: artifact discover
 
 ## Purpose
 
-Interpret Keystone Artifact Graph evidence read-only. Discover output artifacts, classify impact,
-stale, and metadata-gap candidates, report reuse/test candidates, and prepare source-surface
-handoffs or worker-assignment seeds.
+Interpret Keystone Artifact Graph evidence without writing source surfaces. Discover output artifacts,
+classify impact, stale, and metadata-gap candidates, report reuse/test candidates, prepare handoffs,
+and decide canonical graph mutations for graph-relevant synchronization transactions.
 
-Source documents, accepted decisions, output artifacts, and verification evidence are the source of truth. Linker output does not replace source documents, source edits, or Main acceptance. Linker owns operational graph interpretation, not source edit authority.
+Source documents, accepted decisions, output artifacts, and verification evidence are the source of
+truth. Linker output does not replace them or Main acceptance. Linker is the sole canonical graph
+mutation decision owner, but is source-write-free: exact patches are attested and applied only by the
+owner of each source surface.
 
 ## Runtime Authority
 
@@ -30,7 +33,8 @@ Read project-local material only as project evidence when it exists:
 3. Project-specific Artifact Graph policy and declared `key.*` metadata.
 4. Repository paths, symbols, APIs, config, schemas, tests, diffs, and other observed evidence.
 
-Main may invoke Linker without separate user permission because Linker is read-only. Do not infer
+Main may invoke Linker without separate user permission because Linker never writes source surfaces.
+Canonical mutation planning does not grant edit authority or widen the current scope. Do not infer
 an adoption profile from graph coverage; Keystone uses one operating model.
 
 ## Graph Interpretation Rules
@@ -41,7 +45,7 @@ Apply these rules without depending on project-local Linker instructions:
 2. Treat skill source, code, config, schema, API, test, generated file, and document artifact as
    output-artifact surfaces.
 3. Read typed relations from `produces`, `provides`, `uses`, `implements`, `verifies`,
-   `governed_by`, `documents`, `supersedes`, and `derived_from`.
+   `governed_by`, `documents`, `supersedes`, `derived_from`, and `depends_on`.
 4. Treat `key.refs` as navigation evidence, not automatic impact propagation.
 5. Keep stable identity separate from path, symbol, test name, config key, or schema locator.
 6. Treat API artifacts as contracts by default. Do not infer that an API provides a capability
@@ -52,6 +56,19 @@ Apply these rules without depending on project-local Linker instructions:
 9. Separate mechanical stale evidence, semantic stale candidates, and metadata gaps.
 10. Treat generated indexes as derived evidence, never as the source of truth or a Linker write
     target.
+11. Treat independently referenceable Markdown headings, list items, table rows, decisions,
+    claims, and acceptance items as document-item nodes when they declare stable item metadata.
+12. Inherit document and section authority, `governed_by`, and lifecycle into an item when they are
+    not overridden, but never inherit `id` or `supersedes`.
+13. Interpret a partial decision replacement through `key.claim.* -> supersedes -> key.claim.*`;
+    never promote it into whole-document supersession without evidence.
+14. Treat `legacy_terms` as search evidence, not a typed relation, and classify matches by the
+    containing item's effective authority and lifecycle.
+15. Treat output `authority.produced_from` as provenance and derive `<source> produces <output>` only
+    as generated/inferred reverse evidence. Do not normalize `produced_from` as a typed relation;
+    report a missing target as unresolved provenance or a metadata gap.
+16. Treat `revised_by` as revision-history evidence, not a typed relation or proof of authority,
+    impact, supersession, production, or governance. Report ambiguous evidence as informational or unknown.
 
 ## When To Use
 
@@ -65,6 +82,7 @@ Use Linker when:
 6. Change Set impact seeds and required/optional/excluded candidates must be prepared.
 7. Main needs read-only graph interpretation and chooses to use Linker without a separate approval
    ceremony.
+8. A graph-relevant `document_delta` or `artifact_delta` automatically starts synchronization.
 
 ## When Not To Use
 
@@ -102,14 +120,18 @@ Choose the narrowest mode that answers the request:
    metadata.
 4. `Worker Assignment Seed`: package artifact context, reuse/test candidates, and sync risks for a
    permitted Coordinator assignment.
+5. `Graph Synchronization`: decide canonical mutations and exact owner-applied patches, reconcile
+   attestation and apply results, then reconstruct and mechanically validate the transaction.
 
 ## Workflow
 
 1. Resolve an authoritative document root when the requested analysis depends on Keystone
    documents; otherwise work from the explicit seed and repository evidence.
-2. Split seeds into documents, decisions, work orders, metadata, output artifacts, capabilities,
-   APIs, code, config, schemas, tests, paths, symbols, and keywords.
-3. Search existing Keystone metadata, anchors, and repository evidence without modifying files.
+2. Split seeds into documents, document items, decisions, claims, acceptance items, work orders,
+   metadata, output artifacts, capabilities, APIs, code, config, schemas, tests, paths, symbols,
+   visible item IDs, and keywords.
+3. Search existing Keystone metadata, item comments, anchors, and repository evidence without
+   modifying files.
 4. Reconstruct only relations supported by declared, observed, or clearly labeled inferred
    evidence.
 5. Read relation direction from source to target. Treat `produces`, `implements`, and `verifies`
@@ -117,6 +139,8 @@ Choose the narrowest mode that answers the request:
    `uses`, `provides`, `governed_by`, `documents`, `supersedes`, and `derived_from` according to
    direction and evidence strength. Never promote filename or keyword overlap into a declared
    typed relation.
+   Interpret `depends_on` as source-to-target semantic evidence and keep `work_gates` as separate
+   execution evidence. Prefer structured metadata over legacy HTML dependency evidence and report conflicts.
 6. Separate reuse candidates, test candidates, mechanical stale, semantic stale, and metadata gaps.
 7. Apply fail-soft handling when graph evidence is absent or sparse: return a partial report with
    inspected evidence, uninspectable areas, and gaps. Do not fail initialization, claim a missing
@@ -125,6 +149,145 @@ Choose the narrowest mode that answers the request:
    Coordinator for output artifacts and repository-source surfaces; Main/Clarify for actual
    decisions.
 9. Recommend the narrowest next action without performing edits, assignment, or acceptance.
+
+## Graph Synchronization Mode
+
+A `document_delta` or `artifact_delta` with `graph_relevant: true` automatically starts this mode.
+The trigger does not create or expand user-approved scope, Coordinator permission, worker authority,
+or acceptance. A safe `not_required` conclusion needs a concrete graph-relevance reason tied to the
+changed locators and semantic summary; finalization records that outcome as `not_applicable`.
+
+1. Reconstruct the graph from canonical source metadata, never from a derived cache alone.
+2. Admit `declared` evidence. Admit `observed` evidence only after the owning surface confirms its
+   meaning. Keep `inferred` evidence as a candidate and exclude it from canonical mutations.
+3. Normalize capability-first. A bounded direct document-item-to-artifact relation is allowed only
+   for a single schema constraint or policy implementation and records `direct_relation_reason`.
+4. Decide canonical node/relation/provenance/locator/lifecycle mutations and an exact patch for every
+   affected source surface. Each patch has one `author | main | coordinator` owner and its own raw-byte
+   SHA-256 baseline. Linker never applies a patch.
+5. Move `proposed -> awaiting_attestation`. Each owner returns exactly one patch decision:
+   `confirm | reject | needs_revision`, with evidence. Reject or revision makes the transaction
+   `conflicted`; all required confirms make it `ready_to_apply`.
+6. Owners recheck their patch baseline immediately before write and return
+   `applied | failed | stale_baseline`, a resulting digest for `applied`, and evidence. A stale baseline
+   is never written. Preserve partial success as `partially_applied`.
+7. Resume partial application by comparing already-applied patches with their recorded resulting
+   digests and remaining patches with their baselines. Never blindly reapply a successful patch.
+8. After apply, reconstruct from sources without cache and compare the result with the canonical
+   mutation. Run the bundled validator described in
+   [references/graph-runtime.md](references/graph-runtime.md). Only complete required confirmations,
+   apply results, matching reconstruction, and passing mechanical validation produce `verified`.
+9. A `conflicted` or `failed` transaction resumes through a new attempt with a new transaction ID,
+   revised mutation/patches and current baselines while preserving prior attempt evidence.
+
+```yaml
+graph_synchronization:
+  schema_version: 1
+  graph_relevance:
+    relevant: true | false
+    disposition: required | not_applicable | deferred
+    reason:
+  transaction: <canonical graph_transaction below>
+  prior_attempts:
+    - <canonical graph_transaction from an earlier attempt>
+
+graph_transaction:
+  schema_version: 1
+  transaction_id:
+  scope_ref:
+  input_deltas:
+    - kind: document_delta | artifact_delta
+      source_surface:
+      changed_locators: []
+      semantic_summary:
+      baseline_digest: sha256:<64-lowercase-hex> | absent
+      graph_relevant: true | false
+  canonical_mutations:
+    - operation: add | update | remove
+      entity: node | relation
+      before:
+      after:
+      evidence: declared | observed
+      direct_relation_reason:
+  surface_patches:
+    - patch_id:
+      owner: author | main | coordinator
+      surface: document_metadata | code_anchor | config_anchor | schema_anchor | api_anchor | test_anchor | companion_metadata
+      target_path:
+      baseline_digest: sha256:<64-lowercase-hex> | absent
+      exact_patch:
+      required: true | false
+  attestations:
+    - patch_id:
+      owner: author | main | coordinator
+      decision: confirm | reject | needs_revision
+      evidence:
+  apply_results:
+    - patch_id:
+      result: applied | failed | stale_baseline
+      resulting_digest:
+      evidence:
+  state: proposed | awaiting_attestation | ready_to_apply | applying | partially_applied | verified | conflicted | failed
+  reconstruction:
+  mechanical_validation:
+  coverage_debt: []
+```
+
+`graph_relevance` is finalization/report evidence and `prior_attempts` is retry-history evidence; neither
+is a canonical transaction field. The bundled runtime serializes the current `transaction` and every
+`prior_attempts` entry with the same exact `graph_transaction` wire. `reconstruction` is either `null` or
+`{baseline: <GraphSnapshot>, result: <GraphSnapshot>}`. `mechanical_validation` is the validator's
+schema-versioned diagnostic envelope, not a bare diagnostic array. A CLI manifest passes only the current
+canonical transaction in its `transaction` field; it does not silently discard synchronization-envelope
+fields.
+
+## Document Item Metadata
+
+Parse document items from these Markdown surfaces:
+
+1. A compact or multiline `key` comment immediately above a heading.
+2. A compact or multiline `key` comment immediately above a list item.
+3. A compact `key` comment in the first cell of a Markdown table row; keep the visible row ID as a
+   locator rather than treating it as stable identity.
+
+Recognize `key.rule.*`, `key.claim.*`, and `key.acceptance.*` as item namespaces in addition to
+document, decision, work, capability, and output-artifact namespaces. Do not require metadata on
+every sentence, bullet, or row. An existing independently meaningful item without metadata is a
+metadata-gap candidate when the available evidence shows it must be referenced, replaced, or
+verified separately.
+
+Resolve effective item metadata in this order: document, enclosing section, item. Allow inherited
+source authority, `governed_by`, and lifecycle; item declarations may narrow but must not silently
+expand inherited authority. Never inherit `id`, `supersedes`, or `legacy_terms`. Preserve locators
+such as path, heading, list position, and visible row ID separately from stable identity.
+
+When an accepted decision replaces only one claim while retaining its other meanings, follow the
+declared claim-level `supersedes` edge. If either side lacks a claim node, report a metadata gap and
+do not infer whole-decision or whole-document replacement.
+
+Use `legacy_terms` only when attached to a replacement item with `supersedes` or to an explicitly
+deprecated or removed item. Reject broad standalone terms such as `batch`, `handler`, or `plan` as
+insufficient stale evidence. Classify an exact legacy-term match as follows:
+
+- Active or pending authoritative item: semantic stale candidate, normally required review.
+- Archived, rejected, superseded, removed, or explicit history evidence: informational or excluded
+  historical evidence.
+- Unknown containing item or ambiguous authority/lifecycle: metadata gap plus semantic review
+  candidate.
+- A progress or verification record claims removal while an active authoritative item still
+  matches: semantic stale contradiction.
+
+Do not treat a legacy term itself as an edge, silently suppress historical evidence, or require a
+zero-match search across the entire corpus.
+
+## Dependency Interpretation
+
+Validate dependency target existence, duplicate and self references, gate scope and condition, source
+step IDs, and structured/legacy conflicts. Evaluate each dependency as `satisfied`, `waiting`,
+`unresolvable`, `invalid`, or `unknown`. A legacy work-level dependency without an explicit gate does
+not block source start; treat it as a work-completion gate candidate. For step gates, confirm cycles
+only from an expanded event graph of source step start/completion, target condition satisfaction, and
+source work completion—not from a work-node graph alone. Do not mutate status, assign, cancel, or accept work.
 
 ## Initialization and Handoff Boundary
 
@@ -202,18 +365,37 @@ linker_report:
       modularization_reason:
   metadata_gaps:
     - artifact:
+      item_locator:
       expected_metadata:
       reason:
   stale_candidates:
     mechanical:
+      - artifact:
+        item_locator:
+        evidence:
+        reason:
     semantic:
+      - artifact:
+        item_key_id:
+        item_locator:
+        effective_lifecycle:
+        legacy_term:
+        classification: active_stale | removal_contradiction | ambiguous_review
+        evidence:
   excluded_candidates:
     - artifact:
+      item_locator:
       reason:
   relations:
     declared:
     observed:
     inferred:
+  dependency_evaluation:
+    - source:
+      target:
+      status: satisfied | waiting | unresolvable | invalid | unknown
+      gate_scope:
+      evidence:
   graph_interpretation:
     status: ok | partial | blocked
     basis:
@@ -226,7 +408,7 @@ linker_report:
   source_surface_handoffs:
     author:
       - artifact:
-        surface: source_document_frontmatter | section_comment | decision_record | api_contract_source_section
+        surface: source_document_frontmatter | section_comment | document_item_comment | decision_record | api_contract_source_section
         recommended_change:
         reason:
     main_direct_or_permitted_coordinator:
@@ -248,17 +430,39 @@ linker_report:
     edit_authority: author_or_main_direct_or_permitted_coordinator_only
   candidate_budget:
     applied: true | false
+    limit:
+    counts:
+      total:
+      returned:
+      required:
+      strong_candidates:
+      weak_candidates:
+      informational:
     truncated:
       required:
       strong_candidates:
       weak_candidates:
       informational:
     omitted_summary:
+      - grade: strong_candidate | weak_candidate | informational
+        count:
+        evidence_type:
+        keyword_range: {first:, last:}
+        path_range: {first:, last:}
+        reason: candidate_budget
   risks_and_gaps:
   recommended_next_action:
     skill:
     reason:
+  graph_synchronization:
+    # Use the Graph Synchronization Mode wire above when a delta was assessed.
 ```
+
+`candidate_budget_projection` sorts candidates deterministically by grade, stable ID, locator, and
+traversal path. It always returns every `required` candidate even when that makes `returned` exceed
+`limit`; only `strong_candidate`, `weak_candidate`, and `informational` entries may be truncated.
+`truncated.required` is therefore always zero. When no entry is omitted, `applied` is false and
+`omitted_summary` is empty.
 
 ## Output Examples
 
@@ -328,7 +532,7 @@ linker_report:
 
 ## Boundaries
 
-1. Linker is read-only.
+1. Linker is source-write-free but is the sole canonical graph mutation decision owner.
 2. Linker may recommend source-surface handoffs but must not perform edits.
 3. Linker does not make final decisions or Main acceptance decisions.
 4. Linker does not assign workers.
@@ -358,7 +562,7 @@ a resolved document root are absent. Return a partial evidence report when usefu
 
 Verify Linker behavior by checking:
 
-1. Four modes are distinct.
+1. Five modes are distinct.
 2. Operational graph interpretation does not imply edit authority.
 3. Mechanical stale, semantic stale, and metadata gaps are separated.
 4. Source surface handoff owners are separated.
@@ -368,6 +572,21 @@ Verify Linker behavior by checking:
 8. Missing graph evidence produces a partial fail-soft result rather than a profile or initialization failure.
 9. Repository-source changes are handed to Main direct or a user-permitted Coordinator.
 10. Ordinary pre-init repository orientation does not require Reader or Linker.
+11. Heading, list-item, and first-cell table-row metadata are parsed without conflating visible IDs
+    with stable `key.id` values.
+12. Parent authority, `governed_by`, and lifecycle inheritance is applied while `id`, `supersedes`,
+    and `legacy_terms` remain item-local.
+13. Partial decision replacement follows claim-level supersession and missing claim metadata is
+    reported as a gap.
+14. Active legacy-term matches, historical matches, ambiguous matches, and removal contradictions
+    receive distinct classifications.
+15. Duplicate item IDs, malformed item metadata, unknown relations, missing relation targets, and
+    supersession cycles are mechanical stale evidence.
+16. Dependency relations and gate evidence remain separate, legacy conflicts are reported, and cycles
+    require expanded-event evidence without automatic work-state mutation.
+17. Graph-relevant deltas automatically start synchronization without widening scope or permission.
+18. Only owner attestations, baseline-safe apply results, source reconstruction, and mechanical
+    validation can produce a verified transaction; partial apply and new attempts remain resumable.
 
 Suggested checks:
 

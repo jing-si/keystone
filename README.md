@@ -27,7 +27,7 @@ Keystone consists of six independent, cooperating Codex skills:
 | `keystone-author` | Create and revise project standards, work orders, progress records, decisions, indexes, and Change Sets. |
 | `keystone-reader` | Read existing Keystone documents, recover active work, and prepare a focused context brief. |
 | `keystone-clarify` | Resolve one actual high-impact user decision at a time, then return control to the caller. |
-| `keystone-linker` | Interpret the Artifact Graph read-only and report impact, stale, gap, reuse, and verification candidates. |
+| `keystone-linker` | Read graph evidence without editing source surfaces, decide canonical graph mutations, and report exact owner-applied synchronization patches. |
 | `keystone-coordinator` | With user permission for the work scope, delegate bounded work and coordinate report, review, verification, and Main acceptance. |
 
 Each installed skill package contains its own runtime contract. A consuming
@@ -121,7 +121,9 @@ reserved for the exceptional Project Foundation round before standards exist.
 
 - Source documents remain authoritative; internal handoff payloads are hidden
   unless they are needed for audit, debugging, or verification.
-- Linker is read-only and may be used without separate permission.
+- Linker is source-write-free and may be used without separate permission. It is the sole canonical
+  graph mutation decision owner; Author, Main, or a permitted Coordinator attest and apply patches only
+  on their own source surfaces.
 - Coordinator always requires user permission for its work scope. Directly
   invoking `keystone-coordinator` counts as that permission.
 - Keystone does not force a worktree, workspace, concurrency, or delegation
@@ -131,15 +133,15 @@ reserved for the exceptional Project Foundation round before standards exist.
 
 ## Repository Status and Sources
 
-The R002 standards and all six repo-local skill sources are implemented and
-accepted. The authoritative current state remains in the source documents so
-README status does not become a competing authority:
+The authoritative current round and acceptance state remain in the source documents so README status
+does not become a competing authority. Runtime packages include bounded acceptance finalization and
+Artifact Graph synchronization contracts; consult these sources for current status:
 
 - [`00_docs/key-context-map.md`](00_docs/key-context-map.md)
 - [`00_docs/standards/01_key-project-standard.md`](00_docs/standards/01_key-project-standard.md)
 - [`00_docs/standards/bootstrap/key-standard-bootstrap.md`](00_docs/standards/bootstrap/key-standard-bootstrap.md)
 - [`00_docs/works/00_key-index.md`](00_docs/works/00_key-index.md)
-- [`00_docs/works/r002-bootstrap-runtime-independence/00_key-index.md`](00_docs/works/r002-bootstrap-runtime-independence/00_key-index.md)
+- [`00_docs/works/r005-artifact-graph-synchronization/00_key-index.md`](00_docs/works/r005-artifact-graph-synchronization/00_key-index.md)
 
 The older `work-package-doc-architect` and `subagent-work-coordinator` projects
 remain historical prototype references, not runtime dependencies.

@@ -1,8 +1,10 @@
 ---
 doc_type: standard
+created_at: "2026-07-20"
 status: active
 approval:
   state: accepted
+  accepted_at: "2026-08-04"
   accepted_by: main
 key:
   id: key.standard.skill.init
@@ -14,6 +16,7 @@ key:
     - key.topic.initialization
     - key.topic.work-recovery
     - key.topic.runtime-independence
+    - key.topic.temporal-metadata
 ---
 
 # keystone-init 기준서
@@ -48,6 +51,7 @@ Keystone 문서 없이 실행 계약이 완결되어야 한다.
 Init은 프로젝트 기준서, Context Map, Init/Clarify/Author 기준서, 작업서, 진행 기록, Artifact
 Graph를 선행 조건으로 요구하지 않는다. 이 저장소의 `key-standard-init.md`는 개발 명세이며,
 소비 프로젝트 런타임에서는 설치된 `keystone-init` 패키지가 같은 계약을 자체 제공한다.
+
 
 <!-- key: id=key.standard.skill.init.required-input refs=key.role.init key.topic.initialization -->
 ## Required input
@@ -90,6 +94,10 @@ Init이 직접 생성할 수 있는 고정 scaffold는 다음뿐이다.
 `<document_root>/standards/01_key-project-standard.md`의 프로젝트 의미는 Author가 작성한다.
 Init template은 목적, scope, source evidence, User Decision 후보, completion criteria,
 verification과 resume 지점을 담되 프로젝트 정책을 임의로 채우지 않는다.
+Init이 새로 생성하는 scaffold 문서에는 생성 당일의 `created_at: YYYY-MM-DD`를 기록한다.
+Draft/pending 문서에는 `approval.accepted_at`을 만들지 않으며, 새 결정이 실제로 기록되면
+결정이 확정된 `결정일`을 사용한다.
+
 
 <!-- key: id=key.standard.skill.init.workflow refs=key.role.init key.role.author key.role.clarify key.topic.initialization -->
 ## Workflow
@@ -121,6 +129,8 @@ verification과 resume 지점을 담되 프로젝트 정책을 임의로 채우�
 5. 기존 문서의 이동과 대규모 정규화를 자동 수행하지 않는다.
 6. 생성 후 실제 파일과 link를 검증한 뒤에만 다음 상태를 판정한다.
 7. 사용자 초기화 거부 시 파일을 생성하지 않는다.
+8. Repair 중 기존 문서의 `created_at`을 현재 실행일로 덮어쓰거나 근거 없이 과거 날짜를
+   추정하지 않는다.
 
 <!-- key: id=key.standard.skill.init.clarify-boundary refs=key.role.init key.role.clarify key.topic.user-decision -->
 ## Clarify 경계
@@ -182,6 +192,13 @@ payload는 Clarify topic이 아니다.
 6. 민감 정보 저장, 파괴적 이동 또는 외부 공개가 필요하다.
 
 <!-- key: id=key.standard.skill.init.verification refs=key.role.init key.topic.verification key.topic.initialization -->
+<!-- key: id=key.standard.skill.init.dependency-boundary refs=key.role.init key.topic.initialization key.topic.work-sequence -->
+## Dependency boundary
+
+Init은 fixed R000 scaffold에 project-specific dependency나 `work_gates`를 추정해 생성하지 않는다.
+기존 scaffold의 dependency target이 missing/conflicted이면 덮어쓰거나 status를 바꾸지 않고
+repair 후 Reader/Author/Main이 복구할 risk로 보고한다.
+
 ## Verification
 
 1. `inspect`, `initialize`, `repair`의 쓰기 권한 차이가 명확해야 한다.
@@ -190,3 +207,5 @@ payload는 Clarify topic이 아니다.
 4. 아홉 통합 시나리오의 기대 동작을 이 계약만으로 설명할 수 있어야 한다.
 5. Init 이후 원래 요청, skill과 resume 단계가 복구되어야 한다.
 6. 소비 프로젝트 로컬 Init 기준서를 required input으로 요구하지 않아야 한다.
+7. 새 scaffold의 `created_at`, pending approval과 결정일이 Bootstrap temporal metadata 기준과
+   일치해야 하며, repair가 기존 날짜를 바꾸지 않아야 한다.

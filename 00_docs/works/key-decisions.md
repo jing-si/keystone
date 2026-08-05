@@ -1,5 +1,6 @@
 ---
 doc_type: decisions
+created_at: "2026-06-16"
 key:
   id: key.work.decisions
   refs:
@@ -11,6 +12,7 @@ key:
     - key.topic.bootstrap
     - key.topic.initialization
     - key.topic.runtime-independence
+    - key.topic.temporal-metadata
 ---
 
 # 작업서 결정 기록(6)
@@ -147,6 +149,7 @@ key:
   Skill Creation, Integration Verification
 - 상태: accepted
 - 결정: Artifact Graph의 model language는 Artifact Graph 기준서가 정의한다.
+<!-- key: id=key.claim.linker.read-only-interpretation -->
 - 결정: Linker는 Artifact Graph의 operational interpretation owner다. Linker는 source
   document, 키메타(9), 코드 앵커(18), repository evidence를 read-only로 해석해 graph state,
   relation evidence, impact candidate, stale candidate, metadata gap, reuse candidate, test
@@ -318,6 +321,7 @@ key:
   `DEC-WORKS-012`의 mandatory routing ceremony
 - 결정: 작은 명확한 작업은 Main이 직접 수정한다. 복수 surface나 권한 경계가 있을 때만
   routing context를 명시적으로 기록한다.
+<!-- key: id=key.claim.linker.read-only-invocation -->
 - 결정: Linker는 read-only이므로 Main이 별도 사용자 허락 없이 사용할 수 있다.
 - 결정: Coordinator는 work scope마다 사용자 허락을 받는다. 직접 호출은 해당 범위의
   허락이며 같은 범위의 assignment, review, repair에서는 반복하지 않는다.
@@ -340,3 +344,179 @@ key:
   기록한다.
 - 결정: 이미 수락된 R001의 S00-S09 식별자는 역사 보존을 위해 소급 변경하지 않는다.
 - 이유: 0번 round의 의미적 예외와 일반 실행 순서의 1-based numbering을 분리하기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-020 refs=key.doc.decision key.topic.keystone-metadata key.topic.temporal-metadata key.topic.acceptance -->
+## DEC-WORKS-020: 문서와 결정에 의미 있는 날짜를 기록한다
+
+- 관련 work: Project Standard, Bootstrap Runtime Standard, Author Standard, Init Standard
+- 결정일: 2026-07-23
+- 상태: accepted
+- 결정: 새 원천 문서에는 변경하지 않는 최초 생성일 `created_at`을 기록한다.
+- 결정: 현재 문서 의미가 수락되면 `approval.accepted_at`을 기록하고, 의미 변경으로 approval이
+  `pending`이 되면 현재 수락일을 제거한 뒤 재수락 시 새 날짜를 기록한다.
+- 결정: 새 결정에는 `결정일`을 기록한다. 승인일과 효력일이 다르거나 문서·결정의 대체 시점을
+  보존해야 할 때만 선택적 날짜를 추가한다.
+- 결정: 일반적인 `updated_at`은 도입하지 않으며, 기존 문서 날짜를 근거 없이 추정하거나
+  일괄 migration하지 않는다.
+- 결정: 거버넌스 날짜는 `YYYY-MM-DD`를 기본으로 하고, 실행 event의 정확한 순서가 필요한 별도
+  기록만 ISO 8601 timestamp와 timezone을 사용한다.
+- 이유: 결정·승인·효력의 시간 맥락을 작업 복구와 감사에 사용할 수 있게 하면서 형식 변경과
+  Git 이력까지 중복 기록하는 metadata 부담은 피하기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-021 refs=key.doc.decision key.topic.acceptance key.topic.finalization key.topic.progress-update key.topic.verification -->
+## DEC-WORKS-021: Main acceptance와 원천 문서 finalization 완료를 분리한다
+
+- 관련 work: Project Standard, Author Standard, Coordinator Standard
+- 결정일: 2026-08-04
+- 상태: accepted
+- 결정: Main이 구현·review·verification 결과를 수용하면 해당 work 또는 step은
+  `accepted`가 된다.
+- 결정: 영향 원천 문서 갱신과 교차 문서 정합성 검증은 기존 Progress 또는 Change Set의
+  `finalization.state: pending | in_progress | complete | waived` 하위 상태로 기록한다.
+  `finalized`를 progress status, work status, lifecycle 또는 approval 값으로 추가하지 않는다.
+- 결정: Finalization이 미완료이거나 실패하면 구현 수용은 취소하지 않고
+  `finalization.state: pending` 또는 `in_progress`로 남긴다. 이 상태에서는 Keystone workflow를
+  완전히 종료하지 않고 다음 구현 step보다 finalization을 먼저 복구한다.
+- 결정: Author는 finalization 대상 문서 후보를 계산하고 각 후보의 update, no-change,
+  historical, out-of-scope, clarification 또는 integration-gate disposition과 근거를 남긴다.
+- 결정: Coordinator는 Main acceptance evidence와 worker·review·verification 결과를 Author
+  finalization 입력으로 전달하되, 원천 문서 수정 범위와 기준은 Author가 소유한다.
+- 결정: Finalization은 operative artifact, 원천 문서 의미, current step/work/round 상태,
+  Change Set, integration gate, residual·deferred item, 또는 namespace 충돌 후보를
+  실질적으로 바꾸는 acceptance에 의무로 적용한다.
+- 결정: 원천 문서나 workflow 상태 변경이 없는 조사·검토·설명은 finalization 기록을
+  강제하지 않는다. Acceptance가 있지만 정합화 대상이 없는 경우에만 `required: false`와 근거를 남긴다.
+- 결정: 완료되지 않은 required finalization은 동일 work의 다음 implement assignment,
+  `in_progress` 전이, 다음 step Main acceptance와 work 종료를 차단하는 scoped hard gate다.
+- 결정: Finalization 복구를 위한 조사·문서 수정·검증·충돌 조사와 다음 step의
+  read-only 사전 조사는 허용한다.
+- 결정: 다른 work/round는 dependency, 공유 namespace·current step·Change Set 또는
+  방향 영향이 없을 때만 병행 진행할 수 있다.
+- 결정: 긴급 우회는 자동 예외가 아니며 Main/user가 이유, 허용 범위,
+  finalization 부채, 복구 조건과 residual risk를 명시적으로 수용해야 한다.
+- 결정: Main acceptance event는 finalization 필요성 판정의 자동 trigger다. Main 또는
+  현재 work scope에 허용된 Coordinator는 별도 사용자 요청 없이 대상을 판정하고
+  필요하면 Author Acceptance Finalize Mode를 즉시 시작한다.
+- 결정: Coordinator 허용이 없는 Main direct workflow에서는 Main이 Author finalization을
+  직접 시작하며, finalization을 이유로 Coordinator 권한을 자동 생성하지 않는다.
+- 결정: 자동 finalization은 이미 수용된 work의 원천 문서와 검증 범위에
+  한하며, 다른 work 수정, 기준 의미·scope·acceptance criteria 변경 또는 high-impact
+  결정이 필요하면 pending을 유지하고 필요한 결정·승인을 요청한다.
+- 결정: Finalization은 runtime 필수 절차와 executable validator 검증의 두 계층으로
+  강제한다. Runtime이 영향 후보·수정·상태 전이를 소유하고 validator가 기계적
+  정합성 evidence를 생성한다.
+- 결정: Validator는 진단 전용이며 원천 문서 수정, acceptance 또는 `finalization.state: complete`를
+  자동 생성하지 않는다. Runtime 판단과 충돌하거나 실패하면 pending을 유지한다.
+- 결정: Repository가 pre-commit/CI hook을 지원하면 동일 validator를 재호출하는
+  안전망을 연결하되, hook은 runtime finalization을 대체하거나 의미·권한·acceptance를
+  추론하지 않는다.
+- 결정: Finalization 대상에서 validator가 없거나 호출할 수 없으면
+  `validator_unavailable`, process 실행·결과 생성이 실패하면 `validator_execution_failed`로
+  분리하고 두 경우 모두 fail-closed로 처리한다.
+- 결정: Fail-closed에서 Main `accepted`는 유지하되 `finalization.state: complete`로 전환하지
+  않고 pending을 남긴다. 수동 문서 검토로 required validator evidence를 대체하지 않는다.
+- 결정: Validator가 제공·복구되면 기존 문서 수정과 acceptance evidence를 보존한
+  채 동일 finalization을 재개해 validator를 다시 실행한다.
+- 결정: Core finalization validator engine과 기본 규칙은 설치된 Keystone package가
+  자체 포함하며, 소비 프로젝트에 validator source 복사본을 생성하지 않는다.
+- 결정: 프로젝트는 document root, 문서 구조, namespace과 추가 검사를 설정·adapter로
+  확장할 수 있지만 core 규칙·fail-closed를 제거·약화하거나 validator의 권한을
+  수정·acceptance·finalization 완료 전이로 높일 수 없다.
+- 보완 결정일: 2026-08-05
+- 결정: 단수 `current_step`을 권위 모델로 사용하지 않는다. 활성 Step은 상태를 복제하지 않는
+  `active_steps` 참조 목록으로 표현하며 0개 이상의 동등한 Step을 허용한다.
+- 결정: 다른 Step을 처리하는 과정에서 미래 Step 일부를 먼저 수행했지만 해당 Step 상태를
+  전이하지 않은 경우, 대상 Step에 `early_work`로 원인·처리 범위·남은 범위·상태 영향 없음
+  을 기록한다. 미래 Step은 이 기록만으로 활성화하거나 완료하지 않는다.
+- 결정: 현재 Step 수용 시 해당 Step만 직접 상태 전이하고, Work·Round·root index·Context Map처럼
+  상태를 집계하거나 노출하는 상위 소유자는 자체 전이 조건 충족 여부를 평가한다. 형제·미래
+  Step 상태는 변경하지 않는다.
+- 결정: Core validator는 새 사용자 호출 스킬이 아니라 `keystone-author` 설치 패키지의 bundled
+  script로 제공한다. Author가 finalization에서 자동 실행하고 hook/CI는 같은 command를 재호출한다.
+- 결정: Pre-commit/CI와 project-local wrapper는 package가 제공하는 안정적 command/interface를
+  호출하는 surface이며 독립 validator source of truth가 아니다.
+- 이유: 구현 수용 사실을 보존하면서 Progress, Work Order, Change Set, index,
+  standard, 복구 안내가 서로 다른 시점을 가리키는 상태를 workflow 종료로 오인하지
+  않기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-022 refs=key.doc.decision key.topic.artifact-graph key.topic.provenance -->
+## DEC-WORKS-022: `produced_from`은 provenance field로 유지한다
+
+- 관련 work: R003 Dependency and Work Gate Standard, Artifact Graph Standard, Linker Standard
+- 결정일: 2026-08-04
+- 상태: accepted
+- 결정: `produced_from`은 output artifact가 어느 source document, decision 또는 work order의
+  산출물인지 기록하는 provenance/authority field로 유지하고 공식 typed relation에 추가하지 않는다.
+- 결정: Linker는 선언된 `produced_from: <source>`에서 `<source> produces <output>`의
+  역방향 edge를 generated/inferred evidence로 파생한다.
+- 결정: Source surface에 `produced_from`과 `produces`를 양방향으로 중복 기록하지 않는다.
+- 결정: Work-order provenance는 artifact-to-artifact 파생을 나타내는 `derived_from`과
+  혼용하지 않는다.
+- 결정: `produced_from` target이 없거나 유효한 source로 해석되지 않으면
+  unresolved provenance 또는 metadata gap으로 보고한다.
+- 이유: 이미 사용 중인 output-to-source provenance를 보존하면서 공식 `produces`와의
+  양방향 중복·drift를 피하고 `derived_from`의 파생 의미를 유지하기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-023 refs=key.doc.decision key.topic.artifact-graph key.topic.revision-history -->
+## DEC-WORKS-023: `revised_by`는 revision-history evidence로 유지한다
+
+- 관련 work: R003 Dependency and Work Gate Standard, Artifact Graph Standard, Linker Standard
+- 결정일: 2026-08-04
+- 상태: accepted
+- 결정: `revised_by`는 문서·artifact의 개정 이력을 탐색하기 위한 revision-history
+  evidence로 유지하고 공식 typed relation에 추가하지 않는다.
+- 결정: `revised_by`만으로 authority, impact propagation, `supersedes`, `produces`,
+  `governed_by`를 추론하지 않는다.
+- 결정: 정확한 semantic relation이 필요하면 적합한 typed relation, decision, Change Set
+  또는 revision record로 명시한다.
+- 결정: Target이 없거나 의미가 모호하면 relation error로 단정하지 않고
+  informational 또는 unknown revision evidence로 보고한다.
+- 이유: `revised_by`는 개정의 원인·권위·대체·산출 중 어느 의미인지 단독으로
+  확정할 수 없으므로 기존 semantic relation의 정확성을 해치지 않고 history 탐색 단서로만
+  사용하기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-024 refs=key.doc.decision key.topic.artifact-graph key.topic.keystone-metadata key.topic.finalization key.role.linker key.role.author key.role.coordinator -->
+## DEC-WORKS-024: Graph mutation authority와 source surface ownership을 분리한다
+
+- 관련 work: R005 Artifact Graph Synchronization
+- 결정일: 2026-08-05
+- 상태: accepted
+<!--
+key:
+  id: key.claim.linker.graph-mutation-authority
+  supersedes:
+    - key.claim.linker.read-only-interpretation
+    - key.claim.linker.read-only-invocation
+-->
+- 결정: Linker는 Artifact Graph의 canonical mutation authority를 가진다. Artifact ID, capability
+  node, relation, locator, lifecycle과 replacement의 생성·변경·폐기 결정을 Linker가 소유한다.
+- 결정: Linker의 graph mutation authority는 원천 문서의 자연어 의미나 repository implementation
+  logic을 직접 수정하는 authority를 포함하지 않는다.
+- 결정: Author는 문서 의미와 문서 키메타의 물리적 반영을 소유한다. Coordinator 또는 Main
+  direct는 code/config/schema/API/test 구현과 repository anchor의 물리적 반영을 소유한다.
+- 결정: Author와 Coordinator/Main은 typed relation을 독자적으로 확정하지 않고 Linker가 만든
+  exact graph mutation을 자기 surface의 의미·구현 evidence로 attestation한 뒤 적용한다.
+- 결정: Graph-relevant 문서 또는 repository 의미 변경은 별도 사용자 요청 없이 graph
+  synchronization lifecycle을 시작한다. 실제 호출 연결은 Main 또는 host runtime이 수행하며
+  이 trigger만으로 Coordinator 권한이나 work scope를 자동 생성하지 않는다.
+- 결정: Graph transaction은 delta, canonical mutation, surface attestation, baseline 확인,
+  surface owner 적용, Linker reconstruction과 mechanical validator 통과 뒤에만 `verified`가 된다.
+- 결정: `inferred` relation은 자동 mutation으로 반영하지 않는다. `observed` relation은 해당
+  surface owner의 attestation을 요구한다.
+- 결정: 프로젝트 전체 graph coverage와 current transaction completeness를 구분한다. 현재
+  transaction 밖의 legacy metadata gap은 debt로 보고할 수 있지만 현재 변경 범위가 완결되면
+  transaction을 `verified`로 판정할 수 있다.
+- 결정: Capability를 문서와 구현 사이의 안정적인 중심 node로 우선 사용하되 단일 schema 제약,
+  특정 정책 구현 등 capability node가 과한 경우 문서 item과 artifact의 직접 연결을 허용한다.
+- 결정: 기존 metadata는 읽기 호환하고 신규 또는 의미가 변경된 metadata부터 canonical 형식으로
+  수렴한다. 기존 corpus의 일괄 metadata migration은 요구하지 않는다.
+- 결정: R004 finalization은 R005에서 graph-relevant change의 graph sync disposition과 verified
+  evidence를 요구하도록 후속 확장한다. Graph sync 미완료는 Main acceptance를 취소하지 않지만
+  required finalization 완료를 차단한다.
+- 결정: R005 검증은 Keystone 저장소 내부의 package-owned 합성 fixture와 CLI로 닫는다. Uptendo
+  등 외부 소비 프로젝트 상태는 R005 acceptance 조건이 아니며 실제 사용에서 발견한 문제는
+  후속 corrective round로 다룬다.
+- 이유: Linker가 graph 의미를 가장 정확히 해석하면서도 권고만 하고 surface owner가 relation을
+  다시 해석하는 기존 handoff는 graph 누락과 drift를 폐루프로 방지하지 못했다. Graph 의미 결정과
+  source write를 분리한 검증 가능한 transaction으로 기준서와 실제 산출물의 양방향 연결을
+  안정적으로 유지하기 위해서다.

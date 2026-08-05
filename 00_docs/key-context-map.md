@@ -17,8 +17,9 @@ key:
 
 # 프로젝트 컨텍스트 맵
 
-활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 active work round는 없으며, 최신
-accepted round는 `00_docs/works/r002-bootstrap-runtime-independence/`다.
+활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 active work round는
+`00_docs/works/r005-artifact-graph-synchronization/`이며, 최신 accepted round는
+`00_docs/works/r004-acceptance-finalization/`이다.
 
 <!-- key: id=key.context-map.project refs=key.doc.source key.topic.skill-contract key.topic.bootstrap -->
 ## 프로젝트
@@ -35,8 +36,9 @@ bounded worker 실행 결과를 아티팩트 그래프(14)와 worker assignment/
 3. `keystone-clarify`: 실제 사용자 결정(6)을 한 topic씩 정리하고 호출자에게 반환한다.
 4. `keystone-author`: 기준서, 작업서, 진행 기록, 결정 기록, Change Set(17)을 작성하거나
    승인된 범위에서 수정한다.
-5. `keystone-linker`: Artifact Graph의 operational interpretation owner로서 문서, capability,
-   code, config, schema, API, test artifact의 연결과 impact/stale/gap 후보를 탐색한다.
+5. `keystone-linker`: Artifact Graph의 canonical mutation decision owner로서 문서, capability,
+   code, config, schema, API, test artifact의 연결과 impact/stale/gap 후보를 해석하고 exact
+   graph mutation을 결정하되 source surface를 직접 수정하지 않는다.
 6. `keystone-coordinator`: 사용자 허락이 있는 work scope에서 Keystone context를 worker
    assignment로 만들고 worker report를 Keystone workflow로 회수한다.
 
@@ -72,6 +74,9 @@ bounded worker 실행 결과를 아티팩트 그래프(14)와 worker assignment/
 | Round 색인 | `00_docs/works/00_key-index.md` | current | 최신 round와 active work round 탐색 |
 | R001 Bootstrap Keystone | `00_docs/works/r001-bootstrap-keystone/00_key-index.md` | superseded | S00-S07 accepted 이력과 S08-S09 대체 기록 |
 | R002 Bootstrap and Runtime Independence | `00_docs/works/r002-bootstrap-runtime-independence/00_key-index.md` | accepted | Init, R000과 skill runtime independence |
+| R003 Dependency and Work Gate | `00_docs/works/r003-dependency-work-gate/00_key-index.md` | accepted | `depends_on`, 단계별 work gate, runtime 계약과 통합 검증 완료 |
+| R004 Acceptance Finalization | `00_docs/works/r004-acceptance-finalization/00_key-index.md` | accepted | acceptance finalization, runtime·validator·hook 통합 검증 |
+| R005 Artifact Graph Synchronization | `00_docs/works/r005-artifact-graph-synchronization/00_key-index.md` | accepted | 기준서와 code/config/schema/API/test를 연결하는 graph synchronization 계약·runtime·검증 |
 | Document Tree Setup | `00_docs/works/r001-bootstrap-keystone/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
 | Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | accepted | 전체 공통 기준서 |
 | Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서 |
@@ -168,15 +173,24 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 <!-- key: id=key.context-map.section refs=key.topic.work-sequence key.topic.document-system key.topic.work-round -->
 ## 현재 작업 단계
 
-현재 active round는 없다. R001 S00-S07은 accepted 이력으로 보존되고, 미수락 S08 Skill
-Creation과 S09 Integration Verification은 superseded다. R002의 S01 기준서 개편과 S02 skill
-source 구현·검증은 모두 수락됐다. 실제 설치본 갱신이나 live project 실험은 별도 작업 범위로
-시작한다.
+현재 active round는 없고 최신 accepted round는 R005 Artifact Graph Synchronization이다. R001 S00-S07은 accepted 이력으로
+보존되고, 미수락 S08 Skill Creation과 S09 Integration Verification은 superseded다. R002의
+S01 기준서 개편과 S02 skill source 구현·검증은 모두 수락됐다. R003은 dependency 의미와
+단계별 gate 기준과 repo-local runtime 구현·통합 검증을 R003에서 수락했다.
+R004 Acceptance Finalization은 accepted round로, Main acceptance 후 영향 문서 자동 정합화,
+scoped hard gate, package-owned validator와 hook 안전망을 구현·검증했다.
+R005는 기준서가 존재하는 프로젝트에서 capability-first graph, canonical mutation, surface
+attestation, source owner 적용과 finalization evidence를 연결하고 runtime·설치 layout·합성 규모
+검증까지 accepted했다.
+
+Active steps: []
 
 | Step | 제목 | 목적 |
 |---|---|---|
-| S01 | Bootstrap Runtime Standard | Init, R000, runtime authority와 기존 skill 개발 기준을 개편한다 |
-| S02 | Skill Runtime Implementation | 여섯 skill source와 통합 검증을 새 기준으로 구현한다 |
+| S01 | Artifact Graph Synchronization Standard | accepted — graph mutation authority, surface ownership, metadata와 transaction 계약을 기준서에 확정했다 |
+| S02 | Graph Runtime and Validator | accepted — parser, adapter, planner, reconciler와 validator를 구현·검증했다 |
+| S03 | Graph Skill Runtime Integration | accepted — Author·Coordinator·Linker와 finalization runtime을 graph synchronization lifecycle에 연결했다 |
+| S04 | Graph Integration Verification | accepted — Keystone 내부 합성 fixture와 package CLI로 전체 lifecycle을 검증했다 |
 
 <!-- key: id=key.context-map.planned-keystone-skills refs=key.topic.skill-contract key.topic.bootstrap -->
 ## Keystone 스킬 구현 상태
@@ -187,7 +201,7 @@ source 구현·검증은 모두 수락됐다. 실제 설치본 갱신이나 live
 | `keystone-reader` | repo source implemented | Keystone 문서를 탐색하고 pre-init에서는 read-only partial 결과를 만든다 |
 | `keystone-author` | repo source implemented | 기준서와 작업서를 생성하고 Init handoff 뒤 원래 작업을 resume한다 |
 | `keystone-clarify` | repo source implemented | 실제 User Decision을 한 topic씩 수집해 호출자에게 반환한다 |
-| `keystone-linker` | repo source implemented | Artifact Graph를 read-only로 해석하고 evidence 부족 시 fail-soft로 보고한다 |
+| `keystone-linker` | repo source implemented | Artifact Graph를 해석하고 canonical mutation을 결정하되 source surface는 read-only로 다룬다 |
 | `keystone-coordinator` | repo source implemented | 사용자 허락 범위에서 assignment, review, verification, acceptance flow를 조율한다 |
 
 <!-- key: id=key.context-map.prototype-skill-reference refs=key.topic.bootstrap key.topic.skill-contract -->
