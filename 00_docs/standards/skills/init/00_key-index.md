@@ -2,8 +2,7 @@
 doc_type: standard_index
 document_lifecycle: active
 approval:
-  state: accepted
-  accepted_by: main
+  state: pending
 key:
   id: key.standard.skill.init.index
   refs:

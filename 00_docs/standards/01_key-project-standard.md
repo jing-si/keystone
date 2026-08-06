@@ -490,8 +490,10 @@ test의 의미나 실제 동작을 대체하지 않는다.
 12. Main direct 또는 허락된 Coordinator는 `artifact_delta`와 canonical mutation을 대조해
     repository 의미·anchor patch를 attestation하고 승인된 exact patch를 적용한다. Validator는
     기계적 진단만 하며 mutation, scope, acceptance 또는 source write를 결정하지 않는다.
-13. Main/User만 work scope와 acceptance를 결정한다. Graph-relevant 변경 trigger는
-    synchronization lifecycle을 자동 시작하지만 scope를 넓히거나 Coordinator 허락을 만들지 않는다.
+13. Main/User만 work scope와 acceptance를 결정한다. Graph-relevant 변경이 단일 source surface에
+    한정되면 surface owner의 direct refresh와 validation으로 처리한다. 둘 이상의 source surface에
+    coordinated patch가 필요할 때만 synchronization transaction lifecycle을 시작하며, 이 trigger는
+    scope를 넓히거나 Coordinator 허락을 만들지 않는다.
 
 Keystone 작업은 문서 탐색, impact review, context brief, worker assignment, review,
 verification을 준비할 때 키메타(9), 코드 앵커(18), repository evidence를 함께 사용한다.

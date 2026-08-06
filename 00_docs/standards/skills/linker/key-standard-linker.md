@@ -299,9 +299,11 @@ Output focus:
 
 ### Graph Synchronization Mode
 
-Graph-relevant `document_delta | artifact_delta`에서 canonical mutation을 결정하고 source owner가
-attest/apply할 exact patch transaction을 제안한다. Trigger는 lifecycle을 자동 시작하지만 current
-scope, Coordinator permission, worker assignment 또는 acceptance를 자동 생성하지 않는다.
+Graph-relevant `document_delta | artifact_delta`가 둘 이상의 source surface에 coordinated patch를
+요구할 때 canonical mutation을 결정하고 source owner가 attest/apply할 exact patch transaction을
+제안한다. 단일 source surface delta는 owner의 direct refresh와 validation으로 처리한다.
+Transaction trigger는 current scope, Coordinator permission, worker assignment 또는 acceptance를
+자동 생성하지 않는다.
 
 1. Delta locator와 각 source의 UTF-8 raw-byte SHA-256 baseline을 수집한다.
 2. `declared` evidence는 admissible로, `observed` evidence는 surface-owner `confirm` 조건으로

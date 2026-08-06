@@ -630,22 +630,25 @@ Main acceptance는 다음 조건이 충족될 때만 가능하다.
    validation residual risk를 확인했다.
 10. Source conflict가 있으면 resolved, excluded, or next action으로 분리되어 있다.
 
-Acceptance 후에만 진행 기록(5)을 `accepted` 또는 해당 project의 완료 상태로 바꿀 수 있다.
+Completion evidence가 있을 때 `work_status: complete`로 전이하고, Main acceptance 후에만
+`approval.state: accepted`로 전이한다. 두 상태는 서로 대체하지 않는다.
 
 <!-- key: id=key.standard.skill.coordinator.progress-update-boundary refs=key.role.coordinator key.topic.progress-update key.topic.acceptance -->
 ## Progress update boundary
 
 진행 기록(5)은 worker workflow 상태를 복구하기 위해 다음 규칙으로 갱신한다.
 
-1. Assignment를 만들면 필요한 경우 `assigned`를 기록할 수 있다.
-2. Report를 받으면 필요한 경우 `reported`를 기록할 수 있다.
-3. Review 중이면 `reviewing`, verification 중이면 `verifying`을 기록할 수 있다.
-4. Main acceptance 전에는 `accepted`로 표시하지 않는다.
-5. Worker `DONE`만으로 progress를 완료 처리하지 않는다.
-6. 문서 작성/수정의 기준과 반영 범위는 `keystone-author`가 담당한다. Formal workflow 상태를
+1. Assignment를 만들면 optional `workflow_substate: assigned`를 기록할 수 있다.
+2. Report를 받으면 optional `workflow_substate: reported`를 기록할 수 있다.
+3. Review 중이면 `workflow_substate: reviewing`, verification 중이면
+   `workflow_substate: verifying`를 기록할 수 있다. 이 값들은 `work_status`가 아니다.
+4. Completion criteria와 verification evidence가 충족되면 `work_status: complete`로 전이한다.
+5. Main acceptance 전에는 `approval.state: accepted`로 표시하지 않는다.
+6. Worker `DONE`만으로 `work_status: complete` 또는 `approval.state: accepted`로 전이하지 않는다.
+7. 문서 작성/수정의 기준과 반영 범위는 `keystone-author`가 담당한다. Formal workflow 상태를
    복구해야 하는 경우에만 Coordinator가 진행 상태 전이를 조율한다.
-7. 단순 오탈자, 미세 표현 수정, 의미 변화 없는 formatting은 진행 기록(5)에 남기지 않는다.
-8. Status semantics를 바꾸려면 Author 또는 Clarify를 통해 원천 문서(2) update 결정을 먼저
+8. 단순 오탈자, 미세 표현 수정, 의미 변화 없는 formatting은 진행 기록(5)에 남기지 않는다.
+9. Status semantics를 바꾸려면 Author 또는 Clarify를 통해 원천 문서(2) update 결정을 먼저
    받는다.
 
 <!-- key: id=key.standard.skill.coordinator.derived-document-policy refs=key.role.coordinator key.doc.source key.topic.document-system -->

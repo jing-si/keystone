@@ -134,7 +134,9 @@ Artifact Graph는 Keystone의 핵심 능력이지만 모든 프로젝트가 첫�
 4. Gap 보고는 자동 수정, Coordinator 호출, 사용자 질문이나 작업 중단을 의미하지 않는다.
 5. 프로젝트가 발전하면서 기준서와 산출물의 의미 있는 연결부터 점진적으로 추가한다.
 
-Generated reverse index나 cache가 필요해지면 별도 결정(6)과 bounded workflow를 먼저 둔다.
+Repository 밖 disposable Linker cache의 routine refresh는 permissionless internal operation이다.
+새 persistent cache, repository write surface 또는 user-facing runtime interface를 도입할 때만
+별도 결정(6)과 bounded workflow를 먼저 둔다.
 
 <!-- key: id=key.standard.artifact.graph.synchronization-contract refs=key.topic.artifact-graph key.topic.change-set key.topic.verification key.role.linker key.role.author key.role.coordinator -->
 ## Canonical graph synchronization contract
@@ -764,7 +766,9 @@ Generated reverse index나 graph cache는 source of truth가 아니다.
    projection을 생성하거나 갱신할 수 있다. Repository source와 `00_docs/**`에는 쓰지 않는다.
 3. Generated index의 freshness는 worktree identity, discovery scope path set과 각 source의
    raw-byte digest로 판정한다. Git HEAD, mtime 또는 timestamp만으로 fresh를 선언하지 않는다.
-4. Generated index 작성이 필요해지면 별도 결정(6)과 bounded workflow를 먼저 둔다.
+4. Routine external disposable index refresh에는 별도 결정을 요구하지 않는다. 새 persistent
+   storage, repository write surface 또는 user-facing runtime interface를 도입할 때만 별도
+   결정(6)과 bounded workflow를 먼저 둔다.
 5. Generated index가 source document, code anchor, repository evidence와 충돌하면 source
    surface를 우선하고 generated index는 stale candidate로 보고한다.
 
