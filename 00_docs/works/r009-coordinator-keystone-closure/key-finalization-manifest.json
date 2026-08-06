@@ -1,0 +1,86 @@
+{
+  "schema_version": 3,
+  "acceptance_ref": "R009/S01/main-acceptance",
+  "steps": [
+    {
+      "ref": "R009/S01",
+      "work_ref": "R009/coordinator-keystone-closure",
+      "status": "complete",
+      "approval_state": "accepted",
+      "progress_path": "00_docs/works/r009-coordinator-keystone-closure/coordinator-keystone-closure/key-progress.md"
+    }
+  ],
+  "accepted_steps": ["R009/S01"],
+  "execution_transitions": [
+    {"ref": "R009/S01", "from": "in_progress", "to": "complete"}
+  ],
+  "approval_transitions": [
+    {
+      "ref": "R009/S01",
+      "from": "pending",
+      "to": "accepted",
+      "evidence": "Main accepted the fresh verification result on 2026-08-06."
+    }
+  ],
+  "active_steps": [],
+  "active_step_sources": [
+    {"category": "work_index", "path": "00_docs/works/r009-coordinator-keystone-closure/coordinator-keystone-closure/00_key-index.md"},
+    {"category": "round_index", "path": "00_docs/works/r009-coordinator-keystone-closure/00_key-index.md"},
+    {"category": "context_map", "path": "00_docs/key-context-map.md"}
+  ],
+  "early_work": [
+    {
+      "target_step": "R009/S01",
+      "cause": "The user directed R009 to proceed independently while R008 remained active.",
+      "completed_scope": ["Coordinator closure runtime, standards, contract tests, local installation, and repository verification."],
+      "remaining_scope": ["none; the independent-first integration gate was resolved by the user direction and Main acceptance."],
+      "status_effect": "none"
+    }
+  ],
+  "finalization": {
+    "required": true,
+    "state": "complete",
+    "progress_path": "00_docs/works/r009-coordinator-keystone-closure/coordinator-keystone-closure/key-progress.md",
+    "evidence": [
+      "main_acceptance",
+      "impact_dispositions",
+      "source_updates",
+      "semantic_review",
+      "post_edit_verification",
+      "Coordinator 25 passed; skill contracts 18 passed; Linker 175 passed with PYTHONPATH; Author 75 passed; Reader 2 passed.",
+      "compileall, repository graph validation (0 diagnostics), bash -n installer, and git diff --check passed.",
+      "Staging/backup/post-swap local install succeeded; installed SKILL, validator, and reference are byte-identical; installed Coordinator tests 25 passed; install manifest records 0.6.0-dev and source_dirty true."
+    ]
+  },
+  "graph_sync": {
+    "required": false,
+    "disposition": "not_applicable",
+    "reason": "Linker confirmed that the existing key.skill.coordinator governed_by key.standard.skill.coordinator relation remains valid; R009 changed governed meaning without a canonical node/relation mutation. R002 produced_from is historical provenance, while R008/S07 code/test anchors remain non-blocking coverage debt.",
+    "evidence": [
+      "Linker classification: graph_sync not_applicable; the existing governed_by relation remains valid and no canonical node/relation mutation is required.",
+      "Repository graph validation passed with 0 diagnostics."
+    ]
+  },
+  "impact_candidates": [
+    {"category": "progress", "artifact": "R009/S01 progress", "path": "00_docs/works/r009-coordinator-keystone-closure/coordinator-keystone-closure/key-progress.md", "disposition": "updated", "reason": "Records complete/accepted status, finalization, verification, and graph disposition."},
+    {"category": "work_order_change_set", "artifact": "R009/S01 work order and Change Set", "path": "00_docs/works/r009-coordinator-keystone-closure/coordinator-keystone-closure/key-work-coordinator-keystone-closure.md", "disposition": "updated", "reason": "Records checked completion criteria, acceptance evidence, scope, and graph interpretation."},
+    {"category": "work_index", "artifact": "R009 work index", "path": "00_docs/works/r009-coordinator-keystone-closure/coordinator-keystone-closure/00_key-index.md", "disposition": "updated", "reason": "Represents the owning Work as complete and accepted."},
+    {"category": "round_index", "artifact": "R009 round index", "path": "00_docs/works/r009-coordinator-keystone-closure/00_key-index.md", "disposition": "updated", "reason": "Represents R009/S01 as complete and accepted while preserving early-work history."},
+    {"category": "root_index", "artifact": "root works index", "path": "00_docs/works/00_key-index.md", "disposition": "updated", "reason": "Adds R009 as the latest accepted round and retains R008 as the active round."},
+    {"category": "context_map", "artifact": "Context Map", "path": "00_docs/key-context-map.md", "disposition": "updated", "reason": "Updates latest accepted round and recovery text without changing R008 status."},
+    {"category": "standard_decision_plan", "artifact": "Coordinator and Subagent standards", "path": "00_docs/standards/skills/coordinator/key-standard-coordinator.md", "disposition": "updated", "reason": "Aligns canonical context and closure examples with the accepted runtime; Subagent report delta shape is consistent."},
+    {"category": "standard_decision_plan", "artifact": "Subagent artifact delta/report example", "path": "00_docs/standards/subagents/key-standard-subagents.md", "disposition": "updated", "reason": "Adds kind: artifact_delta to the canonical artifact delta/report example without changing its semantics."},
+    {"category": "standard_decision_plan", "artifact": "DEC-WORKS-026 decision source", "path": "00_docs/works/key-decisions.md", "disposition": "no_change", "reason": "The accepted decision remains authoritative; the R009 Work Order now cites it without altering decision meaning."},
+    {"category": "standard_decision_plan", "artifact": "skills standard index", "path": "00_docs/standards/skills/00_key-index.md", "disposition": "no_change", "reason": "Its Coordinator standard description remains consistent with the accepted closure runtime."},
+    {"category": "standard_decision_plan", "artifact": "subagent standard index", "path": "00_docs/standards/subagents/00_key-index.md", "disposition": "no_change", "reason": "Its Subagent standard description remains consistent after the artifact delta/report example clarification."},
+    {"category": "standard_decision_plan", "artifact": "public README", "path": "README.md", "disposition": "no_change", "reason": "The public README already describes the current Coordinator and graph-mutation authority without an R009-specific change."},
+    {"category": "recovery", "artifact": "R009 recovery instructions", "path": "00_docs/works/r009-coordinator-keystone-closure/00_key-index.md", "disposition": "updated", "reason": "Recovers accepted R009 evidence and explicitly preserves the independent R008 active-round namespace."},
+    {"category": "implementation_gate", "artifact": "R009 integration gate", "path": "00_docs/works/r009-coordinator-keystone-closure/coordinator-keystone-closure/key-progress.md", "disposition": "updated", "reason": "The user's independent-first direction resolved the former R008 integration gate.", "gate_state": "resolved", "gate_scope": "R009/S01 independent acceptance"},
+    {"category": "residual_risk", "artifact": "R009 residual risks", "path": "00_docs/works/r009-coordinator-keystone-closure/coordinator-keystone-closure/key-progress.md", "disposition": "updated", "reason": "Preserves non-blocking R008/S07 code/test anchor coverage debt and records excluded publication work.", "risk_state": "recorded", "risk_items": ["R008/S07 code/test anchor coverage remains independent non-blocking debt.", "Publication, push, merge, and external pilot remain out of scope."]},
+    {"category": "namespace", "artifact": "shared round namespaces", "path": "00_docs/works/00_key-index.md", "disposition": "updated", "reason": "R008 remains the independent active-round namespace while R009 is recorded as accepted.", "namespace_state": "checked"}
+  ],
+  "namespace_entries": [
+    {"namespace": "work_round", "value": "R008", "owner": "R008 Skill Graph and Self-Host Runtime Closure", "disposition": "preserved", "reason": "Independent active-round namespace; not an R009 dependency or blocker."},
+    {"namespace": "work_round", "value": "R009", "owner": "R009 Coordinator Keystone Closure", "disposition": "accepted", "reason": "Latest accepted round; its acceptance does not transition R008."}
+  ]
+}
