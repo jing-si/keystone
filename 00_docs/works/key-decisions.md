@@ -369,6 +369,7 @@ key:
 - 관련 work: Project Standard, Author Standard, Coordinator Standard
 - 결정일: 2026-08-04
 - 상태: accepted
+<!-- key: id=key.claim.work.main-acceptance-sets-work-accepted refs=key.topic.acceptance key.topic.progress-update -->
 - 결정: Main이 구현·review·verification 결과를 수용하면 해당 work 또는 step은
   `accepted`가 된다.
 - 결정: 영향 원천 문서 갱신과 교차 문서 정합성 검증은 기존 Progress 또는 Change Set의
@@ -496,6 +497,7 @@ key:
   direct는 code/config/schema/API/test 구현과 repository anchor의 물리적 반영을 소유한다.
 - 결정: Author와 Coordinator/Main은 typed relation을 독자적으로 확정하지 않고 Linker가 만든
   exact graph mutation을 자기 surface의 의미·구현 evidence로 attestation한 뒤 적용한다.
+<!-- key: id=key.claim.graph.graph-relevant-change-starts-transaction refs=key.topic.artifact-graph key.topic.finalization -->
 - 결정: Graph-relevant 문서 또는 repository 의미 변경은 별도 사용자 요청 없이 graph
   synchronization lifecycle을 시작한다. 실제 호출 연결은 Main 또는 host runtime이 수행하며
   이 trigger만으로 Coordinator 권한이나 work scope를 자동 생성하지 않는다.
@@ -506,6 +508,7 @@ key:
 - 결정: 프로젝트 전체 graph coverage와 current transaction completeness를 구분한다. 현재
   transaction 밖의 legacy metadata gap은 debt로 보고할 수 있지만 현재 변경 범위가 완결되면
   transaction을 `verified`로 판정할 수 있다.
+<!-- key: id=key.claim.graph.capability-first-admission refs=key.topic.artifact-graph key.topic.keystone-metadata -->
 - 결정: Capability를 문서와 구현 사이의 안정적인 중심 node로 우선 사용하되 단일 schema 제약,
   특정 정책 구현 등 capability node가 과한 경우 문서 item과 artifact의 직접 연결을 허용한다.
 - 결정: 기존 metadata는 읽기 호환하고 신규 또는 의미가 변경된 metadata부터 canonical 형식으로
@@ -520,3 +523,69 @@ key:
   다시 해석하는 기존 handoff는 graph 누락과 drift를 폐루프로 방지하지 못했다. Graph 의미 결정과
   source write를 분리한 검증 가능한 transaction으로 기준서와 실제 산출물의 양방향 연결을
   안정적으로 유지하기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-025 refs=key.doc.decision key.topic.artifact-graph key.topic.keystone-metadata key.topic.work-recovery key.topic.skill-contract -->
+## DEC-WORKS-025: Source-owned ID/ref와 context readiness를 기본 탐색 계약으로 둔다
+
+- 관련 work: R006 Reference Index and Context Readiness
+- 결정일: 2026-08-06
+- 상태: accepted
+<!-- key: id=key.claim.r006.historical-record-compatibility refs=key.topic.work-round key.doc.decision -->
+- 결정: R003-R005 accepted 작업 기록은 역사적 evidence로 보존하고 호환성과 부분 대체는
+  R006 source의 claim 단위 관계로만 표현한다. R005 전체를 supersede하지 않는다.
+<!-- key: id=key.claim.r006.no-external-runtime-surface refs=key.topic.runtime-independence key.boundary.scope-control -->
+- 결정: R006은 user-facing global CLI, PATH 변경, 외부 database, global install, publication과
+  외부 소비 repository 변경을 도입하지 않는다.
+<!-- key: id=key.claim.r006.reader-linker-write-boundary refs=key.role.reader key.role.linker key.topic.work-recovery -->
+- 결정: Reader는 repository source read-only를 유지하고 Linker만 repository 밖의 폐기 가능한
+  파생 cache를 쓸 수 있다. Linker도 source surface에는 쓰지 않는다.
+<!-- key: id=key.claim.r006.permissionless-linker-boundary refs=key.role.linker key.standard.subagent key.boundary.scope-control -->
+- 결정: Permissionless Linker subagent는 scan, index, graph 해석과 validation을 수행할 수 있지만
+  source 수정, scope 확장, worker 생성, project 의미 결정과 acceptance는 할 수 없다.
+<!--
+key:
+  id: key.claim.r006.owner-ref-first-identity
+  supersedes:
+    - key.claim.graph.capability-first-admission
+-->
+- 결정: 의미 있는 standard/code/config/schema/test artifact의 `id`는 정확히 한 source owner가
+  소유하고 다른 artifact는 `refs`로 연결한다. Typed relation은 multi-hop 탐색, 역할 의미,
+  dependency, verification evidence 또는 reuse 분석이 필요할 때만 선택적으로 사용한다.
+<!--
+key:
+  id: key.claim.r006.transaction-scope-and-validation
+  supersedes:
+    - key.claim.graph.graph-relevant-change-starts-transaction
+-->
+- 결정: Graph transaction은 multi-surface 변경에만 요구한다. Transaction validation은 현재
+  work의 omission을 gate하고 repository validation은 coverage debt를 보고하되 current transaction
+  omission이 아닌 이유만으로 현재 work를 차단하지 않는다.
+<!-- key: id=key.claim.r006.separate-state-namespaces refs=key.topic.progress-update key.topic.acceptance key.topic.finalization -->
+- 결정: Initialization, context readiness, work execution, approval, dependency, graph transaction,
+  finalization과 verification state는 서로 다른 namespace로 유지한다.
+<!--
+key:
+  id: key.claim.r006.complete-and-accepted
+  supersedes:
+    - key.claim.work.main-acceptance-sets-work-accepted
+-->
+- 결정: Work 실행 완료는 `work_status: complete`, Main acceptance는 `approval.state: accepted`로
+  분리하고 기본 dependency는 두 조건을 모두 요구한다.
+<!-- key: id=key.claim.r006.verification-requirement-evidence-split refs=key.topic.verification key.topic.artifact-graph -->
+- 결정: `requires_verification_of`는 검증 요구를, `verifies`는 실제 test 또는
+  `verification_result`가 완료한 evidence를 나타낸다.
+<!-- key: id=key.claim.r006.declared-effective-inheritance refs=key.topic.keystone-metadata key.topic.document-system -->
+- 결정: Declared metadata는 source가 작성하고 effective metadata는 document → section → item
+  상속으로 파생한다. `id`, `supersedes`, legacy term과 일반 typed relation은 상속하지 않는다.
+<!-- key: id=key.claim.r006.context-freshness refs=key.topic.work-recovery key.topic.verification -->
+- 결정: Context freshness는 discovery scope의 path set과 raw-byte source digest를 포함한다.
+  Git HEAD 또는 mtime만으로 freshness를 판정하지 않는다.
+<!-- key: id=key.claim.r006.reader-linker-recursion-guard refs=key.role.reader key.role.linker key.topic.work-recovery -->
+- 결정: Reader→Linker index-readiness와 Linker→Reader context-recovery 호출은 serialized recursion
+  guard를 전달하며 initiating lane으로 다시 호출할 수 없다.
+<!-- key: id=key.claim.r006.runtime-tdd-and-regression refs=key.topic.verification key.topic.runtime-independence -->
+- 결정: Executable runtime 변경은 TDD로 진행하고 기존 Author, Linker와 runtime-contract test
+  suite를 regression gate로 유지한다.
+- 이유: Keystone의 원래 목표인 source-owned ID/ref 기반 직접 탐색을 기본으로 복구하면서,
+  typed graph와 transaction의 비용을 다단계 의미 탐색과 multi-surface 변경에 한정하고 AI가
+  사용자에게 내부 관리 절차를 노출하지 않고도 신선한 project context를 재사용하게 하기 위해서다.

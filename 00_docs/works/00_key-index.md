@@ -26,6 +26,7 @@ key:
 | R003 | Dependency and Work Gate | `r003-dependency-work-gate/00_key-index.md` | accepted | `depends_on`과 단계별 실행 gate를 정의하고 관련 skill runtime 계약에 구현했다 |
 | R004 | Acceptance Finalization | `r004-acceptance-finalization/00_key-index.md` | accepted | Main acceptance를 문서 정합성과 executable validator로 종료한다 |
 | R005 | Artifact Graph Synchronization | `r005-artifact-graph-synchronization/00_key-index.md` | accepted | 기준서와 실제 산출물을 capability-first graph synchronization lifecycle로 연결했다 |
+| R006 | Reference Index and Context Readiness | `r006-reference-index-context-readiness/00_key-index.md` | in_progress | source-owned ID/ref를 중심으로 탐색을 재정렬하고 Reader·Linker context readiness를 구현한다 |
 
 <!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work key.topic.work-round -->
 ## 공통 결정
@@ -37,7 +38,7 @@ key:
 
 1. 프로젝트 전체 방향은 `00_docs/key-context-map.md`를 먼저 읽는다.
 2. 공통 기준과 용어는 `00_docs/standards/01_key-project-standard.md`를 따른다.
-3. 현재 active round가 있으면 이 파일의 `Work rounds` 표를 권위로 삼는다. 현재 active round는 없다.
+3. 현재 active round가 있으면 이 파일의 `Work rounds` 표를 권위로 삼는다. 현재 active round는 R006이다.
 4. Round 내부 실행 순서는 해당 round의 `00_key-index.md`에서 확인한다.
 5. 각 work의 세부 목표와 검증은 해당 work node의 `key-work-{slug}.md`에서 확인한다.
 6. 각 work의 진행 상태는 해당 work node의 `key-progress.md`에서 확인한다.

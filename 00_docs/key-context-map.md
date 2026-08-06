@@ -18,8 +18,8 @@ key:
 # 프로젝트 컨텍스트 맵
 
 활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 active work round는
-`00_docs/works/r005-artifact-graph-synchronization/`이며, 최신 accepted round는
-`00_docs/works/r004-acceptance-finalization/`이다.
+`00_docs/works/r006-reference-index-context-readiness/`이며, 최신 accepted round는
+`00_docs/works/r005-artifact-graph-synchronization/`이다.
 
 <!-- key: id=key.context-map.project refs=key.doc.source key.topic.skill-contract key.topic.bootstrap -->
 ## 프로젝트
@@ -77,6 +77,7 @@ bounded worker 실행 결과를 아티팩트 그래프(14)와 worker assignment/
 | R003 Dependency and Work Gate | `00_docs/works/r003-dependency-work-gate/00_key-index.md` | accepted | `depends_on`, 단계별 work gate, runtime 계약과 통합 검증 완료 |
 | R004 Acceptance Finalization | `00_docs/works/r004-acceptance-finalization/00_key-index.md` | accepted | acceptance finalization, runtime·validator·hook 통합 검증 |
 | R005 Artifact Graph Synchronization | `00_docs/works/r005-artifact-graph-synchronization/00_key-index.md` | accepted | 기준서와 code/config/schema/API/test를 연결하는 graph synchronization 계약·runtime·검증 |
+| R006 Reference Index and Context Readiness | `00_docs/works/r006-reference-index-context-readiness/00_key-index.md` | in_progress | source-owned ID/ref 탐색, Reader context readiness와 선택적 graph/transaction 정합화 |
 | Document Tree Setup | `00_docs/works/r001-bootstrap-keystone/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
 | Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | accepted | 전체 공통 기준서 |
 | Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서 |
@@ -173,7 +174,7 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 <!-- key: id=key.context-map.section refs=key.topic.work-sequence key.topic.document-system key.topic.work-round -->
 ## 현재 작업 단계
 
-현재 active round는 없고 최신 accepted round는 R005 Artifact Graph Synchronization이다. R001 S00-S07은 accepted 이력으로
+현재 active round는 R006 Reference Index and Context Readiness이고 최신 accepted round는 R005 Artifact Graph Synchronization이다. R001 S00-S07은 accepted 이력으로
 보존되고, 미수락 S08 Skill Creation과 S09 Integration Verification은 superseded다. R002의
 S01 기준서 개편과 S02 skill source 구현·검증은 모두 수락됐다. R003은 dependency 의미와
 단계별 gate 기준과 repo-local runtime 구현·통합 검증을 R003에서 수락했다.
@@ -182,15 +183,17 @@ scoped hard gate, package-owned validator와 hook 안전망을 구현·검증했
 R005는 기준서가 존재하는 프로젝트에서 capability-first graph, canonical mutation, surface
 attestation, source owner 적용과 finalization evidence를 연결하고 runtime·설치 layout·합성 규모
 검증까지 accepted했다.
+R006은 source-owned stable ID와 ref를 기본 탐색 계약으로 복구하고 Reader의 docs-first context
+readiness, Linker의 외부 파생 index, 선택적 typed graph와 multi-surface transaction을 정합화한다.
 
-Active steps: []
+Active steps: [R006/S01]
 
 | Step | 제목 | 목적 |
 |---|---|---|
-| S01 | Artifact Graph Synchronization Standard | accepted — graph mutation authority, surface ownership, metadata와 transaction 계약을 기준서에 확정했다 |
-| S02 | Graph Runtime and Validator | accepted — parser, adapter, planner, reconciler와 validator를 구현·검증했다 |
-| S03 | Graph Skill Runtime Integration | accepted — Author·Coordinator·Linker와 finalization runtime을 graph synchronization lifecycle에 연결했다 |
-| S04 | Graph Integration Verification | accepted — Keystone 내부 합성 fixture와 package CLI로 전체 lifecycle을 검증했다 |
+| S01 | Reference Index Contract Standard | in_progress — owner/ref-first identity와 context readiness 계약을 전체 기준서에 확정한다 |
+| S02 | Skill Context Contract Integration | planned — Reader·Linker·Author·Coordinator installed skill 계약을 동기화한다 |
+| S03 | Index Runtime Implementation | planned — 외부 파생 owner/ref index와 freshness runtime을 구현한다 |
+| S04 | Integration Verification | planned — cross-skill·설치 layout·finalization을 통합 검증한다 |
 
 <!-- key: id=key.context-map.planned-keystone-skills refs=key.topic.skill-contract key.topic.bootstrap -->
 ## Keystone 스킬 구현 상태
