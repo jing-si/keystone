@@ -47,6 +47,10 @@ Apply these rules without depending on project-local Linker instructions:
 3. Read typed relations from `produces`, `provides`, `uses`, `implements`,
    `requires_verification_of`, `verifies`,
    `governed_by`, `documents`, `supersedes`, `derived_from`, and `depends_on`.
+   `requires_verification_of` runs from an acceptance criterion or claim -> target. When that target
+   changes, review the requirement and verification plan; the relation is not proof that verification
+   ran. `verifies` runs from a test artifact or verification result -> target and records actual
+   verification evidence.
 4. Treat `key.refs` as navigation evidence, not automatic impact propagation.
 5. Keep stable identity separate from path, symbol, test name, config key, or schema locator.
 6. Treat API artifacts as contracts by default. Do not infer that an API provides a capability

@@ -201,4 +201,5 @@ Check that Reader:
 8. Hides structured payloads by default.
 9. Recovers structured and legacy dependencies with explicit evaluation and scope without changing work state.
 10. Starts docs-scope readiness, expands to repository scope lazily, and never becomes cache owner.
-11. Invalidates affected scope after writes and prevents Reader-Linker recursion in one call chain.
+11. Treats a downstream source-owner write as invalidating the affected Reader context token and
+    prevents Reader-Linker recursion in one call chain; Reader itself remains source read-only.

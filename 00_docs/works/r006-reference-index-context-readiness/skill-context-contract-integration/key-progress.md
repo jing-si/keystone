@@ -34,6 +34,9 @@ authority/freshness, recursion guard, optional graph/transaction, state와 verif
 
 - RED: `python3 -m unittest skills.tests.test_r006_context_readiness_contracts -v` — 6 failures
 - GREEN: 같은 command — 6 tests passed
+- Review-fix RED: relation 방향과 negative boundary를 강화한 7-test suite에서 Linker의
+  `requires_verification_of` 방향/target-change 계약 누락 1 failure
+- Review-fix GREEN: 방향 계약과 Reader write-boundary 표현 수정 뒤 7 tests passed
 - Regression: `python3 -m unittest skills.tests.test_s03_runtime_contracts -v` — 4 tests passed
 - Linker regression: package runtime path에서 94 tests passed
 - Author regression: package runtime path에서 61 tests passed
