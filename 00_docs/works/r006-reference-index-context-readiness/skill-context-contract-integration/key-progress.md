@@ -2,8 +2,8 @@
 doc_type: progress
 created_at: "2026-08-06"
 document_lifecycle: active
-approval: {state: pending}
-work_status: in_progress
+approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: main}
+work_status: complete
 key:
   id: key.work.skill-context-contract-integration.progress
   refs: [key.topic.progress-update, key.topic.skill-contract, key.topic.work-recovery]
@@ -14,9 +14,9 @@ key:
 ## 현재 상태
 
 - Step: S02
-- Work status: in_progress
-- Approval state: pending
-- Active: true
+- Work status: complete
+- Approval state: accepted
+- Active: false
 
 ## Prerequisite
 
@@ -44,4 +44,6 @@ authority/freshness, recursion guard, optional graph/transaction, state와 verif
 
 ## 다음 작업
 
-독립 review에서 기준 정합성, source-write/cache 경계와 regression evidence를 확인한다.
+독립 review에서 검증 관계 방향, negative 권한 경계와 Reader invalidation
+주체를 보강한 뒤 재검토를 통과했고 Main이 S02를 수락했다. S03 runtime은 이
+계약을 실행 가능하게 구현한다.

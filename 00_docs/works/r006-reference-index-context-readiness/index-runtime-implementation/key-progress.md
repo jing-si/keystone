@@ -3,7 +3,7 @@ doc_type: progress
 created_at: "2026-08-06"
 document_lifecycle: active
 approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: user}
-work_status: planned
+work_status: in_progress
 key:
   id: key.work.index-runtime-implementation.progress
   refs: [key.topic.progress-update, key.topic.artifact-graph, key.topic.work-recovery]
@@ -14,9 +14,9 @@ key:
 ## 현재 상태
 
 - Step: S03
-- Work status: planned
+- Work status: in_progress
 - Approval state: accepted
-- Active: false
+- Active: true
 
 ## Prerequisite
 
@@ -24,4 +24,5 @@ key:
 
 ## 다음 작업
 
-Owner/ref와 freshness 실패 test를 먼저 작성한 뒤 최소 external-cache runtime을 구현한다.
+S02가 complete and accepted되어 S03을 활성화했다. Owner/ref와 freshness 실패 test를
+먼저 작성한 뒤 최소 external-cache runtime을 구현한다.

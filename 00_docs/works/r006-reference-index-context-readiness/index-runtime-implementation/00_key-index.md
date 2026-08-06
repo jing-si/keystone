@@ -3,7 +3,7 @@ doc_type: work
 created_at: "2026-08-06"
 document_lifecycle: active
 approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: user}
-work_status: planned
+work_status: in_progress
 key:
   id: key.work.index-runtime-implementation.index
   refs: [key.doc.work, key.topic.artifact-graph, key.topic.work-recovery, key.topic.verification]
@@ -27,6 +27,6 @@ Source에서 재생성 가능한 외부 owner/ref index와 context freshness, la
 
 ## 현재 상태
 
-- Work status: planned
+- Work status: in_progress
 - Approval state: accepted
-- Active step: false
+- Active step: true
