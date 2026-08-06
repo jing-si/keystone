@@ -3,7 +3,7 @@ doc_type: work
 created_at: "2026-08-06"
 document_lifecycle: active
 approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: user}
-work_status: planned
+work_status: in_progress
 key:
   id: key.work.r006-integration-verification.index
   refs: [key.doc.work, key.topic.verification, key.topic.work-recovery, key.topic.finalization]
@@ -27,6 +27,6 @@ Reader→Linker→Author/Coordinator context 흐름, installed package layout와
 
 ## 현재 상태
 
-- Work status: planned
+- Work status: in_progress
 - Approval state: accepted
-- Active step: false
+- Active step: true

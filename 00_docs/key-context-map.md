@@ -186,14 +186,14 @@ attestation, source owner 적용과 finalization evidence를 연결하고 runtim
 R006은 source-owned stable ID와 ref를 기본 탐색 계약으로 복구하고 Reader의 docs-first context
 readiness, Linker의 외부 파생 index, 선택적 typed graph와 multi-surface transaction을 정합화한다.
 
-Active steps: [R006/S03]
+Active steps: [R006/S04]
 
 | Step | 제목 | 목적 |
 |---|---|---|
 | S01 | Reference Index Contract Standard | complete and accepted — owner/ref-first identity와 context readiness 계약을 전체 기준서에 확정했다 |
 | S02 | Skill Context Contract Integration | complete and accepted — Reader·Linker·Author·Coordinator installed skill 계약을 동기화했다 |
-| S03 | Index Runtime Implementation | in_progress — 외부 파생 owner/ref index와 freshness runtime을 구현한다 |
-| S04 | Integration Verification | planned — cross-skill·설치 layout·finalization을 통합 검증한다 |
+| S03 | Index Runtime Implementation | complete and accepted — 외부 파생 owner/ref index와 freshness runtime을 구현했다 |
+| S04 | Integration Verification | in_progress — cross-skill·설치 layout·finalization을 통합 검증한다 |
 
 <!-- key: id=key.context-map.planned-keystone-skills refs=key.topic.skill-contract key.topic.bootstrap -->
 ## Keystone 스킬 구현 상태

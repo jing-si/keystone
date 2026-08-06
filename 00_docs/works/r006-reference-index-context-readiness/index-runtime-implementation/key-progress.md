@@ -3,7 +3,7 @@ doc_type: progress
 created_at: "2026-08-06"
 document_lifecycle: active
 approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: user}
-work_status: in_progress
+work_status: complete
 key:
   id: key.work.index-runtime-implementation.progress
   refs: [key.topic.progress-update, key.topic.artifact-graph, key.topic.work-recovery]
@@ -14,19 +14,20 @@ key:
 ## 현재 상태
 
 - Step: S03
-- Work status: in_progress
+- Work status: complete
 - Approval state: accepted
-- Active: true
+- Active: false
 
 ## Prerequisite
 
 - R006 S02 complete and accepted
 
-## 다음 작업
+## 완료 상태
 
 S02가 complete and accepted되어 S03을 활성화했다. Owner/ref, freshness, docs/repository scope,
 external SQLite generation, optional typed graph, recursion guard와 corrupt-cache fail-soft를 TDD로
-구현했다. 독립 review와 Main acceptance 전까지 work status는 `in_progress`로 유지한다.
+구현했다. 독립 review의 adversarial 지적을 모두 해소하고 최종 재검토와 Main
+acceptance를 통과했다. S04에서 cross-skill·temporary install·finalization을 검증한다.
 
 ## 구현 증거
 
