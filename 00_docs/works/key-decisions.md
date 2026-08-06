@@ -589,3 +589,33 @@ key:
 - 이유: Keystone의 원래 목표인 source-owned ID/ref 기반 직접 탐색을 기본으로 복구하면서,
   typed graph와 transaction의 비용을 다단계 의미 탐색과 multi-surface 변경에 한정하고 AI가
   사용자에게 내부 관리 절차를 노출하지 않고도 신선한 project context를 재사용하게 하기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-026 refs=key.doc.decision key.role.coordinator key.standard.subagent key.topic.skill-contract key.topic.keystone-metadata key.topic.artifact-graph -->
+## DEC-WORKS-026: Coordinator는 외부 구현의 Keystone closure를 책임진다
+
+- 관련 work: R009 Coordinator Keystone Closure
+- 결정일: 2026-08-06
+- 상태: accepted
+<!-- key: id=key.claim.r009.context-provisioning refs=key.role.coordinator key.topic.work-recovery key.contract.output -->
+- 결정: Coordinator는 구현 worker에게 Main context checkpoint와 관련 Keystone 기준서, 작업서,
+  진행 기록, 결정, Reader brief와 필요한 Linker/Author evidence를 결합한 bounded Context Pack을
+  제공한다.
+<!-- key: id=key.claim.r009.execution-mode-ownership refs=key.role.coordinator key.topic.external-assist key.boundary.scope-control -->
+- 결정: 외부 코딩 스킬이 선택된 `orchestration` mode에서는 해당 worker가 구현 surface를
+  수정하고 Coordinator는 구현을 중복 수행하지 않는다. 외부 스킬이 없는 `direct_execution`
+  mode에서는 Coordinator가 default bounded-worker contract 안에서 구현을 직접 수행할 수 있다.
+<!-- key: id=key.claim.r009.keystone-closure-owner refs=key.role.coordinator key.role.linker key.role.author key.topic.finalization -->
+- 결정: 어느 execution mode에서도 Coordinator는 changed surface를 회수하고 Linker의 graph
+  classification·synchronization과 Author의 source-document update·finalization을 routing해 Keystone
+  closure가 끝날 때까지 감독한다. Coordinator가 graph 의미나 문서 의미를 대신 결정하지 않는다.
+<!-- key: id=key.claim.r009.external-done-is-report refs=key.topic.report key.topic.acceptance key.topic.finalization -->
+- 결정: 외부 스킬의 `DONE`, task complete, review clean 또는 branch-ready는 worker report
+  evidence일 뿐 Keystone work completion, Main acceptance 또는 finalization complete로 직접
+  승격되지 않는다.
+<!-- key: id=key.claim.r009.fail-closed-closure refs=key.topic.keystone-metadata key.topic.artifact-graph key.topic.verification -->
+- 결정: Document sync, metadata sync, graph sync와 verification의 required disposition이
+  미분류·미완료·무증거 상태이면 Coordinator는 `accept_candidate`를 만들지 않고 repair,
+  evidence collection 또는 blocked 상태로 남긴다.
+- 이유: 코딩 방법론은 교체 가능하게 유지하면서도 worker가 Keystone 문맥 없이 구현하거나 코드
+  완료 뒤 문서·키메타·그래프가 누락되는 것을 Coordinator의 일관된 감시·routing gate로 막기
+  위해서다.

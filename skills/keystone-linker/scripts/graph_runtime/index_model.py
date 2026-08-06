@@ -23,6 +23,8 @@ class FreshnessToken:
     scope: str
     entries: Tuple[FreshnessEntry, ...]
     digest: str
+    discovered_paths: Tuple[str, ...] = ()
+    complete: bool = True
 
 
 @dataclass(frozen=True)

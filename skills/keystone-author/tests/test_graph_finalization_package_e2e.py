@@ -62,6 +62,13 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
                                  / "graph_runtime" / "readiness.py")
         cls.reference_contract = (cls.codex_home / "skills" / "keystone-linker" / "references"
                                   / "reference-index-runtime.md")
+        cls.coordinator_skill = cls.codex_home / "skills" / "keystone-coordinator" / "SKILL.md"
+        cls.coordinator_validator = (cls.codex_home / "skills" / "keystone-coordinator" / "scripts"
+                                     / "validate_closure.py")
+        cls.coordinator_reference = (cls.codex_home / "skills" / "keystone-coordinator" / "references"
+                                     / "closure-validator.md")
+        cls.coordinator_test = (cls.codex_home / "skills" / "keystone-coordinator" / "tests"
+                                / "test_validate_closure.py")
         cls.install_seconds = time.monotonic() - started
 
     @classmethod
@@ -290,6 +297,48 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
         self.assertTrue((self.codex_home / "skills" / "unrelated-skill" / "SKILL.md").is_file())
         backups = tuple((self.codex_home / "skills" / ".keystone-backups").glob("*/keystone-reader/OLD"))
         self.assertEqual(1, len(backups))
+
+    def test_temporary_install_contains_callable_coordinator_closure_package(self):
+        for path in (
+            self.coordinator_skill,
+            self.coordinator_validator,
+            self.coordinator_reference,
+            self.coordinator_test,
+        ):
+            self.assertTrue(path.is_file(), path)
+        process = subprocess.run(
+            [sys.executable, str(self.coordinator_validator), "--help"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(0, process.returncode, process.stdout + process.stderr)
+
+    def test_post_swap_coordinator_validator_failure_restores_every_package_and_manifest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            codex_home = Path(temporary)
+            skills = codex_home / "skills"
+            expected = {}
+            for name in ("keystone-init", "keystone-reader", "keystone-author", "keystone-clarify",
+                         "keystone-linker", "keystone-coordinator"):
+                marker = skills / name / "OLD"
+                marker.parent.mkdir(parents=True)
+                marker.write_text(name, encoding="utf-8")
+                expected[name] = marker
+            old_manifest = '{"schema_version":1,"package_version":"old"}\n'
+            (skills / ".keystone-install.json").write_text(old_manifest, encoding="utf-8")
+
+            process = subprocess.run(
+                ["bash", str(ROOT / "reinstall-local-keystone-skills.sh")],
+                cwd=str(ROOT),
+                env=dict(os.environ, CODEX_HOME=str(codex_home),
+                         _KEYSTONE_TEST_BREAK_COORDINATOR_VALIDATOR_AFTER_SWAP="true"),
+                capture_output=True, text=True, check=False,
+            )
+
+            self.assertNotEqual(0, process.returncode)
+            self.assertIn("Final installed-package verification failed", process.stderr)
+            for name, marker in expected.items():
+                self.assertEqual(name, marker.read_text(encoding="utf-8"))
+            self.assertEqual(old_manifest, (skills / ".keystone-install.json").read_text(encoding="utf-8"))
 
     def test_post_swap_verification_failure_restores_every_package_and_manifest(self):
         with tempfile.TemporaryDirectory() as temporary:

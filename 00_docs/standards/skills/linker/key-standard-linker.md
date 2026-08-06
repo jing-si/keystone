@@ -193,7 +193,9 @@ Parsing과 normalization은 다음 기준을 따른다.
 1. `key.id`와 code anchor `id`는 stable artifact identity로 보고 locator와 분리한다.
 2. `key.refs`는 탐색 후보 edge로만 사용하고 required impact relation으로 확정하지 않는다.
 3. Document item은 부모 document와 section의 `governed_by`, source authority와 lifecycle을
-   상속할 수 있지만 `id`와 `supersedes`는 상속하지 않는다.
+   상속할 수 있지만 `id`와 `supersedes`는 상속하지 않는다. Effective `governed_by`는 부모
+   effective set과 child declared set의 ordered union이며 inherited target을 child의 typed
+   relation으로 복제하지 않는다.
 4. Decision의 일부만 대체되면 decision document 전체가 아니라 declared `key.claim.*`
    relation을 impact seed로 사용한다. Claim metadata가 없으면 부분 대체를 확정하지 않고
    metadata gap으로 보고한다.

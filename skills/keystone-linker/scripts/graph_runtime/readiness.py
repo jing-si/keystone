@@ -27,6 +27,15 @@ def context_readiness(repository_root, cache_path, *, initiator, artifact_contex
     discovery = scanner.discover(scope)
     store = SQLiteIndexStore(cache_path, repository_root=repository_root)
     cache_diagnostics = []
+    if not discovery.freshness.complete:
+        result = scanner.scan_discovery(discovery, include_typed_graph=materialize_graph)
+        cache_diagnostics.append(IndexDiagnostic(
+            "cache_bypassed_incomplete_discovery",
+            "incomplete discovery generation is not cacheable",
+            str(Path(cache_path)),
+            "warning",
+        ))
+        return ReadinessResult(result, "source_fallback", tuple(cache_diagnostics), current)
     try:
         loaded = store.load(discovery.freshness)
         if loaded is not None and (not materialize_graph or loaded.typed_graph is not None):
@@ -53,6 +62,17 @@ def context_readiness(repository_root, cache_path, *, initiator, artifact_contex
     try:
         store.replace(result)
         return ReadinessResult(result, "refreshed", (), current)
+    except CacheCorrupt as error:
+        cache_diagnostics.append(IndexDiagnostic("cache_unavailable", str(error), str(Path(cache_path))))
+        try:
+            store.recover(result)
+            cache_diagnostics.append(IndexDiagnostic(
+                "cache_recovered", "structurally invalid disposable cache was replaced",
+                str(Path(cache_path))))
+        except StoreUnavailable as recovery_error:
+            cache_diagnostics.append(IndexDiagnostic(
+                "cache_recovery_failed", str(recovery_error), str(Path(cache_path))))
+        return ReadinessResult(result, "source_fallback", tuple(cache_diagnostics), current)
     except StoreUnavailable as error:
         cache_diagnostics.append(IndexDiagnostic("cache_unavailable", str(error), str(Path(cache_path))))
         return ReadinessResult(result, "source_fallback", tuple(cache_diagnostics), current)

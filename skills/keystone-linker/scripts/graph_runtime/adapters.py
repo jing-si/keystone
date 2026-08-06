@@ -11,16 +11,28 @@ class Adapter(Protocol):
 
 
 def _following_construct(text: str, end: int) -> Tuple[Optional[str], Optional[str]]:
+    kind, label, _offset, _level = _following_construct_context(text, end)
+    return kind, label
+
+
+def _following_construct_context(text: str, end: int):
     tail = text[end:]
-    match = re.match(r"[ \t]*(?:\r?\n)[ \t]*(.*)", tail)
+    match = re.match(r"[ \t]*(?:\r?\n)([ \t]*)([^\r\n]*)", tail)
     if not match:
-        return None, None
-    line = match.group(1).strip()
-    if line.startswith("#"):
-        return "heading", line.lstrip("#").strip()
+        return None, None, end, None
+    line = match.group(2).strip()
+    target_offset = end + match.start(1)
+    heading = re.match(r"^(#{1,6})(?:[ \t]+|$)(.*?)\s*#*\s*$", line)
+    if heading:
+        return "heading", heading.group(2).strip(), target_offset, len(heading.group(1))
     if re.match(r"(?:[-+*]|\d+[.)])\s+", line):
-        return "list", re.sub(r"^(?:[-+*]|\d+[.)])\s+", "", line).strip()
-    return None, None
+        label = re.sub(r"^(?:[-+*]|\d+[.)])\s+", "", line).strip()
+        return "list", label, target_offset, None
+    following_line = tail[match.end():]
+    setext = re.match(r"\r?\n[ \t]{0,3}(=+|-+)[ \t]*(?:\r?\n|$)", following_line)
+    if line and setext:
+        return "heading", line, target_offset, 1 if setext.group(1)[0] == "=" else 2
+    return None, None, target_offset, None
 
 
 def _fenced_ranges(text: str):
@@ -48,20 +60,39 @@ def _inside_inline_code(text: str, position: int) -> bool:
 
 
 @dataclass(frozen=True)
+class MarkdownMetadataBlock:
+    text: str
+    construct: Optional[str]
+    label: Optional[str]
+    target_offset: int
+    heading_level: Optional[int] = None
+    enclosing_heading_offset: Optional[int] = None
+
+
+@dataclass(frozen=True)
 class MarkdownAdapter:
     surface: str = "document_metadata"
 
     def metadata_blocks(self, text: str):
+        for block in self.metadata_blocks_with_context(text):
+            yield block.text, block.construct, block.label
+
+    def metadata_blocks_with_context(self, text: str):
         fenced = _fenced_ranges(text)
+        blocks = []
         if text.startswith("---\n") or text.startswith("---\r\n"):
             match = re.match(r"^---\r?\n(.*?)\r?\n---(?:\r?\n|$)", text, re.DOTALL)
             if match:
                 frontmatter = match.group(1)
                 if re.search(r"^(?:key(?:\.|\s*:)|document_lifecycle\s*:|approval\s*:|authority\s*:|work_gates\s*:)",
                              frontmatter, re.MULTILINE):
-                    yield frontmatter, "document", None
+                    blocks.append(MarkdownMetadataBlock(
+                        frontmatter, "document", None, -1,
+                    ))
             else:
-                yield "__malformed_frontmatter__", "document", None
+                blocks.append(MarkdownMetadataBlock(
+                    "__malformed_frontmatter__", "document", None, -1,
+                ))
         pending = None
         for match in re.finditer(r"<!--(.*?)-->", text, re.DOTALL):
             if _in_ranges(match.start(), fenced) or _inside_inline_code(text, match.start()):
@@ -83,12 +114,20 @@ class MarkdownAdapter:
                 pending = (pending[0] + " " + body, match.end())
                 continue
             if pending is not None:
-                kind, label = _following_construct(text, pending[1])
-                yield pending[0], kind, label
+                kind, label, target_offset, level = _following_construct_context(
+                    text, pending[1],
+                )
+                blocks.append(MarkdownMetadataBlock(
+                    pending[0], kind, label, target_offset, level,
+                ))
             pending = (body, match.end())
         if pending is not None:
-            kind, label = _following_construct(text, pending[1])
-            yield pending[0], kind, label
+            kind, label, target_offset, level = _following_construct_context(
+                text, pending[1],
+            )
+            blocks.append(MarkdownMetadataBlock(
+                pending[0], kind, label, target_offset, level,
+            ))
         for row in re.finditer(r"^\|\s*<!--(.*?)-->\s*([^|]*)\|", text, re.MULTILINE | re.DOTALL):
             if _in_ranges(row.start(), fenced):
                 continue
@@ -96,7 +135,67 @@ class MarkdownAdapter:
             if body.startswith("key:"):
                 body = body[4:].strip()
             visible = re.sub(r"[`*_]", "", row.group(2)).strip()
-            yield body, "table", visible
+            blocks.append(MarkdownMetadataBlock(
+                body, "table", visible, row.start(),
+            ))
+
+        annotated_headings = {
+            block.target_offset
+            for block in blocks
+            if block.construct == "heading"
+        }
+        headings = _markdown_headings(text, fenced)
+        for block in sorted(blocks, key=lambda item: item.target_offset):
+            stack = []
+            for offset, level in headings:
+                if offset >= block.target_offset:
+                    break
+                while stack and stack[-1][1] >= level:
+                    stack.pop()
+                stack.append((offset, level))
+            enclosing = next(
+                (offset for offset, _level in reversed(stack)
+                 if offset in annotated_headings),
+                None,
+            )
+            yield MarkdownMetadataBlock(
+                block.text,
+                block.construct,
+                block.label,
+                block.target_offset,
+                block.heading_level,
+                enclosing,
+            )
+
+
+def _markdown_headings(text: str, fenced):
+    comment_ranges = tuple(
+        (match.start(), match.end())
+        for match in re.finditer(r"<!--.*?-->", text, re.DOTALL)
+    )
+    frontmatter = re.match(r"^---\r?\n.*?\r?\n---(?:\r?\n|$)", text, re.DOTALL)
+    ignored = fenced + comment_ranges + (
+        ((frontmatter.start(), frontmatter.end()),) if frontmatter else ()
+    )
+    headings = []
+    pattern = r"^[ \t]{0,3}(#{1,6})(?:[ \t]+|$).*?$"
+    for match in re.finditer(pattern, text, re.MULTILINE):
+        if _in_ranges(match.start(), ignored):
+            continue
+        headings.append((match.start(), len(match.group(1))))
+    setext_pattern = r"^([^\r\n]+)\r?\n[ \t]{0,3}(=+|-+)[ \t]*$"
+    for match in re.finditer(setext_pattern, text, re.MULTILINE):
+        label = match.group(1).strip()
+        if (_in_ranges(match.start(), ignored)
+                or not label
+                or label.startswith(("#", "<!--", "```", "~~~"))
+                or re.match(r"(?:[-+*]|\d+[.)])\s+", label)):
+            continue
+        headings.append((
+            match.start(),
+            1 if match.group(2)[0] == "=" else 2,
+        ))
+    return tuple(sorted(set(headings)))
 
 
 @dataclass(frozen=True)

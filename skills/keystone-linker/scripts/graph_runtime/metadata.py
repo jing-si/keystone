@@ -19,14 +19,36 @@ from .source_relations import RELATION_TYPES, build_source_relations
 from .yaml_subset import MetadataError, parse_yaml_subset
 
 
+_COMPACT_MULTI_VALUE_FIELDS = frozenset({
+    "refs", "produced_from", "governed_by", "legacy_terms", "aliases",
+}) | frozenset(RELATION_TYPES)
+
+
 def _compact(text: str) -> Dict[str, Any]:
     result: Dict[str, Any] = {}
+    current_key: Optional[str] = None
     for token in shlex.split(text.replace(", ", ",")):
-        if "=" not in token:
+        if "=" in token:
+            key, value = token.split("=", 1)
+            values = [part for part in value.split(",") if part]
+            if key in _COMPACT_MULTI_VALUE_FIELDS:
+                existing = result.get(key, [])
+                if not isinstance(existing, list):
+                    existing = [existing] if existing else []
+                result[key] = existing + values
+            else:
+                result[key] = values if len(values) > 1 else (values[0] if values else "")
+            current_key = key
             continue
-        key, value = token.split("=", 1)
-        values = [part for part in value.split(",") if part]
-        result[key] = values if len(values) > 1 else (values[0] if values else "")
+        if current_key not in _COMPACT_MULTI_VALUE_FIELDS:
+            raise MetadataError(
+                "bare compact metadata token is not attached to a list field: %s" % token
+            )
+        continuations = [part for part in token.split(",") if part]
+        existing = result.get(current_key, [])
+        if not isinstance(existing, list):
+            existing = [existing] if existing else []
+        result[current_key] = existing + continuations
     if not result:
         raise MetadataError("metadata contains no key/value declarations")
     return result
@@ -206,8 +228,25 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
     markdown = adapter.surface == "document_metadata"
     document_node: Optional[Node] = None
     current_section_node: Optional[Node] = None
+    section_nodes_by_offset: Dict[int, Node] = {}
     parsed_work_gates = ()
-    for block, construct, label in adapter.metadata_blocks(text):
+    contextual_blocks = (
+        adapter.metadata_blocks_with_context(text)
+        if markdown and hasattr(adapter, "metadata_blocks_with_context")
+        else None
+    )
+    blocks = contextual_blocks if contextual_blocks is not None else adapter.metadata_blocks(text)
+    for raw_block in blocks:
+        if hasattr(raw_block, "text"):
+            block = raw_block.text
+            construct = raw_block.construct
+            label = raw_block.label
+            target_offset = raw_block.target_offset
+            enclosing_heading_offset = raw_block.enclosing_heading_offset
+        else:
+            block, construct, label = raw_block
+            target_offset = None
+            enclosing_heading_offset = None
         try:
             data = _metadata(block)
             node_id = str(data.get("id", "")).strip()
@@ -222,7 +261,12 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
                                               locator=locator))
             parent = None
             if markdown and construct != "document":
-                parent = current_section_node if construct in {"list", "table", None} else document_node
+                if target_offset is not None:
+                    parent = section_nodes_by_offset.get(enclosing_heading_offset)
+                else:
+                    parent = (current_section_node
+                              if construct in {"list", "table", None}
+                              else document_node)
                 if parent is None:
                     parent = document_node
             node_result = build_source_node(
@@ -246,6 +290,8 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
                 document_node = node
             elif markdown and construct == "heading":
                 current_section_node = node
+                if target_offset is not None:
+                    section_nodes_by_offset[target_offset] = node
             relation_result = build_source_relations(
                 data,
                 node,

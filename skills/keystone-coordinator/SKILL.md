@@ -1,6 +1,6 @@
 ---
 name: keystone-coordinator
-description: "Coordinate bounded worker delegation, multiple workers, formal review or verification, and worker-report handling only with user permission for the current work scope. Direct invocation grants permission for that scope; do not ask again within it, but ask again when scope or risk meaningfully expands. Prefer Main direct for small, clear work. Do not use to replace Main acceptance or when the work cannot be safely bounded."
+description: "Provide bounded Keystone context, execute directly when no external coding skill is selected, or orchestrate an external-skill worker when one is selected. After implementation, supervise document, metadata, graph, verification, and finalization closure with Linker and Author while Main retains acceptance. Direct invocation grants permission only for the current scope."
 ---
 
 <!-- keystone: id=key.skill.coordinator kind=output_artifact artifact_kind=skill_source -->
@@ -11,7 +11,14 @@ description: "Coordinate bounded worker delegation, multiple workers, formal rev
 
 ## Purpose
 
-Broker bounded worker assignments while Main remains supervisor and acceptance owner. Turn recovered work steps, Reader context briefs, Linker reports, and Author Change Sets into assignments; then review worker reports for scope, verification, repair, escalation, and Main acceptance readiness.
+Turn recovered work steps, Main context, Reader briefs, Linker reports, and Author Change Sets into a
+bounded execution context. When no external coding skill is selected, perform the approved repository
+work directly under the default bounded-worker contract. When an external skill is selected, delegate
+implementation to that worker and remain the orchestration and supervision owner.
+
+After either execution mode, collect every changed surface and drive the Keystone closure workflow:
+actual-state review, verification, Linker graph classification or synchronization, Author-owned source
+document and metadata updates, Main acceptance readiness, and post-acceptance finalization.
 
 Treat source documents and accepted decisions as project authority. Treat Coordinator payloads as runtime handoff records only. Never interpret worker `DONE` as Main acceptance.
 
@@ -34,7 +41,7 @@ Obtain user permission for each work scope before using Coordinator. Treat direc
 - Do not ask again for assignment, review, verification, or repair inside the same scope.
 - Ask again before meaningful scope or risk expansion, including new sensitive data, destructive changes, public release, external cost, or changed authority.
 - Do not treat invocation of an external coding skill alone as Coordinator permission.
-- Prefer Main direct for small, clear work that does not benefit from delegation or formal report handling.
+- A direct invocation may use `direct_execution` for small, bounded work without an external coding skill.
 
 ## Permissionless Linker Boundary
 
@@ -64,12 +71,16 @@ Use Coordinator, with permission, when one or more of these are needed:
 5. Convert a Linker report or Author Change Set into assignment context or reviewer focus.
 6. Review worker reports and choose an accept candidate, repair, review, verify, escalate, or block action.
 7. Preserve formal work state across delegation while Main retains final acceptance.
+8. Execute bounded code/config/schema/API/test work directly when the user invoked Coordinator and no
+   external coding skill is selected.
+9. Ensure an external worker's implementation is not considered complete until required Keystone
+   document, metadata, graph, and verification closure is ready for Main acceptance.
 
 ## When Not To Use
 
 Do not use Coordinator when:
 
-1. Main can safely complete a small, clear task directly.
+1. The request is not invoking Coordinator and Main can safely complete a small, clear task directly.
 2. The main task is source-document scope design or authoring; use Author.
 3. A high-impact user decision is missing; use Clarify for one actual decision topic.
 4. The main task is read-only Keystone navigation; use Reader.
@@ -92,7 +103,7 @@ When context cannot be recovered, do not create a worker assignment. Report what
 
 Absence of a project-local Coordinator standard is never a missing-context error.
 
-## Required Assignment Context
+## Required Execution Context
 
 Before assigning a worker, recover or establish:
 
@@ -108,8 +119,46 @@ Before assigning a worker, recover or establish:
 10. Execution constraints supplied by the user, injected skill, or host.
 11. Pre-implementation Linker graph context and any pending graph transaction when implementation or
     anchor meaning is graph-relevant.
+12. A Main context checkpoint preserving global intent, accepted decisions, current work identity,
+    source conflicts, and scope boundaries.
 
 Include `routing_context_ref` only when multiple surfaces, an authority boundary, or an audit requirement makes an explicit routing record useful. Do not require a routing payload for ordinary assignments.
+
+## Execution Modes
+
+Choose exactly one mode before implementation:
+
+1. `direct_execution`
+   - Use when no external coding skill is selected.
+   - Coordinator applies the `keystone-default-bounded-worker` contract to its own bounded repository
+     edits and produces the same canonical report required from a delegated worker.
+2. `orchestration`
+   - Use when one or more external coding skills are selected.
+   - Coordinator provides the Context Pack and delegates implementation. It does not duplicate the
+     worker's implementation edits.
+   - External orchestration procedures may propose task decomposition, but Coordinator owns every
+     assignment and review boundary. Injected skills do not create unsupervised child workers.
+
+External-skill `DONE`, task complete, review clean, commit-ready, or branch-ready is worker evidence
+only. None of these values changes Keystone work status, grants Main acceptance, or completes
+finalization.
+
+## Pre-implementation Context Provisioning
+
+Before direct work or delegation, create one bounded Context Pack that combines:
+
+1. `main_context_checkpoint` with user intent, accepted decisions, scope, exclusions, and preserved
+   existing changes.
+2. Current round, Work, all active or assigned Step refs, dependency gates, completion criteria, and
+   verification expectations.
+3. The relevant source documents and applicable standards, not an unbounded corpus dump.
+4. Reader recovery evidence when work state or navigation was recovered.
+5. Linker artifact context, reuse/test candidates, metadata gaps, and any pending graph transaction
+   when artifact meaning is relevant.
+6. Author Change Set or document-edit boundary when source documents may need to change.
+
+Do not start implementation while required context is missing or blocked. Main-provided context and
+Keystone evidence are complementary and must survive the worker handoff.
 
 ## Workflow
 
@@ -124,17 +173,22 @@ Include `routing_context_ref` only when multiple surfaces, an authority boundary
 6. Use a Linker report when artifact relations, impact candidates, stale/gap risks, reuse candidates, or anchor changes materially affect the assignment.
    Preserve its document-item and claim IDs, partial-supersession boundaries, legacy-term stale candidates,
    and metadata-gap classification without reinterpreting them.
-7. Decide whether delegation is useful and whether the work can be bounded. Return to Main direct when it is not.
+7. Decide whether the work can be bounded and select `direct_execution` or `orchestration`.
 8. Select a purpose and authority: `investigate/read_only`, `document_edit/bounded_edit`, `implement/bounded_edit`, `review/review_only`, or `verify/verification`.
-9. Select an injected skill contract. Use `keystone-default-bounded-worker` when no domain-specific or explicitly requested external skill applies.
+9. In direct execution, use `keystone-default-bounded-worker`. In orchestration, select the explicitly
+   requested or applicable external skill contract.
 10. Keep `injected_skills` non-empty for every actual worker assignment.
 11. Record only execution constraints supplied by the user, injected skill, or host; do not choose an isolation or concurrency strategy on Keystone's behalf.
-12. Create the bounded assignment and deliver it to the worker.
+12. Create the bounded execution record. Execute it directly or deliver the assignment and Context Pack
+    to the external-skill worker according to the selected mode.
 13. Inspect the returned report and actual state for scope, forbidden changes, verification, source conflicts, and preserved Main context.
 14. When item-level metadata is in scope, reconcile changed item/claim IDs, metadata sync, legacy-term
     findings, and required verification closure against the supplied Linker or Author handoff.
-15. Choose the next action: accept candidate, repair, review, verify, escalate, or block.
-16. Let Main make the acceptance decision. After that decision, route the accepted Step evidence to
+15. Normalize direct or external output into the canonical worker report, including one artifact delta
+    for every changed surface.
+16. Complete the post-implementation Keystone closure gate below.
+17. Choose the next action: accept candidate, repair, review, verify, escalate, or block.
+18. Let Main make the acceptance decision. After that decision, route the accepted Step evidence to
     Author's `acceptance_finalize` runtime automatically; do not wait for another user command.
 
 A required active-Step gate in `waiting` state blocks that Step's implement assignment, but may allow
@@ -148,24 +202,60 @@ and Work closure. Continue independent Work, equal active Steps, finalization re
 review, and verification. Coordinator does not run source edits, reinterpret validator diagnostics as
 acceptance, or mark finalization complete.
 
+## Post-implementation Keystone Closure
+
+Normalize direct and delegated implementation output into one closure record. A report is incomplete
+until it contains changed files, one `artifact_delta` per changed surface, scope and forbidden-change
+checks, verification evidence, and explicit document, metadata, and graph sync dispositions.
+
+For each sync category use:
+
+```yaml
+sync_result:
+  disposition: required | not_applicable | deferred
+  state: complete | verified | not_applicable | pending | blocked
+  reason:
+  evidence: []
+```
+
+Apply these gates:
+
+1. Ask Linker to classify every artifact delta. Coordinator never turns a worker's graph guess into a
+   canonical relation.
+2. Route required source-document or document-item changes to Author. Coordinator supervises the
+   handoff but does not take Author's source-write authority.
+3. Route required repository anchor patches through Linker's canonical mutation and the owning
+   repository surface. Required graph sync closes only at `verified`.
+4. A `not_applicable` disposition requires a concrete reason and evidence. Missing fields are not an
+   implicit no-change result.
+5. A `deferred`, pending, blocked, unclassified, or evidence-free required disposition prevents
+   `accept_candidate`.
+6. External-skill success never overrides this gate. Repair or collect evidence until pre-acceptance
+   closure is complete, or report the actual blocker.
+7. After Main acceptance, route Author finalization. Only `complete` or explicitly `waived`
+   finalization with acceptance evidence produces Coordinator `closure_complete`.
+
+Run the package-local validator described in
+[references/closure-validator.md](references/closure-validator.md). It is diagnostic-only: it does not
+edit sources, decide graph meaning, grant acceptance, or complete Author finalization.
+
 ## Artifact Delta and Graph Synchronization
 
-Within an already permitted implementation scope, collect an `artifact_delta` when a worker or Main
-direct changes repository behavior, artifact meaning, or an anchor. Main direct uses the same contract
-without creating an assignment. A graph-relevant delta invokes Linker classification as direct refresh
+Within an already permitted implementation scope, collect one `artifact_delta` for every changed
+repository behavior, artifact meaning, or anchor. Direct execution uses the same contract without a
+delegated assignment. A graph-relevant delta invokes Linker classification as direct refresh
 or multi-surface synchronization;
 this does not create Coordinator permission, widen scope, raise worker authority, or grant acceptance.
 A safe `not_required` assessment for a non-relevant delta records a concrete reason outside the
 canonical delta and maps to finalization `not_applicable`.
 
 ```yaml
-artifact_delta:
-  kind: artifact_delta
-  source_surface:
-  changed_locators: []
-  semantic_summary:
-  baseline_digest: sha256:<64-lowercase-hex> | absent
-  graph_relevant: true | false
+artifact_deltas:
+  - kind: artifact_delta
+    source_surface:
+    changed_locators: []
+    semantic_summary:
+    baseline_digest: sha256:<64-lowercase-hex> | absent
 graph_attestations:
   - patch_id:
     owner: main | coordinator
@@ -211,7 +301,7 @@ Use injected skills as bounded guidance. They never increase authority or replac
 - Use `keystone-default-bounded-worker` when no other skill applies.
 - When the user explicitly requests an external skill, inject it with the narrowest applicable mode.
 - Do not inject the default contract redundantly when an external skill already provides the worker procedure; retain all assignment boundaries.
-- If an injected procedure requires authority, scope, external state, publishing, dependency changes, or additional workers beyond the assignment, require a `NEEDS_SCOPE_CHANGE` or `NEEDS_CONTEXT` report.
+- If an injected procedure requires authority, scope, external state, publishing, dependency changes, or additional workers beyond the assignment, require a `NEEDS_SCOPE_CHANGE` or `NEEDS_CONTEXT` report. Coordinator may translate an approved decomposition into separate bounded assignments; the injected worker may not create them independently.
 - Require the report to identify the skill, mode, outputs used, and limits encountered.
 
 Default contract:
@@ -233,7 +323,7 @@ injected_skill:
   forbidden_use:
     - scope expansion
     - authority escalation
-    - child subagent creation
+    - unsupervised child subagent creation
     - Main acceptance
   stop_conditions:
     - missing source context
@@ -248,6 +338,7 @@ Use the following shape for an actual worker assignment. Omit `routing_context_r
 ```yaml
 worker_assignment:
   assignment_id:
+  execution_mode: direct_execution | orchestration
   # routing_context_ref: optional; include only for multiple surfaces, authority boundaries, or audit
   goal:
   completion_criteria:
@@ -259,9 +350,24 @@ worker_assignment:
   accepted_decisions:
   applicable_standards:
   context_pack:
-    required_sources:
-    optional_sources:
+    main_context_checkpoint:
+    work_context:
+      round_ref:
+      work_ref:
+      step_refs: []
+    source_documents: []
+    applicable_standards: []
+    accepted_decisions: [] # explicit; [] means no accepted decisions apply
+    completion_criteria: []
+    scope_boundaries:
+      read_scope: []
+      allowed_edit_scope: []
+      excluded_scope: []
+    forbidden_changes: []
+    verification_expectations: []
     artifact_context:
+      status: ready | not_applicable | blocked
+      evidence: []
       anchor_change_context:
         allowed_anchor_changes:
           - artifact_id:
@@ -271,6 +377,14 @@ worker_assignment:
             linker_report_ref:
         forbidden_anchor_changes:
         verification_required:
+    reader_context:
+      status: ready | not_applicable | blocked
+      evidence: []
+    author_context:
+      status: ready | not_applicable | blocked
+      evidence: []
+    required_sources:
+    optional_sources:
     reuse_candidates:
     test_candidates:
     document_sync_candidates:
@@ -284,7 +398,6 @@ worker_assignment:
     work_completion_gates:
     graph_transaction_ref:
     allowed_graph_patch_ids:
-  main_context_checkpoint:
   injected_skills:
     - skill_id:
       mode:
@@ -309,19 +422,27 @@ worker_assignment:
     constraints:
     supplied_by: user | injected_skill | host | combined
   return_report_contract:
-    artifact_delta:
+    artifact_deltas:
+    document_sync:
+    metadata_sync:
+    graph_sync:
     graph_attestations:
     graph_apply_results:
     graph_resume_evidence:
 ```
 
-Use `main_context_checkpoint` to preserve global intent, accepted decisions, current work identity, source conflicts, scope boundaries, and Main acceptance ownership across handoffs.
+Use `context_pack.main_context_checkpoint` to preserve global intent, accepted decisions, current work
+identity, source conflicts, scope boundaries, and Main acceptance ownership across handoffs. The Context
+Pack must explicitly carry its accepted-decisions array (use `[]` only when none apply), completion
+criteria, scope boundaries, forbidden changes, verification expectations, and artifact/Reader/Author
+context status plus evidence. `ready` and `not_applicable` require evidence; `blocked` prevents readiness.
 
 Worker report:
 
 ```yaml
 worker_report:
   assignment_id:
+  execution_mode: direct_execution | orchestration
   status: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | NEEDS_SCOPE_CHANGE | BLOCKED
   status_reason:
   reason_code:
@@ -336,11 +457,11 @@ worker_report:
       outputs_used:
       candidates_found:
       limits_hit:
-  changed_files:
   changed_key_ids:
   changed_item_or_claim_ids:
   changed_capabilities:
-  artifact_delta:
+  changed_files: [] # explicit; [] only when no repository surface changed
+  artifact_deltas: [] # explicit; one kind: artifact_delta entry per changed file
   graph_attestations:
   graph_apply_results:
   graph_transaction_state:
@@ -354,6 +475,21 @@ worker_report:
   verification:
   document_sync_needed:
   metadata_sync_needed:
+  document_sync:
+    disposition: required | not_applicable | deferred
+    state: complete | not_applicable | pending | blocked
+    reason:
+    evidence: []
+  metadata_sync:
+    disposition: required | not_applicable | deferred
+    state: complete | not_applicable | pending | blocked
+    reason:
+    evidence: []
+  graph_sync:
+    disposition: required | not_applicable | deferred
+    state: verified | not_applicable | pending | blocked
+    reason:
+    evidence: []
   legacy_term_findings:
   verification_closure:
     - target_item_or_claim_id:
@@ -384,6 +520,10 @@ worker_report_review:
   graph_reconstruction_result: pass | fail | not_run | inconclusive
   graph_mechanical_validation_result: pass | fail | not_run | inconclusive
   graph_transaction_complete: true | false
+  document_sync_result: complete | not_applicable | pending | blocked
+  metadata_sync_result: complete | not_applicable | pending | blocked
+  keystone_closure_phase: pre_acceptance | post_acceptance
+  finalization_result: not_started | in_progress | complete | waived | blocked
   source_conflict_result:
   main_context_preserved: true | false
   reason_codes:
@@ -391,19 +531,41 @@ worker_report_review:
   verification_required: true | false
   repair_required: true | false
   escalation_required: true | false
-  coordinator_decision: accept_candidate | repair | review | verify | escalate | block
+  coordinator_decision: accept_candidate | closure_complete | repair | review | verify | escalate | block
   main_acceptance_allowed: true | false
   residual_risk:
   next_action:
 ```
 
 Keep report status separate from work-progress status. Treat `accept_candidate` as readiness for Main review, not acceptance.
+`document_sync_needed` and `metadata_sync_needed` are compatibility hints only. New reports must use
+the structured `document_sync`, `metadata_sync`, and `graph_sync` results above.
+
+Only `DONE` is ready for an `accept_candidate`. `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`,
+`NEEDS_SCOPE_CHANGE`, and `BLOCKED` remain non-ready until their named concern or blocker is resolved.
+The worker report's `execution_mode` must match its manifest. `changed_files` and `artifact_deltas` are
+explicit arrays; genuine no-change uses `[]` for both. Each changed file has exactly one delta with
+`kind: artifact_delta`.
+
+For every post-acceptance decision, record acceptance separately from finalization:
+
+```yaml
+keystone_closure:
+  acceptance_ref:
+  acceptance_evidence: []
+  finalization:
+    state: complete | waived | blocked
+    acceptance_ref:
+    evidence: []
+    waiver_reason: # required when state is waived
+```
 
 ## Current Example
 
 ```yaml
 worker_assignment:
   assignment_id: r002-s02-coordinator-runtime
+  execution_mode: direct_execution
   goal: Align the Coordinator runtime skill with accepted R002 standards.
   completion_criteria:
     - Coordinator permission is scoped and explicit
@@ -443,6 +605,7 @@ worker_assignment:
 
 worker_report:
   assignment_id: r002-s02-coordinator-runtime
+  execution_mode: direct_execution
   status: DONE
   scope_check: within_scope
   forbidden_change_check: none
@@ -467,7 +630,13 @@ Review every worker report against actual state, not just its claimed status.
 7. Separate source conflicts, stale work orders, stale progress records, and unpropagated accepted decisions.
 8. Assign separate review or verification only when it materially improves confidence.
 9. Use `accept_candidate` only when Main can make an informed acceptance decision.
-10. Leave acceptance to Main. Worker `DONE`, Coordinator review, and successful verification do not independently accept work.
+10. Require complete pre-acceptance document, metadata, graph, and verification closure before
+    `accept_candidate`.
+11. Leave acceptance to Main. Worker `DONE`, Coordinator review, and successful verification do not independently accept work.
+12. Every post-acceptance record, including repair, escalation, and block decisions, carries
+    `keystone_closure.acceptance_ref` and non-empty `acceptance_evidence`. `closure_complete` also
+    requires ready Context Pack/report/scope/verification/sync evidence and Author finalization evidence.
+    Finalization may be `complete` or explicitly `waived`; a waiver states a concrete `waiver_reason`.
 
 ## Default User Response
 
@@ -479,13 +648,13 @@ Before sending a user-facing response, apply the Payload Disclosure Gate: do not
 
 ## Boundaries
 
-1. Broker assignments; do not replace Main.
+1. Own execution routing and Keystone closure supervision; do not replace Main acceptance.
 2. Do not create high-impact decisions or expand accepted scope.
 3. Do not design source-document edit scope without an Author Edit Contract.
 4. Do not interpret artifact-graph candidates without Linker evidence.
 5. Do not mark progress accepted before Main acceptance.
 6. Do not choose workspace isolation, concurrency, or integration strategy on Keystone's behalf.
-7. Do not let injected skills raise authority, change scope, or create child workers.
+7. Do not let injected skills raise authority, change scope, or create unsupervised child workers.
 8. Do not persist assignment or reviewer documents unless a user, audit policy, or rerun requirement needs them.
 
 ## Stop Conditions
@@ -504,6 +673,8 @@ Stop assignment or continuation when:
    interpretation not supplied by Linker or an accepted Author handoff.
 10. A report requires source authority, acceptance criteria, status semantics, or meaningful scope/risk changes.
 11. Host constraints or concurrent edits make the assignment unsafe.
+12. Any changed surface lacks an artifact delta or a required document, metadata, graph, verification,
+    or finalization result lacks evidence.
 
 Apply fail-soft recovery instead of inventing missing context. Ask the user only when an actual decision or permission boundary remains.
 
@@ -530,3 +701,9 @@ Verify Coordinator behavior by checking:
     assignment, acceptance, or status authority.
 15. Worker/Main reports preserve owner attestations, apply results, partial resume evidence, and the
     distinction between Coordinator accept-candidate readiness and Linker-verified graph closure.
+16. Direct execution is selected only without an external coding skill; orchestration is selected when
+    an external skill performs implementation.
+17. Main and Keystone context are both present in the bounded Context Pack before implementation.
+18. External `DONE` cannot pass an incomplete document, metadata, graph, verification, or finalization
+    closure gate.
+19. The package-local closure validator returns a diagnostic envelope and fail-closed exit code.

@@ -33,7 +33,34 @@ _IGNORED_DIRS = frozenset({
     ".git", ".worktrees", "__pycache__", "node_modules", ".venv", "venv", "dist",
     "build", ".gradle", "target", "vendor", "Pods", "DerivedData", "coverage", ".next", "out",
 })
-_UNRESOLVED_REF_ALLOWED_PREFIXES = ("key.topic.", "key.role.", "key.boundary.")
+_TAXONOMY_REF_PREFIXES = (
+    "key.topic.",
+    "key.role.",
+    "key.boundary.",
+    "key.section.",
+    "key.step.",
+    "key.artifact.",
+    "key.mode.",
+)
+_TAXONOMY_REF_IDS = frozenset({
+    "key.contract.output",
+    "key.contract.report",
+    "key.doc.decision",
+    "key.doc.decision-record",
+    "key.doc.derived-agent",
+    "key.doc.progress",
+    "key.doc.source",
+    "key.doc.standard",
+    "key.doc.work",
+    "key.doc.work-order",
+    "key.output.artifact",
+    "key.output.context-pack",
+    "key.output.current-step-brief",
+    "key.output.edit-plan",
+    "key.output.worker-assignment-seed",
+})
+_COMPATIBILITY_NAVIGATION_REF_IDS = frozenset({"key.standard.artifact"})
+_DOCS_EXTERNAL_OWNER_PREFIXES = ("key.skill.",)
 
 
 class ReferenceScanner:
@@ -63,6 +90,7 @@ class ReferenceScanner:
         scope = ScanScope(scope)
         base = self._document_root_path if scope == ScanScope.DOCS else self.root
         paths = tuple(sorted(self._paths(base, scope), key=lambda item: item.as_posix()))
+        discovered_paths = tuple(self._relative(path) for path in paths)
         sources = []
         diagnostics = []
         total_bytes = 0
@@ -89,16 +117,22 @@ class ReferenceScanner:
             total_bytes += size
         sources = tuple(sources)
         entries = tuple(FreshnessEntry(source.relative, _digest(source.raw_bytes)) for source in sources)
+        incomplete_codes = {"scan_truncated", "source_too_large", "source_unreadable"}
+        complete = not any(item.code in incomplete_codes for item in diagnostics)
         identity = self._worktree_identity()
         body = {
             "worktree_identity": identity,
             "scope": scope.value,
             "entries": [(entry.path, entry.digest) for entry in entries],
+            "discovered_paths": discovered_paths,
+            "complete": complete,
         }
         token = FreshnessToken(
             identity, scope.value, entries,
             "sha256:" + hashlib.sha256(json.dumps(body, separators=(",", ":"),
                                                    sort_keys=True).encode("utf-8")).hexdigest(),
+            discovered_paths,
+            complete,
         )
         return Discovery(scope, sources, token, tuple(diagnostics))
 
@@ -129,7 +163,7 @@ class ReferenceScanner:
                 diagnostics.extend(IndexDiagnostic(item.code, item.message, item.path)
                                    for item in parsed.diagnostics)
                 for node in parsed.snapshot.nodes:
-                    locator = node.locator.heading or node.locator.symbol
+                    locator = _owner_locator(node)
                     owner = OwnerRecord(node.id, node.locator.path, locator)
                     owner_counts[node.id] = owner_counts.get(node.id, 0) + 1
                     if owner_counts[node.id] > 1:
@@ -158,7 +192,7 @@ class ReferenceScanner:
             diagnostics.extend(IndexDiagnostic(item.code, item.message, item.path) for item in parsed.diagnostics)
             nodes_by_id = {node.id: node for node in parsed.snapshot.nodes}
             for node in parsed.snapshot.nodes:
-                locator = node.locator.heading or node.locator.symbol
+                locator = _owner_locator(node)
                 owner = OwnerRecord(node.id, relative, locator)
                 owner_counts[node.id] = owner_counts.get(node.id, 0) + 1
                 if owner_counts[node.id] > 1:
@@ -177,8 +211,7 @@ class ReferenceScanner:
                     source_id, targets = declaration
                     locator = label
                     if source_id in nodes_by_id:
-                        locator = (nodes_by_id[source_id].locator.heading or
-                                   nodes_by_id[source_id].locator.symbol or label)
+                        locator = _owner_locator(nodes_by_id[source_id]) or label
                     for target in targets:
                         refs.append(RefRecord(source_id, target, relative, locator))
                 except (MetadataError, TypeError, ValueError):
@@ -190,10 +223,19 @@ class ReferenceScanner:
                              if item.evidence.value == "declared")
         owner_ids = {owner.id for owner in owners}
         for ref in refs:
-            if (ref.target_id not in owner_ids
-                    and not ref.target_id.startswith(_UNRESOLVED_REF_ALLOWED_PREFIXES)):
+            if ref.target_id in owner_ids or _is_taxonomy_ref(ref.target_id):
+                continue
+            if (discovery.scope == ScanScope.DOCS
+                    and ref.target_id.startswith(_DOCS_EXTERNAL_OWNER_PREFIXES)):
                 diagnostics.append(IndexDiagnostic(
-                    "dangling_ref", "ref target has no owner: %s" % ref.target_id, ref.path))
+                    "out_of_scope_ref",
+                    "ref target requires repository-scope owner resolution: %s" % ref.target_id,
+                    ref.path,
+                    "warning",
+                ))
+                continue
+            diagnostics.append(IndexDiagnostic(
+                "dangling_ref", "ref target has no owner: %s" % ref.target_id, ref.path))
         ordered_owners = tuple(sorted(owners, key=lambda item: (item.id, item.path, item.locator or "")))
         ordered_refs = tuple(sorted(set(refs), key=lambda item: (item.target_id, item.source_id, item.path)))
         ordered_diagnostics = tuple(sorted(diagnostics, key=lambda item: (item.code, item.path or "", item.message)))
@@ -258,9 +300,23 @@ def _digest(value: bytes) -> str:
     return "sha256:" + hashlib.sha256(value).hexdigest()
 
 
+def _owner_locator(node):
+    locator = node.locator
+    return (locator.heading or locator.symbol or locator.test_name or
+            locator.config_key or locator.schema_name)
+
+
+def _is_taxonomy_ref(target_id: str) -> bool:
+    return (target_id in _TAXONOMY_REF_IDS
+            or target_id in _COMPATIBILITY_NAVIGATION_REF_IDS
+            or target_id.startswith(_TAXONOMY_REF_PREFIXES))
+
+
 def _has_machine_locator(node) -> bool:
     locator = node.locator
     if node.kind.value == "source_document":
+        return bool(locator.path)
+    if node.artifact_kind.value == "skill_source":
         return bool(locator.path)
     if node.kind.value in {"document_section", "document_item", "claim", "decision",
                            "work_order", "work_step", "capability", "verification_result"}:

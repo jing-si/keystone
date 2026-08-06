@@ -32,7 +32,7 @@ class CacheBusy(StoreUnavailable):
     pass
 
 
-CACHE_SCHEMA_VERSION = 3
+CACHE_SCHEMA_VERSION = 4
 MAX_GENERATIONS = 4
 
 
@@ -105,6 +105,8 @@ def _encode(result: IndexResult) -> str:
             "scope": result.freshness.scope,
             "digest": result.freshness.digest,
             "entries": [[item.path, item.digest] for item in result.freshness.entries],
+            "discovered_paths": list(result.freshness.discovered_paths),
+            "complete": result.freshness.complete,
         },
         "owners": [[item.id, item.path, item.locator] for item in result.owners],
         "refs": [[item.source_id, item.target_id, item.path, item.locator] for item in result.refs],
@@ -192,15 +194,21 @@ def _decode(payload: str, expected: FreshnessToken) -> IndexResult:
         raise ValueError("cache payload schema is invalid")
     freshness = value["freshness"]
     if not isinstance(freshness, dict) or set(freshness) != {
-            "worktree_identity", "scope", "digest", "entries"}:
+            "worktree_identity", "scope", "digest", "entries", "discovered_paths", "complete"}:
         raise ValueError("cache freshness payload is invalid")
     entries = tuple(FreshnessEntry(*item) for item in freshness["entries"])
+    discovered_paths = tuple(freshness["discovered_paths"])
+    if (not all(isinstance(item, str) for item in discovered_paths)
+            or not isinstance(freshness["complete"], bool)):
+        raise ValueError("cache freshness completeness is invalid")
     body = {"worktree_identity": freshness["worktree_identity"], "scope": freshness["scope"],
-            "entries": [(item.path, item.digest) for item in entries]}
+            "entries": [(item.path, item.digest) for item in entries],
+            "discovered_paths": discovered_paths, "complete": freshness["complete"]}
     recomputed = "sha256:" + hashlib.sha256(json.dumps(
         body, separators=(",", ":"), sort_keys=True).encode("utf-8")).hexdigest()
     decoded_token = FreshnessToken(
-        freshness["worktree_identity"], freshness["scope"], entries, freshness["digest"])
+        freshness["worktree_identity"], freshness["scope"], entries, freshness["digest"],
+        discovered_paths, freshness["complete"])
     if recomputed != decoded_token.digest or decoded_token != expected or value["scope"] != expected.scope:
         raise ValueError("cache freshness does not match requested source generation")
     graph = value["typed_edges"]

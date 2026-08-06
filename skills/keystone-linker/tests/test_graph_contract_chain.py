@@ -35,6 +35,53 @@ from graph_runtime.validator import validate_snapshot, validate_transaction
 
 
 class GraphContractChainTest(unittest.TestCase):
+    def test_repository_skill_metadata_preserves_all_governance_and_production_edges(self):
+        repository_root = Path(__file__).resolve().parents[3]
+        expected_governance = {
+            "author": ("key.standard.project", "key.standard.skill.author"),
+            "clarify": ("key.standard.project", "key.standard.skill.clarify"),
+            "coordinator": ("key.standard.project", "key.standard.skill.coordinator"),
+            "init": (
+                "key.standard.project",
+                "key.standard.bootstrap",
+                "key.standard.skill.init",
+            ),
+            "linker": ("key.standard.project", "key.standard.skill.linker"),
+            "reader": ("key.standard.project", "key.standard.skill.reader"),
+        }
+
+        for skill_name, governed_by in expected_governance.items():
+            with self.subTest(skill=skill_name):
+                relative_path = Path("skills") / ("keystone-" + skill_name) / "SKILL.md"
+                result = parse_source(
+                    (repository_root / relative_path).read_text(encoding="utf-8"),
+                    relative_path.as_posix(),
+                    MarkdownAdapter(),
+                )
+                skill_id = "key.skill." + skill_name
+                node = next(item for item in result.snapshot.nodes if item.id == skill_id)
+
+                self.assertFalse(result.diagnostics)
+                self.assertEqual(governed_by, node.provenance.governed_by)
+                self.assertTrue({
+                    (relation.source, relation.relation, relation.target)
+                    for relation in result.snapshot.relations
+                }.issuperset({
+                    (skill_id, RelationType.GOVERNED_BY, standard_id)
+                    for standard_id in governed_by
+                }))
+                self.assertIn(
+                    (
+                        "key.work.skill-runtime-implementation.order",
+                        RelationType.PRODUCES,
+                        skill_id,
+                    ),
+                    {
+                        (relation.source, relation.relation, relation.target)
+                        for relation in result.snapshot.relations
+                    },
+                )
+
     def test_official_verification_relation_closes_the_full_execution_chain(self):
         before = """---
 key: {id: key.doc.contract, kind: source_document}

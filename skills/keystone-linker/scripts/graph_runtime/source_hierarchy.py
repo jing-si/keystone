@@ -67,21 +67,12 @@ def build_source_node(
         effective_approval = parent.approval_state
 
     declared_governed_by = metadata_strings(data.get("governed_by"))
-    effective_governed_by = declared_governed_by or (
+    parent_governed_by = (
         parent.provenance.governed_by if parent is not None else ()
     )
-    if (
-        parent is not None
-        and declared_governed_by
-        and not set(declared_governed_by) <= set(parent.provenance.governed_by)
-    ):
-        diagnostics.append(Diagnostic(
-            "governance_authority_expansion",
-            "child governed_by cannot expand parent governance",
-            path=path,
-            locator=locator,
-        ))
-        effective_governed_by = parent.provenance.governed_by
+    effective_governed_by = tuple(dict.fromkeys(
+        parent_governed_by + declared_governed_by
+    ))
 
     declared_authority = _authority_entries(data.get("_source_authority"))
     effective_authority = declared_authority or (

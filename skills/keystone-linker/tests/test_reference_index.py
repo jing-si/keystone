@@ -53,6 +53,68 @@ class ReferenceIndexTests(unittest.TestCase):
 
         self.assertNotIn("dangling_ref", {item.code for item in result.diagnostics})
 
+    def test_mixed_namespace_taxonomy_uses_exact_vocabulary_ids(self):
+        self.write(
+            "00_docs/standard.md",
+            "<!-- keystone: id=key.claim.consumer kind=claim "
+            "refs=key.doc.work,key.contract.output,key.section.scope,key.step.s01,"
+            "key.output.context-pack,key.artifact.skill-md,key.mode.default,"
+            "key.standard.artifact,key.doc.missing-owner,key.contract.missing-owner,"
+            "key.output.missing-owner,key.verification.missing-owner -->\n"
+            "# Consumer\n",
+        )
+
+        result = ReferenceScanner(self.root).scan(ScanScope.DOCS)
+        dangling = [
+            item.message.rsplit(": ", 1)[-1]
+            for item in result.diagnostics
+            if item.code == "dangling_ref"
+        ]
+
+        self.assertEqual(
+            [
+                "key.contract.missing-owner",
+                "key.doc.missing-owner",
+                "key.output.missing-owner",
+                "key.verification.missing-owner",
+            ],
+            dangling,
+        )
+
+    def test_repository_owner_ref_is_out_of_scope_warning_in_docs_scan(self):
+        self.write(
+            "00_docs/standard.md",
+            "<!-- keystone: id=key.claim.consumer kind=claim refs=key.skill.author -->\n"
+            "# Consumer\n",
+        )
+        self.write(
+            "skills/keystone-author/SKILL.md",
+            "<!-- keystone: id=key.skill.author kind=output_artifact "
+            "artifact_kind=skill_source -->\n# Author\n",
+        )
+
+        docs = ReferenceScanner(self.root).scan(ScanScope.DOCS)
+        repository = ReferenceScanner(self.root).scan(ScanScope.REPOSITORY)
+
+        self.assertNotIn("dangling_ref", {item.code for item in docs.diagnostics})
+        out_of_scope = next(item for item in docs.diagnostics if item.code == "out_of_scope_ref")
+        self.assertEqual("warning", out_of_scope.severity)
+        self.assertNotIn(
+            "out_of_scope_ref",
+            {item.code for item in repository.diagnostics},
+        )
+
+    def test_skill_source_file_path_is_a_sufficient_locator(self):
+        self.write(
+            "skills/keystone-author/SKILL.md",
+            "<!-- keystone: id=key.skill.author kind=output_artifact "
+            "artifact_kind=skill_source -->\n# Author\n",
+        )
+
+        result = ReferenceScanner(self.root).scan(ScanScope.REPOSITORY)
+
+        self.assertNotIn("locator_gap", {item.code for item in result.diagnostics})
+
     def test_document_owner_path_is_a_sufficient_locator(self):
         self.write("00_docs/standard.md", """---
 key: {id: key.doc.standard, kind: source_document}
@@ -145,6 +207,44 @@ plain body
         self.assertIn("locator_gap", {item.code for item in result.diagnostics})
         diagnostic = next(item for item in result.diagnostics if item.code == "locator_gap")
         self.assertEqual("warning", diagnostic.severity)
+
+    def test_all_machine_locator_values_are_preserved_in_owner_records(self):
+        self.write(
+            "tests/test_app.py",
+            "# keystone: id=key.test.app kind=output_artifact artifact_kind=test "
+            "locator.test_name=test_app\ndef test_app():\n    pass\n",
+        )
+        self.write(
+            "config/app.yml",
+            "# keystone: id=key.config.app kind=output_artifact artifact_kind=config "
+            "locator.config_key=app.feature\napp:\n  feature: true\n",
+        )
+        self.write(
+            "schema/app.sql",
+            "-- keystone: id=key.schema.app kind=output_artifact artifact_kind=schema "
+            "locator.schema_name=app_table\ncreate table app_table(id int);\n",
+        )
+
+        result = ReferenceScanner(self.root).scan(ScanScope.REPOSITORY)
+        locators = {item.id: item.locator for item in result.owners}
+
+        self.assertEqual("test_app", locators["key.test.app"])
+        self.assertEqual("app.feature", locators["key.config.app"])
+        self.assertEqual("app_table", locators["key.schema.app"])
+
+    def test_incomplete_discovery_records_full_path_set(self):
+        self.write("00_docs/large.md", "x" * 32)
+        self.write("00_docs/small.md", "plain\n")
+
+        discovery = ReferenceScanner(
+            self.root, max_file_bytes=8,
+        ).discover(ScanScope.DOCS)
+
+        self.assertFalse(discovery.freshness.complete)
+        self.assertEqual(
+            ("00_docs/large.md", "00_docs/small.md"),
+            discovery.freshness.discovered_paths,
+        )
 
     def test_repository_default_excludes_and_additional_language_adapters(self):
         self.write(".venv/lib/ignored.py", "# keystone: id=key.ignored kind=output_artifact\n")

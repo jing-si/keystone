@@ -28,7 +28,7 @@ Keystone consists of six independent, cooperating Codex skills:
 | `keystone-reader` | Read existing Keystone documents, recover active work, and prepare a focused context brief. |
 | `keystone-clarify` | Resolve one actual high-impact user decision at a time, then return control to the caller. |
 | `keystone-linker` | Read graph evidence without editing source surfaces, decide canonical graph mutations, and report exact owner-applied synchronization patches. |
-| `keystone-coordinator` | With user permission for the work scope, delegate bounded work and coordinate report, review, verification, and Main acceptance. |
+| `keystone-coordinator` | With scoped user permission, provide Keystone context, execute directly or orchestrate an external-skill worker, and supervise document, metadata, graph, verification, and finalization closure. |
 
 Each installed skill package contains its own runtime contract. A consuming
 project does not need project-local `standards/skills/**` files. The documents
@@ -135,6 +135,9 @@ reserved for the exceptional Project Foundation round before standards exist.
   on their own source surfaces.
 - Coordinator always requires user permission for its work scope. Directly
   invoking `keystone-coordinator` counts as that permission.
+- Without an external coding skill, Coordinator may execute bounded repository work directly. With an
+  external skill, that worker owns implementation while Coordinator owns context provisioning and
+  Keystone closure supervision through Linker and Author.
 - Keystone does not force a worktree, workspace, concurrency, or delegation
   strategy. The user, host, or injected worker contract chooses the execution
   environment.

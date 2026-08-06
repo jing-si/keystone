@@ -56,7 +56,11 @@ def relation_direction_allowed(source_kind: str, source_artifact_kind: str,
                     target_kind in {"capability", "decision", "claim"} or
                     (target_kind == "output_artifact" and target_artifact_kind in {"api", "code"}))
     if relation == "governed_by":
-        return source_kind == "output_artifact" and target_kind in {"source_document", "decision"}
+        governed_sources = {
+            "source_document", "document_section", "document_item", "claim",
+            "decision", "work_order", "work_step", "output_artifact",
+        }
+        return source_kind in governed_sources and target_kind in {"source_document", "decision"}
     if relation == "documents":
         return source_kind in {"source_document", "document_section", "document_item"} and target_kind == "output_artifact"
     if relation == "depends_on":

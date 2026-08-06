@@ -208,7 +208,7 @@ injected_skill:
     - verification
     - residual_risk
   forbidden_use:
-    - child subagent creation
+    - unsupervised child subagent creation
     - scope expansion
     - Main acceptance
     - progress accepted 또는 complete update
@@ -253,7 +253,7 @@ injected_skill:
     - Coordinator replacement
     - authority escalation
     - scope expansion
-    - child subagent creation
+    - unsupervised child subagent creation
     - Main acceptance
     - progress accepted 또는 complete update
   stop_conditions:
@@ -282,6 +282,67 @@ external_coding_skill_mode_policy:
     review: 파일 수정 없이 검토가 주목적일 때
     skill_testing: SKILL.md behavior simulation이나 fixture 검증이 주목적일 때
 ```
+
+<!-- key: id=key.standard.subagent.execution-mode-ownership refs=key.role.coordinator key.topic.external-assist key.boundary.scope-control -->
+### Coordinator execution mode와 구현 ownership
+
+Coordinator가 code/config/schema/API/test 실행을 소유할 때 다음 두 mode를 구분한다.
+
+1. `direct_execution`
+   - 외부 코딩 스킬이 선택되지 않은 경우다.
+   - Coordinator가 `keystone-default-bounded-worker` contract를 자기 실행에 적용해 bounded
+     implementation surface를 직접 수정하고 canonical worker report를 남긴다.
+2. `orchestration`
+   - 외부 코딩 스킬이 하나 이상 선택된 경우다.
+   - External-skill worker가 implementation surface를 수정하고 Coordinator는 같은 구현을 중복
+     수행하지 않는다.
+   - 외부 workflow가 추가 task/worker 분해를 제안할 수 있지만 실제 worker 생성, scope와 review
+     boundary는 Coordinator가 소유한다. Injected worker가 감독 밖 child worker를 만들 수 없다.
+
+External skill의 `DONE`, task complete, review clean, commit-ready와 branch-ready는 worker report
+evidence일 뿐 Progress의 `work_status`, Main acceptance 또는 finalization state를 바꾸지 않는다.
+
+<!-- key: id=key.standard.subagent.context-and-closure-handoff refs=key.role.coordinator key.contract.output key.topic.keystone-metadata key.topic.artifact-graph -->
+### Context Pack과 Keystone closure handoff
+
+Coordinator는 구현 전에 Main checkpoint와 relevant Keystone source를 합친 Context Pack을
+제공해야 한다. 최소한 current Work/Step, accepted decision, completion criteria, scope, forbidden
+change, verification, 관련 기준서·작업서·진행 기록과 필요한 Reader/Linker/Author evidence를
+포함한다. 전체 문서 corpus를 worker에게 재해석시키는 것은 Context Pack이 아니다.
+
+구현 뒤 direct 또는 delegated output은 같은 canonical worker report로 정규화한다.
+
+```yaml
+worker_report:
+  execution_mode: direct_execution | orchestration
+  changed_files: []
+  artifact_deltas:
+    - kind: artifact_delta
+      source_surface:
+      changed_locators: []
+      semantic_summary:
+      baseline_digest: sha256:<64-lowercase-hex> | absent
+  document_sync:
+    disposition: required | not_applicable | deferred
+    state: complete | not_applicable | pending | blocked
+    reason:
+    evidence: []
+  metadata_sync:
+    disposition: required | not_applicable | deferred
+    state: complete | not_applicable | pending | blocked
+    reason:
+    evidence: []
+  graph_sync:
+    disposition: required | not_applicable | deferred
+    state: verified | not_applicable | pending | blocked
+    reason:
+    evidence: []
+```
+
+각 changed surface는 artifact delta를 가져야 한다. `not_applicable`도 구체적인 reason과 evidence가
+필요하다. Required 또는 deferred closure가 미완료이면 Coordinator는 worker success를
+`accept_candidate`로 승격하지 않는다. Graph 의미는 Linker, source-document와 finalization은
+Author가 소유하고 Coordinator는 두 handoff의 완료를 감독한다.
 
 규칙은 다음과 같다.
 
@@ -380,6 +441,7 @@ Worker report는 purpose-specific payload를 추가할 수 있지만, 기본 env
 ```yaml
 worker_report:
   assignment_id:
+  execution_mode: direct_execution | orchestration
   status: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | NEEDS_SCOPE_CHANGE | BLOCKED
   status_reason:
   reason_code:
@@ -396,6 +458,7 @@ worker_report:
       candidates_found:
       limits_hit:
   changed_files:
+  artifact_deltas: []
   changed_key_ids:
   changed_capabilities:
   local_decisions:
@@ -407,12 +470,19 @@ worker_report:
   verification:
   document_sync_needed:
   metadata_sync_needed:
+  document_sync:
+  metadata_sync:
+  graph_sync:
   workspace_conflicts:
   keymeta_or_code_anchor_gap_candidates:
   risks:
   residual_risk:
   recommended_next_action:
 ```
+
+`document_sync_needed`와 `metadata_sync_needed`는 기존 report compatibility hint다. 새 report는
+구조화된 `document_sync`, `metadata_sync`, `graph_sync` disposition/state/reason/evidence를
+사용하며 Coordinator closure validator가 이를 fail-closed로 확인한다.
 
 `NEEDS_CONTEXT` report는 가능하면 다음 reason code를 포함한다.
 

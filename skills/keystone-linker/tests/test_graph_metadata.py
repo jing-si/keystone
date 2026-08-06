@@ -29,9 +29,149 @@ from graph_runtime.model import (
     NodeKind,
     RelationType,
 )
+from graph_runtime.validator import validate_snapshot
 
 
 class GraphMetadataTest(unittest.TestCase):
+    def test_markdown_hierarchy_uses_actual_annotated_and_unannotated_headings(self):
+        source = """---
+key: {id: key.doc.hierarchy, kind: source_document}
+---
+<!-- key: id=key.section.security -->
+## Security
+
+## Billing
+
+<!-- key: id=key.rule.billing -->
+- Billing rule
+
+<!-- key: id=key.section.billing.details -->
+### Details
+
+<!-- key: id=key.rule.billing.details -->
+- Billing detail
+
+<!-- key: id=key.section.operations -->
+## Operations
+
+<!-- key: id=key.section.operations.nested -->
+### Nested
+"""
+
+        result = parse_source(source, "00_docs/hierarchy.md", MarkdownAdapter())
+        parents = {node.id: node.parent_id for node in result.snapshot.nodes}
+        security = next(
+            node for node in result.snapshot.nodes
+            if node.id == "key.section.security"
+        )
+
+        self.assertFalse(result.diagnostics)
+        self.assertEqual(NodeKind.DOCUMENT_SECTION, security.kind)
+        self.assertEqual("Security", security.locator.heading)
+        self.assertEqual("key.doc.hierarchy", parents["key.rule.billing"])
+        self.assertEqual("key.doc.hierarchy", parents["key.section.billing.details"])
+        self.assertEqual(
+            "key.section.billing.details",
+            parents["key.rule.billing.details"],
+        )
+        self.assertEqual(
+            "key.section.operations",
+            parents["key.section.operations.nested"],
+        )
+
+    def test_setext_heading_is_an_actual_hierarchy_boundary(self):
+        source = """---
+key: {id: key.doc.hierarchy, kind: source_document}
+---
+<!-- key: id=key.section.security -->
+Security
+--------
+
+Billing
+-------
+
+<!-- key: id=key.rule.billing -->
+- Billing rule
+"""
+
+        result = parse_source(source, "00_docs/hierarchy.md", MarkdownAdapter())
+        parents = {node.id: node.parent_id for node in result.snapshot.nodes}
+        security = next(
+            node for node in result.snapshot.nodes
+            if node.id == "key.section.security"
+        )
+
+        self.assertFalse(result.diagnostics)
+        self.assertEqual(NodeKind.DOCUMENT_SECTION, security.kind)
+        self.assertEqual("Security", security.locator.heading)
+        self.assertEqual("key.doc.hierarchy", parents["key.rule.billing"])
+
+    def test_document_governance_union_and_declared_relations_validate_end_to_end(self):
+        source = """---
+key:
+  id: key.doc.rules
+  kind: source_document
+  governed_by: [key.decision.governance]
+---
+<!-- key: id=key.decision.governance kind=decision -->
+## Governance
+
+<!-- key: id=key.section.rules governed_by=key.decision.additional -->
+## Rules
+
+<!-- key: id=key.decision.additional kind=decision -->
+### Additional Governance
+
+<!-- key: id=key.rule.one governed_by=key.decision.item -->
+- Rule one
+
+<!-- key: id=key.decision.item kind=decision -->
+### Item Governance
+"""
+
+        result = parse_source(source, "00_docs/rules.md", MarkdownAdapter())
+        nodes = {node.id: node for node in result.snapshot.nodes}
+        relations = {
+            (relation.source, relation.relation, relation.target)
+            for relation in result.snapshot.relations
+        }
+
+        self.assertFalse(result.diagnostics)
+        self.assertEqual(
+            ("key.decision.governance", "key.decision.additional"),
+            nodes["key.section.rules"].provenance.governed_by,
+        )
+        self.assertEqual(
+            (
+                "key.decision.governance",
+                "key.decision.additional",
+                "key.decision.item",
+            ),
+            nodes["key.rule.one"].provenance.governed_by,
+        )
+        self.assertIn(
+            (
+                "key.rule.one",
+                RelationType.GOVERNED_BY,
+                "key.decision.item",
+            ),
+            relations,
+        )
+        self.assertNotIn(
+            (
+                "key.rule.one",
+                RelationType.GOVERNED_BY,
+                "key.decision.governance",
+            ),
+            relations,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "00_docs").mkdir()
+            (root / "00_docs" / "rules.md").write_text(source, encoding="utf-8")
+            validation = validate_snapshot(root, result.snapshot, result.diagnostics)
+        self.assertFalse(validation)
+
     def test_reference_declaration_exposes_only_owner_and_navigation_refs(self):
         declaration = parse_reference_declaration(
             "id=key.claim.consumer refs=key.claim.target,key.topic.graph "
@@ -73,6 +213,37 @@ key: {id: key.doc.real, kind: source_document}
         self.assertEqual(["key.code.skill"], [node.id for node in result.snapshot.nodes])
         self.assertEqual(("key.work.skill",), result.snapshot.nodes[0].provenance.produced_from)
         self.assertEqual(("key.standard.project",), result.snapshot.nodes[0].provenance.governed_by)
+
+    def test_compact_space_separated_multi_values_are_not_dropped(self):
+        source = """<!-- keystone: id=key.skill.example kind=output_artifact artifact_kind=skill_source -->
+<!-- keystone: refs=key.doc.one key.doc.two -->
+<!-- keystone: governed_by=key.standard.project key.standard.child -->
+# Skill
+"""
+
+        result = parse_source(source, "skills/example/SKILL.md", MarkdownAdapter())
+        declaration = parse_reference_declaration(
+            "id=key.skill.example refs=key.doc.one key.doc.two")
+
+        self.assertFalse(result.diagnostics)
+        self.assertEqual(
+            ("key.skill.example", ("key.doc.one", "key.doc.two")),
+            declaration,
+        )
+        self.assertEqual(
+            ("key.standard.project", "key.standard.child"),
+            result.snapshot.nodes[0].provenance.governed_by,
+        )
+
+    def test_compact_bare_token_after_scalar_is_not_silently_ignored(self):
+        result = parse_source(
+            "<!-- keystone: id=key.claim.example unexpected kind=claim -->\n# Example\n",
+            "docs/example.md",
+            MarkdownAdapter(),
+        )
+
+        self.assertEqual((), result.snapshot.nodes)
+        self.assertIn("malformed_metadata", {item.code for item in result.diagnostics})
 
     def test_inline_code_metadata_example_is_passive(self):
         source = """---

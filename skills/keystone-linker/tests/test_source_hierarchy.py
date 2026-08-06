@@ -45,7 +45,7 @@ class SourceHierarchyTest(unittest.TestCase):
         self.assertEqual(self.parent.source_authority, result.node.source_authority)
         self.assertEqual(self.parent.id, result.node.parent_id)
 
-    def test_child_authority_expansion_is_clamped_in_diagnostic_order(self):
+    def test_child_governance_is_additive_while_authority_expansion_is_clamped(self):
         result = build_source_node(
             {
                 "_approval_state": "accepted",
@@ -64,14 +64,13 @@ class SourceHierarchyTest(unittest.TestCase):
         self.assertEqual(
             [
                 "approval_authority_expansion",
-                "governance_authority_expansion",
                 "source_authority_expansion",
             ],
             [item.code for item in result.diagnostics],
         )
         self.assertEqual(self.parent.approval_state, result.node.approval_state)
         self.assertEqual(
-            self.parent.provenance.governed_by,
+            ("key.standard.project", "key.standard.other"),
             result.node.provenance.governed_by,
         )
         self.assertEqual(self.parent.source_authority, result.node.source_authority)

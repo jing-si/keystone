@@ -1217,8 +1217,9 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
    분석이 필요한 경우에만 선언한다. 단순 직접 탐색은 owner/ref index로 충족한다.
 4. Declared metadata는 source가 소유하고 effective metadata는 document -> section -> item
    순서로 파생한다. `document_lifecycle`, `governed_by`, source authority와 approval은 상속할 수
-   있지만 `id`, `supersedes`와 일반 typed relation은 상속하지 않는다. 자식은 부모 authority나
-   approval을 확대할 수 없다.
+   있지만 `id`, `supersedes`와 일반 typed relation은 상속하지 않는다. Effective `governed_by`는
+   부모 effective set과 자식 declared set의 ordered union이며 자식의 새 governing target은 제약
+   추가로 해석한다. 자식은 부모 source authority나 approval을 확대할 수 없다.
 
 <!-- key: id=key.standard.project.std-keystone-058 refs=key.topic.progress-update key.topic.acceptance key.topic.work-sequence -->
 ### STD-KEYSTONE-058: 실행, 승인과 dependency 상태 namespace를 분리한다
@@ -1250,7 +1251,7 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
 ## 관련 active work
 
 - `00_docs/works/00_key-index.md`
-- `00_docs/works/r006-reference-index-context-readiness/00_key-index.md`
+- `00_docs/works/r008-skill-graph-traceability/00_key-index.md`
 
 <!-- key: id=key.standard.project.child-standards refs=key.topic.skill-contract key.topic.document-system -->
 ## 관련 child 기준서

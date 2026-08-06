@@ -33,8 +33,8 @@ key:
    - `keystone-linker`의 permissionless owner/ref index readiness, optional graph projection,
      artifact discovery, impact/stale/gap review와 source surface handoff를 정의한다.
 6. `coordinator/00_key-index.md`
-   - `keystone-coordinator`의 worker assignment/report, bounded worker routing, report,
-     review, verification, acceptance flow를 정의한다.
+   - `keystone-coordinator`의 Context Pack, direct/orchestration mode, bounded execution routing,
+     report, Keystone closure, review, verification과 acceptance flow를 정의한다.
 
 <!-- key: id=key.standard.skills.index.planned-skill-standards refs=key.topic.skill-contract key.doc.standard -->
 ## 계획된 스킬별 기준서

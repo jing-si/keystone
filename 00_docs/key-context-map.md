@@ -17,8 +17,9 @@ key:
 
 # 프로젝트 컨텍스트 맵
 
-활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 active work round는 없으며, 최신
-accepted round는 `00_docs/works/r007-contract-execution-reconciliation/`이다.
+활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 active work round는
+`00_docs/works/r008-skill-graph-traceability/`이며, 최신 accepted round는
+`00_docs/works/r009-coordinator-keystone-closure/`이다.
 
 <!-- key: id=key.context-map.project refs=key.doc.source key.topic.skill-contract key.topic.bootstrap -->
 ## 프로젝트
@@ -38,8 +39,9 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
 5. `keystone-linker`: Source-write-free internal role로 owner/ref external index readiness와 선택적
    Artifact Graph 해석, impact/stale/gap 및 validation을 수행하고 multi-surface change에서 exact
    graph mutation을 결정하되 repository source surface를 직접 수정하지 않는다.
-6. `keystone-coordinator`: 사용자 허락이 있는 work scope에서 Keystone context를 worker
-   assignment로 만들고 worker report를 Keystone workflow로 회수한다.
+6. `keystone-coordinator`: 사용자 허락이 있는 work scope에서 `direct_execution` 또는
+   external-skill `orchestration`을 선택하고, bounded Keystone context와 worker report를
+   Linker/Author document·metadata·graph·finalization closure supervision으로 회수한다.
 
 설치된 skill package는 고유 runtime 계약을 자체 포함한다. 이 저장소의
 `00_docs/standards/skills/**`는 개발·검수 명세이며 소비 프로젝트의 runtime 선행 문서가 아니다.
@@ -79,6 +81,8 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
 | R005 Artifact Graph Synchronization | `00_docs/works/r005-artifact-graph-synchronization/00_key-index.md` | accepted | 기준서와 code/config/schema/API/test를 연결하는 graph synchronization 계약·runtime·검증 |
 | R006 Reference Index and Context Readiness | `00_docs/works/r006-reference-index-context-readiness/00_key-index.md` | accepted | source-owned ID/ref 탐색, Reader context readiness와 선택적 graph/transaction 정합화 |
 | R007 Contract Execution Reconciliation | `00_docs/works/r007-contract-execution-reconciliation/00_key-index.md` | accepted | 문서 계약 실행 정합화와 Python convention·점진적 리팩터링 완료 |
+| R008 Skill Graph and Self-Host Runtime Closure | `00_docs/works/r008-skill-graph-traceability/00_key-index.md` | active | readiness부터 dependency·transaction·finalization까지 self-host workflow 정합화 |
+| R009 Coordinator Keystone Closure | `00_docs/works/r009-coordinator-keystone-closure/00_key-index.md` | accepted | Coordinator context provisioning, closure gate와 local installation parity를 complete and accepted로 기록 |
 | Document Tree Setup | `00_docs/works/r001-bootstrap-keystone/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
 | Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | accepted | 전체 공통 기준서 |
 | Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서 |
@@ -175,8 +179,10 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 <!-- key: id=key.context-map.section refs=key.topic.work-sequence key.topic.document-system key.topic.work-round -->
 ## 현재 작업 단계
 
-현재 active round는 없고 최신 accepted round는 R007 Contract Execution Reconciliation이다. R001 S00-S07은 accepted 이력으로
-보존되고, 미수락 S08 Skill Creation과 S09 Integration Verification은 superseded다. R002의
+현재 active round는 R008 Skill Graph and Self-Host Runtime Closure이며 최신 accepted round는 R009
+Coordinator Keystone Closure다. R009/S01은 사용자 independent-first direction으로 R008과 독립적으로
+수락됐고 R008의 source와 round status는 보존했다. R001 S00-S07은 accepted 이력으로 보존되고, 미수락
+S08 Skill Creation과 S09 Integration Verification은 superseded다. R002의
 S01 기준서 개편과 S02 skill source 구현·검증은 모두 수락됐다. R003은 dependency 의미와
 단계별 gate 기준과 repo-local runtime 구현·통합 검증을 R003에서 수락했다.
 R004 Acceptance Finalization은 accepted round로, Main acceptance 후 영향 문서 자동 정합화,
@@ -189,13 +195,22 @@ readiness, Linker의 외부 파생 index, 선택적 typed graph와 multi-surface
 통합 검증까지 accepted했다.
 R007은 재검토에서 확인된 상태·dependency·metadata·relation·validation·index 실행 불일치를
 정합화하고, Python convention과 1~16차 점진적 모듈 리팩터링 및 최종 검증을 accepted했다.
+R008은 compact metadata와 owner/ref readiness부터 Markdown hierarchy, dependency execution,
+companion/repository validation, transaction/finalization, graph lifecycle과 wire compatibility를
+순서대로 정합화하고, 마지막에 핵심 skill runtime traceability와 self-host E2E로 전체 경로를
+검증한다.
 
-Active steps: []
+Active steps: [R008/S03]
 
 | Step | 제목 | 목적 |
 |---|---|---|
-| R007/S01 | Contract Execution Reconciliation | complete and accepted — 계약과 runtime 실행 경로를 정합화했다 |
-| R007/S02 | Python Convention and Incremental Refactoring | complete and accepted — convention과 1~16차 책임 분리를 완료했다 |
+| R008/S01 | Metadata Parser and Readiness Repair | complete — compact metadata, owner/ref readiness와 cache completeness를 정합화했다 |
+| R008/S02 | Markdown Hierarchy and Governance | complete — 실제 heading hierarchy와 governance relation 의미를 정합화했다 |
+| R008/S03 | Dependency Execution Graph | in_progress — Step registry, legacy gate와 expanded-event cycle을 구현한다 |
+| R008/S04 | Companion and Repository Validation | planned — binary companion과 full repository coverage를 검증한다 |
+| R008/S05 | Transaction and Finalization Hardening | planned — executable patch, retry와 multi-Step closure를 강화한다 |
+| R008/S06 | Graph Lifecycle and Wire Compatibility | planned — lifecycle/evidence traversal과 wire compatibility를 정합화한다 |
+| R008/S07 | Skill Runtime Traceability and Self-Host E2E | planned — runtime·test relation과 전체 workflow를 검증한다 |
 
 <!-- key: id=key.context-map.planned-keystone-skills refs=key.topic.skill-contract key.topic.bootstrap -->
 ## Keystone 스킬 구현 상태
@@ -207,7 +222,7 @@ Active steps: []
 | `keystone-author` | repo source implemented | 기준서와 작업서를 생성하고 Init handoff 뒤 원래 작업을 resume한다 |
 | `keystone-clarify` | repo source implemented | 실제 User Decision을 한 topic씩 수집해 호출자에게 반환한다 |
 | `keystone-linker` | repo source implemented | Artifact Graph를 해석하고 canonical mutation을 결정하되 source surface는 read-only로 다룬다 |
-| `keystone-coordinator` | repo source implemented | 사용자 허락 범위에서 assignment, review, verification, acceptance flow를 조율한다 |
+| `keystone-coordinator` | repo source implemented | 사용자 허락 범위에서 direct execution 또는 external-skill orchestration, Linker/Author closure supervision을 조율한다 |
 
 <!-- key: id=key.context-map.prototype-skill-reference refs=key.topic.bootstrap key.topic.skill-contract -->
 ## Prototype 스킬 참고

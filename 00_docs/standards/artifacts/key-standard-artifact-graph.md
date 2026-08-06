@@ -433,7 +433,11 @@ Parser는 source가 쓴 `declared` metadata와 document -> section -> item 순�
 `effective` metadata를 구분한다. Document item은 부모 document와 section의 `governed_by`,
 source authority, `document_lifecycle`과 approval을 기본 상속한다. `id`, `supersedes`, legacy
 term과 일반 typed relation은 상속하지 않는다. Item lifecycle이 부모와 다를 때만 명시하며,
-자식 선언은 부모의 source authority나 approval state를 조용히 확대할 수 없다.
+자식 선언은 부모의 source authority나 approval state를 조용히 확대할 수 없다. Effective
+`governed_by`는 부모 effective set 뒤에 자식 declared set을 중복 없이 추가한 ordered union으로
+계산한다. 새 governing target은 제약 추가이며 authority expansion이 아니다. Typed
+`governed_by` relation은 각 node가 직접 선언한 target만 emit하고 inherited target을 child
+relation으로 복제하지 않는다.
 
 결정 전체가 하나의 대체 단위이면 `key.decision.*`를 사용한다. 결정의 일부 의미만 후속 결정이
 대체하고 나머지는 유지하면 그 부분을 `key.claim.*`으로 분리하고 새 claim에서 이전 claim으로
@@ -495,7 +499,7 @@ API artifact가 capability provider라는 뜻은 아니다.
 5. `requires_verification_of`: acceptance criterion 또는 claim이 어떤 target의 검증을 요구한다.
 6. `verifies`: test artifact 또는 `verification_result`가 capability, API, decision, claim이나
    code behavior를 실제로 검증한 evidence를 나타낸다.
-7. `governed_by`: artifact가 기준서(3)나 결정(6)의 규칙을 따른다.
+7. `governed_by`: document node 또는 artifact가 기준서(3)나 결정(6)의 규칙을 따른다.
 8. `documents`: source document가 artifact를 설명한다.
 9. `supersedes`: 새 artifact가 기존 artifact를 대체한다.
 10. `derived_from`: artifact가 다른 artifact나 source에서 파생되었다.
@@ -532,7 +536,7 @@ Typed relation은 source에서 target으로 읽는다. Reverse relation은 sourc
 | `implements` | code/config/schema -> API/contract/decision | contract 변경 시 implementer는 `required` |
 | `requires_verification_of` | acceptance criterion/claim -> capability/API/decision/claim/code behavior | target 변경 시 requirement와 검증 계획을 review |
 | `verifies` | test/verification_result -> capability/API/decision/claim/code behavior | target 변경 시 verification evidence는 `required` review |
-| `governed_by` | artifact -> standard/decision | governing source 변경 시 artifact는 `required` 또는 `strong_candidate` |
+| `governed_by` | document/artifact -> standard/decision | governing source 변경 시 source는 `required` 또는 `strong_candidate` |
 | `documents` | source document/section -> artifact | artifact 변경 시 document는 `strong_candidate`; broad mention은 `key.refs`로 둔다 |
 | `supersedes` | new artifact -> old artifact | old reference 발견 시 stale 또는 `required` review 후보 |
 | `derived_from` | derived/generated artifact -> source artifact | source 변경 시 derived artifact는 regeneration 또는 review 후보 |

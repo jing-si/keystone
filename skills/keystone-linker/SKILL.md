@@ -290,10 +290,12 @@ every sentence, bullet, or row. An existing independently meaningful item withou
 metadata-gap candidate when the available evidence shows it must be referenced, replaced, or
 verified separately.
 
-Resolve effective item metadata in this order: document, enclosing section, item. Allow inherited
-source authority, `governed_by`, and lifecycle; item declarations may narrow but must not silently
-expand inherited authority. Never inherit `id`, `supersedes`, or `legacy_terms`. Preserve locators
-such as path, heading, list position, and visible row ID separately from stable identity.
+Resolve effective item metadata in this order: document, enclosing section, item. Inherit source
+authority, `governed_by`, and lifecycle. Compute effective `governed_by` as an ordered union of the
+parent effective set and child declarations; emit typed relations only for targets declared on that
+node. Child declarations must not silently expand source authority or approval. Never inherit `id`,
+`supersedes`, or `legacy_terms`. Preserve locators such as path, heading, list position, and visible
+row ID separately from stable identity.
 
 When an accepted decision replaces only one claim while retaining its other meanings, follow the
 declared claim-level `supersedes` edge. If either side lacks a claim node, report a metadata gap and

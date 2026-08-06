@@ -21,9 +21,10 @@ key:
 
 1. `key-standard-coordinator.md`
    - `keystone-coordinator`의 목적, trigger/non-trigger, Goal assignment, Context Pack,
-     worker assignment/report, bounded worker routing, 외부 코딩 스킬 injected skill 선택,
+     direct/orchestration mode, worker assignment/report, bounded execution routing,
+     외부 코딩 스킬 injected skill 선택과 구현 ownership,
      사용자 허락, permissionless Linker 예외, context freshness/invalidation, 실행 환경 경계,
-     report handling, review, verification, acceptance flow를
+     report handling, document·metadata·graph closure, review, verification, acceptance flow를
      정의한다. 소비 프로젝트 로컬 Coordinator 기준서는 runtime 선행 조건이 아니다.
 
 <!-- key: id=key.standard.skill.coordinator.index.parent-standard refs=key.role.coordinator key.doc.standard key.topic.skill-contract key.standard.subagent -->

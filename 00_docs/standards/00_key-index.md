@@ -50,8 +50,8 @@ key:
    - `keystone-linker`의 permissionless owner/ref index readiness, optional graph interpretation,
      artifact discovery, impact/stale/gap review와 source surface handoff를 정의한다.
 11. Coordinator 기준서: `skills/coordinator/key-standard-coordinator.md`
-   - `keystone-coordinator`의 worker assignment/report, routing, report, review,
-     verification, acceptance flow를 정의한다.
+   - `keystone-coordinator`의 Context Pack, direct/orchestration mode, worker report와
+     document·metadata·graph·verification·finalization closure flow를 정의한다.
 
 <!-- key: id=key.standard.index.reading-rules refs=key.doc.source key.doc.standard key.topic.document-system key.standard.subagent key.topic.work-round -->
 ## 읽기 규칙

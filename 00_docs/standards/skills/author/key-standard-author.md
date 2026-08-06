@@ -701,6 +701,7 @@ Author 기준은 다음 방법으로 검증한다.
    artifact 또는 verification result가 수행한 evidence만 `verifies`를 선언한다.
 3. Declared metadata만 source에 작성한다. Effective `document_lifecycle`, `governed_by`, authority와
    approval은 document -> section -> item 상속으로 계산하며 파생값을 child마다 복제하지 않는다.
+   Effective `governed_by`는 부모 effective set과 child declared set의 ordered union으로 계산한다.
 4. 승인 범위의 단일 document surface 변경은 Author가 직접 적용하고 Linker에 affected docs scope
    index invalidation/refresh를 알린다. Typed graph가 관련돼도 다른 surface patch가 필요하지 않으면
    transaction을 강제하지 않는다.

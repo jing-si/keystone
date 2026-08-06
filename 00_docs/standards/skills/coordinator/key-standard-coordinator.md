@@ -22,13 +22,15 @@ key:
 ## 목적
 
 이 기준서는 `keystone-coordinator`의 상세 계약을 정의한다. `keystone-coordinator`는
-main이 supervisor로 남아 있는 상태에서 작업서(4)의 Goal unit, Reader context brief, Linker
-report, Author Change Set(17)을 bounded worker assignment(19)로 만들고, worker report(20)를
-Keystone workflow로 회수하는 bounded assignment broker다.
+main이 supervisor로 남아 있는 상태에서 작업서(4)의 Goal unit, Main checkpoint, Reader context
+brief, Linker report, Author Change Set(17)을 bounded execution context로 만들고, 구현 결과를
+Keystone workflow로 회수하는 execution routing과 closure supervisor다.
 
 Worker assignment와 worker report는 runtime output이며 원천 문서(2)를 대체하지 않는다.
-코드 수정은 대표적인 실행 작업이지만, Coordinator의 책임은 코딩 방법론이 아니라 context,
-authority, scope, execution environment boundary, stop condition, report contract를 정하는 것이다.
+외부 코딩 스킬이 없으면 Coordinator가 default bounded-worker contract로 구현을 직접 수행할 수
+있다. 외부 코딩 스킬이 있으면 해당 worker가 구현하고 Coordinator는 중복 수정하지 않는다.
+두 경우 모두 Coordinator의 고유 책임은 context, authority, scope, execution environment boundary,
+stop condition, report contract와 구현 후 Keystone closure를 끝까지 감독하는 것이다.
 
 <!-- key: id=key.standard.skill.coordinator.scope refs=key.role.coordinator key.role.subagent key.standard.subagent key.topic.verification key.topic.acceptance key.topic.formal-workflow key.topic.artifact-graph -->
 ## 적용 범위
@@ -44,6 +46,8 @@ authority, scope, execution environment boundary, stop condition, report contrac
 9. 진행 상태와 report status update boundary
 10. 외부 코딩 스킬(12)의 injected skill 선택과 주입
 11. 파생 에이전트 문서(8) 생성 조건
+12. Direct execution과 external-skill orchestration mode
+13. 구현 후 document, metadata, graph, verification과 finalization closure gate
 
 <!-- key: id=key.standard.skill.coordinator.out-of-scope refs=key.role.coordinator key.topic.skill-contract key.topic.external-assist -->
 ## 적용하지 않는 범위
@@ -59,7 +63,7 @@ authority, scope, execution environment boundary, stop condition, report contrac
    main/user decision 없이 자동 worker task로 보내기
 8. 외부 보조 스킬(12)을 Coordinator를 대체하는 automatic 또는 mandatory execution layer로 만들기
 9. Artifact relation, impact candidate, stale candidate, metadata gap을 Linker 없이 확정하기
-10. Worker가 추가 subagent를 만들게 하기
+10. Worker가 Coordinator 감독 밖의 추가 subagent를 만들게 하기
 
 <!-- key: id=key.standard.skill.coordinator.standard-relations refs=key.role.coordinator key.doc.standard key.topic.skill-contract key.standard.subagent key.topic.work-round key.topic.artifact-graph -->
 ## 기준 관계
@@ -82,8 +86,9 @@ authority, scope, execution environment boundary, stop condition, report contrac
 ## Skill identity
 
 1. Skill name: `keystone-coordinator`
-2. Primary role: bounded assignment brokering, Goal assignment, worker report handling,
-   Change Set coordination, review, verification, acceptance coordination
+2. Primary role: bounded context provisioning, direct execution 또는 external-skill orchestration,
+   worker report handling, Change Set coordination, Keystone closure supervision, review,
+   verification, acceptance coordination
 3. Primary user: main agent
 4. Output authority: Coordinator output은 main의 orchestration 판단을 돕는 runtime output이며
    원천 문서(2)를 대체하지 않는다.
@@ -127,6 +132,10 @@ review, repair, verification에는 반복 확인하지 않지만 scope나 risk�
 13. Repo-local `skills/keystone-*/SKILL.md` 변경이 여러 파일, delegation, formal review,
     verification, execution environment 조율 또는 report handling을 요구해 Main direct보다
     허락된 Coordinator가 적합하다.
+14. 사용자가 Coordinator를 직접 호출했고 외부 코딩 스킬 없이 bounded implementation을
+    Coordinator가 직접 수행하기를 기대한다.
+15. 외부 스킬의 구현 결과를 document, metadata, graph, verification과 finalization closure로
+    회수해야 한다.
 
 <!-- key: id=key.standard.skill.coordinator.non-trigger-condition refs=key.role.coordinator key.topic.skill-contract -->
 ## Non-trigger condition
@@ -165,9 +174,49 @@ Coordinator는 다음 input을 사용할 수 있어야 한다.
 14. Code/config/schema/API/test anchor 변경이 필요한 경우 Linker report의 recommended anchor
     change, affected artifact ID, relation evidence, verification expectation
 15. 복수 surface나 권한 경계가 있어 명시적으로 남긴 경우 routing context
+16. Main의 global intent, accepted decision, current work identity와 preserved boundary를 담는
+    `main_context_checkpoint`
 
 Input이 부족하면 Coordinator는 worker를 배정하지 않고 Reader, Author, Clarify, Linker 중
 필요한 다음 작업을 제안하거나 main/user 결정(6)을 요청한다.
+
+<!-- key: id=key.standard.skill.coordinator.execution-mode refs=key.role.coordinator key.topic.external-assist key.boundary.scope-control -->
+## Execution mode와 implementation ownership
+
+Coordinator는 구현 전에 다음 mode 중 하나를 선택한다.
+
+1. `direct_execution`
+   - 외부 코딩 스킬이 선택되지 않은 경우다.
+   - Coordinator가 `keystone-default-bounded-worker` contract를 자기 실행에 적용해 허락된
+     repository implementation surface를 직접 수정한다.
+   - Delegated worker가 없어도 canonical worker report와 closure evidence를 같은 형식으로 만든다.
+2. `orchestration`
+   - 외부 코딩 스킬이 하나 이상 선택된 경우다.
+   - External-skill worker가 implementation surface를 수정하고 Coordinator는 동일 구현을
+     중복 수행하지 않는다.
+   - 외부 workflow의 task decomposition은 input으로 사용할 수 있지만 worker 생성, scope,
+     review와 verification assignment는 Coordinator가 소유한다.
+
+Injected skill의 `DONE`, task complete, review clean, commit-ready 또는 branch-ready는 worker report
+evidence다. 이 값만으로 Progress, Main acceptance와 finalization을 전이하지 않는다.
+
+<!-- key: id=key.standard.skill.coordinator.context-provisioning refs=key.role.coordinator key.contract.output key.topic.work-recovery key.topic.artifact-graph -->
+## Pre-implementation Context Pack
+
+Coordinator는 direct execution 또는 worker assignment 전에 다음을 하나의 bounded Context Pack으로
+결합한다.
+
+1. Main context checkpoint: 사용자 intent, accepted decision, current work identity, scope,
+   exclusions, existing-change preservation
+2. Work context: round/work/모든 assigned Step, dependency gates, completion criteria와 verification
+3. Relevant source documents와 applicable standards
+4. Reader recovery evidence가 실제로 사용된 경우 해당 brief/token
+5. Linker artifact context, reuse/test candidate, metadata gap와 pending graph transaction
+6. 문서 수정 후보가 있으면 Author Change Set 또는 document-edit boundary
+
+Context Pack은 전체 Keystone corpus를 worker에게 다시 해석시키는 문서 dump가 아니다. Main이
+제공한 정보와 Keystone source evidence를 함께 보존하며 required context가 missing 또는 blocked면
+implementation을 시작하지 않는다.
 
 <!-- key: id=key.standard.skill.coordinator.common-workflow refs=key.role.coordinator key.topic.work-execution key.topic.artifact-graph key.topic.verification key.topic.acceptance key.standard.subagent -->
 ## Common workflow
@@ -184,22 +233,25 @@ Coordinator는 다음 순서를 따른다.
 6. Reader context brief와 Author Change Set(17)을 확인한다.
 7. 아티팩트 그래프(14) 후보가 있으면 Linker report를 요구하거나 기존 Linker report에서 impact
    seed, required/optional/excluded candidates를 확인한다.
-8. Work unit이 bounded worker assignment로 자를 수 있는지 판단한다.
-9. Subagent 기준서에 따라 purpose preset, authority, injected skill contract를 선택한다.
-10. Code/config/schema/API/test 수정 요청에서 외부 코딩 스킬(12)이 명시되었으면 Coordinator를 유지한 채
-   해당 스킬을 injected skill로 주입한다.
-11. Domain-specific 또는 명시된 external coding skill이 없으면 `keystone-default-bounded-worker`
-    contract를 선택한다.
+8. Work unit을 bounded execution context로 만들 수 있는지 판단한다.
+9. 외부 코딩 스킬이 있으면 `orchestration`, 없으면 `direct_execution` mode를 선택한다.
+10. Subagent 기준서에 따라 purpose preset, authority, injected skill contract를 선택한다.
+11. Orchestration이면 외부 스킬을 worker에게 주입하고, direct execution이면
+    `keystone-default-bounded-worker` contract를 Coordinator 자기 실행에 적용한다.
 12. 여러 coding skill 후보가 있고 선택에 따라 workflow, verification, risk가 달라질 때만
     main/user 선택을 요청한다.
 13. 위임 실행의 isolation, worktree, branch, concurrency는 사용자 지시, 주입된 skill과 host
     환경의 계약을 따른다.
-14. 선택한 Step의 Step Brief, Context Pack, worker assignment를 만든다.
+14. 선택한 Step의 Step Brief와 Context Pack을 만들고 mode에 따라 직접 실행하거나 worker
+    assignment를 전달한다.
 15. Worker handoff boundary 또는 reviewer focus를 구성한다.
-16. Worker report(20)를 받은 뒤 actual state와 output을 확인한다.
+16. Direct 또는 delegated output을 canonical worker report(20)로 정규화하고 actual state를 확인한다.
 17. 필요하면 별도 review 또는 verify assignment를 배정한다.
-18. Report 결과를 accept candidate, repair, verify, escalate, block 중 하나로 처리한다.
-19. Main acceptance 조건이 충족된 경우에만 진행 기록(5)을 갱신한다.
+18. 모든 changed surface의 artifact delta를 Linker에 전달하고 required document/metadata 변경은
+    Author로 routing한다.
+19. Post-implementation Keystone closure gate를 통과한 결과만 accept candidate로 처리한다.
+20. Main acceptance 조건이 충족된 경우에만 진행 기록(5)을 갱신하고, acceptance 뒤 Author
+    finalization을 완료할 때까지 closure를 감독한다.
 
 <!-- key: id=key.standard.skill.coordinator.runtime-output-contract refs=key.role.coordinator key.contract.output key.topic.work-execution key.topic.work-round key.topic.artifact-graph key.standard.subagent -->
 ## Runtime output contract
@@ -207,12 +259,12 @@ Coordinator는 다음 순서를 따른다.
 Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
 
 1. Step Brief
-   - `round_id`, `work_id`, `step_id`, active step set, Goal, completion criteria, applicable
-     standards, excluded work, expected edit area, verification, known risks,
-     `main_context_checkpoint`를 담는다.
+   - `execution_mode`, `round_id`, `work_id`, `step_id`, active step set, Goal, completion criteria,
+     applicable standards, excluded work, expected edit area, verification, known risks를 담는다.
 2. Context Pack
-   - worker나 reviewer가 읽어야 하는 관련 기준서(3), 작업서(4), 결정(6), scope,
-     progress 발견사항, 키메타와 코드 앵커 기반 관련 문서와 artifact 후보를 담는다.
+   - 하나의 `main_context_checkpoint`, work/source/standards context, explicit accepted decisions,
+     completion criteria, scope boundaries, forbidden changes, verification expectations, single
+     `artifact_context`, Reader/Author status와 evidence를 담는다.
 3. Change Set brief
    - intent, changed nodes, impact seeds, required candidates, optional candidates, excluded
      scope, verification, acceptance state를 담는다.
@@ -235,34 +287,6 @@ Coordinator는 상황에 따라 다음 runtime output을 만들 수 있다.
      담는다.
 8. Verification checklist
    - 기준서-led verification expectation, graph validation, local verification note를 합쳐 만든다.
-
-Main context checkpoint는 다음 shape을 우선 사용한다.
-
-```yaml
-main_context_checkpoint:
-  global_intent_summary:
-  accepted_decisions_in_effect:
-  current_work_identity:
-    round_id:
-    work_id:
-    step_id:
-  current_user_instruction:
-  progress_state:
-  session_state:
-  source_conflicts:
-    - document:
-      conflict:
-      resolved_by:
-  source_conflict_check:
-  stale_work_order_check:
-  accepted_decision_propagation_check:
-  preserved_boundaries:
-    - main_acceptance_only
-    - no_scope_expansion
-    - no_child_subagents
-    - single_workspace_one_writer
-  acceptance_owner: main
-```
 
 이 runtime output은 기본적으로 persistent 문서가 아니다. 명시적 필요가 있을 때만 파생
 에이전트 문서(8)로 저장할 수 있다.
@@ -302,6 +326,7 @@ Worker assignment는 다음 shape을 우선 사용한다.
 worker_assignment:
   assignment_id:
   routing_context_ref:
+  execution_mode: direct_execution | orchestration
   goal:
   completion_criteria:
   intent_summary:
@@ -312,23 +337,54 @@ worker_assignment:
   accepted_decisions:
   applicable_standards:
   context_pack:
+    main_context_checkpoint:
+    work_context:
+      round_ref:
+      work_ref:
+      step_refs: []
+    source_documents: []
+    applicable_standards: []
+    accepted_decisions: [] # explicit; [] means no accepted decisions apply
+    completion_criteria: []
+    scope_boundaries:
+      read_scope: []
+      allowed_edit_scope: []
+      excluded_scope: []
+    forbidden_changes: []
+    verification_expectations: []
+    artifact_context:
+      status: ready | not_applicable | blocked
+      evidence: []
+      anchor_change_context:
+        allowed_anchor_changes:
+          - artifact_id:
+            surface: code_anchor | config_anchor | schema_anchor | api_anchor | test_anchor
+            relation:
+            reason:
+            linker_report_ref:
+        forbidden_anchor_changes:
+        verification_required:
+    reader_context:
+      status: ready | not_applicable | blocked
+      evidence: []
+    author_context:
+      status: ready | not_applicable | blocked
+      evidence: []
     required_sources:
     optional_sources:
-    artifact_context:
-    anchor_change_context:
-      allowed_anchor_changes:
-        - artifact_id:
-          surface: code_anchor | config_anchor | schema_anchor | api_anchor | test_anchor
-          relation:
-          reason:
-          linker_report_ref:
-      forbidden_anchor_changes:
-      verification_required:
     reuse_candidates:
     test_candidates:
     document_sync_candidates:
     metadata_sync_risks:
-  main_context_checkpoint:
+    affected_item_or_claim_ids:
+    partial_supersession_boundaries:
+    legacy_term_stale_candidates:
+    metadata_gaps:
+    dependency_status:
+    active_step_gates:
+    work_completion_gates:
+    graph_transaction_ref:
+    allowed_graph_patch_ids:
   injected_skills:
     - skill_id:
       mode:
@@ -365,12 +421,12 @@ Coordinator는 사용자가 현재 work scope의 위임을 허락한 경우에�
 
 외부 코딩 스킬(12)은 다음 규칙으로 선택한다.
 
-1. 사용자가 `$coordinator`만 명시하면 Coordinator는 `keystone-default-bounded-worker` contract를
-   사용한다.
+1. 사용자가 `$coordinator`만 명시하면 Coordinator는 `direct_execution` mode에서
+   `keystone-default-bounded-worker` contract를 자기 실행에 적용한다.
 2. 사용자가 `$superpowers`처럼 외부 코딩 스킬만 명시한 것은 Coordinator 허락으로 보지 않는다.
    위임이 필요하면 Main이 Coordinator 사용 여부를 별도로 묻는다.
-3. 사용자가 `$coordinator`와 외부 코딩 스킬을 함께 명시하면 Coordinator와 해당 injected skill을
-   함께 사용한다.
+3. 사용자가 `$coordinator`와 외부 코딩 스킬을 함께 명시하면 `orchestration` mode를 선택하고
+   해당 external-skill worker에게 구현을 위임한다.
 4. 사용자가 외부 코딩 스킬을 명시하지 않으면 Coordinator는 선택지를 매번 표시하지 않고
    `keystone-default-bounded-worker` contract를 사용한다.
 5. 외부 코딩 스킬이 명시된 경우 `keystone-default-bounded-worker` contract를 중복 주입하지
@@ -387,9 +443,10 @@ Coordinator는 사용자가 현재 work scope의 위임을 허락한 경우에�
 1. Injected skill은 worker authority를 올리지 않는다.
 2. Injected skill은 Coordinator assignment의 goal, scope, forbidden changes, execution environment boundary,
    verification, return report contract를 바꾸지 않는다.
-3. Injected skill이 assignment scope 밖의 절차, 추가 authority, 추가 subagent, external state,
-   publishing, dependency/build system 변경을 요구하면 worker는 `NEEDS_SCOPE_CHANGE` 또는
-   `NEEDS_CONTEXT`로 보고한다.
+3. Injected skill이 assignment scope 밖의 절차, 추가 authority, 감독 밖 추가 subagent,
+   external state, publishing, dependency/build system 변경을 요구하면 worker는
+   `NEEDS_SCOPE_CHANGE` 또는 `NEEDS_CONTEXT`로 보고한다. Approved decomposition이 유용하면
+   Coordinator가 별도 bounded assignment로 만든다.
 4. `NEEDS_SCOPE_CHANGE`의 `kind`는 subagent 기준서의 catalog를 우선 사용한다.
 5. 외부 코딩 스킬 사용은 worker의 local workflow를 바꿀 수 있지만 Keystone acceptance
    criteria를 바꾸지 않는다.
@@ -403,6 +460,7 @@ Worker report는 다음 shape을 우선 사용한다.
 ```yaml
 worker_report:
   assignment_id:
+  execution_mode: direct_execution | orchestration
   status: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | NEEDS_SCOPE_CHANGE | BLOCKED
   status_reason:
   reason_code:
@@ -418,6 +476,7 @@ worker_report:
       candidates_found:
       limits_hit:
   changed_files:
+  artifact_deltas: []
   changed_key_ids:
   changed_capabilities:
   local_decisions:
@@ -429,12 +488,30 @@ worker_report:
   verification:
   document_sync_needed:
   metadata_sync_needed:
+  document_sync:
+    disposition: required | not_applicable | deferred
+    state: complete | not_applicable | pending | blocked
+    reason:
+    evidence: []
+  metadata_sync:
+    disposition: required | not_applicable | deferred
+    state: complete | not_applicable | pending | blocked
+    reason:
+    evidence: []
+  graph_sync:
+    disposition: required | not_applicable | deferred
+    state: verified | not_applicable | pending | blocked
+    reason:
+    evidence: []
   source_conflicts:
   main_context_checkpoint_check:
   workspace_conflicts:
   residual_risk:
   recommended_next_action:
 ```
+
+`document_sync_needed`와 `metadata_sync_needed`는 compatibility hint다. 새 report는 구조화된
+document/metadata/graph sync 결과를 사용하고 모든 changed file을 `artifact_deltas`로 덮는다.
 
 Worker report review는 다음 shape을 우선 사용한다.
 
@@ -460,7 +537,9 @@ worker_report_review:
 ```
 
 `accept_candidate`는 Main acceptance가 아니라 Main이 acceptance 판단을 할 수 있는 후보
-상태다.
+상태다. 오직 Worker `DONE`만 actual state, scope, forbidden-change, verification, required
+document/metadata/graph closure와 evidence를 포함한 모든 readiness gate가 통과한 경우에
+`accept_candidate`가 될 수 있다.
 
 <!-- key: id=key.standard.skill.coordinator.purpose-routing-contract refs=key.role.coordinator key.role.subagent key.standard.subagent key.topic.work-execution key.topic.keystone-metadata key.topic.artifact-graph -->
 ## Purpose routing contract
@@ -543,12 +622,39 @@ Coordinator는 subagent 기준서의 reason code catalog를 우선 사용한다.
 계열은 `source_conflict`, `stale_work_order`, `stale_progress_record`,
 `accepted_decision_not_propagated`를 분리해 review focus와 next action으로 연결한다.
 
+<!-- key: id=key.standard.skill.coordinator.keystone-closure refs=key.role.coordinator key.role.linker key.role.author key.topic.keystone-metadata key.topic.artifact-graph key.topic.finalization -->
+## Post-implementation Keystone closure
+
+Coordinator는 direct/delegated 구현을 같은 closure workflow로 회수한다.
+
+1. Changed file마다 source surface, changed locator, semantic summary와 baseline digest를 가진
+   artifact delta가 있는지 확인한다.
+2. 모든 delta를 Linker classification으로 보내 direct refresh, required synchronization 또는
+   근거 있는 `not_applicable`을 판정한다.
+3. Source-document 또는 item metadata 변경이 필요하면 Author에게 bounded Change Set과 Linker
+   evidence를 전달한다. Coordinator가 문서 의미를 대신 쓰지 않는다.
+4. Repository anchor 변경은 Linker canonical patch와 owning surface attestation/apply를 거친다.
+5. `document_sync`, `metadata_sync`, `graph_sync` 각각에
+   `required | not_applicable | deferred` disposition, compatible state, reason과 evidence를 기록한다.
+6. Required document/metadata sync는 `complete`, required graph sync는 `verified`여야 한다.
+   `not_applicable`도 concrete reason과 evidence가 필요하다.
+7. Missing, deferred, pending, blocked 또는 evidence-free closure가 하나라도 있으면 worker의
+   성공 보고와 무관하게 `accept_candidate`를 만들지 않는다.
+8. Pre-acceptance closure가 완료되면 Main acceptance 후보로 전달한다. Post-acceptance decision은
+   `keystone_closure.acceptance_ref`와 non-empty `acceptance_evidence`를 기록한 경우에만 실행한다.
+   Author의 schema-v3 finalization, ready Context Pack/report/scope/verification/sync evidence가
+   모두 있고 finalization이 `complete` 또는 concrete `waiver_reason`을 기록한 explicitly `waived`
+   상태일 때만 Coordinator `closure_complete`를 기록한다.
+
+Installed Coordinator package의 `scripts/validate_closure.py`는 이 gate를 diagnostic envelope와
+exit code로 검사한다. Validator는 source edit, graph mutation, Main acceptance 또는 Author
+finalization 권한을 가지지 않는다.
+
 <!-- key: id=key.standard.skill.coordinator.graph-synchronization refs=key.role.coordinator key.role.linker key.topic.artifact-graph key.topic.verification key.topic.change-set -->
 ## Artifact delta와 graph synchronization
 
-1. Coordinator는 허락된 assignment에서 repository implementation 또는 anchor 의미 변경을
-   발견하면 worker report로 `artifact_delta`를 수집한다. Main direct는 같은 contract를 직접
-   수행할 수 있다.
+1. Coordinator는 direct execution 또는 허락된 assignment에서 repository implementation이나
+   anchor 의미 변경을 발견하면 changed surface마다 `artifact_delta`를 수집한다.
 2. Delta는 source surface, changed locator, semantic summary와 target source의 UTF-8 raw-byte
    SHA-256 baseline을 가진다. Graph-relevant delta가 복수 source surface patch를 요구할 때만
    Linker synchronization transaction을 시작한다. 단일 surface 변경은 direct refresh로 끝내며
@@ -571,6 +677,7 @@ Coordinator는 subagent 기준서의 reason code catalog를 우선 사용한다.
 
 ```yaml
 artifact_delta:
+  kind: artifact_delta
   source_surface:
   changed_locators: []
   semantic_summary:
@@ -629,6 +736,9 @@ Main acceptance는 다음 조건이 충족될 때만 가능하다.
 9. 아티팩트 그래프(14)가 관련된 경우 reuse decision, 키메타 또는 코드 앵커 gap, graph
    validation residual risk를 확인했다.
 10. Source conflict가 있으면 resolved, excluded, or next action으로 분리되어 있다.
+11. 모든 changed surface가 artifact delta로 회수되고 document, metadata와 graph sync가 required
+    completion 또는 evidence-backed `not_applicable` 상태다.
+12. Package-local closure validator가 current phase manifest를 통과했다.
 
 Completion evidence가 있을 때 `work_status: complete`로 전이하고, Main acceptance 후에만
 `approval.state: accepted`로 전이한다. 두 상태는 서로 대체하지 않는다.
@@ -698,6 +808,8 @@ Coordinator는 다음 상황에서 중단하거나 main/user 결정(6)을 요청
 20. 명시된 외부 코딩 스킬의 필수 절차가 Coordinator assignment의 scope, authority,
     execution environment boundary, verification과 충돌한다.
 21. 복수 surface나 권한 경계가 불명확해 assignment scope를 안전하게 만들 수 없다.
+22. Changed surface가 artifact delta에서 누락되거나 document, metadata, graph, verification 또는
+    finalization closure를 증명할 evidence가 없다.
 
 <!-- key: id=key.standard.skill.coordinator.verification refs=key.role.coordinator key.topic.verification key.topic.acceptance key.standard.subagent -->
 <!-- key: id=key.standard.skill.coordinator.dependency-sequencing refs=key.role.coordinator key.topic.work-sequence key.topic.work-execution -->
@@ -754,6 +866,15 @@ Coordinator 기준은 다음 방법으로 검증한다.
    - `rg -n "external coding skill|외부 코딩 스킬|keystone-default-bounded-worker|injected skill" 00_docs/standards`
 25. 프로젝트 로컬 Coordinator 기준서가 없어도 설치된 contract로 사용자 허락과 assignment
     경계를 판단할 수 있어야 한다.
+26. 외부 스킬이 없으면 direct execution, 외부 스킬이 있으면 orchestration을 선택하고 두 mode의
+    implementation ownership을 혼동하지 않아야 한다.
+27. Main checkpoint와 bounded Keystone source context가 implementation 전에 Context Pack에
+    포함되어야 한다.
+28. External `DONE` 또는 branch-ready만으로 incomplete document/metadata/graph closure가
+    `accept_candidate`를 통과하지 않아야 한다.
+29. Main acceptance 뒤 Author finalization evidence가 없으면 `closure_complete`가 되지 않아야 한다.
+30. `scripts/validate_closure.py`의 정상, incomplete, no-change, invalid mode fixture가 stable
+    diagnostic envelope와 exit code를 반환해야 한다.
 
 <!-- key: id=key.standard.skill.coordinator.permissionless-linker-boundary refs=key.role.coordinator key.role.linker key.standard.subagent key.boundary.scope-control -->
 ## Permissionless Linker와 Coordinator 허락 경계

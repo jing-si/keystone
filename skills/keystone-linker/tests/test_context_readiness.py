@@ -13,6 +13,7 @@ from graph_runtime.index_store import SQLiteIndexStore, StoreUnavailable
 from graph_runtime import index_store
 from graph_runtime.readiness import context_readiness
 from graph_runtime.scanner import ScanScope
+from graph_runtime.scanner import ReferenceScanner
 
 
 READINESS_CLI = Path(__file__).parents[1] / "scripts" / "graph_runtime" / "readiness_cli.py"
@@ -156,6 +157,37 @@ class ContextReadinessTests(unittest.TestCase):
 
                 self.assertEqual("source_fallback", first.cache_status)
                 self.assertEqual("reused", second.cache_status)
+
+    def test_legacy_cache_without_updated_at_is_repaired_after_cache_miss(self):
+        self.cache.parent.mkdir(parents=True)
+        connection = sqlite3.connect(str(self.cache))
+        connection.execute(
+            "CREATE TABLE generations ("
+            "freshness_digest TEXT PRIMARY KEY, schema_version INTEGER NOT NULL, "
+            "payload TEXT NOT NULL, payload_digest TEXT NOT NULL)"
+        )
+        connection.commit()
+        connection.close()
+
+        first = context_readiness(self.root, self.cache, initiator="reader")
+        second = context_readiness(self.root, self.cache, initiator="reader")
+
+        self.assertEqual("source_fallback", first.cache_status)
+        self.assertIn("cache_recovered", {item.code for item in first.diagnostics})
+        self.assertEqual("reused", second.cache_status)
+
+    def test_incomplete_discovery_bypasses_cache(self):
+        (self.root / "00_docs" / "large.md").write_text("x" * 32, encoding="utf-8")
+        scanner = ReferenceScanner(self.root, max_file_bytes=8)
+
+        with mock.patch("graph_runtime.readiness.ReferenceScanner", return_value=scanner):
+            first = context_readiness(self.root, self.cache, initiator="reader")
+            second = context_readiness(self.root, self.cache, initiator="reader")
+
+        self.assertEqual("source_fallback", first.cache_status)
+        self.assertEqual("source_fallback", second.cache_status)
+        self.assertFalse(self.cache.exists())
+        self.assertFalse(first.result.freshness.complete)
 
     def test_locked_cache_is_preserved_and_not_replaced(self):
         context_readiness(self.root, self.cache, initiator="reader")
