@@ -25,7 +25,8 @@ meaning when they exist; Reader output does not replace them or Main acceptance.
 3. Finding relevant project standards, work orders, progress records, and decisions.
 4. Preparing read-only context before document or implementation work.
 5. Reporting mismatch between Keystone documents and repository evidence.
-6. Determining whether deeper Artifact Graph interpretation should pass to `keystone-linker`.
+6. Starting docs-first context readiness and determining whether deeper owner/ref or Artifact Graph
+   interpretation should pass to `keystone-linker`.
 
 Do not use Reader to edit any file, create standards or work records, collect high-impact decisions,
 assign workers, review worker reports, or accept results. Deep artifact impact, stale, reuse, and
@@ -103,6 +104,24 @@ evaluation.
 Use an orientation, navigation, or work-preparation emphasis as the request requires; do not require
 the caller to name a mode.
 
+## Session Context Readiness
+
+When the user explicitly invokes Reader at the start of a Codex session, Reader is the orientation and
+context-readiness entry point, not the cache owner.
+
+1. Recover work from the configured document root, root/round/work indexes, and active Progress.
+2. On the first invocation, request permissionless Linker readiness for the docs discovery scope. Pass
+   worktree identity, the sorted path set, and each file's raw-byte SHA-256 digest.
+3. Request a lazy repository scope only when code/config/schema/test artifact context is actually needed.
+4. Reuse a fresh external index. If it is missing, stale, corrupt, or cannot be locked or written, fall
+   back fail-soft to source discovery; a cache problem is not a user decision.
+5. Include the freshness token, discovery scope, source citations, and unresolved gaps in the internal
+   context brief. Downstream skills may reuse a fresh token; after a source write they invalidate the
+   affected discovery scope.
+6. Pass a serialized recursion guard with `initiator: reader`. The called Linker must not call Reader
+   again in the same chain; a Linker-initiated Reader chain applies the inverse rule.
+7. Keep raw readiness and index payloads agent-facing and hidden from the user by default.
+
 ## Result Contract
 
 Keep the internal result proportional to available evidence. Include:
@@ -133,6 +152,11 @@ reader_output:
   recommended_next_action:
   sources_read:
   assumptions:
+  context_readiness:
+    discovery_scope:
+    freshness_token:
+    cache_status:
+    recursion_guard:
 ```
 
 For work preparation, also include Goal, Scope, applicable standards, completion criteria, stop
@@ -176,3 +200,5 @@ Check that Reader:
    partial supersession, inheritance, legacy-term stale status, or metadata gaps.
 8. Hides structured payloads by default.
 9. Recovers structured and legacy dependencies with explicit evaluation and scope without changing work state.
+10. Starts docs-scope readiness, expands to repository scope lazily, and never becomes cache owner.
+11. Invalidates affected scope after writes and prevents Reader-Linker recursion in one call chain.

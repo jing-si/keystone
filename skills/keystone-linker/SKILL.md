@@ -44,7 +44,8 @@ Apply these rules without depending on project-local Linker instructions:
 1. Prefer `source_document | decision | work_order -> output_artifact` as the core graph relation.
 2. Treat skill source, code, config, schema, API, test, generated file, and document artifact as
    output-artifact surfaces.
-3. Read typed relations from `produces`, `provides`, `uses`, `implements`, `verifies`,
+3. Read typed relations from `produces`, `provides`, `uses`, `implements`,
+   `requires_verification_of`, `verifies`,
    `governed_by`, `documents`, `supersedes`, `derived_from`, and `depends_on`.
 4. Treat `key.refs` as navigation evidence, not automatic impact propagation.
 5. Keep stable identity separate from path, symbol, test name, config key, or schema locator.
@@ -54,8 +55,8 @@ Apply these rules without depending on project-local Linker instructions:
 8. Grade candidates as `required`, `strong_candidate`, `weak_candidate`, `informational`, or
    `excluded`; candidate discovery never authorizes edits or acceptance.
 9. Separate mechanical stale evidence, semantic stale candidates, and metadata gaps.
-10. Treat generated indexes as derived evidence, never as the source of truth or a Linker write
-    target.
+10. Treat generated indexes as derived evidence, never as the source of truth. Linker may refresh only
+    its disposable cache outside the repository; it never writes a repository source surface.
 11. Treat independently referenceable Markdown headings, list items, table rows, decisions,
     claims, and acceptance items as document-item nodes when they declare stable item metadata.
 12. Inherit document and section authority, `governed_by`, and lifecycle into an item when they are
@@ -82,7 +83,7 @@ Use Linker when:
 6. Change Set impact seeds and required/optional/excluded candidates must be prepared.
 7. Main needs read-only graph interpretation and chooses to use Linker without a separate approval
    ceremony.
-8. A graph-relevant `document_delta` or `artifact_delta` automatically starts synchronization.
+8. Reader or another Keystone skill needs internal owner/ref readiness.
 
 ## When Not To Use
 
@@ -120,8 +121,29 @@ Choose the narrowest mode that answers the request:
    metadata.
 4. `Worker Assignment Seed`: package artifact context, reuse/test candidates, and sync risks for a
    permitted Coordinator assignment.
-5. `Graph Synchronization`: decide canonical mutations and exact owner-applied patches, reconcile
+5. `Owner/Ref Index Readiness`: refresh or reuse a bounded derived index for context discovery.
+6. `Graph Synchronization`: decide canonical mutations and exact owner-applied patches, reconcile
    attestation and apply results, then reconstruct and mechanically validate the transaction.
+
+## Owner/Ref Index Readiness
+
+This is a permissionless internal mode, not a user-facing command. Reader and other Keystone skills may
+request it without Coordinator permission because it has no repository source-write authority.
+
+1. Collect declared owner IDs and refs from meaningful source artifacts. Diagnose duplicate owners,
+   unresolved refs, and locator gaps without requiring every artifact to have a typed relation.
+2. Store the reverse index only in a disposable cache outside the repository, with a single writer.
+   Source annotations, standards, and companion metadata remain authoritative; cache data is never
+   acceptance or transaction evidence.
+3. Freshness requires worktree identity, the discovery scope name, the sorted path set, and every
+   source file's raw-byte SHA-256 digest. Git HEAD, mtime, or a timestamp is insufficient.
+4. Docs scope discovers the configured document root. Repository scope uses explicit include/exclude
+   rules and supported source/companion discovery, and runs lazily only when artifact context is needed.
+5. Cache failure returns fail-soft diagnostics and raw source results; it does not block orientation.
+6. Build an optional typed graph projection only for multi-hop, semantic-role, dependency,
+   verification, or reuse queries. Broad similarity never creates a canonical edge.
+7. Honor the serialized recursion guard. Reader-to-Linker and Linker-to-Reader chains must not re-enter
+   the initiating lane.
 
 ## Workflow
 
@@ -152,7 +174,10 @@ Choose the narrowest mode that answers the request:
 
 ## Graph Synchronization Mode
 
-A `document_delta` or `artifact_delta` with `graph_relevant: true` automatically starts this mode.
+Use this mode only when multiple source surfaces must change together to close canonical meaning. A
+single-surface owner/ref or metadata change stays in the surface owner's direct lane and only requires
+index refresh and validation. A `document_delta` or `artifact_delta` with `graph_relevant: true` requests
+classification; it does not by itself force a transaction.
 The trigger does not create or expand user-approved scope, Coordinator permission, worker authority,
 or acceptance. A safe `not_required` conclusion needs a concrete graph-relevance reason tied to the
 changed locators and semantic summary; finalization records that outcome as `not_applicable`.
@@ -177,8 +202,13 @@ changed locators and semantic summary; finalization records that outcome as `not
    mutation. Run the bundled validator described in
    [references/graph-runtime.md](references/graph-runtime.md). Only complete required confirmations,
    apply results, matching reconstruction, and passing mechanical validation produce `verified`.
-9. A `conflicted` or `failed` transaction resumes through a new attempt with a new transaction ID,
-   revised mutation/patches and current baselines while preserving prior attempt evidence.
+9. A `conflicted` or `failed` transaction resumes through a new attempt with a new transaction ID and
+   preserved attempt history. For `stale_baseline`, at least one baseline must change. For `reject` or
+   `needs_revision`, the same baseline is allowed when the mutation or exact patch changes. For
+   `reconstruction_mismatch`, change a baseline, mutation, or patch. A verified
+   `transient_application_failure` may retry the same patch.
+10. Treat transaction scope validation as the current-work gate. Report repository scope coverage debt
+    separately; gaps outside the transaction do not widen or block the current work.
 
 ```yaml
 graph_synchronization:
@@ -562,7 +592,7 @@ a resolved document root are absent. Return a partial evidence report when usefu
 
 Verify Linker behavior by checking:
 
-1. Five modes are distinct.
+1. Six modes are distinct.
 2. Operational graph interpretation does not imply edit authority.
 3. Mechanical stale, semantic stale, and metadata gaps are separated.
 4. Source surface handoff owners are separated.
@@ -584,7 +614,8 @@ Verify Linker behavior by checking:
     supersession cycles are mechanical stale evidence.
 16. Dependency relations and gate evidence remain separate, legacy conflicts are reported, and cycles
     require expanded-event evidence without automatic work-state mutation.
-17. Graph-relevant deltas automatically start synchronization without widening scope or permission.
+17. Graph-relevant deltas are classified as direct refresh or multi-surface synchronization without
+    widening scope or permission.
 18. Only owner attestations, baseline-safe apply results, source reconstruction, and mechanical
     validation can produce a verified transaction; partial apply and new attempts remain resumable.
 

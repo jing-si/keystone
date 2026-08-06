@@ -2,7 +2,7 @@
 doc_type: work
 created_at: "2026-08-06"
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: user}
+approval: {state: pending}
 work_status: in_progress
 key:
   id: key.work.skill-context-contract-integration.index
@@ -28,5 +28,5 @@ S01 accepted 기준을 Reader·Linker·Author·Coordinator 중심의 installed s
 ## 현재 상태
 
 - Work status: in_progress
-- Approval state: accepted
+- Approval state: pending
 - Active step: true

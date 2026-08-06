@@ -36,6 +36,23 @@ Obtain user permission for each work scope before using Coordinator. Treat direc
 - Do not treat invocation of an external coding skill alone as Coordinator permission.
 - Prefer Main direct for small, clear work that does not benefit from delegation or formal report handling.
 
+## Permissionless Linker Boundary
+
+Coordinator permission governs file-changing worker delegation and scope-bearing orchestration. An
+internal Linker scan, index refresh, graph interpretation, or validation with no source-write authority
+does not require Coordinator permission.
+
+1. Permissionless Linker is not a Coordinator worker. It cannot patch source, expand scope, create a
+   worker, decide project meaning, or accept results.
+2. Before an assignment, reuse a fresh Reader context token. If required artifact context is absent,
+   request Linker's lazy repository scope and include its bounded evidence in the Context Pack.
+3. After a file-changing worker report, invalidate the affected discovery scope. Review and verification
+   use refreshed context, not the stale pre-write index.
+4. Keep a small approved anchor update on one repository surface in that surface owner's direct lane.
+   Require graph synchronization only when multiple source surfaces must change together.
+5. Apply conflict-reason retry conditions and a new transaction ID with attempt history. Repository
+   coverage debt does not widen the assignment or replace transaction scope validation.
+
 ## When To Use
 
 Use Coordinator, with permission, when one or more of these are needed:
@@ -135,7 +152,8 @@ acceptance, or mark finalization complete.
 
 Within an already permitted implementation scope, collect an `artifact_delta` when a worker or Main
 direct changes repository behavior, artifact meaning, or an anchor. Main direct uses the same contract
-without creating an assignment. A graph-relevant delta automatically invokes Linker synchronization;
+without creating an assignment. A graph-relevant delta invokes Linker classification as direct refresh
+or multi-surface synchronization;
 this does not create Coordinator permission, widen scope, raise worker authority, or grant acceptance.
 A safe `not_required` assessment for a non-relevant delta records a concrete reason outside the
 canonical delta and maps to finalization `not_applicable`.
@@ -167,8 +185,9 @@ Never write a stale baseline. Preserve each result and partial success as `parti
 
 Resume verifies recorded resulting digests for successful patches and baselines for remaining patches,
 without blind reapplication. Rejected or revision-needed attestations and stale baselines are
-`conflicted`; failed apply is `failed`. Linker creates a new attempt with a new transaction ID and
-current baselines. Coordinator may prepare `accept_candidate`, but only Linker reconstruction plus the
+`conflicted`; failed apply is `failed`. Linker creates a new attempt with a new transaction ID, preserved
+attempt history, and conflict-reason-specific baseline/mutation/patch changes. Coordinator may prepare
+`accept_candidate`, but only Linker reconstruction plus the
 bundled mechanical validator can make the transaction `verified`; Main retains acceptance and Author
 retains finalization authority.
 

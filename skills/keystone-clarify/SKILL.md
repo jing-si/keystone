@@ -56,6 +56,18 @@ Clarify is not tied to a host execution mode or question API. Use the interactio
 the current environment, but never claim to have activated or switched a mode unless the host actually
 did so.
 
+## Internal Index and Graph Management Boundary
+
+Accepted operational rules for owner/ref cache location, refresh, docs/repository scan timing, and
+transaction/repository validation scope are not a user decision topic. Do not ask the user how a
+permissionless Linker should scan, index, or validate. Treat cache failure with source fallback and a
+risk report.
+
+Ask one high-impact question only when Linker evidence leaves multiple valid choices about project
+meaning, policy, scope, or authority. Coverage debt alone is not permission to ask for scope expansion.
+In decision and edit-plan metadata, use `requires_verification_of` for a verification requirement; it
+does not promote to `verifies` before an actual test artifact or verification result supplies evidence.
+
 ## Inputs and Evidence
 
 Use the current topic, user request, accepted decisions, relevant source documents and work context when

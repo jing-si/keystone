@@ -117,7 +117,8 @@ or mark finalization complete. Hook absence is distinct from validator unavailab
 ## Document Delta and Graph Synchronization
 
 After an approved document meaning or independently addressable metadata item changes, Author emits a
-delta. `graph_relevant: true` automatically invokes Linker's Graph Synchronization mode; it does not
+delta. `graph_relevant: true` invokes Linker classification; it does not automatically require a graph
+synchronization transaction and does not
 widen Author scope, create Coordinator permission, or grant acceptance. A safe `not_required`
 assessment for `graph_relevant: false` requires a concrete reason and maps to finalization
 `not_applicable`; it does not change the canonical delta shape.
@@ -152,7 +153,8 @@ Preserve every `applied | failed | stale_baseline` result. Partial success remai
 `partially_applied`; a resume skips patches whose current digest equals their recorded resulting digest
 and rechecks remaining baselines. Linker reconstructs the graph from source and runs mechanical
 validation. Author cannot declare the transaction `verified` or finalization complete. A conflicted or
-failed transaction requires Linker's new attempt with new ID and current baselines.
+failed transaction requires Linker's new attempt with a new ID, preserved attempt history, and the
+conflict-reason-specific baseline/mutation/patch change defined by Linker.
 
 Progress and Change Sets retain `graph_sync` disposition/reason, transaction ID/state, delta and patch
 references, owner attestations, apply results, reconstruction, mechanical validation, transaction
@@ -165,7 +167,8 @@ the Linker transaction artifact if Progress contains a resolvable locator to it.
 - Start ordinary rounds at `R001` and every round's steps at `S01`.
 - Reserve `R000 Project Foundation` for the special pre-standard foundation round; its first step is also `S01`.
 - Give each new work node a `00_key-index.md`, `key-work-{slug}.md`, and `key-progress.md` unless an accepted project rule says otherwise.
-- Keep lifecycle (`draft`, `active`, `superseded`, `archived`), approval (`pending`, `accepted`, `rejected` when needed), and work status in separate fields.
+- Keep `document_lifecycle` (`draft`, `active`, `superseded`, `archived`), `approval.state`
+  (`pending`, `accepted`, `rejected` when needed), and `work_status` in separate fields.
 - Do not mark work `accepted` or `complete` before Main acceptance. Worker `DONE` is not Main acceptance.
 - Apply accepted Clarify results without inventing a new decision or expanding their edit plan.
 - Use Change Sets for large changes or document-to-code/test impact that needs traceability.
@@ -207,10 +210,11 @@ otherwise.
   do not insert a standalone comment between rows:
 
   ```markdown
-  | <!-- key: id=key.acceptance.worker.planning-grouping verifies=key.claim.worker.planning-boundary --> `PA-PLAN-01` | 입력 | 기대 결과 |
+  | <!-- key: id=key.acceptance.worker.planning-grouping requires_verification_of=key.claim.worker.planning-boundary --> `PA-PLAN-01` | 입력 | 기대 결과 |
   ```
 
-- Inherit the parent document or section's `governed_by`, source authority, and lifecycle by default.
+- Write declared metadata only. Compute effective metadata by inheriting the parent document or section's
+  `governed_by`, source authority, `document_lifecycle`, and approval by default.
   Never inherit `id` or `supersedes`. Declare item lifecycle only when it differs from the parent, and
   never use a child declaration to widen or replace parent source authority.
 - When an entire decision is one replacement unit, use a decision ID. When only part of a decision is
@@ -221,14 +225,21 @@ otherwise.
   Record only exact searchable former names, identifiers, routes, tables, or columns. Do not register
   broad standalone words such as `batch`, `handler`, or `plan`, and do not treat `legacy_terms` as a
   typed relation.
-- Use `refs` for navigation and typed item relations such as `governed_by`, `supersedes`, and `verifies`
-  for declared semantics. A relation remains an impact candidate rather than automatic permission to
+- Use `refs` for navigation. Use `requires_verification_of` when an acceptance criterion or claim states
+  a verification requirement; reserve `verifies` for evidence performed by a test artifact or
+  verification result. Use typed item relations such as `governed_by` and `supersedes` for declared
+  semantics. A relation remains an impact candidate rather than automatic permission to
   edit another source surface.
 
 Before writing metadata, inspect the parent document and section so the item declaration does not
 duplicate inherited fields or conflict with their authority. If stale meaning, reverse impact,
 historical exceptions, or metadata-gap interpretation is needed, preserve the approved source edit and
 request Linker evidence rather than inventing a graph conclusion.
+
+For one approved document surface, apply the source edit directly and notify Linker to invalidate or
+refresh the affected discovery scope. Do not edit the external cache. Require a graph synchronization
+transaction only when multiple source surfaces must change together. Downstream skills must not reuse a
+stale pre-write context token.
 
 ## Temporal Metadata
 

@@ -98,6 +98,14 @@ Give every newly created Markdown scaffold document an immutable `created_at: "Y
 
 Initialization and repair are idempotent: never overwrite an existing file unconditionally, duplicate valid scaffold, move existing documents, perform broad normalization, or migrate document, section, item, or claim metadata automatically. Preserve user and other-agent changes.
 
+## Context Readiness Boundary
+
+Session orientation and cache/index readiness for a usable Keystone foundation are Reader work and are
+not an Init mode. Init never scaffolds or repairs Linker's external cache and never treats it as source
+of truth. A missing, stale, or corrupt graph/index cache does not lower the initialization state; source
+documents and recovery invariants determine that state. After initialize or repair, hand first
+orientation to Reader, whose repository artifact scan remains lazy until the resumed request needs it.
+
 Do not invent project-specific `depends_on` targets or `work_gates` in the fixed R000 scaffold. During
 repair, report missing or conflicting dependency targets as recovery risks without creating future IDs,
 rewriting relations, or changing work status. Dependency gaps alone do not change initialization state.
