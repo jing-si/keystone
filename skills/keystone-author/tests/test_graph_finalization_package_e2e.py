@@ -41,6 +41,12 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
         started = time.monotonic()
         cls.install_dir = tempfile.TemporaryDirectory()
         cls.codex_home = Path(cls.install_dir.name)
+        installed_skills = cls.codex_home / "skills"
+        (installed_skills / "keystone-reader").mkdir(parents=True)
+        (installed_skills / "keystone-reader" / "OLD").write_text("old", encoding="utf-8")
+        (installed_skills / "unrelated-skill").mkdir()
+        (installed_skills / "unrelated-skill" / "SKILL.md").write_text(
+            "unrelated", encoding="utf-8")
         process = subprocess.run(
             ["bash", str(ROOT / "reinstall-local-keystone-skills.sh")],
             cwd=str(ROOT), env=dict(os.environ, CODEX_HOME=str(cls.codex_home)),
@@ -52,6 +58,10 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
                              / "run_finalization_validation.py")
         cls.linker_runner = (cls.codex_home / "skills" / "keystone-linker" / "scripts"
                              / "run_graph_validation.py")
+        cls.reference_runtime = (cls.codex_home / "skills" / "keystone-linker" / "scripts"
+                                 / "graph_runtime" / "readiness.py")
+        cls.reference_contract = (cls.codex_home / "skills" / "keystone-linker" / "references"
+                                  / "reference-index-runtime.md")
         cls.install_seconds = time.monotonic() - started
 
     @classmethod
@@ -242,6 +252,34 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
         process = self.run_installed(self.finalization_manifest(self.verified_transaction()))
         self.assertEqual(0, process.returncode, process.stdout + process.stderr)
         self.assertEqual("pass", json.loads(process.stdout)["status"])
+
+    def test_temporary_install_contains_internal_reference_index_package(self):
+        self.assertTrue(self.reference_runtime.is_file())
+        self.assertTrue(self.reference_contract.is_file())
+        self.assertFalse((self.codex_home / "bin" / "keystone-index").exists())
+        process = subprocess.run(
+            [sys.executable, "-c", (
+                "import sys; sys.path.insert(0, sys.argv[1]); "
+                "from graph_runtime.readiness import context_readiness; "
+                "assert callable(context_readiness)"),
+             str(self.reference_runtime.parents[1])],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(0, process.returncode, process.stdout + process.stderr)
+
+        manifest = self.codex_home / "skills" / ".keystone-install.json"
+        self.assertTrue(manifest.is_file())
+        installed = json.loads(manifest.read_text(encoding="utf-8"))
+        self.assertEqual(1, installed["schema_version"])
+        self.assertEqual(
+            ["keystone-init", "keystone-reader", "keystone-author", "keystone-clarify",
+             "keystone-linker", "keystone-coordinator"],
+            installed["skills"],
+        )
+        self.assertTrue(installed["source_revision"])
+        self.assertTrue((self.codex_home / "skills" / "unrelated-skill" / "SKILL.md").is_file())
+        backups = tuple((self.codex_home / "skills" / ".keystone-backups").glob("*/keystone-reader/OLD"))
+        self.assertEqual(1, len(backups))
 
     def test_nonverified_states_fail_closed_without_cancelling_acceptance(self):
         accepted_source = self.progress.read_bytes()

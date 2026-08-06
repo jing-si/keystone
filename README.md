@@ -44,9 +44,10 @@ bash ./reinstall-local-keystone-skills.sh
 ```
 
 The script installs into `${CODEX_HOME}/skills` when `CODEX_HOME` is set and
-otherwise uses `~/.codex/skills`. It validates that all source `SKILL.md` files
-exist, replaces only the six same-named Keystone skill directories, copies the
-current repo-local sources, and verifies the result. Other installed skills are
+otherwise uses `~/.codex/skills`. It validates all six packages in a temporary
+staging directory before replacing the same-named Keystone skill directories,
+keeps replaced packages under `.keystone-backups`, records the source revision
+in `.keystone-install.json`, and verifies the result. Other installed skills are
 not touched.
 
 To install into a different Codex home:
@@ -121,6 +122,13 @@ reserved for the exceptional Project Foundation round before standards exist.
 
 - Source documents remain authoritative; internal handoff payloads are hidden
   unless they are needed for audit, debugging, or verification.
+- Stable source-owned IDs and refs provide the default lookup path. Reader starts
+  with docs-only context readiness; Linker lazily enriches repository artifact
+  context through a disposable external index. The typed graph remains optional
+  and is materialized only for semantic traversal that needs it.
+- Freshness covers worktree identity, the sorted discovery path set, and raw file
+  bytes. Cache loss, staleness, corruption, or contention falls back to source
+  discovery and never makes the cache authoritative.
 - Linker is source-write-free and may be used without separate permission. It is the sole canonical
   graph mutation decision owner; Author, Main, or a permitted Coordinator attest and apply patches only
   on their own source surfaces.
@@ -141,7 +149,7 @@ Artifact Graph synchronization contracts; consult these sources for current stat
 - [`00_docs/standards/01_key-project-standard.md`](00_docs/standards/01_key-project-standard.md)
 - [`00_docs/standards/bootstrap/key-standard-bootstrap.md`](00_docs/standards/bootstrap/key-standard-bootstrap.md)
 - [`00_docs/works/00_key-index.md`](00_docs/works/00_key-index.md)
-- [`00_docs/works/r005-artifact-graph-synchronization/00_key-index.md`](00_docs/works/r005-artifact-graph-synchronization/00_key-index.md)
+- [`00_docs/works/r006-reference-index-context-readiness/00_key-index.md`](00_docs/works/r006-reference-index-context-readiness/00_key-index.md)
 
 The older `work-package-doc-architect` and `subagent-work-coordinator` projects
 remain historical prototype references, not runtime dependencies.
