@@ -47,7 +47,8 @@ The script installs into `${CODEX_HOME}/skills` when `CODEX_HOME` is set and
 otherwise uses `~/.codex/skills`. It validates all six packages in a temporary
 staging directory before replacing the same-named Keystone skill directories,
 keeps replaced packages under `.keystone-backups`, records the source revision
-in `.keystone-install.json`, and verifies the result. Other installed skills are
+and package version from [`VERSION`](VERSION) in `.keystone-install.json`, and
+verifies the installed result before committing the replacement. Other installed skills are
 not touched.
 
 To install into a different Codex home:

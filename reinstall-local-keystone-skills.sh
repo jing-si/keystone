@@ -9,6 +9,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEST_ROOT="${CODEX_HOME:-$HOME/.codex}/skills"
+PACKAGE_VERSION_FILE="$REPO_ROOT/VERSION"
 
 SKILLS=(
   keystone-init
@@ -21,6 +22,12 @@ SKILLS=(
 
 echo "Repository: $REPO_ROOT"
 echo "Install destination: $DEST_ROOT"
+
+if [ ! -s "$PACKAGE_VERSION_FILE" ]; then
+  echo "Missing Keystone package version: $PACKAGE_VERSION_FILE" >&2
+  exit 1
+fi
+PACKAGE_VERSION="$(tr -d '[:space:]' < "$PACKAGE_VERSION_FILE")"
 
 for skill in "${SKILLS[@]}"; do
   if [ ! -f "$REPO_ROOT/skills/$skill/SKILL.md" ]; then
@@ -71,7 +78,8 @@ mkdir -p "$STAGED_SKILLS"
 cleanup_staging() {
   rm -rf "$STAGING_ROOT"
 }
-trap cleanup_staging EXIT
+INSTALL_SWITCH_STARTED=false
+INSTALL_COMMITTED=false
 
 echo "Staging local Keystone skills..."
 for skill in "${SKILLS[@]}"; do
@@ -119,13 +127,14 @@ python3 "$INSTALLED_LINKER_GRAPH_RUNNER" --help >/dev/null
 bash -n "$INSTALLED_LINKER_GRAPH_HOOK"
 
 SOURCE_REVISION="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
+SOURCE_DIRTY=false
 if [ -z "$SOURCE_REVISION" ]; then
   SOURCE_REVISION="unknown"
 elif [ -n "$(git -C "$REPO_ROOT" status --porcelain 2>/dev/null || true)" ]; then
-  SOURCE_REVISION="$SOURCE_REVISION-dirty"
+  SOURCE_DIRTY=true
 fi
-printf '{"schema_version":1,"source_revision":"%s","skills":["keystone-init","keystone-reader","keystone-author","keystone-clarify","keystone-linker","keystone-coordinator"]}\n' \
-  "$SOURCE_REVISION" > "$STAGED_SKILLS/.keystone-install.json"
+printf '{"schema_version":1,"package_version":"%s","source_commit":"%s","source_dirty":%s,"skills":["keystone-init","keystone-reader","keystone-author","keystone-clarify","keystone-linker","keystone-coordinator"]}\n' \
+  "$PACKAGE_VERSION" "$SOURCE_REVISION" "$SOURCE_DIRTY" > "$STAGED_SKILLS/.keystone-install.json"
 
 BACKUP_ROOT="$DEST_ROOT/.keystone-backups/$(date -u +%Y%m%dT%H%M%SZ)-$$"
 mkdir -p "$BACKUP_ROOT"
@@ -135,6 +144,9 @@ MANIFEST_BACKED_UP=false
 
 rollback_install() {
   local skill
+  if [ "$INSTALL_SWITCH_STARTED" != true ]; then
+    return
+  fi
   for skill in "${MOVED_NEW[@]}"; do
     rm -rf "$DEST_ROOT/$skill"
   done
@@ -149,8 +161,22 @@ rollback_install() {
   fi
 }
 
-trap 'rollback_install; cleanup_staging' ERR
+finish_install() {
+  local status=$?
+  trap - EXIT ERR
+  if [ "$status" -ne 0 ] || [ "$INSTALL_COMMITTED" != true ]; then
+    if [ "$status" -eq 0 ]; then
+      status=1
+    fi
+    set +e
+    rollback_install
+  fi
+  cleanup_staging
+  exit "$status"
+}
+trap finish_install EXIT
 echo "Installing staged Keystone skills..."
+INSTALL_SWITCH_STARTED=true
 if [ -e "$DEST_ROOT/.keystone-install.json" ]; then
   mv "$DEST_ROOT/.keystone-install.json" "$BACKUP_ROOT/.keystone-install.json"
   MANIFEST_BACKED_UP=true
@@ -164,8 +190,10 @@ for skill in "${SKILLS[@]}"; do
   MOVED_NEW+=("$skill")
 done
 mv "$STAGED_SKILLS/.keystone-install.json" "$DEST_ROOT/.keystone-install.json"
-trap - ERR
-trap cleanup_staging EXIT
+
+if [ -n "${_KEYSTONE_TEST_BREAK_AFTER_SWAP:-}" ]; then
+  rm -f "$DEST_ROOT/$_KEYSTONE_TEST_BREAK_AFTER_SWAP/SKILL.md"
+fi
 
 echo "Installed:"
 for skill in "${SKILLS[@]}"; do
@@ -176,6 +204,33 @@ for skill in "${SKILLS[@]}"; do
     exit 1
   fi
 done
+
+FINAL_AUTHOR_VALIDATOR="$DEST_ROOT/keystone-author/scripts/validate_finalization.py"
+FINAL_AUTHOR_RUNNER="$DEST_ROOT/keystone-author/scripts/run_finalization_validation.py"
+FINAL_AUTHOR_HOOK="$DEST_ROOT/keystone-author/scripts/check_finalization_hook.sh"
+FINAL_LINKER_VALIDATOR="$DEST_ROOT/keystone-linker/scripts/validate_graph.py"
+FINAL_LINKER_RUNNER="$DEST_ROOT/keystone-linker/scripts/run_graph_validation.py"
+FINAL_LINKER_HOOK="$DEST_ROOT/keystone-linker/scripts/check_graph_hook.sh"
+FINAL_REFERENCE_RUNTIME="$DEST_ROOT/keystone-linker/scripts/graph_runtime/readiness.py"
+FINAL_REFERENCE_CONTRACT="$DEST_ROOT/keystone-linker/references/reference-index-runtime.md"
+for installed in "$FINAL_AUTHOR_VALIDATOR" "$FINAL_AUTHOR_RUNNER" "$FINAL_AUTHOR_HOOK" \
+  "$FINAL_LINKER_VALIDATOR" "$FINAL_LINKER_RUNNER" "$FINAL_LINKER_HOOK" \
+  "$FINAL_REFERENCE_RUNTIME" "$FINAL_REFERENCE_CONTRACT" "$DEST_ROOT/.keystone-install.json"; do
+  if [ ! -f "$installed" ]; then
+    echo "Final installed-package verification failed: $installed" >&2
+    exit 1
+  fi
+done
+python3 "$FINAL_AUTHOR_VALIDATOR" --help >/dev/null
+python3 "$FINAL_AUTHOR_RUNNER" --help >/dev/null
+bash -n "$FINAL_AUTHOR_HOOK"
+python3 "$FINAL_LINKER_VALIDATOR" --help >/dev/null
+python3 "$FINAL_LINKER_RUNNER" --help >/dev/null
+bash -n "$FINAL_LINKER_HOOK"
+PYTHONPATH="$DEST_ROOT/keystone-linker/scripts" python3 -c \
+  'from graph_runtime.readiness import context_readiness; assert callable(context_readiness)'
+
+INSTALL_COMMITTED=true
 
 echo
 echo "Done. Restart Codex to load the updated Keystone skills."

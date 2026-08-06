@@ -276,10 +276,47 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
              "keystone-linker", "keystone-coordinator"],
             installed["skills"],
         )
-        self.assertTrue(installed["source_revision"])
+        self.assertEqual(
+            (ROOT / "VERSION").read_text(encoding="utf-8").strip(),
+            installed["package_version"],
+        )
+        self.assertTrue(installed["source_commit"])
+        self.assertIsInstance(installed["source_dirty"], bool)
         self.assertTrue((self.codex_home / "skills" / "unrelated-skill" / "SKILL.md").is_file())
         backups = tuple((self.codex_home / "skills" / ".keystone-backups").glob("*/keystone-reader/OLD"))
         self.assertEqual(1, len(backups))
+
+    def test_post_swap_verification_failure_restores_every_package_and_manifest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            codex_home = Path(temporary)
+            skills = codex_home / "skills"
+            expected = {}
+            for name in ("keystone-init", "keystone-reader", "keystone-author", "keystone-clarify",
+                         "keystone-linker", "keystone-coordinator"):
+                marker = skills / name / "OLD"
+                marker.parent.mkdir(parents=True)
+                marker.write_text(name, encoding="utf-8")
+                expected[name] = marker
+            old_manifest = '{"schema_version":1,"package_version":"old"}\n'
+            (skills / ".keystone-install.json").write_text(old_manifest, encoding="utf-8")
+
+            process = subprocess.run(
+                ["bash", str(ROOT / "reinstall-local-keystone-skills.sh")],
+                cwd=str(ROOT),
+                env=dict(os.environ, CODEX_HOME=str(codex_home),
+                         _KEYSTONE_TEST_BREAK_AFTER_SWAP="keystone-reader"),
+                capture_output=True, text=True, check=False,
+            )
+
+            self.assertNotEqual(0, process.returncode)
+            self.assertIn("Install failed for keystone-reader", process.stderr)
+            for name, marker in expected.items():
+                self.assertEqual(name, marker.read_text(encoding="utf-8"))
+                self.assertFalse((skills / name / "SKILL.md").exists())
+            self.assertEqual(
+                old_manifest,
+                (skills / ".keystone-install.json").read_text(encoding="utf-8"),
+            )
 
     def test_nonverified_states_fail_closed_without_cancelling_acceptance(self):
         accepted_source = self.progress.read_bytes()
