@@ -12,7 +12,8 @@ readiness API. They are not a user-facing command and do not make the SQLite gen
 - `index_store.SQLiteIndexStore` accepts a caller-provided cache path outside the repository and
   replaces one schema-versioned immutable generation inside `BEGIN IMMEDIATE`. A loaded payload is
   accepted only when its scope, worktree, entries, and recomputed digest exactly match the requested
-  source generation.
+  source generation. A separately stored SHA-256 binds the complete canonical payload, including
+  owners, refs, diagnostics, typed edges, freshness, and schema.
 - `query.owner_for(...)` and `query.refs_to(...)` query immutable results without touching source.
 
 The caller supplies the repository root, external cache path, configured document root, and optional
@@ -27,8 +28,13 @@ returns `cache_unavailable`; it does not block Reader orientation. Source annota
 companion metadata remain authoritative. Parsed source text is data only: the runtime never evaluates
 instructions, imports project code, runs project commands, edits source, or grants acceptance.
 
+Structural corruption and unsupported cache schemas are recoverable because the cache is disposable:
+the store builds a complete sibling SQLite file and atomically replaces the invalid cache. Busy or
+locked caches are never replaced; that invocation remains source-only and a later invocation retries.
+
 Docs readiness never materializes a typed graph. Repository enrichment may request one explicitly;
 only declared parser relations are projected; inferred reverse provenance is excluded. Discovery
-retains the exact bytes covered by its freshness token so a later scan cannot combine an old token
-with newer source. `CallTrace` is serialized as JSON and rejects a lane
+retains relative paths and the exact bytes covered by its freshness token. Scanning iterates only that
+immutable snapshot, so replacing, deleting, or redirecting a discovered path cannot combine an old
+token with newer source. `CallTrace` is serialized as JSON and rejects a lane
 already present in the chain, allowing Reader → Linker once while blocking Reader → Linker → Reader.

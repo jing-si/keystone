@@ -37,3 +37,5 @@ external SQLite generation, optional typed graph, recursion guard와 corrupt-cac
 - Review hardening: discovery byte snapshot, strict cache schema/freshness validation, bounded document
   root/companion discovery, declared-only typed projection, locator-gap diagnostics와
   `requires_verification_of` parser/validator alignment를 추가했다.
+- Cache reuse hardening: complete payload checksum, immutable relative-path/byte scan, structural cache
+  atomic recovery와 locked-cache non-destructive fallback을 검증했다.

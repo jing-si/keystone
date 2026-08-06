@@ -2,7 +2,9 @@
 
 import json
 import hashlib
+import os
 import sqlite3
+import tempfile
 from pathlib import Path
 
 from .index_model import (
@@ -15,7 +17,15 @@ class StoreUnavailable(RuntimeError):
     pass
 
 
-CACHE_SCHEMA_VERSION = 1
+class CacheCorrupt(StoreUnavailable):
+    pass
+
+
+class CacheBusy(StoreUnavailable):
+    pass
+
+
+CACHE_SCHEMA_VERSION = 2
 
 
 class SQLiteIndexStore:
@@ -32,33 +42,51 @@ class SQLiteIndexStore:
         try:
             with sqlite3.connect(str(self.path), timeout=self.timeout) as connection:
                 row = connection.execute(
-                    "SELECT schema_version, payload FROM generations WHERE freshness_digest = ?",
-                    (freshness.digest,),
+                    "SELECT schema_version, payload, payload_digest FROM generations "
+                    "WHERE freshness_digest = ?", (freshness.digest,),
                 ).fetchone()
-            if row and row[0] != CACHE_SCHEMA_VERSION:
-                raise StoreUnavailable("unsupported cache schema version")
-            return _decode(row[1], freshness) if row else None
-        except (sqlite3.Error, OSError, ValueError, KeyError, TypeError) as error:
+        except sqlite3.Error as error:
+            _raise_sqlite(error)
+        except OSError as error:
             raise StoreUnavailable(str(error)) from error
+        if not row:
+            return None
+        if row[0] != CACHE_SCHEMA_VERSION:
+            raise CacheCorrupt("unsupported cache schema version")
+        if not isinstance(row[1], str) or row[2] != _payload_digest(row[1]):
+            raise CacheCorrupt("cache payload integrity check failed")
+        try:
+            return _decode(row[1], freshness)
+        except (ValueError, KeyError, TypeError, IndexError) as error:
+            raise CacheCorrupt(str(error)) from error
 
     def replace(self, result: IndexResult) -> None:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
-            with sqlite3.connect(str(self.path), timeout=self.timeout) as connection:
-                connection.execute("BEGIN IMMEDIATE")
-                connection.execute(
-                    "CREATE TABLE IF NOT EXISTS generations "
-                    "(freshness_digest TEXT PRIMARY KEY, schema_version INTEGER NOT NULL, "
-                    "payload TEXT NOT NULL)"
-                )
-                connection.execute("DELETE FROM generations")
-                connection.execute(
-                    "INSERT INTO generations (freshness_digest, schema_version, payload) VALUES (?, ?, ?)",
-                    (result.freshness.digest, CACHE_SCHEMA_VERSION, _encode(result)),
-                )
-                connection.commit()
-        except (sqlite3.Error, OSError) as error:
+            _write_generation(self.path, result, timeout=self.timeout)
+        except sqlite3.Error as error:
+            _raise_sqlite(error)
+        except OSError as error:
             raise StoreUnavailable(str(error)) from error
+
+    def recover(self, result: IndexResult) -> None:
+        """Atomically replace only a structurally unusable disposable cache."""
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        descriptor, temporary = tempfile.mkstemp(prefix=self.path.name + ".", suffix=".repair",
+                                                 dir=str(self.path.parent))
+        os.close(descriptor)
+        temporary_path = Path(temporary)
+        try:
+            temporary_path.unlink()
+            _write_generation(temporary_path, result, timeout=self.timeout)
+            os.replace(str(temporary_path), str(self.path))
+        except sqlite3.Error as error:
+            _raise_sqlite(error)
+        except OSError as error:
+            raise StoreUnavailable(str(error)) from error
+        finally:
+            if temporary_path.exists():
+                temporary_path.unlink()
 
 
 def _encode(result: IndexResult) -> str:
@@ -78,6 +106,35 @@ def _encode(result: IndexResult) -> str:
             [item.source_id, item.relation, item.target_id] for item in result.typed_graph.edges]),
     }
     return json.dumps(value, separators=(",", ":"), sort_keys=True)
+
+
+def _payload_digest(payload: str) -> str:
+    return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _write_generation(path: Path, result: IndexResult, *, timeout: float) -> None:
+    payload = _encode(result)
+    with sqlite3.connect(str(path), timeout=timeout) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS generations "
+            "(freshness_digest TEXT PRIMARY KEY, schema_version INTEGER NOT NULL, "
+            "payload TEXT NOT NULL, payload_digest TEXT NOT NULL)"
+        )
+        connection.execute("DELETE FROM generations")
+        connection.execute(
+            "INSERT INTO generations "
+            "(freshness_digest, schema_version, payload, payload_digest) VALUES (?, ?, ?, ?)",
+            (result.freshness.digest, CACHE_SCHEMA_VERSION, payload, _payload_digest(payload)),
+        )
+        connection.commit()
+
+
+def _raise_sqlite(error: sqlite3.Error) -> None:
+    message = str(error).lower()
+    if "locked" in message or "busy" in message:
+        raise CacheBusy(str(error)) from error
+    raise CacheCorrupt(str(error)) from error
 
 
 def _decode(payload: str, expected: FreshnessToken) -> IndexResult:

@@ -133,6 +133,29 @@ class ReferenceIndexTests(unittest.TestCase):
         self.assertEqual({"key.before"}, {item.id for item in result.owners})
         self.assertEqual(discovery.freshness, result.freshness)
 
+    def test_discovery_snapshot_survives_replace_delete_and_symlink(self):
+        source = self.write("00_docs/a.md", "<!-- keystone: id=key.captured kind=claim -->\n# Captured\n")
+        scanner = ReferenceScanner(self.root)
+        before_replace = scanner.discover(ScanScope.DOCS)
+        replacement = self.write("replacement.md", "<!-- keystone: id=key.replacement kind=claim -->\n# Replacement\n")
+        replacement.replace(source)
+        replaced_result = scanner.scan_discovery(before_replace)
+
+        before_delete = scanner.discover(ScanScope.DOCS)
+        source.unlink()
+        deleted_result = scanner.scan_discovery(before_delete)
+
+        source.write_text("<!-- keystone: id=key.before_link kind=claim -->\n# Before link\n", encoding="utf-8")
+        before_symlink = scanner.discover(ScanScope.DOCS)
+        source.unlink()
+        outside = self.write("outside.md", "<!-- keystone: id=key.outside kind=claim -->\n# Outside\n")
+        source.symlink_to(outside)
+        symlink_result = scanner.scan_discovery(before_symlink)
+
+        self.assertEqual({"key.captured"}, {item.id for item in replaced_result.owners})
+        self.assertEqual({"key.replacement"}, {item.id for item in deleted_result.owners})
+        self.assertEqual({"key.before_link"}, {item.id for item in symlink_result.owners})
+
     def test_repository_discovers_source_adjacent_companion(self):
         source = self.write("src/worker.py", "def run():\n    pass\n")
         digest = "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest()

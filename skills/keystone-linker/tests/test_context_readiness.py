@@ -91,6 +91,72 @@ class ContextReadinessTests(unittest.TestCase):
         self.assertEqual("source_fallback", readiness.cache_status)
         self.assertIn("cache_unavailable", {item.code for item in readiness.diagnostics})
 
+    def test_complete_payload_integrity_rejects_independent_field_mutation(self):
+        (self.root / "src").mkdir()
+        (self.root / "src" / "App.kt").write_text(
+            "// keystone: id=key.app kind=output_artifact refs=key.missing implements=key.context\n",
+            encoding="utf-8")
+        mutations = {
+            "owners": lambda value: value["owners"].append(["key.forged", "x", None]),
+            "refs": lambda value: value["refs"].append(["key.app", "key.context", "x", None]),
+            "diagnostics": lambda value: value["diagnostics"].append(["forged", "forged", None]),
+            "typed_edges": lambda value: value["typed_edges"].append(["key.app", "uses", "key.context"]),
+            "schema_version": lambda value: value.__setitem__("schema_version", 999),
+        }
+        for index, (name, mutate) in enumerate(mutations.items()):
+            with self.subTest(name=name):
+                cache = Path(self.temp.name) / ("cache-%d" % index) / "index.sqlite3"
+                context_readiness(self.root, cache, initiator="linker", artifact_context=True,
+                                  include_typed_graph=True)
+                connection = sqlite3.connect(str(cache))
+                payload = json.loads(connection.execute("SELECT payload FROM generations").fetchone()[0])
+                mutate(payload)
+                connection.execute("UPDATE generations SET payload = ?", (json.dumps(payload),))
+                connection.commit()
+                connection.close()
+
+                readiness = context_readiness(
+                    self.root, cache, initiator="linker", artifact_context=True,
+                    include_typed_graph=True)
+                self.assertEqual("source_fallback", readiness.cache_status)
+                self.assertNotIn("key.forged", {item.id for item in readiness.result.owners})
+
+    def test_malformed_and_old_schema_cache_are_repaired_for_next_reuse(self):
+        cases = ("malformed", "old_schema")
+        for index, case in enumerate(cases):
+            with self.subTest(case=case):
+                cache = Path(self.temp.name) / ("recovery-%d" % index) / "index.sqlite3"
+                cache.parent.mkdir(parents=True)
+                if case == "malformed":
+                    cache.write_bytes(b"not sqlite")
+                else:
+                    connection = sqlite3.connect(str(cache))
+                    connection.execute(
+                        "CREATE TABLE generations (freshness_digest TEXT PRIMARY KEY, payload TEXT NOT NULL)")
+                    connection.commit()
+                    connection.close()
+
+                first = context_readiness(self.root, cache, initiator="reader")
+                second = context_readiness(self.root, cache, initiator="reader")
+
+                self.assertEqual("source_fallback", first.cache_status)
+                self.assertEqual("reused", second.cache_status)
+
+    def test_locked_cache_is_preserved_and_not_replaced(self):
+        context_readiness(self.root, self.cache, initiator="reader")
+        before = self.cache.read_bytes()
+        connection = sqlite3.connect(str(self.cache))
+        connection.execute("BEGIN EXCLUSIVE")
+        try:
+            (self.root / "00_docs" / "context.md").write_text(
+                "<!-- keystone: id=key.locked kind=source_document -->\n# Locked\n", encoding="utf-8")
+            readiness = context_readiness(self.root, self.cache, initiator="reader")
+            self.assertEqual("source_fallback", readiness.cache_status)
+            self.assertEqual(before, self.cache.read_bytes())
+        finally:
+            connection.rollback()
+            connection.close()
+
     def test_busy_single_writer_fails_soft_without_losing_source_result(self):
         context_readiness(self.root, self.cache, initiator="reader")
         connection = sqlite3.connect(str(self.cache))

@@ -15,11 +15,16 @@ from .metadata import MetadataError, _metadata, _strings, parse_source
 
 
 @dataclass(frozen=True)
+class SourceSnapshot:
+    relative: str
+    raw_bytes: bytes
+
+
+@dataclass(frozen=True)
 class Discovery:
     scope: ScanScope
-    paths: Tuple[Path, ...]
+    sources: Tuple[SourceSnapshot, ...]
     freshness: FreshnessToken
-    contents: Tuple[Tuple[str, bytes], ...]
 
 
 _IGNORED_DIRS = frozenset({".git", ".worktrees", "__pycache__", "node_modules"})
@@ -46,8 +51,8 @@ class ReferenceScanner:
         scope = ScanScope(scope)
         base = self._document_root_path if scope == ScanScope.DOCS else self.root
         paths = tuple(sorted(self._paths(base, scope), key=lambda item: item.as_posix()))
-        contents = tuple((self._relative(path), path.read_bytes()) for path in paths)
-        entries = tuple(FreshnessEntry(relative, _digest(raw)) for relative, raw in contents)
+        sources = tuple(SourceSnapshot(self._relative(path), path.read_bytes()) for path in paths)
+        entries = tuple(FreshnessEntry(source.relative, _digest(source.raw_bytes)) for source in sources)
         identity = self._worktree_identity()
         body = {
             "worktree_identity": identity,
@@ -59,7 +64,7 @@ class ReferenceScanner:
             "sha256:" + hashlib.sha256(json.dumps(body, separators=(",", ":"),
                                                    sort_keys=True).encode("utf-8")).hexdigest(),
         )
-        return Discovery(scope, paths, token, contents)
+        return Discovery(scope, sources, token)
 
     def scan(self, scope: ScanScope, *, include_typed_graph: bool = False) -> IndexResult:
         return self.scan_discovery(self.discover(scope), include_typed_graph=include_typed_graph)
@@ -69,13 +74,13 @@ class ReferenceScanner:
         refs = []
         edges = []
         diagnostics = []
-        raw_by_path = dict(discovery.contents)
-        for path in discovery.paths:
-            relative = self._relative(path)
+        raw_by_path = {source.relative: source.raw_bytes for source in discovery.sources}
+        for source in discovery.sources:
+            relative = source.relative
             if relative.endswith(".keystone.json"):
                 source_relative = relative[:-len(".keystone.json")]
                 try:
-                    companion_text = raw_by_path[relative].decode("utf-8")
+                    companion_text = source.raw_bytes.decode("utf-8")
                 except UnicodeDecodeError:
                     diagnostics.append(IndexDiagnostic("unsupported_encoding", "companion is not UTF-8", relative))
                     continue
@@ -108,7 +113,7 @@ class ReferenceScanner:
             if adapter is None:
                 continue
             try:
-                text = raw_by_path[relative].decode("utf-8")
+                text = source.raw_bytes.decode("utf-8")
             except UnicodeDecodeError:
                 diagnostics.append(IndexDiagnostic("unsupported_encoding", "source is not UTF-8", relative))
                 continue
