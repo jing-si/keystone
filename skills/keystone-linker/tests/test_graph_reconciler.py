@@ -6,6 +6,7 @@ from graph_runtime.model import (
     ApplicationStatus,
     AttestationDecision,
     CanonicalMutation,
+    ConflictReason,
     Diagnostic,
     Evidence,
     GraphSnapshot,
@@ -97,6 +98,11 @@ class GraphReconcilerTests(unittest.TestCase):
                 result = record_attestation(
                     awaiting, SurfaceAttestation("patch-a", PatchOwner.AUTHOR, decision))
                 self.assertEqual(result.state, TransactionState.CONFLICTED)
+                self.assertEqual(
+                    ConflictReason.REJECT if decision == AttestationDecision.REJECT
+                    else ConflictReason.NEEDS_REVISION,
+                    result.conflict_reason,
+                )
 
     def test_stale_baseline_conflicts_before_application(self):
         result = begin_application(self._confirmed(), {
@@ -104,6 +110,7 @@ class GraphReconcilerTests(unittest.TestCase):
             "patch-b": self.patch_b.baseline_digest,
         })
         self.assertEqual(result.state, TransactionState.CONFLICTED)
+        self.assertEqual(ConflictReason.STALE_BASELINE, result.conflict_reason)
         self.assertEqual(result.apply_results[0].result, ApplicationStatus.STALE_BASELINE)
 
     def test_partial_apply_and_resume_preserve_completed_patch(self):
@@ -213,17 +220,29 @@ class GraphReconcilerTests(unittest.TestCase):
             finalize_transaction(failed, GraphSnapshot(nodes=(self.node,)), (), {},
                                  baseline_snapshot=GraphSnapshot())
 
-    def test_conflicted_restart_requires_new_attempt_and_baselines(self):
+    def test_reject_or_revision_retry_allows_same_baseline_with_changed_patch(self):
         conflicted = record_attestation(
             begin_attestation(self.proposed),
             SurfaceAttestation("patch-a", PatchOwner.AUTHOR, AttestationDecision.REJECT))
         revised = replace(self.proposed, transaction_id="tx-2", surface_patches=(
-            replace(self.patch_a, baseline_digest="sha256:" + "3" * 64), self.patch_b))
+            replace(self.patch_a, exact_patch="revised doc patch"), self.patch_b))
         history = new_attempt(AttemptHistory(conflicted), revised)
         self.assertEqual(history.current.state, TransactionState.PROPOSED)
         self.assertEqual(history.prior_attempts, (conflicted,))
-        with self.assertRaisesRegex(ValueError, "new baseline"):
+        with self.assertRaisesRegex(ValueError, "changed mutation or patch"):
             new_attempt(AttemptHistory(conflicted), replace(self.proposed, transaction_id="tx-3"))
+
+    def test_stale_baseline_retry_requires_new_baseline(self):
+        conflicted = begin_application(self._confirmed(), {
+            "patch-a": "sha256:" + "9" * 64,
+            "patch-b": self.patch_b.baseline_digest,
+        })
+        with self.assertRaisesRegex(ValueError, "new baseline"):
+            new_attempt(AttemptHistory(conflicted), replace(self.proposed, transaction_id="tx-stale"))
+        revised = replace(self.proposed, transaction_id="tx-stale-2", surface_patches=(
+            replace(self.patch_a, baseline_digest="sha256:" + "9" * 64), self.patch_b))
+        self.assertEqual(TransactionState.PROPOSED,
+                         new_attempt(AttemptHistory(conflicted), revised).current.state)
 
     def test_failed_transient_retry_may_keep_baseline_and_preserves_history(self):
         failed = replace(self.proposed, state=TransactionState.FAILED,

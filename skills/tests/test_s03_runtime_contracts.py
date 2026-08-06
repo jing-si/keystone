@@ -25,7 +25,7 @@ class GraphSynchronizationSkillContractTest(unittest.TestCase):
         self.assertIn("kind: document_delta", text)
         self.assertIn("confirm | reject | needs_revision", text)
         self.assertIn("applied | failed | stale_baseline", text)
-        self.assertIn("schema_version: 2", text)
+        self.assertIn("schema_version: 3", text)
         self.assertIn("graph_sync", text)
 
     def test_coordinator_contract_collects_artifact_delta_without_expanding_permission(self):

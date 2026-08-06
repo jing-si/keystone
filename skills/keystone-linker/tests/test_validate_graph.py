@@ -93,6 +93,41 @@ key: {id: key.doc.graph, kind: source_document}
 
         self.assertEqual((0, first_payload), (second.returncode, second_payload))
 
+    def test_repository_scope_auto_discovers_sources_and_reports_manifest_coverage(self):
+        self.write("a.md", "---\nkey: {id: key.a, kind: source_document}\n---\n")
+        self.write("src/app.py", "# keystone: id=key.app kind=output_artifact locator.symbol=run\ndef run():\n    pass\n")
+
+        auto_process, auto = self.run_validator("--scope", "repository")
+        subset_manifest = self.write("subset.json", json.dumps({
+            "schema_version": 1, "scope": "repository", "coverage": "subset",
+            "sources": ["a.md"],
+        }))
+        subset_process, subset = self.run_validator("--manifest", str(subset_manifest))
+        full_manifest = self.write("full.json", json.dumps({
+            "schema_version": 1, "scope": "repository", "coverage": "full",
+            "sources": ["a.md"],
+        }))
+        full_process, full = self.run_validator("--manifest", str(full_manifest))
+
+        self.assertEqual(0, auto_process.returncode, auto)
+        self.assertEqual(0, subset_process.returncode, subset)
+        self.assert_code(subset, "repository_coverage_debt")
+        self.assertEqual("warning", next(item["severity"] for item in subset["diagnostics"]
+                                         if item["code"] == "repository_coverage_debt"))
+        self.assertEqual(1, full_process.returncode)
+        self.assert_code(full, "repository_source_omitted")
+
+    def test_duplicate_manifest_sources_are_not_silently_deduplicated(self):
+        self.write("a.md", "---\nkey: {id: key.a, kind: source_document}\n---\n")
+        manifest = self.write("manifest.json", json.dumps({
+            "schema_version": 1, "sources": ["a.md", "a.md"],
+        }))
+
+        process, payload = self.run_validator("--manifest", str(manifest))
+
+        self.assertEqual(1, process.returncode)
+        self.assert_code(payload, "duplicate_manifest_source")
+
     def test_duplicate_missing_target_and_missing_source_are_diagnosed(self):
         self.write("one.md", """---
 key: {id: key.doc.one, kind: source_document, documents: key.missing}

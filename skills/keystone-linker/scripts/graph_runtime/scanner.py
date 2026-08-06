@@ -11,7 +11,8 @@ from .index_model import (
     FreshnessEntry, FreshnessToken, IndexDiagnostic, IndexResult, OwnerRecord, ScanScope,
     RefRecord, TypedEdge, TypedGraph,
 )
-from .metadata import MetadataError, _metadata, _strings, parse_source
+from .metadata import parse_reference_declaration, parse_source
+from .yaml_subset import MetadataError
 
 
 @dataclass(frozen=True)
@@ -25,14 +26,22 @@ class Discovery:
     scope: ScanScope
     sources: Tuple[SourceSnapshot, ...]
     freshness: FreshnessToken
+    diagnostics: Tuple[IndexDiagnostic, ...] = ()
 
 
-_IGNORED_DIRS = frozenset({".git", ".worktrees", "__pycache__", "node_modules"})
+_IGNORED_DIRS = frozenset({
+    ".git", ".worktrees", "__pycache__", "node_modules", ".venv", "venv", "dist",
+    "build", ".gradle", "target", "vendor", "Pods", "DerivedData", "coverage", ".next", "out",
+})
+_UNRESOLVED_REF_ALLOWED_PREFIXES = ("key.topic.", "key.role.", "key.boundary.")
 
 
 class ReferenceScanner:
     def __init__(self, repository_root, *, document_root="00_docs",
-                 includes: Sequence[str] = (), excludes: Sequence[str] = ()):
+                 includes: Sequence[str] = (), excludes: Sequence[str] = (),
+                 max_file_bytes: int = 5 * 1024 * 1024,
+                 max_total_bytes: int = 50 * 1024 * 1024,
+                 max_files: int = 50000):
         self.root = Path(repository_root).resolve()
         declared_root = Path(document_root)
         if declared_root.is_absolute() or ".." in declared_root.parts:
@@ -46,12 +55,39 @@ class ReferenceScanner:
         self._document_root_path = resolved_document_root
         self.includes = tuple(includes)
         self.excludes = tuple(excludes)
+        self.max_file_bytes = max_file_bytes
+        self.max_total_bytes = max_total_bytes
+        self.max_files = max_files
 
     def discover(self, scope: ScanScope) -> Discovery:
         scope = ScanScope(scope)
         base = self._document_root_path if scope == ScanScope.DOCS else self.root
         paths = tuple(sorted(self._paths(base, scope), key=lambda item: item.as_posix()))
-        sources = tuple(SourceSnapshot(self._relative(path), path.read_bytes()) for path in paths)
+        sources = []
+        diagnostics = []
+        total_bytes = 0
+        for path in paths:
+            relative = self._relative(path)
+            if len(sources) >= self.max_files:
+                diagnostics.append(IndexDiagnostic(
+                    "scan_truncated", "scan file budget was exceeded", relative, "warning"))
+                break
+            try:
+                size = path.stat().st_size
+            except OSError as error:
+                diagnostics.append(IndexDiagnostic("source_unreadable", str(error), relative))
+                continue
+            if size > self.max_file_bytes:
+                diagnostics.append(IndexDiagnostic(
+                    "source_too_large", "source exceeds per-file scan budget", relative, "warning"))
+                continue
+            if total_bytes + size > self.max_total_bytes:
+                diagnostics.append(IndexDiagnostic(
+                    "scan_truncated", "scan byte budget was exceeded", relative, "warning"))
+                break
+            sources.append(SourceSnapshot(relative, path.read_bytes()))
+            total_bytes += size
+        sources = tuple(sources)
         entries = tuple(FreshnessEntry(source.relative, _digest(source.raw_bytes)) for source in sources)
         identity = self._worktree_identity()
         body = {
@@ -64,16 +100,17 @@ class ReferenceScanner:
             "sha256:" + hashlib.sha256(json.dumps(body, separators=(",", ":"),
                                                    sort_keys=True).encode("utf-8")).hexdigest(),
         )
-        return Discovery(scope, sources, token)
+        return Discovery(scope, sources, token, tuple(diagnostics))
 
     def scan(self, scope: ScanScope, *, include_typed_graph: bool = False) -> IndexResult:
         return self.scan_discovery(self.discover(scope), include_typed_graph=include_typed_graph)
 
     def scan_discovery(self, discovery: Discovery, *, include_typed_graph: bool = False) -> IndexResult:
-        owners = {}
+        owners = []
+        owner_counts = {}
         refs = []
         edges = []
-        diagnostics = []
+        diagnostics = list(discovery.diagnostics)
         raw_by_path = {source.relative: source.raw_bytes for source in discovery.sources}
         for source in discovery.sources:
             relative = source.relative
@@ -94,16 +131,16 @@ class ReferenceScanner:
                 for node in parsed.snapshot.nodes:
                     locator = node.locator.heading or node.locator.symbol
                     owner = OwnerRecord(node.id, node.locator.path, locator)
-                    if node.id in owners:
+                    owner_counts[node.id] = owner_counts.get(node.id, 0) + 1
+                    if owner_counts[node.id] > 1:
                         diagnostics.append(IndexDiagnostic(
                             "duplicate_owner", "owner ID is declared more than once: %s" % node.id,
                             relative))
-                    else:
-                        owners[node.id] = owner
-                    if not _has_machine_locator(node.locator):
+                    owners.append(owner)
+                    if not _has_machine_locator(node):
                         diagnostics.append(IndexDiagnostic(
                             "locator_gap", "owner has no machine-checkable locator: %s" % node.id,
-                            relative))
+                            relative, "warning"))
                 if include_typed_graph:
                     edges.extend(TypedEdge(item.source, item.relation.value, item.target)
                                  for item in parsed.snapshot.relations
@@ -123,26 +160,26 @@ class ReferenceScanner:
             for node in parsed.snapshot.nodes:
                 locator = node.locator.heading or node.locator.symbol
                 owner = OwnerRecord(node.id, relative, locator)
-                if node.id in owners:
+                owner_counts[node.id] = owner_counts.get(node.id, 0) + 1
+                if owner_counts[node.id] > 1:
                     diagnostics.append(IndexDiagnostic(
                         "duplicate_owner", "owner ID is declared more than once: %s" % node.id, relative))
-                else:
-                    owners[node.id] = owner
-                if not _has_machine_locator(node.locator):
+                owners.append(owner)
+                if not _has_machine_locator(node):
                     diagnostics.append(IndexDiagnostic(
                         "locator_gap", "owner has no machine-checkable locator: %s" % node.id,
-                        relative))
+                        relative, "warning"))
             for block, _construct, label in adapter.metadata_blocks(text):
                 try:
-                    data = _metadata(block)
-                    source_id = data.get("id")
-                    if not isinstance(source_id, str) or not source_id:
+                    declaration = parse_reference_declaration(block)
+                    if declaration is None:
                         continue
+                    source_id, targets = declaration
                     locator = label
                     if source_id in nodes_by_id:
                         locator = (nodes_by_id[source_id].locator.heading or
                                    nodes_by_id[source_id].locator.symbol or label)
-                    for target in _strings(data.get("refs")):
+                    for target in targets:
                         refs.append(RefRecord(source_id, target, relative, locator))
                 except (MetadataError, TypeError, ValueError):
                     # The canonical parser already reports malformed metadata.
@@ -151,12 +188,13 @@ class ReferenceScanner:
                 edges.extend(TypedEdge(item.source, item.relation.value, item.target)
                              for item in parsed.snapshot.relations
                              if item.evidence.value == "declared")
-        owner_ids = set(owners)
+        owner_ids = {owner.id for owner in owners}
         for ref in refs:
-            if ref.target_id not in owner_ids:
+            if (ref.target_id not in owner_ids
+                    and not ref.target_id.startswith(_UNRESOLVED_REF_ALLOWED_PREFIXES)):
                 diagnostics.append(IndexDiagnostic(
                     "dangling_ref", "ref target has no owner: %s" % ref.target_id, ref.path))
-        ordered_owners = tuple(sorted(owners.values(), key=lambda item: (item.id, item.path)))
+        ordered_owners = tuple(sorted(owners, key=lambda item: (item.id, item.path, item.locator or "")))
         ordered_refs = tuple(sorted(set(refs), key=lambda item: (item.target_id, item.source_id, item.path)))
         ordered_diagnostics = tuple(sorted(diagnostics, key=lambda item: (item.code, item.path or "", item.message)))
         graph = (TypedGraph(tuple(sorted(set(edges), key=lambda item: (
@@ -220,6 +258,17 @@ def _digest(value: bytes) -> str:
     return "sha256:" + hashlib.sha256(value).hexdigest()
 
 
-def _has_machine_locator(locator) -> bool:
-    return any((locator.heading, locator.symbol, locator.test_name,
-                locator.config_key, locator.schema_name))
+def _has_machine_locator(node) -> bool:
+    locator = node.locator
+    if node.kind.value == "source_document":
+        return bool(locator.path)
+    if node.kind.value in {"document_section", "document_item", "claim", "decision",
+                           "work_order", "work_step", "capability", "verification_result"}:
+        return bool(locator.path and (locator.heading or locator.symbol))
+    if node.artifact_kind.value == "test":
+        return bool(locator.path and (locator.test_name or locator.symbol))
+    if node.artifact_kind.value == "config":
+        return bool(locator.path and (locator.config_key or locator.symbol))
+    if node.artifact_kind.value == "schema":
+        return bool(locator.path and (locator.schema_name or locator.symbol))
+    return bool(locator.path and locator.symbol)

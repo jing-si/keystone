@@ -1,20 +1,24 @@
 # Internal Reference Index Runtime
 
 The modules under `scripts/graph_runtime/` expose a package-internal, source-read-only owner/ref
-readiness API. They are not a user-facing command and do not make the SQLite generation authoritative.
+readiness API. They do not make the SQLite generation authoritative.
 
 ## Entry points
 
 - `readiness.context_readiness(...)` selects docs scope by default and repository scope only when
   `artifact_context=True`.
+- `python3 -m graph_runtime.readiness_cli --request-json ... --response-json -` is the deterministic
+  package-internal host wrapper. Its request supplies the same bounded inputs; when `cache_path` is
+  omitted it derives an external cache under `CODEX_HOME/cache/keystone/<repository-hash>/`.
 - `scanner.ReferenceScanner` discovers a bounded path set, hashes raw bytes, reconstructs owners,
   refs, diagnostics, and an optional typed projection.
 - `index_store.SQLiteIndexStore` accepts a caller-provided cache path outside the repository and
-  replaces one schema-versioned immutable generation inside `BEGIN IMMEDIATE`. A loaded payload is
+  retains up to four scope/freshness-keyed immutable generations inside `BEGIN IMMEDIATE`. A loaded payload is
   accepted only when its scope, worktree, entries, and recomputed digest exactly match the requested
   source generation. A separately stored SHA-256 binds the complete canonical payload, including
   owners, refs, diagnostics, typed edges, freshness, and schema.
-- `query.owner_for(...)` and `query.refs_to(...)` query immutable results without touching source.
+- `query.owner_for(...)` returns `unique`, `missing`, or `ambiguous` with all candidates; duplicate
+  owners therefore cannot silently select the first source. `query.refs_to(...)` queries reverse refs.
 
 The caller supplies the repository root, external cache path, configured document root, and optional
 repository include/exclude patterns. Cache freshness is the digest of worktree identity, scope name,
@@ -41,3 +45,6 @@ retains relative paths and the exact bytes covered by its freshness token. Scann
 immutable snapshot, so replacing, deleting, or redirecting a discovered path cannot combine an old
 token with newer source. `CallTrace` is serialized as JSON and rejects a lane
 already present in the chain, allowing Reader → Linker once while blocking Reader → Linker → Reader.
+Repository discovery applies default build/vendor exclusions, per-file/file-count/byte budgets, and
+warning diagnostics when a scan is truncated. `key.topic.*`, `key.role.*`, and `key.boundary.*` refs
+are taxonomy/navigation refs and do not require an owner; semantic owner refs remain exact.

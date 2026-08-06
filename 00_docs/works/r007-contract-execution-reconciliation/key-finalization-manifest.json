@@ -1,0 +1,170 @@
+{
+  "schema_version": 3,
+  "acceptance_ref": "R007/main-acceptance",
+  "steps": [
+    {
+      "ref": "R007/S01",
+      "work_ref": "R007/contract-execution-reconciliation",
+      "status": "complete",
+      "approval_state": "accepted",
+      "progress_path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md"
+    },
+    {
+      "ref": "R007/S02",
+      "work_ref": "R007/python-convention-incremental-refactoring",
+      "status": "complete",
+      "approval_state": "accepted",
+      "progress_path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
+    }
+  ],
+  "accepted_steps": [
+    "R007/S01",
+    "R007/S02"
+  ],
+  "execution_transitions": [
+    {
+      "ref": "R007/S01",
+      "from": "in_progress",
+      "to": "complete"
+    },
+    {
+      "ref": "R007/S02",
+      "from": "in_progress",
+      "to": "complete"
+    }
+  ],
+  "approval_transitions": [
+    {
+      "ref": "R007/S01",
+      "from": "pending",
+      "to": "accepted",
+      "evidence": "User accepted the verified R007 result on 2026-08-06."
+    },
+    {
+      "ref": "R007/S02",
+      "from": "pending",
+      "to": "accepted",
+      "evidence": "User accepted the verified R007 result on 2026-08-06."
+    }
+  ],
+  "active_steps": [],
+  "active_step_sources": [
+    {
+      "category": "work_index",
+      "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md"
+    },
+    {
+      "category": "round_index",
+      "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+    },
+    {
+      "category": "context_map",
+      "path": "00_docs/key-context-map.md"
+    }
+  ],
+  "early_work": [],
+  "finalization": {
+    "required": true,
+    "state": "complete",
+    "progress_path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md",
+    "evidence": [
+      "main_acceptance",
+      "impact_dispositions",
+      "source_updates",
+      "semantic_review",
+      "post_edit_verification"
+    ]
+  },
+  "graph_sync": {
+    "required": true,
+    "disposition": "required",
+    "reason": "R007 acceptance changes source-document graph metadata.",
+    "validation_manifest_path": "00_docs/works/r007-contract-execution-reconciliation/key-graph-validation.json",
+    "transaction_id": "graph-tx-r007-finalize-ad67db45f601b12bbfe1"
+  },
+  "impact_candidates": [
+    {
+      "category": "progress",
+      "artifact": "R007 S01 progress",
+      "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md",
+      "disposition": "updated",
+      "reason": "Records complete execution, accepted approval, and finalization evidence."
+    },
+    {
+      "category": "work_order_change_set",
+      "artifact": "R007 S01 work order and Change Set",
+      "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md",
+      "disposition": "updated",
+      "reason": "Records completion of the accepted implementation scope."
+    },
+    {
+      "category": "work_index",
+      "artifact": "R007 S01 work index",
+      "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md",
+      "disposition": "updated",
+      "reason": "Records complete and accepted work state with no active Step."
+    },
+    {
+      "category": "round_index",
+      "artifact": "R007 round index",
+      "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md",
+      "disposition": "updated",
+      "reason": "Records both Steps and the round as complete and accepted."
+    },
+    {
+      "category": "root_index",
+      "artifact": "root works index",
+      "path": "00_docs/works/00_key-index.md",
+      "disposition": "updated",
+      "reason": "Moves R007 from active to accepted and clears the active round."
+    },
+    {
+      "category": "context_map",
+      "artifact": "Context Map",
+      "path": "00_docs/key-context-map.md",
+      "disposition": "updated",
+      "reason": "Clears active Steps and makes R007 the latest accepted round."
+    },
+    {
+      "category": "standard_decision_plan",
+      "artifact": "project decisions",
+      "path": "00_docs/works/key-decisions.md",
+      "disposition": "no_change",
+      "reason": "Finalization implements accepted decisions without changing their meaning."
+    },
+    {
+      "category": "recovery",
+      "artifact": "R007 recovery instructions",
+      "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md",
+      "disposition": "updated",
+      "reason": "Recovery now reports no active R007 Step."
+    },
+    {
+      "category": "implementation_gate",
+      "artifact": "R007 implementation gates",
+      "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md",
+      "disposition": "no_change",
+      "reason": "No unresolved implementation choice remains.",
+      "gate_state": "resolved",
+      "gate_scope": "R007/S01 and R007/S02"
+    },
+    {
+      "category": "residual_risk",
+      "artifact": "R007 residual risks",
+      "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md",
+      "disposition": "no_change",
+      "reason": "No residual risk blocks the accepted result.",
+      "risk_state": "none",
+      "risk_items": []
+    },
+    {
+      "category": "namespace",
+      "artifact": "R007 namespaces",
+      "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md",
+      "disposition": "no_change",
+      "reason": "No duplicate namespace or value ownership was found.",
+      "namespace_state": "checked"
+    }
+  ],
+  "namespace_entries": []
+}

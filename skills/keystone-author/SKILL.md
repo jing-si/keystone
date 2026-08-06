@@ -72,7 +72,8 @@ A work order and progress record improve recoverability but are not artificial p
 After Main accepts one or more processed Steps, automatically run one bounded finalization for that
 acceptance event:
 
-1. Record the accepted Step status and approval, then set every applicable owning Progress and Change Set
+1. Record the accepted Step execution as `work_status: complete` and approval as
+   `approval.state: accepted`, then set every applicable owning Progress and Change Set
    `finalization.state` to `in_progress`. Do not introduce a global `finalized` lifecycle value.
 2. Change status directly only for each Step Main actually accepted. Evaluate the owning Work, Round,
    root works index, and Context Map against their own completion and representation conditions; never
@@ -84,7 +85,7 @@ acceptance event:
 4. Build an impact-candidate manifest covering at least every owning Progress, Work Order/Change Set,
    work index, round index, root works index, Context Map, related standards/decisions/plans, recovery
    text, implementation gates, residual/deferred risks, and shared physical namespaces when applicable.
-   Give every candidate one disposition: `updated`, `no_change_required`, `historical`, `out_of_scope`,
+   Give every candidate one disposition: `updated`, `no_change`, `historical`, `out_of_scope`,
    `clarification_required`, or `integration_gate`, with a reason. Use `historical` only for genuinely
    immutable history, never to exempt a live recovery or status claim. For namespace collisions, record
    each owner and the current Work's integration action; do not edit another Work without authority.
@@ -100,10 +101,11 @@ acceptance event:
    validator exit `0`, semantic review, and Main's post-edit verification are all evidenced. Initial
    Step acceptance starts this process but is not post-edit verification. Use `waived` only for
    an explicitly recorded bootstrap or not-applicable case with reason and follow-up.
-8. Emit finalization manifest `schema_version: 2` and assess `graph_sync` as `required`,
+8. Emit finalization manifest `schema_version: 3` and assess `graph_sync` as `required`,
    `not_applicable`, or `deferred`, with a reason. Required graph sync needs a bundled Linker validation
    manifest and matching verified transaction before finalization can complete. Version 1 is diagnostic
-   compatibility for existing in-progress records only and can never approve `complete`.
+   compatibility for existing in-progress records only and can never approve `complete`. Version 2 is
+   also compatibility-only for unfinished records and cannot approve a new `complete` finalization.
 
 The finalization hard gate is scoped: while a Work has an incomplete required finalization, block only
 that same Work's next implement assignment, transition to `in_progress`, next-Step Main acceptance,
@@ -182,7 +184,8 @@ the Linker transaction artifact if Progress contains a resolvable locator to it.
   name a declared `depends_on` target, and require at least one of `applies_to.steps` or
   `applies_to.work_completion`.
 - Validate target existence, duplicate and self references, source step IDs, and condition values.
-  Use `condition.work_status: complete` unless an accepted project rule defines another value.
+  Use `condition.work_status: complete` and `condition.approval_state: accepted` unless an accepted
+  project rule defines another value.
 - Do not newly write legacy `<!-- keystone: depends_on=... -->` syntax. When structured and legacy
   evidence coexist, preserve structured metadata as authoritative and report conflicts.
 - Never turn a dependency evaluation into automatic progress mutation, assignment, cancellation, or acceptance.
@@ -341,5 +344,6 @@ Check that:
     finalization completes; unavailable or failed execution remains fail-closed and resumable.
 14. Graph-relevant document deltas automatically reach Linker; Author attests and applies only its own
     baseline-matched patch and never declares verified independently.
-15. New finalization uses schema version 2, records graph_sync disposition, and accepts only bundled
+15. New finalization uses schema version 3, separates execution and approval transitions, records
+    graph_sync disposition, and accepts only bundled
     verified transaction evidence for required synchronization.

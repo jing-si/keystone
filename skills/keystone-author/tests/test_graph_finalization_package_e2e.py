@@ -74,7 +74,8 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
         (self.root / "docs").mkdir()
         self.progress = self.root / "docs" / "progress.md"
         self.progress.write_text(
-            "---\nwork_status: accepted\nstep_ref: R005/S03\nwork_ref: R005/graph-runtime\n"
+            "---\nwork_status: complete\napproval:\n  state: accepted\n"
+            "step_ref: R005/S03\nwork_ref: R005/graph-runtime\n"
             "---\n# Progress\n\nfinalization:\n  state: complete\n"
             "  acceptance_ref: R005/S03/main-acceptance\n", encoding="utf-8")
         for name in ("work-index.md", "round-index.md", "context-map.md", "candidate.md"):
@@ -116,7 +117,7 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
         candidates = []
         for category in CATEGORIES:
             item = {"category": category, "artifact": category, "path": "docs/candidate.md",
-                    "disposition": "no_change_required", "reason": "evaluated by E2E fixture"}
+                    "disposition": "no_change", "reason": "evaluated by E2E fixture"}
             if category == "implementation_gate":
                 item.update(gate_state="resolved", gate_scope="R005/S03")
             elif category == "residual_risk":
@@ -125,12 +126,16 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
                 item.update(namespace_state="checked")
             candidates.append(item)
         return {
-            "schema_version": 2, "acceptance_ref": "R005/S03/main-acceptance",
+            "schema_version": 3, "acceptance_ref": "R005/S03/main-acceptance",
             "steps": [{"ref": "R005/S03", "work_ref": "R005/graph-runtime",
-                       "status": "accepted", "progress_path": "docs/progress.md"}],
+                       "status": "complete", "approval_state": "accepted",
+                       "progress_path": "docs/progress.md"}],
             "accepted_steps": ["R005/S03"],
-            "status_transitions": [{"ref": "R005/S03", "from": "in_progress",
-                                    "to": "accepted", "kind": "step"}],
+            "execution_transitions": [
+                {"ref": "R005/S03", "from": "in_progress", "to": "complete"}],
+            "approval_transitions": [
+                {"ref": "R005/S03", "from": "pending", "to": "accepted",
+                 "evidence": "R005/S03/main-acceptance"}],
             "active_steps": [],
             "active_step_sources": [
                 {"category": "work_index", "path": "docs/work-index.md"},
@@ -328,7 +333,8 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
                 process = self.run_installed(manifest)
                 self.assertEqual(1, process.returncode)
                 self.assertIn("graph_sync_transaction_not_verified", process.stdout)
-                self.assertEqual("accepted", manifest["steps"][0]["status"])
+                self.assertEqual("complete", manifest["steps"][0]["status"])
+                self.assertEqual("accepted", manifest["steps"][0]["approval_state"])
                 self.assertEqual(accepted_source, self.progress.read_bytes())
 
     def test_document_and_repository_patches_preserve_partial_stale_and_retry_evidence(self):

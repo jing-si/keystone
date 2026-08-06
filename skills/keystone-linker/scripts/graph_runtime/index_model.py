@@ -33,6 +33,20 @@ class OwnerRecord:
 
 
 @dataclass(frozen=True)
+class OwnerLookupResult:
+    status: str
+    candidates: Tuple[OwnerRecord, ...] = ()
+
+    @property
+    def owner(self) -> Optional[OwnerRecord]:
+        return self.candidates[0] if self.status == "unique" else None
+
+    @property
+    def path(self) -> Optional[str]:
+        return self.owner.path if self.owner is not None else None
+
+
+@dataclass(frozen=True)
 class RefRecord:
     source_id: str
     target_id: str
@@ -57,6 +71,7 @@ class IndexDiagnostic:
     code: str
     message: str
     path: Optional[str] = None
+    severity: str = "error"
 
 
 @dataclass(frozen=True)

@@ -6,14 +6,20 @@ selects semantic relations, expands scope, or decides acceptance.
 
 ## Input
 
-Use repeatable `--source <repository-relative-path>` values, or `--manifest <json>`. A manifest has
-`{"schema_version":1,"sources":[...],"transaction":{...}}`; `transaction` is optional. An explicit
+Use repeatable `--source <repository-relative-path>` values, or `--manifest <json>`. Transaction scope
+validates only those sources. `--scope repository` discovers supported repository sources and adjacent
+companions automatically. A repository manifest may declare `coverage: full | subset`; omitted sources
+are errors for `full` and separately reported coverage-debt warnings for `subset`. A manifest has
+`{"schema_version":1,"scope":"transaction|repository","coverage":"full|subset","sources":[...],"transaction":{...}}`;
+`transaction` is optional. An explicit
 `--transaction <json>` replaces the manifest transaction. Unsupported source surfaces use the
 source-adjacent `<source>.keystone.json` companion containing `schema_version`, `source`, `nodes`, and
 `relations`. Its `source` object records repository-relative `path`, `surface`, and the raw-byte
 `sha256:<64-lowercase-hex>` digest, or `absent` for a new source.
 
 The canonical node fields are `id`, `kind`, `artifact_kind`, `locator`, `lifecycle`, and `provenance`.
+Markdown nodes with declared or inherited document metadata also carry `parent_id`, `declared_metadata`,
+and `effective_metadata` for lifecycle, approval, governance, and source authority.
 The canonical relation fields are `source`, `relation`, `target`, `evidence`, `provenance`, and
 `lifecycle`. Transaction fields and all eight states follow the accepted Artifact Graph standard.
 `inferred` evidence is excluded from canonical mutations. A verified transaction uses
@@ -38,6 +44,7 @@ validation, pass the envelope's current `transaction` object through manifest `t
 
 ```sh
 python3 scripts/validate_graph.py --root REPOSITORY --source 00_docs/key-context-map.md
+python3 scripts/validate_graph.py --root REPOSITORY --scope repository
 python3 scripts/run_graph_validation.py --root REPOSITORY --manifest graph-validation.json
 bash scripts/check_graph_hook.sh --root REPOSITORY --manifest graph-validation.json
 ```

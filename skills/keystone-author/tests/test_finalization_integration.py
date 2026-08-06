@@ -172,11 +172,11 @@ class R008FinalizationFixture(unittest.TestCase):
         process, payload = self.run_command(
             [sys.executable, str(RUNNER), "--validator", str(self.root / "missing.py")]
         )
-        self.assertEqual("validator_unavailable", payload["reason_code"])
+        self.assertEqual("validator_unavailable", payload["diagnostics"][0]["code"])
 
         broken = self.write("broken.py", "print('not json')\n")
         process, payload = self.run_command([sys.executable, str(RUNNER), "--validator", str(broken)])
-        self.assertEqual("validator_execution_failed", payload["reason_code"])
+        self.assertEqual("validator_execution_failed", payload["diagnostics"][0]["code"])
 
     def test_07_only_accepted_step_transitions_while_independent_active_step_continues(self):
         manifest = self.manifest()
@@ -204,7 +204,8 @@ class R008FinalizationFixture(unittest.TestCase):
     def test_09_passing_project_extension_cannot_override_core_failure(self):
         extension = self.write(
             "extension.py",
-            "import json\nprint(json.dumps({'status':'pass','diagnostics':[],'summary':{'errors':0,'warnings':0}}))\n",
+            "import json\nprint(json.dumps({'schema_version':1,'status':'pass','diagnostics':[],"
+            "'summary':{'errors':0,'warnings':0}}))\n",
         )
         manifest = self.manifest()
         manifest["namespace_entries"] = [

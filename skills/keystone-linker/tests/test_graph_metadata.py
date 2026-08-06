@@ -12,8 +12,14 @@ from graph_runtime.adapters import (
     YamlAdapter,
     adapter_for_path,
 )
-from graph_runtime.metadata import parse_companion, parse_source
+from graph_runtime.dependency import (
+    DependencyStatus,
+    DependencyTargetState,
+    evaluate_work_gates,
+)
+from graph_runtime.metadata import parse_companion, parse_reference_declaration, parse_source
 from graph_runtime.model import (
+    ApprovalState,
     CanonicalMutation,
     Evidence,
     Lifecycle,
@@ -26,6 +32,161 @@ from graph_runtime.model import (
 
 
 class GraphMetadataTest(unittest.TestCase):
+    def test_reference_declaration_exposes_only_owner_and_navigation_refs(self):
+        declaration = parse_reference_declaration(
+            "id=key.claim.consumer refs=key.claim.target,key.topic.graph "
+            "depends_on=key.work.target")
+
+        self.assertEqual(
+            ("key.claim.consumer", ("key.claim.target", "key.topic.graph")),
+            declaration,
+        )
+        self.assertIsNone(parse_reference_declaration("refs=key.claim.target"))
+
+    def test_markdown_examples_inside_fences_are_passive(self):
+        source = """---
+key: {id: key.doc.real, kind: source_document}
+---
+```markdown
+<!-- key: id=key.example.only kind=claim -->
+## Example
+<!-- key: ... -->
+```
+<!-- key: id=key.claim.real kind=claim -->
+## Real
+"""
+        result = parse_source(source, "docs/real.md", MarkdownAdapter())
+
+        self.assertEqual({"key.doc.real", "key.claim.real"},
+                         {node.id for node in result.snapshot.nodes})
+        self.assertFalse(result.diagnostics)
+
+    def test_adjacent_compact_comments_extend_one_owner(self):
+        source = """<!-- keystone: id=key.code.skill kind=output_artifact artifact_kind=skill_source -->
+<!-- keystone: produced_from=key.work.skill -->
+<!-- keystone: governed_by=key.standard.project -->
+# Skill
+"""
+        result = parse_source(source, "skills/example/SKILL.md", MarkdownAdapter())
+
+        self.assertFalse(result.diagnostics)
+        self.assertEqual(["key.code.skill"], [node.id for node in result.snapshot.nodes])
+        self.assertEqual(("key.work.skill",), result.snapshot.nodes[0].provenance.produced_from)
+        self.assertEqual(("key.standard.project",), result.snapshot.nodes[0].provenance.governed_by)
+
+    def test_inline_code_metadata_example_is_passive(self):
+        source = """---
+key: {id: key.doc.real, kind: source_document}
+---
+Do not write `<!-- keystone: depends_on=key.old -->` syntax.
+"""
+        result = parse_source(source, "docs/real.md", MarkdownAdapter())
+
+        self.assertEqual(["key.doc.real"], [node.id for node in result.snapshot.nodes])
+        self.assertFalse(result.diagnostics)
+
+    def test_non_keystone_frontmatter_is_passive(self):
+        source = """---
+name: example-skill
+description: No Keystone document owner is declared here.
+---
+<!-- keystone: id=key.skill.example kind=output_artifact artifact_kind=skill_source -->
+# Skill
+"""
+        result = parse_source(source, "skills/example/SKILL.md", MarkdownAdapter())
+
+        self.assertEqual(["key.skill.example"], [node.id for node in result.snapshot.nodes])
+        self.assertFalse(result.diagnostics)
+
+    def test_structured_dependency_and_work_gate_are_executable(self):
+        source = """---
+document_lifecycle: active
+approval:
+  state: pending
+key:
+  id: key.work.current
+  kind: work_order
+  relations:
+    depends_on:
+      - target: key.work.target
+work_gates:
+  - dependency: key.work.target
+    applies_to:
+      steps: [S02]
+    condition:
+      work_status: complete
+      approval_state: accepted
+---
+"""
+        result = parse_source(source, "00_docs/current.md", MarkdownAdapter())
+
+        self.assertFalse(result.diagnostics)
+        self.assertEqual(
+            [("key.work.current", RelationType.DEPENDS_ON, "key.work.target")],
+            [(item.source, item.relation, item.target) for item in result.snapshot.relations],
+        )
+        self.assertEqual(("S02",), result.work_gates[0].steps)
+        waiting = evaluate_work_gates(result.work_gates, {
+            "key.work.target": DependencyTargetState("complete", "pending"),
+        })
+        satisfied = evaluate_work_gates(result.work_gates, {
+            "key.work.target": DependencyTargetState("complete", "accepted"),
+        })
+        self.assertEqual(DependencyStatus.WAITING, waiting[0].status)
+        self.assertTrue(waiting[0].blocking)
+        self.assertEqual(DependencyStatus.SATISFIED, satisfied[0].status)
+        self.assertFalse(satisfied[0].blocking)
+
+    def test_document_section_item_metadata_is_inherited_without_relations(self):
+        source = """---
+document_lifecycle: archived
+approval:
+  state: rejected
+authority:
+  source: project-standard
+key:
+  id: key.doc.old
+  kind: source_document
+  governed_by: [key.standard.project]
+  documents: [key.claim.document]
+---
+<!-- key: id=key.section.old -->
+## Old
+<!-- key: id=key.claim.old -->
+- Historical claim
+"""
+        result = parse_source(source, "00_docs/old.md", MarkdownAdapter())
+        nodes = {node.id: node for node in result.snapshot.nodes}
+
+        for node_id in ("key.section.old", "key.claim.old"):
+            node = nodes[node_id]
+            self.assertEqual(Lifecycle.ARCHIVED, node.lifecycle)
+            self.assertEqual(ApprovalState.REJECTED, node.approval_state)
+            self.assertEqual(("key.standard.project",), node.provenance.governed_by)
+            self.assertEqual((("source", "project-standard"),), node.source_authority)
+        self.assertEqual("key.doc.old", nodes["key.section.old"].parent_id)
+        self.assertEqual("key.section.old", nodes["key.claim.old"].parent_id)
+        relations = {(item.source, item.relation, item.target)
+                     for item in result.snapshot.relations}
+        self.assertIn(("key.doc.old", RelationType.DOCUMENTS, "key.claim.document"), relations)
+        self.assertIn(("key.doc.old", RelationType.GOVERNED_BY, "key.standard.project"), relations)
+        self.assertFalse(any(source != "key.doc.old" for source, _, _ in relations))
+
+    def test_structured_and_legacy_dependency_conflict_is_diagnosed(self):
+        source = """---
+key:
+  id: key.work.current
+  kind: work_order
+  depends_on: [key.work.legacy]
+  relations:
+    depends_on:
+      - target: key.work.structured
+---
+"""
+        result = parse_source(source, "00_docs/current.md", MarkdownAdapter())
+        self.assertTrue(any(item.code == "structured_legacy_relation_conflict"
+                            for item in result.diagnostics))
+
     def test_requires_verification_requirement_is_distinct_from_evidence(self):
         text = """<!-- keystone: id=key.acceptance kind=claim requires_verification_of=key.claim -->
 # Acceptance

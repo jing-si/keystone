@@ -37,10 +37,32 @@ class ReferenceIndexTests(unittest.TestCase):
 
         result = ReferenceScanner(self.root).scan(ScanScope.DOCS)
 
-        self.assertEqual(2, len(result.owners))
+        self.assertEqual(3, len(result.owners))
         self.assertEqual("00_docs/standard.md", owner_for(result, "key.claim.consumer").path)
+        self.assertEqual("ambiguous", owner_for(result, "key.claim.target").status)
+        self.assertEqual(2, len(owner_for(result, "key.claim.target").candidates))
         self.assertEqual(("key.claim.consumer",), tuple(ref.source_id for ref in refs_to(result, "key.claim.target")))
         self.assertEqual({"duplicate_owner", "dangling_ref"}, {item.code for item in result.diagnostics})
+
+    def test_taxonomy_refs_do_not_require_owner_resolution(self):
+        self.write("00_docs/standard.md", """<!-- keystone: id=key.claim.consumer kind=claim refs=key.topic.graph,key.role.linker,key.boundary.docs -->
+# Consumer
+""")
+
+        result = ReferenceScanner(self.root).scan(ScanScope.DOCS)
+
+        self.assertNotIn("dangling_ref", {item.code for item in result.diagnostics})
+
+    def test_document_owner_path_is_a_sufficient_locator(self):
+        self.write("00_docs/standard.md", """---
+key: {id: key.doc.standard, kind: source_document}
+---
+plain body
+""")
+
+        result = ReferenceScanner(self.root).scan(ScanScope.DOCS)
+
+        self.assertNotIn("locator_gap", {item.code for item in result.diagnostics})
 
     def test_docs_scope_is_bounded_and_repository_scope_is_lazy(self):
         self.write("00_docs/standard.md", "<!-- keystone: id=key.claim.docs kind=claim -->\n# Docs\n")
@@ -121,6 +143,28 @@ class ReferenceIndexTests(unittest.TestCase):
         result = ReferenceScanner(self.root).scan(ScanScope.REPOSITORY)
 
         self.assertIn("locator_gap", {item.code for item in result.diagnostics})
+        diagnostic = next(item for item in result.diagnostics if item.code == "locator_gap")
+        self.assertEqual("warning", diagnostic.severity)
+
+    def test_repository_default_excludes_and_additional_language_adapters(self):
+        self.write(".venv/lib/ignored.py", "# keystone: id=key.ignored kind=output_artifact\n")
+        self.write("src/app.py", "# keystone: id=key.python kind=output_artifact locator.symbol=run\n")
+        self.write("src/app.go", "// keystone: id=key.go kind=output_artifact locator.symbol=Run\n")
+        self.write("src/app.rs", "// keystone: id=key.rust kind=output_artifact locator.symbol=run\n")
+        self.write("src/App.cs", "// keystone: id=key.csharp kind=output_artifact locator.symbol=Run\n")
+
+        result = ReferenceScanner(self.root).scan(ScanScope.REPOSITORY)
+
+        self.assertEqual({"key.python", "key.go", "key.rust", "key.csharp"},
+                         {item.id for item in result.owners})
+
+    def test_scan_budget_is_fail_soft_and_reported(self):
+        self.write("00_docs/large.md", "x" * 32)
+
+        result = ReferenceScanner(self.root, max_file_bytes=8).scan(ScanScope.DOCS)
+
+        diagnostic = next(item for item in result.diagnostics if item.code == "source_too_large")
+        self.assertEqual("warning", diagnostic.severity)
 
     def test_discovery_snapshot_retains_exact_bytes_across_mutation(self):
         source = self.write("00_docs/a.md", "<!-- keystone: id=key.before kind=claim -->\n# Before\n")

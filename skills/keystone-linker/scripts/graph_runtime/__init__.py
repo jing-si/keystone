@@ -1,7 +1,8 @@
 """Portable, standard-library-only Artifact Graph runtime primitives.
 
 The owner/ref readiness surface is intentionally package-internal. Import its
-named modules directly; it is not a command or a broad wildcard API.
+named modules directly or use the deterministic internal JSON wrapper; neither
+is a user-facing graph editing command or a broad wildcard API.
 """
 
 from .model import *  # noqa: F401,F403

@@ -3,9 +3,11 @@ import unittest
 from graph_runtime.model import (
     ApplicationResult,
     ApplicationStatus,
+    ApprovalState,
     ArtifactKind,
     AttestationDecision,
     CanonicalMutation,
+    ConflictReason,
     Diagnostic,
     Evidence,
     GraphRelevance,
@@ -80,6 +82,45 @@ class GraphWireTest(unittest.TestCase):
         self.assertEqual("failed", failed_wire["state"])
         self.assertEqual("fail", failed_wire["mechanical_validation"]["status"])
         self.assertEqual((), validate_transaction(failed_wire))
+
+        conflicted = GraphTransaction(
+            "tx-conflicted", "R007/S04", state=TransactionState.CONFLICTED,
+            conflict_reason=ConflictReason.NEEDS_REVISION,
+            surface_patches=(self.patch,),
+            attestations=(SurfaceAttestation(
+                "patch-wire", PatchOwner.MAIN, AttestationDecision.NEEDS_REVISION,
+                "patch wording must change"),),
+        )
+        conflicted_wire = transaction_wire(conflicted)
+        self.assertEqual("needs_revision", conflicted_wire["conflict_reason"])
+        self.assertEqual((), validate_transaction(conflicted_wire))
+
+    def test_transaction_rejects_unknown_root_fields(self):
+        payload = transaction_wire(GraphTransaction("tx-unknown", "key.work.scope"))
+        payload["mystery"] = True
+
+        self.assertTrue(any(item.code == "transaction_unknown_field"
+                            for item in validate_transaction(payload)))
+
+    def test_effective_metadata_node_is_canonical_transaction_wire(self):
+        node = Node(
+            "key.doc.old", NodeKind.SOURCE_DOCUMENT, locator=Locator("old.md"),
+            lifecycle=Lifecycle.ARCHIVED,
+            approval_state=ApprovalState.REJECTED,
+            source_authority=(("source", "project-standard"),),
+            declared_lifecycle=Lifecycle.ARCHIVED,
+            declared_approval_state=ApprovalState.REJECTED,
+            declared_governed_by=("key.standard.project",),
+            declared_source_authority=(("source", "project-standard"),),
+        )
+        transaction = GraphTransaction(
+            "tx-metadata", "key.work.scope",
+            canonical_mutations=(CanonicalMutation(
+                MutationOperation.ADD, MutationEntity.NODE, None, node, Evidence.DECLARED),),
+        )
+
+        codes = {item.code for item in validate_transaction(transaction_wire(transaction))}
+        self.assertNotIn("mutation_node_invalid", codes)
 
     def test_history_and_graph_relevance_are_outside_transaction_wire(self):
         proposed = GraphTransaction("tx-current", "R005/S03")

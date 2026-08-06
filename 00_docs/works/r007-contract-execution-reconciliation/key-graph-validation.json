@@ -1,0 +1,2382 @@
+{
+  "schema_version": 1,
+  "sources": [
+    "00_docs/convention.md",
+    "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md",
+    "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md",
+    "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md",
+    "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md",
+    "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/00_key-index.md",
+    "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-work-python-convention-incremental-refactoring.md",
+    "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
+  ],
+  "transaction": {
+    "apply_results": [
+      {
+        "evidence": "Author applied the accepted status and approval transition.",
+        "patch_id": "patch-r007-finalize-01",
+        "result": "applied",
+        "resulting_digest": "sha256:85c7f230dafd8a86e2a1c8d784c16409c51c002ec29d51e8fc8eaa93ad3478e7"
+      },
+      {
+        "evidence": "Author applied the accepted status and approval transition.",
+        "patch_id": "patch-r007-finalize-02",
+        "result": "applied",
+        "resulting_digest": "sha256:9e482f3c4385ad98a0f6c12a54be4a322547c488322f37bd52eec0f1c786eaad"
+      },
+      {
+        "evidence": "Author applied the accepted status and approval transition.",
+        "patch_id": "patch-r007-finalize-03",
+        "result": "applied",
+        "resulting_digest": "sha256:1a3ed9cbab770e667df13bd5156096db07938dabc7d7e292bbf978932416d424"
+      },
+      {
+        "evidence": "Author applied the accepted status and approval transition.",
+        "patch_id": "patch-r007-finalize-04",
+        "result": "applied",
+        "resulting_digest": "sha256:0d8ada8c5d533dd74344ce5a6e4db5c48b890449682c5c849018c4a7cc7b60a3"
+      },
+      {
+        "evidence": "Author applied the accepted status and approval transition.",
+        "patch_id": "patch-r007-finalize-05",
+        "result": "applied",
+        "resulting_digest": "sha256:053796d77b57d90edabe105e5fc4f8fce96d808db6b53cda5bcfa80f8b1e4e80"
+      },
+      {
+        "evidence": "Author applied the accepted status and approval transition.",
+        "patch_id": "patch-r007-finalize-06",
+        "result": "applied",
+        "resulting_digest": "sha256:a26f92266f265029f4c6fddea893501ed4f54e6696b76991562c2717ad708961"
+      },
+      {
+        "evidence": "Author applied the accepted status and approval transition.",
+        "patch_id": "patch-r007-finalize-07",
+        "result": "applied",
+        "resulting_digest": "sha256:2c6b7f0c5039d0212fe6842a9f8ad282d11d121b456cc5cd6840b428548acc22"
+      },
+      {
+        "evidence": "Author applied the accepted status and approval transition.",
+        "patch_id": "patch-r007-finalize-08",
+        "result": "applied",
+        "resulting_digest": "sha256:705bc0e4802b464755d102001c85deea5733c91b8140d19582569c1668cdd054"
+      }
+    ],
+    "attestations": [
+      {
+        "decision": "confirm",
+        "evidence": "User accepted the verified R007 result.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-01"
+      },
+      {
+        "decision": "confirm",
+        "evidence": "User accepted the verified R007 result.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-02"
+      },
+      {
+        "decision": "confirm",
+        "evidence": "User accepted the verified R007 result.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-03"
+      },
+      {
+        "decision": "confirm",
+        "evidence": "User accepted the verified R007 result.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-04"
+      },
+      {
+        "decision": "confirm",
+        "evidence": "User accepted the verified R007 result.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-05"
+      },
+      {
+        "decision": "confirm",
+        "evidence": "User accepted the verified R007 result.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-06"
+      },
+      {
+        "decision": "confirm",
+        "evidence": "User accepted the verified R007 result.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-07"
+      },
+      {
+        "decision": "confirm",
+        "evidence": "User accepted the verified R007 result.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-08"
+      }
+    ],
+    "canonical_mutations": [
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.architecture",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "구조와 dependency 방향",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "구조와 dependency 방향",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.architecture",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "구조와 dependency 방향",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "구조와 dependency 방향",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.errors",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "오류와 diagnostic",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "오류와 diagnostic",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.errors",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "오류와 diagnostic",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "오류와 diagnostic",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.functions",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "함수와 모듈",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "함수와 모듈",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.functions",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "함수와 모듈",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "함수와 모듈",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.patterns",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "우선 설계 패턴",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "우선 설계 패턴",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.patterns",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "우선 설계 패턴",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "우선 설계 패턴",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.refactoring",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "점진적 리팩터링 규칙",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "점진적 리팩터링 규칙",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.refactoring",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "점진적 리팩터링 규칙",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "점진적 리팩터링 규칙",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.runtime",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "Runtime 기준",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "Runtime 기준",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.runtime",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "Runtime 기준",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "Runtime 기준",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.testing",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "Test와 검증",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "Test와 검증",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.convention.python.testing",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "Test와 검증",
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": "key.doc.convention",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "Test와 검증",
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.doc.convention",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.doc.convention",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/convention.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/convention.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.contract-execution-reconciliation.index",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.contract-execution-reconciliation.index",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.contract-execution-reconciliation.order",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.contract-execution-reconciliation.order",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.contract-execution-reconciliation.progress",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.contract-execution-reconciliation.progress",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.python-convention-incremental-refactoring.index",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/00_key-index.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/00_key-index.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.python-convention-incremental-refactoring.index",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/00_key-index.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/00_key-index.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.python-convention-incremental-refactoring.order",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-work-python-convention-incremental-refactoring.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-work-python-convention-incremental-refactoring.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.python-convention-incremental-refactoring.order",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-work-python-convention-incremental-refactoring.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-work-python-convention-incremental-refactoring.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.python-convention-incremental-refactoring.progress",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.python-convention-incremental-refactoring.progress",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.round.r007-contract-execution-reconciliation.index",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.round.r007-contract-execution-reconciliation.index",
+          "kind": "source_document",
+          "lifecycle": "active",
+          "locator": {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+          },
+          "parent_id": null,
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      },
+      {
+        "after": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "accepted",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.round.r007.execution-order",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "실행 순서",
+            "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+          },
+          "parent_id": "key.work.round.r007-contract-execution-reconciliation.index",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "실행 순서",
+              "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "before": {
+          "artifact_kind": "none",
+          "declared_metadata": {
+            "approval_state": null,
+            "document_lifecycle": null,
+            "governed_by": [],
+            "source_authority": []
+          },
+          "effective_metadata": {
+            "approval_state": "pending",
+            "document_lifecycle": "active",
+            "governed_by": [],
+            "source_authority": []
+          },
+          "id": "key.work.round.r007.execution-order",
+          "kind": "document_section",
+          "lifecycle": "active",
+          "locator": {
+            "heading": "실행 순서",
+            "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+          },
+          "parent_id": "key.work.round.r007-contract-execution-reconciliation.index",
+          "provenance": {
+            "governed_by": [],
+            "locator": {
+              "heading": "실행 순서",
+              "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+            },
+            "produced_from": [],
+            "surface": "document_metadata"
+          }
+        },
+        "entity": "node",
+        "evidence": "declared",
+        "operation": "update"
+      }
+    ],
+    "conflict_reason": null,
+    "coverage_debt": [],
+    "input_deltas": [
+      {
+        "baseline_digest": "sha256:384d38f962539cce6b4a28904c1025c4682851bed182cb5c53a82bc703d1d670",
+        "changed_locators": [
+          {
+            "path": "00_docs/convention.md"
+          }
+        ],
+        "graph_relevant": true,
+        "kind": "document_delta",
+        "semantic_summary": "R007 acceptance finalization state transition",
+        "source_surface": "00_docs/convention.md"
+      },
+      {
+        "baseline_digest": "sha256:f6a389d37d1eabf29fb048056f2c3404fdbfb699152b78a63e136b381c366e23",
+        "changed_locators": [
+          {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+          }
+        ],
+        "graph_relevant": true,
+        "kind": "document_delta",
+        "semantic_summary": "R007 acceptance finalization state transition",
+        "source_surface": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+      },
+      {
+        "baseline_digest": "sha256:02c18d8610db596528791651761dd97e66a16ed4d57348a68fc80100b0fee1bb",
+        "changed_locators": [
+          {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md"
+          }
+        ],
+        "graph_relevant": true,
+        "kind": "document_delta",
+        "semantic_summary": "R007 acceptance finalization state transition",
+        "source_surface": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md"
+      },
+      {
+        "baseline_digest": "sha256:4e63518d2a9f0666d562960970905c9cf01cb5702fdbf71732c2c1563f94c0ca",
+        "changed_locators": [
+          {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md"
+          }
+        ],
+        "graph_relevant": true,
+        "kind": "document_delta",
+        "semantic_summary": "R007 acceptance finalization state transition",
+        "source_surface": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md"
+      },
+      {
+        "baseline_digest": "sha256:5f960de2da950eafd855f352a88c3ec427193f477ca6ad628790fbc39c2c028b",
+        "changed_locators": [
+          {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md"
+          }
+        ],
+        "graph_relevant": true,
+        "kind": "document_delta",
+        "semantic_summary": "R007 acceptance finalization state transition",
+        "source_surface": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md"
+      },
+      {
+        "baseline_digest": "sha256:c5ed454dcb81b1e83190d58e4052d7a69d7ddffe5a33c0c7ba175cf4bcb9295b",
+        "changed_locators": [
+          {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/00_key-index.md"
+          }
+        ],
+        "graph_relevant": true,
+        "kind": "document_delta",
+        "semantic_summary": "R007 acceptance finalization state transition",
+        "source_surface": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/00_key-index.md"
+      },
+      {
+        "baseline_digest": "sha256:0a528fe25cb8d089121db25c723c47be5e229196f07f60b3a85b41db6fb54d71",
+        "changed_locators": [
+          {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-work-python-convention-incremental-refactoring.md"
+          }
+        ],
+        "graph_relevant": true,
+        "kind": "document_delta",
+        "semantic_summary": "R007 acceptance finalization state transition",
+        "source_surface": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-work-python-convention-incremental-refactoring.md"
+      },
+      {
+        "baseline_digest": "sha256:023459595c224045e8440fb709b419e8a7d8ef0ee98d3de938d0859a450815e7",
+        "changed_locators": [
+          {
+            "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
+          }
+        ],
+        "graph_relevant": true,
+        "kind": "document_delta",
+        "semantic_summary": "R007 acceptance finalization state transition",
+        "source_surface": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
+      }
+    ],
+    "mechanical_validation": {
+      "diagnostics": [],
+      "schema_version": 1,
+      "status": "pass",
+      "summary": {
+        "errors": 0,
+        "warnings": 0
+      }
+    },
+    "reconstruction": {
+      "baseline": {
+        "nodes": [
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.architecture",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "구조와 dependency 방향",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "구조와 dependency 방향",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.errors",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "오류와 diagnostic",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "오류와 diagnostic",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.functions",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "함수와 모듈",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "함수와 모듈",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.patterns",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "우선 설계 패턴",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "우선 설계 패턴",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.refactoring",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "점진적 리팩터링 규칙",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "점진적 리팩터링 규칙",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.runtime",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "Runtime 기준",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "Runtime 기준",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.testing",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "Test와 검증",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "Test와 검증",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.doc.convention",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.contract-execution-reconciliation.index",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.contract-execution-reconciliation.order",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.contract-execution-reconciliation.progress",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.python-convention-incremental-refactoring.index",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/00_key-index.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/00_key-index.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.python-convention-incremental-refactoring.order",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-work-python-convention-incremental-refactoring.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-work-python-convention-incremental-refactoring.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.python-convention-incremental-refactoring.progress",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.round.r007-contract-execution-reconciliation.index",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "pending",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.round.r007.execution-order",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "실행 순서",
+              "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+            },
+            "parent_id": "key.work.round.r007-contract-execution-reconciliation.index",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "실행 순서",
+                "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          }
+        ],
+        "relations": [],
+        "schema_version": 1
+      },
+      "result": {
+        "nodes": [
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.architecture",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "구조와 dependency 방향",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "구조와 dependency 방향",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.errors",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "오류와 diagnostic",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "오류와 diagnostic",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.functions",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "함수와 모듈",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "함수와 모듈",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.patterns",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "우선 설계 패턴",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "우선 설계 패턴",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.refactoring",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "점진적 리팩터링 규칙",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "점진적 리팩터링 규칙",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.runtime",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "Runtime 기준",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "Runtime 기준",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.convention.python.testing",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "Test와 검증",
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": "key.doc.convention",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "Test와 검증",
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.doc.convention",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/convention.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/convention.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.contract-execution-reconciliation.index",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.contract-execution-reconciliation.order",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.contract-execution-reconciliation.progress",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.python-convention-incremental-refactoring.index",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/00_key-index.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/00_key-index.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.python-convention-incremental-refactoring.order",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-work-python-convention-incremental-refactoring.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-work-python-convention-incremental-refactoring.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.python-convention-incremental-refactoring.progress",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.round.r007-contract-execution-reconciliation.index",
+            "kind": "source_document",
+            "lifecycle": "active",
+            "locator": {
+              "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+            },
+            "parent_id": null,
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          },
+          {
+            "artifact_kind": "none",
+            "declared_metadata": {
+              "approval_state": null,
+              "document_lifecycle": null,
+              "governed_by": [],
+              "source_authority": []
+            },
+            "effective_metadata": {
+              "approval_state": "accepted",
+              "document_lifecycle": "active",
+              "governed_by": [],
+              "source_authority": []
+            },
+            "id": "key.work.round.r007.execution-order",
+            "kind": "document_section",
+            "lifecycle": "active",
+            "locator": {
+              "heading": "실행 순서",
+              "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+            },
+            "parent_id": "key.work.round.r007-contract-execution-reconciliation.index",
+            "provenance": {
+              "governed_by": [],
+              "locator": {
+                "heading": "실행 순서",
+                "path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+              },
+              "produced_from": [],
+              "surface": "document_metadata"
+            }
+          }
+        ],
+        "relations": [],
+        "schema_version": 1
+      }
+    },
+    "schema_version": 1,
+    "scope_ref": "R007/main-acceptance",
+    "state": "verified",
+    "surface_patches": [
+      {
+        "baseline_digest": "sha256:384d38f962539cce6b4a28904c1025c4682851bed182cb5c53a82bc703d1d670",
+        "exact_patch": "Record R007 complete and accepted finalization metadata.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-01",
+        "required": true,
+        "surface": "document_metadata",
+        "target_path": "00_docs/convention.md"
+      },
+      {
+        "baseline_digest": "sha256:f6a389d37d1eabf29fb048056f2c3404fdbfb699152b78a63e136b381c366e23",
+        "exact_patch": "Record R007 complete and accepted finalization metadata.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-02",
+        "required": true,
+        "surface": "document_metadata",
+        "target_path": "00_docs/works/r007-contract-execution-reconciliation/00_key-index.md"
+      },
+      {
+        "baseline_digest": "sha256:02c18d8610db596528791651761dd97e66a16ed4d57348a68fc80100b0fee1bb",
+        "exact_patch": "Record R007 complete and accepted finalization metadata.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-03",
+        "required": true,
+        "surface": "document_metadata",
+        "target_path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/00_key-index.md"
+      },
+      {
+        "baseline_digest": "sha256:4e63518d2a9f0666d562960970905c9cf01cb5702fdbf71732c2c1563f94c0ca",
+        "exact_patch": "Record R007 complete and accepted finalization metadata.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-04",
+        "required": true,
+        "surface": "document_metadata",
+        "target_path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-work-contract-execution-reconciliation.md"
+      },
+      {
+        "baseline_digest": "sha256:5f960de2da950eafd855f352a88c3ec427193f477ca6ad628790fbc39c2c028b",
+        "exact_patch": "Record R007 complete and accepted finalization metadata.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-05",
+        "required": true,
+        "surface": "document_metadata",
+        "target_path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md"
+      },
+      {
+        "baseline_digest": "sha256:c5ed454dcb81b1e83190d58e4052d7a69d7ddffe5a33c0c7ba175cf4bcb9295b",
+        "exact_patch": "Record R007 complete and accepted finalization metadata.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-06",
+        "required": true,
+        "surface": "document_metadata",
+        "target_path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/00_key-index.md"
+      },
+      {
+        "baseline_digest": "sha256:0a528fe25cb8d089121db25c723c47be5e229196f07f60b3a85b41db6fb54d71",
+        "exact_patch": "Record R007 complete and accepted finalization metadata.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-07",
+        "required": true,
+        "surface": "document_metadata",
+        "target_path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-work-python-convention-incremental-refactoring.md"
+      },
+      {
+        "baseline_digest": "sha256:023459595c224045e8440fb709b419e8a7d8ef0ee98d3de938d0859a450815e7",
+        "exact_patch": "Record R007 complete and accepted finalization metadata.",
+        "owner": "author",
+        "patch_id": "patch-r007-finalize-08",
+        "required": true,
+        "surface": "document_metadata",
+        "target_path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
+      }
+    ],
+    "transaction_id": "graph-tx-r007-finalize-ad67db45f601b12bbfe1"
+  }
+}

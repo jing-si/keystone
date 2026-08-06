@@ -30,26 +30,30 @@ Exit codes:
 - `1`: deterministic validation findings were reported.
 - `2`: invocation or execution input was unavailable or malformed.
 
-Stdout is one JSON object containing `status`, `diagnostics`, and `summary`. Each diagnostic has
+Stdout is one JSON object containing `schema_version`, `status`, `diagnostics`, and `summary`. Each diagnostic has
 `severity`, `code`, `message`, and an optional repository-relative `path`.
 
 ## Manifest
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "acceptance_ref": "R004/S02/main-acceptance",
   "steps": [
     {
       "ref": "R004/S02",
       "work_ref": "R004/finalization-runtime-validator",
-      "status": "accepted",
+      "status": "complete",
+      "approval_state": "accepted",
       "progress_path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/key-progress.md"
     }
   ],
   "accepted_steps": ["R004/S02"],
-  "status_transitions": [
-    {"ref": "R004/S02", "from": "in_progress", "to": "accepted", "kind": "step"}
+  "execution_transitions": [
+    {"ref": "R004/S02", "from": "in_progress", "to": "complete"}
+  ],
+  "approval_transitions": [
+    {"ref": "R004/S02", "from": "pending", "to": "accepted", "evidence": "Main accepted the verified result."}
   ],
   "active_steps": [],
   "active_step_sources": [
@@ -102,7 +106,7 @@ Stdout is one JSON object containing `status`, `diagnostics`, and `summary`. Eac
       "category": "root_index",
       "artifact": "root works index",
       "path": "00_docs/works/00_key-index.md",
-      "disposition": "no_change_required",
+      "disposition": "no_change",
       "reason": "R004 remains the active round."
     },
     {
@@ -116,7 +120,7 @@ Stdout is one JSON object containing `status`, `diagnostics`, and `summary`. Eac
       "category": "standard_decision_plan",
       "artifact": "accepted S01 sources",
       "path": "00_docs/works/key-decisions.md",
-      "disposition": "no_change_required",
+      "disposition": "no_change",
       "reason": "Runtime implements the accepted policy without changing its meaning."
     },
     {
@@ -130,7 +134,7 @@ Stdout is one JSON object containing `status`, `diagnostics`, and `summary`. Eac
       "category": "implementation_gate",
       "artifact": "S02 implementation gates",
       "path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/key-work-finalization-runtime-validator.md",
-      "disposition": "no_change_required",
+      "disposition": "no_change",
       "reason": "No unresolved implementation choice remains.",
       "gate_state": "resolved",
       "gate_scope": "R004/S02 implementation"
@@ -139,7 +143,7 @@ Stdout is one JSON object containing `status`, `diagnostics`, and `summary`. Eac
       "category": "residual_risk",
       "artifact": "S02 residual risks",
       "path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/key-progress.md",
-      "disposition": "no_change_required",
+      "disposition": "no_change",
       "reason": "No S02 residual risk requires a source update.",
       "risk_state": "none",
       "risk_items": []
@@ -148,7 +152,7 @@ Stdout is one JSON object containing `status`, `diagnostics`, and `summary`. Eac
       "category": "namespace",
       "artifact": "shared namespaces",
       "path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/key-progress.md",
-      "disposition": "no_change_required",
+      "disposition": "no_change",
       "reason": "No duplicate namespace/value ownership was found.",
       "namespace_state": "checked"
     }
@@ -157,13 +161,13 @@ Stdout is one JSON object containing `status`, `diagnostics`, and `summary`. Eac
 }
 ```
 
-Schema version 1 is a diagnostic compatibility path for existing R004-era `in_progress` finalization
-only. The live validator never returns success for a version-1 `finalization.state: complete`, even
-when every reference is R004-prefixed, and version 1 cannot contain `graph_sync`. Previously completed
+Schema versions 1 and 2 are diagnostic compatibility paths for existing unfinished finalization only.
+The live validator never returns success for a version-1 or version-2 `finalization.state: complete`,
+and version 1 cannot contain `graph_sync`. Previously completed
 R004 records are historical acceptance evidence: rerunning this validator does not newly approve
 their completion, cancel their acceptance, or require a retroactive state edit. Any new completion or
-graph-relevant finalization must use version 2. Author emits schema version 2 for every new
-finalization. Version 2 requires one graph assessment:
+graph-relevant finalization must use version 3. Author emits schema version 3 for every new
+finalization. Version 3 requires one graph assessment:
 
 ```json
 {
@@ -192,15 +196,17 @@ The manifest must contain all core categories: `progress`, `work_order_change_se
 `round_index`, `root_index`, `context_map`, `standard_decision_plan`, `recovery`,
 `implementation_gate`, `residual_risk`, and `namespace`.
 
-Allowed candidate dispositions are `updated`, `no_change_required`, `historical`, `out_of_scope`,
+Allowed candidate dispositions are `updated`, `no_change`, `historical`, `out_of_scope`,
 `clarification_required`, and `integration_gate`. Every candidate requires a reason. Candidates that
-claim `updated`, `no_change_required`, or `historical` also require an existing path under `--root`.
+claim `updated`, `no_change`, or `historical` also require an existing path under `--root`.
 
 Each Step ref, Work ref, and status must match the referenced Progress `step_ref`, `work_ref`, and
 `work_status`. The work index, round index, and Context Map active-step sources must each contain the
 same `active_steps` set as the manifest. Every `active_steps` ref must resolve
-to a declared Step with an active status. A direct Step transition must name a ref in `accepted_steps`.
-Every accepted Step has exactly one `kind: step`, `in_progress` to `accepted` transition.
+to a declared Step with an active status. Execution and approval transitions must name refs in
+`accepted_steps`.
+Every accepted Step has exactly one `in_progress` to `complete` execution transition and
+exactly one `pending` to `accepted` approval transition with evidence.
 Future-Step partial work
 belongs in `early_work` with a declared target, cause, completed and remaining scope, and
 `status_effect: none`. Duplicate namespace/value claims by different owners are validation failures.

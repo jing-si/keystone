@@ -158,7 +158,7 @@ class FinalizationValidatorCliTest(unittest.TestCase):
         graph_path.write_text(json.dumps({"schema_version": 1, "sources": ["source.md"],
                                           "transaction": transaction}), encoding="utf-8")
         manifest = self.valid_manifest()
-        manifest["schema_version"] = 2
+        self.upgrade_to_v3(manifest)
         manifest["finalization"]["state"] = "complete"
         manifest["finalization"]["evidence"].append("post_edit_verification")
         source = self.root / "docs" / "s02.md"
@@ -169,6 +169,31 @@ class FinalizationValidatorCliTest(unittest.TestCase):
             "validation_manifest_path": "graph-validation.json",
             "transaction_id": transaction["transaction_id"],
         }
+        return manifest
+
+    def upgrade_to_v3(self, manifest):
+        manifest["schema_version"] = 3
+        manifest["steps"][0].update(status="complete", approval_state="accepted")
+        manifest.pop("status_transitions", None)
+        manifest["execution_transitions"] = [
+            {"ref": "R004/S02", "from": "in_progress", "to": "complete"}
+        ]
+        manifest["approval_transitions"] = [
+            {"ref": "R004/S02", "from": "pending", "to": "accepted",
+             "evidence": "R004/S02/main-acceptance"}
+        ]
+        for candidate in manifest["impact_candidates"]:
+            if candidate["disposition"] == "no_change_required":
+                candidate["disposition"] = "no_change"
+        source = self.root / "docs" / "s02.md"
+        content = source.read_text(encoding="utf-8")
+        content = content.replace("work_status: accepted", "work_status: complete")
+        if "approval:" not in content:
+            content = content.replace(
+                "work_status: complete\n",
+                "work_status: complete\napproval:\n  state: accepted\n",
+            )
+        source.write_text(content, encoding="utf-8")
         return manifest
 
     def run_finalization_runner(self, manifest):
@@ -541,7 +566,7 @@ class FinalizationValidatorCliTest(unittest.TestCase):
 
     def test_graph_sync_not_applicable_is_valid_for_complete_finalization(self):
         manifest = self.valid_manifest()
-        manifest["schema_version"] = 2
+        self.upgrade_to_v3(manifest)
         manifest["finalization"]["state"] = "complete"
         manifest["finalization"]["evidence"].append("post_edit_verification")
         (self.root / "docs" / "s02.md").write_text(
@@ -558,9 +583,29 @@ class FinalizationValidatorCliTest(unittest.TestCase):
 
         self.assertEqual(0, process.returncode, payload)
 
+    def test_schema_v3_accepts_inline_approval_and_finalization_source_mappings(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v3(manifest)
+        manifest["graph_sync"] = {
+            "required": False, "disposition": "not_applicable",
+            "reason": "No graph-relevant source changed.",
+        }
+        source = self.root / "docs" / "s02.md"
+        content = source.read_text(encoding="utf-8")
+        content = content.replace("approval:\n  state: accepted\n", "approval: {state: accepted}\n")
+        content = content.replace(
+            "finalization:\n  state: in_progress\n  acceptance_ref: R004/S02/main-acceptance\n",
+            "finalization: {state: in_progress, acceptance_ref: R004/S02/main-acceptance}\n",
+        )
+        source.write_text(content, encoding="utf-8")
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(0, process.returncode, payload)
+
     def test_complete_required_graph_sync_requires_bound_transaction(self):
         manifest = self.valid_manifest()
-        manifest["schema_version"] = 2
+        self.upgrade_to_v3(manifest)
         manifest["finalization"]["state"] = "complete"
         manifest["finalization"]["evidence"].append("post_edit_verification")
         (self.root / "docs" / "s02.md").write_text(
@@ -661,7 +706,7 @@ class FinalizationRunnerCliTest(unittest.TestCase):
         }), encoding="utf-8")
         core = self.root / "core.py"
         core.write_text(
-            "import json\nprint(json.dumps({'status':'pass','diagnostics':[],"
+            "import json\nprint(json.dumps({'schema_version':1,'status':'pass','diagnostics':[],"
             "'summary':{'errors':0,'warnings':0}}))\n", encoding="utf-8")
         command = [sys.executable, str(RUNNER), "--root", str(self.root), "--manifest",
                    str(self.manifest), "--validator", str(core), "--graph-runner", str(graph_runner),
@@ -675,7 +720,7 @@ class FinalizationRunnerCliTest(unittest.TestCase):
         process, payload = self.run_runner(self.root / "missing.py")
 
         self.assertEqual(2, process.returncode)
-        self.assertEqual("validator_unavailable", payload["reason_code"])
+        self.assertEqual("validator_unavailable", payload["diagnostics"][0]["code"])
 
     def test_timeout_maps_to_validator_execution_failed(self):
         slow = self.root / "slow.py"
@@ -684,7 +729,7 @@ class FinalizationRunnerCliTest(unittest.TestCase):
         process, payload = self.run_runner(slow)
 
         self.assertEqual(2, process.returncode)
-        self.assertEqual("validator_execution_failed", payload["reason_code"])
+        self.assertEqual("validator_execution_failed", payload["diagnostics"][0]["code"])
 
     def test_valid_json_with_invalid_envelope_fails_closed_for_any_exit(self):
         for exit_code in (0, 1, 2):
@@ -698,7 +743,7 @@ class FinalizationRunnerCliTest(unittest.TestCase):
                 process, payload = self.run_runner(fake)
 
                 self.assertEqual(2, process.returncode)
-                self.assertEqual("validator_execution_failed", payload["reason_code"])
+                self.assertEqual("validator_execution_failed", payload["diagnostics"][0]["code"])
 
     def test_malformed_diagnostics_and_summary_fail_closed(self):
         cases = [
@@ -720,24 +765,24 @@ class FinalizationRunnerCliTest(unittest.TestCase):
                 process, payload = self.run_runner(fake)
 
                 self.assertEqual(2, process.returncode)
-                self.assertEqual("validator_execution_failed", payload["reason_code"])
+                self.assertEqual("validator_execution_failed", payload["diagnostics"][0]["code"])
 
     def test_missing_timeout_and_malformed_graph_runner_are_distinct(self):
         process, payload = self.run_graph_runner(self.root / "missing.py")
         self.assertEqual(2, process.returncode)
-        self.assertEqual("graph_validator_unavailable", payload["reason_code"])
+        self.assertEqual("graph_validator_unavailable", payload["diagnostics"][0]["code"])
 
         slow = self.root / "slow-graph.py"
         slow.write_text("import time\ntime.sleep(1)\n", encoding="utf-8")
         process, payload = self.run_graph_runner(slow)
         self.assertEqual(2, process.returncode)
-        self.assertEqual("graph_validation_timeout", payload["reason_code"])
+        self.assertEqual("graph_validation_timeout", payload["diagnostics"][0]["code"])
 
         malformed = self.root / "malformed-graph.py"
         malformed.write_text("print('broken')\n", encoding="utf-8")
         process, payload = self.run_graph_runner(malformed)
         self.assertEqual(2, process.returncode)
-        self.assertEqual("graph_validation_output_malformed", payload["reason_code"])
+        self.assertEqual("graph_validation_output_malformed", payload["diagnostics"][0]["code"])
 
     def test_graph_failure_prevents_extension_and_preserves_diagnostics(self):
         graph = self.root / "graph.py"
@@ -789,7 +834,8 @@ class KeystoneInstallerSmokeTest(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(2, smoke.returncode)
-            self.assertEqual("validator_execution_failed", json.loads(smoke.stdout)["reason_code"])
+            self.assertEqual("validator_execution_failed",
+                             json.loads(smoke.stdout)["diagnostics"][0]["code"])
 
 
 if __name__ == "__main__":

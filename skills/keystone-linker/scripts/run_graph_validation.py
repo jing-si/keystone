@@ -14,6 +14,7 @@ def parse_args():
     parser.add_argument("--source", action="append", default=[])
     parser.add_argument("--manifest")
     parser.add_argument("--transaction")
+    parser.add_argument("--scope", choices=("transaction", "repository"))
     parser.add_argument("--validator", default=str(Path(__file__).with_name("validate_graph.py")))
     parser.add_argument("--extension", help="Optional additive validator")
     parser.add_argument("--timeout-seconds", type=float, default=30.0)
@@ -68,6 +69,8 @@ def main():
     forwarded = ["--root", args.root]
     for source in args.source:
         forwarded.extend(("--source", source))
+    if args.scope:
+        forwarded.extend(("--scope", args.scope))
     for flag, value in (("--manifest", args.manifest), ("--transaction", args.transaction)):
         if value:
             forwarded.extend((flag, value))

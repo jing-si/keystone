@@ -160,6 +160,22 @@ class GraphPlannerTests(unittest.TestCase):
             self.test.id: ImpactGrade.REQUIRED,
         })
 
+    def test_verification_requirement_traverses_and_plans_without_bounded_direct_exception(self):
+        requirement = Relation(
+            self.item.id, RelationType.REQUIRES_VERIFICATION_OF, self.code.id)
+        snapshot = GraphSnapshot(self.snapshot.nodes, self.snapshot.relations + (requirement,))
+
+        candidates = changed_seed_candidates(snapshot, (self.code.id,))
+        by_id = {candidate.node.id: candidate.grade for candidate in candidates}
+        self.assertEqual(ImpactGrade.REQUIRED, by_id[self.item.id])
+
+        transaction = plan_graph_sync(
+            self.snapshot, (self.delta,), "scope:s02",
+            requested_relations_after=(requirement,), patch_specs=(self.patch,),
+        )
+        self.assertEqual(RelationType.REQUIRES_VERIFICATION_OF,
+                         transaction.canonical_mutations[0].after.relation)
+
     def test_required_propagation_recurses_without_hiding_two_hop_candidates(self):
         code_test = Relation(self.test.id, RelationType.VERIFIES, self.code.id)
         without_direct_test = tuple(

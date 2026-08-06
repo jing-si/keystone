@@ -7,6 +7,7 @@ from .model import (
     ApplicationResult,
     ApplicationStatus,
     AttestationDecision,
+    ConflictReason,
     Diagnostic,
     GraphSnapshot,
     GraphTransaction,
@@ -86,7 +87,10 @@ def record_attestation(transaction: GraphTransaction,
         raise ValueError("patch already attested")
     attestations = transaction.attestations + (attestation,)
     if attestation.decision in (AttestationDecision.REJECT, AttestationDecision.NEEDS_REVISION):
-        return replace(transaction, attestations=attestations, state=TransactionState.CONFLICTED)
+        reason = (ConflictReason.REJECT if attestation.decision == AttestationDecision.REJECT
+                  else ConflictReason.NEEDS_REVISION)
+        return replace(transaction, attestations=attestations, state=TransactionState.CONFLICTED,
+                       conflict_reason=reason)
     confirmed = {item.patch_id for item in attestations
                  if item.decision == AttestationDecision.CONFIRM}
     required = {patch.patch_id for patch in _required_patches(transaction)}
@@ -108,7 +112,8 @@ def begin_application(transaction: GraphTransaction,
                                            evidence="current digest differs from patch baseline"))
     if stale:
         return replace(transaction, apply_results=transaction.apply_results + tuple(stale),
-                       state=TransactionState.CONFLICTED)
+                       state=TransactionState.CONFLICTED,
+                       conflict_reason=ConflictReason.STALE_BASELINE)
     return replace(transaction, state=TransactionState.APPLYING)
 
 
@@ -125,7 +130,8 @@ def record_application(transaction: GraphTransaction,
     if result.result == ApplicationStatus.FAILED:
         return replace(transaction, apply_results=results, state=TransactionState.FAILED)
     if result.result == ApplicationStatus.STALE_BASELINE:
-        return replace(transaction, apply_results=results, state=TransactionState.CONFLICTED)
+        return replace(transaction, apply_results=results, state=TransactionState.CONFLICTED,
+                       conflict_reason=ConflictReason.STALE_BASELINE)
     if not result.resulting_digest:
         raise ValueError("applied result requires resulting_digest")
     applied_ids = {item.patch_id for item in results if item.result == ApplicationStatus.APPLIED}
@@ -143,13 +149,15 @@ def resume_application(transaction: GraphTransaction,
                if result.result == ApplicationStatus.APPLIED}
     for patch_id, result in applied.items():
         if current_digests.get(patch_id) != result.resulting_digest:
-            return replace(transaction, state=TransactionState.CONFLICTED)
+            return replace(transaction, state=TransactionState.CONFLICTED,
+                           conflict_reason=ConflictReason.RECONSTRUCTION_MISMATCH)
     for patch in _required_patches(transaction):
         if patch.patch_id not in applied and current_digests.get(patch.patch_id) != patch.baseline_digest:
             stale = ApplicationResult(patch.patch_id, ApplicationStatus.STALE_BASELINE,
                                       evidence="remaining patch baseline is stale")
             return replace(transaction, apply_results=transaction.apply_results + (stale,),
-                           state=TransactionState.CONFLICTED)
+                           state=TransactionState.CONFLICTED,
+                           conflict_reason=ConflictReason.STALE_BASELINE)
     return replace(transaction, state=TransactionState.APPLYING)
 
 
@@ -209,12 +217,14 @@ def finalize_transaction(transaction: GraphTransaction,
         if current_digests.get(patch_id) != applied[patch_id].resulting_digest:
             return replace(transaction, reconstruction=reconstruction,
                            mechanical_validation=tuple(mechanical_validation),
-                           state=TransactionState.CONFLICTED)
+                           state=TransactionState.CONFLICTED,
+                           conflict_reason=ConflictReason.RECONSTRUCTION_MISMATCH)
     intended = _intended_snapshot(transaction, baseline_snapshot)
     if _normalized_snapshot(reconstruction) != intended:
         return replace(transaction, reconstruction=reconstruction,
                        mechanical_validation=tuple(mechanical_validation),
-                       state=TransactionState.CONFLICTED)
+                       state=TransactionState.CONFLICTED,
+                       conflict_reason=ConflictReason.RECONSTRUCTION_MISMATCH)
     if any(item.severity == Severity.ERROR for item in mechanical_validation):
         return replace(transaction, reconstruction=reconstruction,
                        mechanical_validation=tuple(mechanical_validation),
@@ -233,9 +243,22 @@ def new_attempt(history: AttemptHistory, revised: GraphTransaction) -> AttemptHi
     prior_baselines = {patch.target_path: patch.baseline_digest
                        for patch in history.current.surface_patches}
     new_baselines = {patch.target_path: patch.baseline_digest for patch in revised.surface_patches}
-    if (history.current.state == TransactionState.CONFLICTED
-            and prior_baselines == new_baselines):
-        raise ValueError("new attempt requires at least one new baseline")
+    if history.current.state == TransactionState.CONFLICTED:
+        reason = history.current.conflict_reason
+        baseline_changed = prior_baselines != new_baselines
+        mutation_changed = history.current.canonical_mutations != revised.canonical_mutations
+        patch_changed = history.current.surface_patches != revised.surface_patches
+        if reason == ConflictReason.STALE_BASELINE and not baseline_changed:
+            raise ValueError("stale-baseline attempt requires at least one new baseline")
+        if reason in {ConflictReason.REJECT, ConflictReason.NEEDS_REVISION} and not (
+                mutation_changed or patch_changed):
+            raise ValueError("rejected or revised attempt requires a changed mutation or patch")
+        if reason == ConflictReason.RECONSTRUCTION_MISMATCH and not (
+                baseline_changed or mutation_changed or patch_changed):
+            raise ValueError("reconstruction-mismatch attempt requires changed input")
+        if reason is None and not baseline_changed:
+            raise ValueError("legacy conflicted attempt requires at least one new baseline")
     clean = replace(revised, attestations=(), apply_results=(), reconstruction=None,
-                    mechanical_validation=(), state=TransactionState.PROPOSED)
+                    mechanical_validation=(), state=TransactionState.PROPOSED,
+                    conflict_reason=None)
     return AttemptHistory(clean, history.prior_attempts + (history.current,))

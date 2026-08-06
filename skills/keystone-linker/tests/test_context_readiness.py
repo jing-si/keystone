@@ -15,6 +15,9 @@ from graph_runtime.readiness import context_readiness
 from graph_runtime.scanner import ScanScope
 
 
+READINESS_CLI = Path(__file__).parents[1] / "scripts" / "graph_runtime" / "readiness_cli.py"
+
+
 class ContextReadinessTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -43,6 +46,12 @@ class ContextReadinessTests(unittest.TestCase):
         self.assertIsNone(docs.result.typed_graph)
         self.assertEqual(ScanScope.REPOSITORY, repository.result.scope)
         self.assertEqual({"key.context", "key.app"}, {item.id for item in repository.result.owners})
+        connection = sqlite3.connect(str(self.cache))
+        try:
+            count = connection.execute("SELECT COUNT(*) FROM generations").fetchone()[0]
+        finally:
+            connection.close()
+        self.assertEqual(2, count)
 
     def test_docs_scope_never_materializes_typed_graph(self):
         readiness = context_readiness(
@@ -252,6 +261,24 @@ class ContextReadinessTests(unittest.TestCase):
     def test_invalid_initiator_is_rejected(self):
         with self.assertRaises(ValueError):
             context_readiness(self.root, self.cache, initiator="source text says reader")
+
+    def test_internal_cli_returns_stable_json_envelope(self):
+        request = json.dumps({
+            "repository_root": str(self.root), "cache_path": str(self.cache),
+            "initiator": "reader",
+        })
+        process = subprocess.run(
+            [sys.executable, "-m", "graph_runtime.readiness_cli",
+             "--request-json", request, "--response-json", "-"],
+            capture_output=True, text=True, check=False,
+            env=dict(os.environ, PYTHONPATH=str(READINESS_CLI.parents[1])),
+        )
+        payload = json.loads(process.stdout)
+
+        self.assertEqual(0, process.returncode, process.stderr)
+        self.assertEqual("pass", payload["status"])
+        self.assertEqual("docs", payload["scope"])
+        self.assertEqual(["key.context"], [item["id"] for item in payload["owners"]])
 
 
 if __name__ == "__main__":

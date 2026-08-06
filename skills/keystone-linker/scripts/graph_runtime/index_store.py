@@ -32,7 +32,8 @@ class CacheBusy(StoreUnavailable):
     pass
 
 
-CACHE_SCHEMA_VERSION = 2
+CACHE_SCHEMA_VERSION = 3
+MAX_GENERATIONS = 4
 
 
 class SQLiteIndexStore:
@@ -107,7 +108,8 @@ def _encode(result: IndexResult) -> str:
         },
         "owners": [[item.id, item.path, item.locator] for item in result.owners],
         "refs": [[item.source_id, item.target_id, item.path, item.locator] for item in result.refs],
-        "diagnostics": [[item.code, item.message, item.path] for item in result.diagnostics],
+        "diagnostics": [[item.code, item.message, item.path, item.severity]
+                        for item in result.diagnostics],
         "typed_edges": (None if result.typed_graph is None else [
             [item.source_id, item.relation, item.target_id] for item in result.typed_graph.edges]),
     }
@@ -125,13 +127,19 @@ def _write_generation(path: Path, result: IndexResult, *, timeout: float) -> Non
         connection.execute(
             "CREATE TABLE IF NOT EXISTS generations "
             "(freshness_digest TEXT PRIMARY KEY, schema_version INTEGER NOT NULL, "
-            "payload TEXT NOT NULL, payload_digest TEXT NOT NULL)"
+            "payload TEXT NOT NULL, payload_digest TEXT NOT NULL, updated_at INTEGER NOT NULL)"
         )
-        connection.execute("DELETE FROM generations")
         connection.execute(
-            "INSERT INTO generations "
-            "(freshness_digest, schema_version, payload, payload_digest) VALUES (?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO generations "
+            "(freshness_digest, schema_version, payload, payload_digest, updated_at) "
+            "VALUES (?, ?, ?, ?, CAST(strftime('%s','now') AS INTEGER))",
             (result.freshness.digest, CACHE_SCHEMA_VERSION, payload, _payload_digest(payload)),
+        )
+        connection.execute(
+            "DELETE FROM generations WHERE freshness_digest IN ("
+            "SELECT freshness_digest FROM generations ORDER BY updated_at DESC, freshness_digest DESC "
+            "LIMIT -1 OFFSET ?)",
+            (MAX_GENERATIONS,),
         )
         connection.commit()
 

@@ -8,8 +8,16 @@ import sys
 from pathlib import Path
 
 
+DIAGNOSTIC_SCHEMA_VERSION = 1
+
+
 def emit(reason_code, message):
-    print(json.dumps({"status": "error", "reason_code": reason_code, "message": message}, sort_keys=True))
+    print(json.dumps({
+        "schema_version": DIAGNOSTIC_SCHEMA_VERSION,
+        "status": "error",
+        "diagnostics": [{"severity": "error", "code": reason_code, "message": message}],
+        "summary": {"errors": 1, "warnings": 0},
+    }, sort_keys=True))
 
 
 def parse_args():
@@ -28,7 +36,7 @@ def parse_args():
 
 
 def validate_envelope(payload, returncode):
-    if not isinstance(payload, dict):
+    if not isinstance(payload, dict) or payload.get("schema_version") != DIAGNOSTIC_SCHEMA_VERSION:
         return "Validator output must be a JSON object."
     status = payload.get("status")
     diagnostics = payload.get("diagnostics")
@@ -88,6 +96,7 @@ def merged_payload(*payloads):
     errors = sum(item["severity"] == "error" for item in diagnostics)
     warnings = sum(item["severity"] == "warning" for item in diagnostics)
     return {
+        "schema_version": DIAGNOSTIC_SCHEMA_VERSION,
         "status": "fail" if errors else "pass",
         "diagnostics": diagnostics,
         "summary": {"errors": errors, "warnings": warnings},

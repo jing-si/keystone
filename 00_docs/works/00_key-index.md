@@ -27,6 +27,7 @@ key:
 | R004 | Acceptance Finalization | `r004-acceptance-finalization/00_key-index.md` | accepted | Main acceptance를 문서 정합성과 executable validator로 종료한다 |
 | R005 | Artifact Graph Synchronization | `r005-artifact-graph-synchronization/00_key-index.md` | accepted | 기준서와 실제 산출물을 capability-first graph synchronization lifecycle로 연결했다 |
 | R006 | Reference Index and Context Readiness | `r006-reference-index-context-readiness/00_key-index.md` | accepted | source-owned ID/ref 탐색과 Reader·Linker context readiness를 구현·검증했다 |
+| R007 | Contract Execution Reconciliation | `r007-contract-execution-reconciliation/00_key-index.md` | accepted | 문서 계약 실행 정합화와 Python convention·점진적 리팩터링을 완료했다 |
 
 <!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work key.topic.work-round -->
 ## 공통 결정
