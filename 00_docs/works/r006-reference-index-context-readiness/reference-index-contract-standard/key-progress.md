@@ -20,9 +20,13 @@ key:
 
 ## 진행 내용
 
-사용자가 owner/ref-first 탐색, Reader context readiness, permissionless Linker indexing과
-선택적 graph/transaction 방향을 수락했다. 전체 기준서 Change Set을 작성할 준비가 완료됐다.
+사용자가 수락한 owner/ref-first 탐색, Reader context readiness, permissionless Linker indexing과
+선택적 graph/transaction 방향을 Project, Artifact Graph, Subagent, Bootstrap와 여섯 skill 기준 및
+관련 index에 반영했다. 상태 namespace, verification relation, metadata 상속, freshness, recursion,
+retry와 validation scope를 교차 정합화했다. Main의 독립 검토와 acceptance 전이 전이므로
+`work_status: in_progress`를 유지한다.
 
 ## 다음 작업
 
-Project와 Artifact Graph 기준부터 skill별 기준까지 `DEC-WORKS-025`를 반영하고 교차 검증한다.
+기준서 Change Set을 독립 검토하고 지적을 해소한 뒤 S01을 `complete + accepted`로 전이하고
+S02 Skill Context Contract Integration을 활성화한다.

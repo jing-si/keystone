@@ -22,7 +22,8 @@ key:
 1. `key-standard-author.md`
    - `keystone-author`의 목적, trigger/non-trigger, 기준서(3)와 작업서(4)
      creation/revision, clarify result 적용, Change Set(17) 작성 규칙, progress update
-     boundary와 Init handoff/resume을 정의한다. 소비 프로젝트 로컬 Author 기준서는 runtime
+     boundary, owner/ref metadata, direct refresh/multi-surface transaction과 context invalidation을
+     정의한다. 소비 프로젝트 로컬 Author 기준서는 runtime
      선행 조건이 아니다.
 
 <!-- key: id=key.standard.skill.author.index.parent-standard refs=key.role.author key.doc.standard key.topic.document-system key.standard.subagent -->

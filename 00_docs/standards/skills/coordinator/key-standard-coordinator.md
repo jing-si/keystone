@@ -1,6 +1,7 @@
 ---
 doc_type: standard
-approval: {state: accepted, accepted_at: "2026-08-05", accepted_by: main}
+document_lifecycle: active
+approval: {state: pending}
 key:
   id: key.standard.skill.coordinator
   refs:
@@ -51,7 +52,8 @@ authority, scope, execution environment boundary, stop condition, report contrac
 2. High-impact topic 질문 수집과 결정(6) 확정
 3. Read-only project orientation 또는 document navigation만 수행하는 작업
 4. Worker가 전체 작업서(4)를 재해석하거나 scope를 확장하게 하기
-5. Main acceptance 없이 진행 상태를 complete 또는 accepted로 표시하기
+5. Completion evidence 없이 `work_status: complete`로 표시하거나 Main acceptance 없이
+   `approval.state: accepted`로 표시하기
 6. 명시적 필요 없이 persistent worker handoff나 reviewer brief 생성
 7. Implementation, schema, auth/security, generated/codegen, shared architecture 변경을
    main/user decision 없이 자동 worker task로 보내기
@@ -548,8 +550,9 @@ Coordinator는 subagent 기준서의 reason code catalog를 우선 사용한다.
    발견하면 worker report로 `artifact_delta`를 수집한다. Main direct는 같은 contract를 직접
    수행할 수 있다.
 2. Delta는 source surface, changed locator, semantic summary와 target source의 UTF-8 raw-byte
-   SHA-256 baseline을 가진다. Graph-relevant delta는 Linker synchronization을 자동 시작하지만
-   current scope, Coordinator permission, worker authority 또는 acceptance를 자동 확대하지 않는다.
+   SHA-256 baseline을 가진다. Graph-relevant delta가 복수 source surface patch를 요구할 때만
+   Linker synchronization transaction을 시작한다. 단일 surface 변경은 direct refresh로 끝내며
+   어느 경로도 current scope, Coordinator permission, worker authority 또는 acceptance를 확대하지 않는다.
 3. Linker만 canonical graph mutation과 exact per-surface patch를 결정한다. Coordinator/Main과
    worker는 relation을 독자적으로 확정하거나 Linker proposal을 재해석하지 않는다.
 4. Repository surface owner는 자기 implementation 의미와 exact patch를 대조해 patch별
@@ -748,3 +751,21 @@ Coordinator 기준은 다음 방법으로 검증한다.
    - `rg -n "external coding skill|외부 코딩 스킬|keystone-default-bounded-worker|injected skill" 00_docs/standards`
 25. 프로젝트 로컬 Coordinator 기준서가 없어도 설치된 contract로 사용자 허락과 assignment
     경계를 판단할 수 있어야 한다.
+
+<!-- key: id=key.standard.skill.coordinator.permissionless-linker-boundary refs=key.role.coordinator key.role.linker key.standard.subagent key.boundary.scope-control -->
+## Permissionless Linker와 Coordinator 허락 경계
+
+1. Coordinator의 explicit user permission은 file-changing worker delegation과 scope-bearing
+   orchestration에 적용한다. Source-write authority가 없는 Linker의 internal scan/index/graph
+   interpretation/validation은 이 permission을 요구하지 않는다.
+2. Permissionless Linker는 Coordinator worker가 아니며 source patch, scope expansion, worker 생성,
+   의미 결정과 acceptance를 수행할 수 없다. 이 예외가 Coordinator 권한을 확대하지 않는다.
+3. Coordinator는 assignment 전에 fresh Reader context token을 재사용하고 필요한 artifact context가
+   없을 때 permissionless Linker의 lazy repository scope 결과를 Context Pack에 포함할 수 있다.
+4. File-changing worker report 뒤 affected discovery scope를 invalidation한다. 후속 review와
+   verification은 stale pre-write index가 아니라 refreshed owner/ref/graph context를 사용한다.
+5. 단일 repository surface 안의 승인된 작은 anchor refresh는 해당 surface owner의 direct lane으로
+   처리할 수 있다. Document와 repository 등 복수 surface 정합화가 필요할 때만 graph transaction을
+   요구한다.
+6. Transaction retry는 conflict reason별 변경 조건과 새 transaction ID/attempt history를 검증한다.
+   Repository coverage debt는 current transaction omission과 분리해 assignment scope를 자동 넓히지 않는다.

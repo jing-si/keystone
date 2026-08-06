@@ -1,6 +1,7 @@
 ---
 doc_type: standard
-approval: {state: accepted, accepted_at: "2026-08-05", accepted_by: main}
+document_lifecycle: active
+approval: {state: pending}
 key:
   id: key.standard.skill.linker
   refs:
@@ -181,7 +182,7 @@ Linker는 초기 구현에서 다음 metadata surface를 우선 읽는다.
    <!-- key: id=key.rule.example.independent-rule supersedes=key.rule.example.old-rule -->
    - Independently replaceable rule
 
-   | <!-- key: id=key.acceptance.example.contract verifies=key.claim.example.contract --> `AC-01` | expected result |
+   | <!-- key: id=key.acceptance.example.contract requires_verification_of=key.claim.example.contract --> `AC-01` | expected result |
    ```
 
 4. Code, config, schema, API, test artifact 안의 `keystone:` line comment
@@ -305,9 +306,9 @@ scope, Coordinator permission, worker assignment 또는 acceptance를 자동 생
 1. Delta locator와 각 source의 UTF-8 raw-byte SHA-256 baseline을 수집한다.
 2. `declared` evidence는 admissible로, `observed` evidence는 surface-owner `confirm` 조건으로
    수용하며 `inferred` evidence는 mutation에서 제외한다.
-3. Capability-first로 node/relation을 정규화한다. Capability가 별도 안정 의미를 만들지 않는
-   단일 schema constraint나 특정 policy implementation만 bounded direct item→artifact 예외로
-   허용하고 이유를 기록한다.
+3. Owner/ref-first로 node와 direct lookup을 정규화한다. Multi-hop, semantic role, dependency,
+   verification evidence 또는 reuse 분석이 필요한 relation만 typed graph projection에 추가하며
+   capability를 모든 artifact의 필수 중심 node로 만들지 않는다.
 4. Artifact Graph 기준서의 canonical node/relation/provenance/locator/lifecycle schema와 relation
    direction을 사용한다.
 5. Markdown metadata, safe language anchor 또는 `<source>.keystone.json` companion 중 해당
@@ -581,3 +582,42 @@ Linker 기준은 다음 방법으로 검증한다.
    - `rg --files 00_docs`
    - `rg -n "keystone-linker|linker_report|Artifact Discovery|Impact Analysis|Stale/Gap Review" 00_docs/standards`
    - `rg -n "source_surface_handoffs|graph_interpretation|operational graph interpretation" 00_docs/standards/skills/linker/key-standard-linker.md`
+
+<!-- key: id=key.standard.skill.linker.reference-index-readiness refs=key.role.linker key.topic.artifact-graph key.topic.work-recovery key.boundary.read-only -->
+## Owner/ref index와 context readiness mode
+
+Owner/ref Index Readiness는 Linker의 permissionless internal mode다. User-facing command로 노출하지
+않고 Reader나 다른 Keystone skill이 필요한 context scope를 전달해 호출한다.
+
+1. 의미 있는 source artifact의 declared owner ID와 refs를 수집하고 duplicate owner, unresolved ref,
+   locator gap을 진단한다. 모든 artifact에 typed relation이나 capability node를 요구하지 않는다.
+2. Owner/ref reverse index는 repository 밖 disposable cache에 single writer로 생성한다. Source
+   annotation, standard와 companion metadata가 source of truth이고 cache는 acceptance/transaction
+   evidence가 아니다.
+3. Freshness는 worktree identity, discovery scope 이름, sorted path set과 각 source raw-byte SHA-256
+   digest로 결정한다. Git HEAD, mtime과 timestamp만으로 fresh를 선언하지 않는다.
+4. Docs scope는 configured document root만, repository scope는 explicit include/exclude와 supported
+   source/companion discovery를 사용한다. Repository scan은 artifact context가 필요할 때 lazy하다.
+5. Cache lock/write/corruption 실패는 fail-soft diagnostic으로 남기고 raw source 탐색 결과를
+   반환한다. Cache failure만으로 current work나 Reader orientation을 block하지 않는다.
+6. Typed graph projection은 multi-hop/semantic-role/dependency/verification/reuse query가 필요할
+   때 owner/ref index 위에 파생한다. Source에 relation이 없으면 broad similarity로 canonical edge를
+   만들지 않는다.
+7. Reader -> Linker와 Linker -> Reader 호출은 serialized recursion guard를 전달하며 initiating
+   lane에 재진입하지 않는다.
+
+<!-- key: id=key.standard.skill.linker.transaction-classification refs=key.role.linker key.topic.artifact-graph key.topic.change-set -->
+## Direct refresh와 transaction 분류
+
+1. 단일 source surface의 owner/ref 또는 metadata 변경은 surface owner가 직접 적용하고 Linker는
+   index refresh와 validation만 수행한다.
+2. 둘 이상의 source surface가 함께 바뀌어야 canonical meaning이 닫히는 경우에만 graph
+   synchronization transaction을 제안한다.
+3. Conflict reason은 `stale_baseline | reject | needs_revision | reconstruction_mismatch |
+   transient_application_failure`로 보존한다. 모든 retry는 새 transaction ID와 attempt history를
+   가진다.
+4. Stale baseline retry는 하나 이상의 changed baseline이 필요하다. Reject/needs_revision은 같은
+   baseline을 허용하되 mutation 또는 exact patch가 달라야 한다. Reconstruction mismatch는 baseline,
+   mutation 또는 patch 중 하나가 달라야 한다. Verified transient failure는 동일 patch retry를 허용한다.
+5. Transaction scope validation은 current work omission을 gate한다. Repository scope validation은
+   전체 coverage debt를 보고하되 current transaction 밖 gap만으로 current work를 block하지 않는다.

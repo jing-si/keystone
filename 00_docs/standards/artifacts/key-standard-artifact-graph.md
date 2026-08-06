@@ -1,6 +1,7 @@
 ---
 doc_type: standard
-approval: {state: accepted, accepted_at: "2026-08-05", accepted_by: main}
+document_lifecycle: active
+approval: {state: pending}
 key:
   id: key.standard.artifact.graph
   refs:
@@ -138,10 +139,12 @@ Generated reverse index나 cache가 필요해지면 별도 결정(6)과 bounded 
 <!-- key: id=key.standard.artifact.graph.synchronization-contract refs=key.topic.artifact-graph key.topic.change-set key.topic.verification key.role.linker key.role.author key.role.coordinator -->
 ## Canonical graph synchronization contract
 
-Graph-relevant change는 `document_delta` 또는 `artifact_delta`를 입력으로 synchronization
-transaction을 자동 시작한다. 이 자동 trigger는 기존 user-approved scope를 넓히거나
-Coordinator permission, worker assignment, acceptance를 자동 생성하지 않는다. 범위 밖 patch가
-필요하면 transaction은 그 surface를 적용하지 않고 `conflicted`로 보고한다.
+ID/ref와 metadata 변경이 단일 source surface 안에서 끝나면 surface owner가 직접 갱신하고
+Linker는 외부 파생 index를 refresh한다. `document_delta` 또는 `artifact_delta`가 둘 이상의
+source surface를 함께 정합화해야 할 때만 synchronization transaction을 시작한다. 이 trigger는
+기존 user-approved scope를 넓히거나 Coordinator permission, worker assignment, acceptance를
+자동 생성하지 않는다. 범위 밖 patch가 필요하면 transaction은 그 surface를 적용하지 않고
+`conflicted`로 보고한다.
 
 ```yaml
 change_delta:
@@ -153,11 +156,10 @@ change_delta:
   graph_relevant: true | false
 ```
 
-Capability가 문서와 구현 사이의 기본 중심 node다. 여러 artifact에 걸친 기능, 재사용 가능한
-behavior 또는 장기 안정성이 필요한 의미는 capability를 거친다. 단일 schema constraint,
-특정 policy implementation 또는 한 artifact에만 국한되어 capability가 별도 의미를 만들지
-못하는 bounded case는 document item에서 artifact로 직접 relation을 선언할 수 있다. 이 예외는
-Linker mutation에 `direct_relation_reason`을 기록하고 broad topic·path overlap에는 사용하지 않는다.
+Stable ID owner와 `refs`가 문서와 구현 사이의 기본 직접 탐색 계약이다. Capability node와 typed
+relation은 multi-hop 탐색, semantic role, dependency, verification evidence 또는 reuse 분석이
+필요할 때만 추가한다. Capability를 모든 artifact의 중심 node로 강제하지 않으며 direct owner/ref
+연결을 예외로 취급하지 않는다. Broad topic·path overlap은 owner/ref나 typed relation의 근거가 아니다.
 
 Canonical wire model은 JSON object로 직렬화 가능한 다음 field를 사용한다.
 
@@ -171,7 +173,7 @@ graph_node:
   provenance: {produced_from: [], governed_by: []}
 graph_relation:
   source:
-  relation: produces | provides | uses | implements | verifies | depends_on | governed_by | documents | supersedes | derived_from
+  relation: produces | provides | uses | implements | requires_verification_of | verifies | depends_on | governed_by | documents | supersedes | derived_from
   target:
   evidence: declared | observed | inferred
   provenance: {surface:, locator:, attested_by:}
@@ -264,8 +266,13 @@ patch만 attestation한다. `reject`는 proposal과 source evidence가 양립하
 3. `ready_to_apply -> applying | conflicted`
 4. `applying -> partially_applied | verified | conflicted | failed`
 5. `partially_applied -> applying | conflicted | failed`
-6. `conflicted -> proposed`는 새 baseline과 revised mutation/patch로 재계획할 때만 허용한다.
-7. `failed -> proposed`는 원인을 보존하고 새 attempt를 만들 때만 허용한다.
+6. `conflicted -> proposed`는 새 transaction ID와 attempt history를 만들고 conflict reason에 맞는
+   변경 증거가 있을 때 허용한다. `stale_baseline`은 하나 이상의 새 baseline이 필요하다.
+   `reject | needs_revision`은 같은 baseline을 허용하되 mutation 또는 exact patch가 달라야 한다.
+   Reconstruction mismatch는 baseline, mutation 또는 patch 중 하나가 달라야 한다.
+7. `failed -> proposed`는 원인을 보존하고 새 transaction ID와 attempt history를 만들 때만
+   허용한다. Verification으로 transient application failure임이 확인되면 동일 baseline/mutation/
+   patch retry를 허용하고 그 외 failure는 원인에 영향을 받는 입력을 변경해야 한다.
 
 `verified`는 모든 required patch의 `confirm`, apply 직전 baseline 일치, 모든 required result의
 `applied`, Linker의 source 재구성 결과가 canonical mutation과 일치함, mechanical validator
@@ -341,7 +348,7 @@ Artifact relation은 다음 field 의미를 우선 사용한다.
 ```yaml
 artifact_relation:
   source: key.<id>
-  relation: produces | provides | uses | implements | verifies | depends_on |
+  relation: produces | provides | uses | implements | requires_verification_of | verifies | depends_on |
             governed_by | documents | supersedes | derived_from
   target: key.<id>
   evidence: declared | observed | inferred
@@ -388,8 +395,8 @@ verification note에 둘 수 있다.
 ## Document item metadata
 
 Document item은 Markdown 문서 안에서 다른 항목과 독립적으로 참조·변경·대체·검증할 수 있는
-의미 단위다. 문서와 section metadata가 있어도 아래 항목은 필요할 때 별도의 stable `key.id`를
-가질 수 있다.
+의미 단위다. 문서와 section metadata가 있어도 아래 조건에 해당하는 의미 있는 항목은 별도의
+stable owner `key.id`를 가져야 한다.
 
 1. 번호가 있는 normative rule, 금지·허용·필수 조건
 2. 결정과 결정 안에서 부분적으로 대체될 수 있는 claim
@@ -399,8 +406,9 @@ Document item은 Markdown 문서 안에서 다른 항목과 독립적으로 참�
 6. 과거 변경에서 반복적으로 stale candidate가 된 의미 단위
 
 모든 문장, bullet, 표 행에 metadata를 붙이지 않는다. 단순 설명, 예시, 순서 없는 열거,
-상위 의미를 반복하는 문장과 독립적으로 변경하거나 참조할 수 없는 조각은 부모 metadata를
-상속한다. 표시 번호나 표의 visible ID는 locator이며 stable `key.id`를 대신하지 않는다.
+상위 의미를 반복하는 문장과 독립적으로 변경하거나 참조할 수 없는 조각은 새 owner ID 대상이
+아니다. 이들은 허용된 effective metadata만 부모에서 상속한다. 표시 번호나 표의 visible ID는
+locator이며 stable `key.id`를 대신하지 않는다.
 
 Document item metadata의 최소 선언은 `id`다. `refs`, typed relation, `lifecycle`과
 `legacy_terms`는 해당 항목에 실제로 필요한 경우에만 선언한다.
@@ -416,12 +424,14 @@ Markdown 표는 행 사이의 comment로 표 구조를 깨뜨리지 않는다. �
 cell 안에 compact comment를 두고 visible row ID를 locator로 유지한다.
 
 ```markdown
-| <!-- key: id=key.acceptance.worker.planning-grouping verifies=key.claim.worker.planning-boundary --> `PA-PLAN-01` | 입력 | 기대 결과 |
+| <!-- key: id=key.acceptance.worker.planning-grouping requires_verification_of=key.claim.worker.planning-boundary --> `PA-PLAN-01` | 입력 | 기대 결과 |
 ```
 
-Document item은 부모 document와 section의 `governed_by`, source authority와 lifecycle을
-기본 상속한다. `id`와 `supersedes`는 상속하지 않는다. Item lifecycle이 부모와 다를 때만
-명시하며, 자식 선언은 부모의 source authority를 조용히 확대하거나 변경할 수 없다.
+Parser는 source가 쓴 `declared` metadata와 document -> section -> item 순서로 계산한
+`effective` metadata를 구분한다. Document item은 부모 document와 section의 `governed_by`,
+source authority, `document_lifecycle`과 approval을 기본 상속한다. `id`, `supersedes`, legacy
+term과 일반 typed relation은 상속하지 않는다. Item lifecycle이 부모와 다를 때만 명시하며,
+자식 선언은 부모의 source authority나 approval state를 조용히 확대할 수 없다.
 
 결정 전체가 하나의 대체 단위이면 `key.decision.*`를 사용한다. 결정의 일부 의미만 후속 결정이
 대체하고 나머지는 유지하면 그 부분을 `key.claim.*`으로 분리하고 새 claim에서 이전 claim으로
@@ -480,12 +490,14 @@ API artifact가 capability provider라는 뜻은 아니다.
 2. `provides`: code/config/schema artifact가 capability를 제공한다.
 3. `uses`: artifact가 다른 capability, API, code artifact를 의미적으로 사용한다.
 4. `implements`: code/config/schema artifact가 API 또는 결정된 contract를 구현한다.
-5. `verifies`: test artifact가 capability, API, decision, code behavior를 검증한다.
-6. `governed_by`: artifact가 기준서(3)나 결정(6)의 규칙을 따른다.
-7. `documents`: source document가 artifact를 설명한다.
-8. `supersedes`: 새 artifact가 기존 artifact를 대체한다.
-9. `derived_from`: artifact가 다른 artifact나 source에서 파생되었다.
-10. `depends_on`: source artifact/work가 target artifact/work의 의미·산출·선행 상태에 의존한다.
+5. `requires_verification_of`: acceptance criterion 또는 claim이 어떤 target의 검증을 요구한다.
+6. `verifies`: test artifact 또는 `verification_result`가 capability, API, decision, claim이나
+   code behavior를 실제로 검증한 evidence를 나타낸다.
+7. `governed_by`: artifact가 기준서(3)나 결정(6)의 규칙을 따른다.
+8. `documents`: source document가 artifact를 설명한다.
+9. `supersedes`: 새 artifact가 기존 artifact를 대체한다.
+10. `derived_from`: artifact가 다른 artifact나 source에서 파생되었다.
+11. `depends_on`: source artifact/work가 target artifact/work의 의미·산출·선행 상태에 의존한다.
 
 `produced_from`은 이 typed relation 목록에 추가하지 않는다. Output artifact에 선언된
 `authority.produced_from: <source>`은 Linker나 generated index가 `<source> produces <output>`의
@@ -516,7 +528,8 @@ Typed relation은 source에서 target으로 읽는다. Reverse relation은 sourc
 | `provides` | code/config/schema artifact -> capability | capability 변경 시 provider는 `required`; provider 변경 시 capability는 `strong_candidate` 이상 |
 | `uses` | artifact -> capability/API/code artifact | target 변경 시 source는 `strong_candidate`; source 변경 시 target은 보통 `informational` |
 | `implements` | code/config/schema -> API/contract/decision | contract 변경 시 implementer는 `required` |
-| `verifies` | test -> capability/API/decision/code behavior | target 변경 시 test는 `required` |
+| `requires_verification_of` | acceptance criterion/claim -> capability/API/decision/claim/code behavior | target 변경 시 requirement와 검증 계획을 review |
+| `verifies` | test/verification_result -> capability/API/decision/claim/code behavior | target 변경 시 verification evidence는 `required` review |
 | `governed_by` | artifact -> standard/decision | governing source 변경 시 artifact는 `required` 또는 `strong_candidate` |
 | `documents` | source document/section -> artifact | artifact 변경 시 document는 `strong_candidate`; broad mention은 `key.refs`로 둔다 |
 | `supersedes` | new artifact -> old artifact | old reference 발견 시 stale 또는 `required` review 후보 |
@@ -555,6 +568,8 @@ work_gates:
       work_completion: true
     condition:
       work_status: complete
+      approval:
+        state: accepted
     optional: false
 ```
 
@@ -563,8 +578,9 @@ work_gates:
 2. `work_gates[].dependency`는 같은 source의 declared `depends_on` target을 가리켜야 한다.
 3. `applies_to.steps`는 gate가 적용되는 source step ID 목록, `work_completion`은 source work
    종료 적용 여부다. 둘 중 하나 이상을 명시한다.
-4. `condition.work_status`는 target이 충족해야 할 상태다. Project가 명시적으로
-   확장하지 않으면 `complete`를 사용한다.
+4. 기본 required gate는 `condition.work_status: complete`와
+   `condition.approval.state: accepted`를 모두 요구한다. 실행 완료와 Main acceptance 중 하나만
+   충족하면 `waiting`이며 project가 명시적으로 확장하지 않으면 이 조합을 사용한다.
 5. `optional: true`는 target 미충족을 blocking으로 사용하지 않는다는 뜻이지 relation이나
    검증을 삭제한다는 뜻이 아니다.
 6. Legacy `<!-- keystone: depends_on=... -->`은 structured metadata가 없을 때만 relation
@@ -594,8 +610,10 @@ event graph에서 판정한다.
 <!-- key: id=key.standard.artifact.graph.metadata-admission refs=key.topic.code-anchor key.topic.artifact-graph key.boundary.scope-control -->
 ## Metadata admission policy
 
-Artifact metadata는 모든 code symbol에 붙이지 않는다. 다음 조건 중 하나에 해당하는 artifact에
-우선 부여한다.
+Artifact metadata는 모든 code symbol에 붙이지 않는다. 다음 조건 중 하나에 해당해 독립적인
+의미·책임·변경 단위가 되는 standard/code/config/schema/API/test artifact는 정확히 한 source owner에
+stable ID를 선언한다. 다른 artifact는 그 ID를 `refs`로 가리킨다. Typed relation은 별도 semantic
+query가 필요할 때만 추가한다.
 
 1. 사람이 수락한 기준서(3)나 결정(6)과 직접 연결된다.
 2. 기준서(3), 결정(6), 작업서(4)의 명시 산출물이며 `produces` 또는 `governed_by` relation으로
@@ -742,11 +760,36 @@ authority를 따르고, 위임이 필요하면 사용자 허락을 받은 Coordi
 Generated reverse index나 graph cache는 source of truth가 아니다.
 
 1. Source of truth는 source document, 키메타(9), 코드 앵커(18), repository evidence다.
-2. 초기 Keystone 기준에서는 Linker가 generated index를 직접 생성하거나 갱신하지 않는다.
-3. Linker는 generated index 필요성, stale risk, omitted candidate를 report할 수 있다.
+2. Linker는 repository 밖의 disposable cache에 owner/ref reverse index와 선택적 typed graph
+   projection을 생성하거나 갱신할 수 있다. Repository source와 `00_docs/**`에는 쓰지 않는다.
+3. Generated index의 freshness는 worktree identity, discovery scope path set과 각 source의
+   raw-byte digest로 판정한다. Git HEAD, mtime 또는 timestamp만으로 fresh를 선언하지 않는다.
 4. Generated index 작성이 필요해지면 별도 결정(6)과 bounded workflow를 먼저 둔다.
 5. Generated index가 source document, code anchor, repository evidence와 충돌하면 source
    surface를 우선하고 generated index는 stale candidate로 보고한다.
+
+<!-- key: id=key.standard.artifact.graph.validation-scopes refs=key.topic.artifact-graph key.topic.verification key.topic.work-recovery -->
+## Transaction과 repository validation scope
+
+Validator input은 `scope: transaction | repository`를 명시하고 모든 결과를 같은 versioned
+diagnostic envelope로 반환한다.
+
+1. Transaction scope는 current work의 input delta, required surface, owner/ref closure, patch,
+   attestation, apply, reconstruction을 검사한다. 이 scope의 omission과 invalid active relation은
+   finalization gate다.
+2. Repository scope는 configured include/exclude와 supported source/companion adapter로 path set을
+   자동 발견한다. 발견 path-set digest, manifest가 full set인지 subset인지, missing companion,
+   duplicate manifest entry, ignored/generated path 처분을 기록한다.
+3. Repository-only legacy gap과 incomplete coverage는 debt이며 current transaction 밖이라는 이유만으로
+   현재 work를 block하지 않는다. Current transaction에 포함되어야 할 source가 repository scan에서만
+   발견되면 transaction omission으로 승격한다.
+4. Removed source/node를 가리키는 active relation, removed source에서 시작하는 active relation,
+   duplicate owner ID, unresolved required ref/locator와 relation closure 위반은 해당 scope의 error다.
+5. Canonical transaction, companion와 manifest는 알려지지 않은 field를 error로 진단한다. Versioned
+   extension namespace로 선언된 project adapter field만 별도 정책에 따라 허용한다.
+6. 정상 pass/fail과 runner execution error는 모두 최소 `schema_version`, `status`, `diagnostics`,
+   `summary`를 가진다. Execution error의 `reason_code`와 `message`도 `diagnostics` entry로 넣어
+   호출자가 별도 JSON schema를 처리하지 않게 한다.
 
 <!-- key: id=key.standard.artifact.graph.simulation-cases refs=key.topic.integration-verification key.topic.artifact-graph key.topic.verification -->
 ## Simulation cases for later integration verification
@@ -794,7 +837,8 @@ Artifact Graph 기준은 다음 방법으로 검증한다.
 6. Locator와 stable ID가 분리되어야 한다.
 7. Mechanical stale, semantic stale, metadata gap을 구분할 수 있어야 한다.
 8. Impact candidate 등급이 자동 수정 또는 자동 acceptance로 해석되지 않아야 한다.
-9. Generated graph index가 source of truth나 Linker write target으로 해석되지 않아야 한다.
+9. Generated graph index가 source of truth나 repository source의 Linker write target으로
+   해석되지 않아야 한다.
 10. Graph evidence 부재가 초기화 실패나 자동 Coordinator 호출로 해석되지 않아야 한다.
 11. Heading, list item과 table row의 독립 의미에 stable item ID를 부여할 수 있어야 한다.
 12. 부분 대체는 document 전체가 아니라 claim-level `supersedes`로 표현할 수 있어야 한다.

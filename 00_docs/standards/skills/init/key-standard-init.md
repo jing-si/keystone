@@ -1,11 +1,9 @@
 ---
 doc_type: standard
 created_at: "2026-07-20"
-status: active
+document_lifecycle: active
 approval:
-  state: accepted
-  accepted_at: "2026-08-04"
-  accepted_by: main
+  state: pending
 key:
   id: key.standard.skill.init
   refs:
@@ -209,3 +207,14 @@ repair 후 Reader/Author/Main이 복구할 risk로 보고한다.
 6. 소비 프로젝트 로컬 Init 기준서를 required input으로 요구하지 않아야 한다.
 7. 새 scaffold의 `created_at`, pending approval과 결정일이 Bootstrap temporal metadata 기준과
    일치해야 하며, repair가 기존 날짜를 바꾸지 않아야 한다.
+
+<!-- key: id=key.standard.skill.init.context-readiness-boundary refs=key.role.init key.role.reader key.role.linker key.topic.work-recovery -->
+## Context readiness 경계
+
+1. Usable Keystone foundation이 있는 프로젝트의 session orientation과 cache/index readiness는
+   Init mode가 아니라 Reader가 수행한다.
+2. Init은 external Linker cache를 scaffold, repair 또는 source-of-truth로 만들지 않는다.
+3. Initialization inspection 중 graph/index cache가 없거나 stale해도 foundation state를 낮추지
+   않는다. Source documents와 recovery invariants만 initialization state를 결정한다.
+4. Initialize/repair 뒤 필요한 첫 orientation은 Reader handoff로 남긴다. Repository artifact scan은
+   해당 후속 요청에 필요할 때만 lazy하게 수행한다.

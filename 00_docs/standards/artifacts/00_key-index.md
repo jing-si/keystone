@@ -17,9 +17,9 @@ key:
 ## 현재 기준서
 
 1. `key-standard-artifact-graph.md`
-   - 문서, decision, work, capability, code/config/schema/API/test artifact의 metadata,
-     ownership boundary, relation direction, locator, lifecycle, stale/gap handling,
-     impact candidate 기준을 정의한다.
+   - 문서와 repository artifact의 one-owner ID/ref, external derived index, optional typed graph,
+     declared/effective metadata, relation direction, locator, direct refresh/multi-surface transaction,
+     transaction/repository validation과 stale/gap 기준을 정의한다.
 
 <!-- key: id=key.standard.artifact.index.parent-standard refs=key.doc.standard key.topic.document-system -->
 ## Parent 기준서
@@ -31,8 +31,8 @@ key:
 <!-- key: id=key.standard.artifact.index.reading-rules refs=key.doc.standard key.topic.artifact-graph key.topic.impact-review -->
 ## 읽기 규칙
 
-1. 문서와 code/config/schema/API/test artifact 연결, relation propagation, impact candidate,
-   stale/gap 판단이 필요하면 `key-standard-artifact-graph.md`를 읽는다.
+1. Owner/ref 직접 탐색, optional relation propagation, impact candidate, stale/gap 또는 validation
+   scope 판단이 필요하면 `key-standard-artifact-graph.md`를 읽는다.
 2. Artifact graph 기준은 원천 문서(2) 권위와 Main acceptance 규칙을 대체하지 않는다.
 3. Graph evidence 부재만으로 초기화 실패로 보지 않고 Linker가 fail-soft로 gap을 보고한다.
 4. Artifact graph 후보를 실제 변경으로 연결해야 하면 `../skills/linker/00_key-index.md`,

@@ -1,6 +1,6 @@
 ---
 doc_type: standard_index
-status: active
+document_lifecycle: active
 approval:
   state: accepted
   accepted_by: main
@@ -23,7 +23,7 @@ key:
 
 1. `key-standard-bootstrap.md`
    - 런타임 권위 경계, 초기화 상태, R000 Project Foundation, Main 수락과 User Decision,
-     handoff/resume, fail-soft 공통 원칙을 정의한다.
+     Init/session readiness 분리, handoff/resume, fail-soft 공통 원칙을 정의한다.
 
 <!-- key: id=key.standard.bootstrap.index.related-standards refs=key.doc.standard key.topic.skill-contract -->
 ## 관련 기준서

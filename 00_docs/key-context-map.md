@@ -25,20 +25,20 @@ key:
 ## 프로젝트
 
 이 저장소는 `keystone` 스킬 시스템을 정의하고 구현하기 위한 저장소다. 최종 산출물은
-사람이 읽을 수 있는 원천 문서(2)를 중심 인터페이스로 삼아 사람의 의도, 문서, code, test,
-bounded worker 실행 결과를 아티팩트 그래프(14)와 worker assignment/report로 연결하는 독립 스킬들의
-집합이다.
+사람이 읽을 수 있는 원천 문서(2)를 중심 인터페이스로 삼아 stable owner ID와 ref로 문서, code,
+config, schema, test를 직접 탐색하고, 필요한 의미 연결만 선택적 아티팩트 그래프(14)로 해석하며
+bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 스킬들의 집합이다.
 
 1. `keystone-init`: 새 프로젝트에 R000과 작업 복구 scaffold를 만들고 프로젝트 기준서 작성
    흐름을 시작한다.
-2. `keystone-reader`: 존재하는 기준서(3), 작업서(4), artifact graph 필요 단서를 읽고 context brief를
-   만든다.
+2. `keystone-reader`: 세션 시작에 기준서(3), 작업서(4)를 읽고 docs-first context readiness와
+   context brief를 준비하며 repository artifact scope는 필요할 때 lazy하게 요청한다.
 3. `keystone-clarify`: 실제 사용자 결정(6)을 한 topic씩 정리하고 호출자에게 반환한다.
 4. `keystone-author`: 기준서, 작업서, 진행 기록, 결정 기록, Change Set(17)을 작성하거나
    승인된 범위에서 수정한다.
-5. `keystone-linker`: Artifact Graph의 canonical mutation decision owner로서 문서, capability,
-   code, config, schema, API, test artifact의 연결과 impact/stale/gap 후보를 해석하고 exact
-   graph mutation을 결정하되 source surface를 직접 수정하지 않는다.
+5. `keystone-linker`: Source-write-free internal role로 owner/ref external index readiness와 선택적
+   Artifact Graph 해석, impact/stale/gap 및 validation을 수행하고 multi-surface change에서 exact
+   graph mutation을 결정하되 repository source surface를 직접 수정하지 않는다.
 6. `keystone-coordinator`: 사용자 허락이 있는 work scope에서 Keystone context를 worker
    assignment로 만들고 worker report를 Keystone workflow로 회수한다.
 
@@ -57,13 +57,13 @@ bounded worker 실행 결과를 아티팩트 그래프(14)와 worker assignment/
 | 프로젝트 | `00_docs/standards/01_key-project-standard.md` | 프로젝트 공통 규칙, 원천 문서(2) 정책, 아티팩트 그래프(14), 스킬군 역할, coordinator 호환성을 확인할 때 읽는다 |
 | Bootstrap | `00_docs/standards/bootstrap/key-standard-bootstrap.md` | 초기화 상태, R000, runtime authority, Main/User Decision, handoff/resume를 확인할 때 읽는다 |
 | Subagent | `00_docs/standards/subagents/key-standard-subagents.md` | helper/subagent의 bounded worker model, purpose preset, authority, injected skill contract, report status, 실행 환경 경계를 확인할 때 읽는다 |
-| Artifact Graph | `00_docs/standards/artifacts/key-standard-artifact-graph.md` | graph model, ownership boundary, typed relation, locator, stale/gap handling, impact candidate 기준을 확인할 때 읽는다 |
+| Artifact Graph | `00_docs/standards/artifacts/key-standard-artifact-graph.md` | owner/ref index, optional graph model, declared/effective metadata, validation scope, direct refresh/transaction과 impact 기준을 확인할 때 읽는다 |
 | 스킬별 | `00_docs/standards/skills/00_key-index.md` | 개별 Keystone 스킬의 상세 기준서를 찾을 때 읽는다 |
 | Init | `00_docs/standards/skills/init/key-standard-init.md` | `keystone-init` 개발 계약, scaffold write authority와 통합 시나리오를 확인할 때 읽는다 |
-| Reader | `00_docs/standards/skills/reader/key-standard-reader.md` | `keystone-reader`의 trigger, mode, output, read-only boundary를 확인할 때 읽는다 |
+| Reader | `00_docs/standards/skills/reader/key-standard-reader.md` | session orientation, docs-first context readiness, lazy repository scope와 read-only boundary를 확인할 때 읽는다 |
 | Author | `00_docs/standards/skills/author/key-standard-author.md` | `keystone-author`의 기준서(3), 작업서(4), progress update boundary를 확인할 때 읽는다 |
 | Clarify | `00_docs/standards/skills/clarify/key-standard-clarify.md` | `keystone-clarify`의 decision collection, reflection, Author handoff를 확인할 때 읽는다 |
-| Linker | `00_docs/standards/skills/linker/key-standard-linker.md` | `keystone-linker`의 operational graph interpretation, impact analysis, stale/gap review, source surface handoff, worker assignment seed를 확인할 때 읽는다 |
+| Linker | `00_docs/standards/skills/linker/key-standard-linker.md` | permissionless owner/ref index readiness, optional graph interpretation, validation과 source surface handoff를 확인할 때 읽는다 |
 | Coordinator | `00_docs/standards/skills/coordinator/key-standard-coordinator.md` | `keystone-coordinator`의 worker assignment/report, bounded worker routing, report, review, verification, acceptance flow를 확인할 때 읽는다 |
 
 <!-- key: id=key.context-map.work-order refs=key.topic.document-system key.doc.source key.topic.work-sequence key.topic.work-round -->

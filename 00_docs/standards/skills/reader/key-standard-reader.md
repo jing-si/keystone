@@ -1,5 +1,7 @@
 ---
 doc_type: standard
+document_lifecycle: active
+approval: {state: pending}
 key:
   id: key.standard.skill.reader
   refs:
@@ -401,3 +403,26 @@ Reader 기준은 다음 방법으로 검증한다.
 10. Verification command:
    - `rg --files 00_docs`
    - Reader 관련 기준서를 읽어 link와 scope consistency 확인
+
+<!-- key: id=key.standard.skill.reader.context-readiness refs=key.role.reader key.role.linker key.topic.work-recovery key.boundary.read-only -->
+## Session context readiness
+
+사용자가 Codex 세션 시작에 Reader를 명시 호출하면 Reader는 project orientation과 context readiness의
+진입점이 된다. Reader는 cache owner가 아니며 repository source read-only를 유지한다.
+
+1. Configured document root, root/round/work index와 active Progress를 읽어 현재 work context를
+   복구한다.
+2. 첫 invocation은 docs discovery scope에 대해 permissionless Linker index-readiness를 요청한다.
+   Scope token은 worktree identity, sorted path set과 각 file raw-byte digest를 포함한다.
+3. Code/config/schema/test scan은 artifact context가 요청되거나 downstream skill input에 실제로
+   필요할 때만 lazy repository scope로 확장한다.
+4. Fresh external index가 있으면 재사용하고 stale/missing/corrupt이면 Linker refresh 또는 source
+   직접 탐색으로 fail-soft fallback한다. Cache 문제 자체를 사용자 decision으로 올리지 않는다.
+5. Reader가 만든 context brief는 freshness token, discovery scope, source citations와 unresolved
+   gap을 포함한다. 다른 skill은 token이 fresh한 동안 이를 재사용하고 write 후에는 영향을 받은
+   scope를 invalidation한다.
+6. Reader -> Linker 호출은 `initiator: reader` recursion guard를 전달한다. 해당 Linker execution은
+   같은 chain에서 Reader를 다시 호출하지 않는다. Linker가 Reader recovery를 시작한 chain도
+   반대 방향으로 동일하게 제한한다.
+7. Permissionless Linker의 raw readiness/index payload는 agent-facing handoff다. 기본 사용자 응답은
+   project state, relevant risk와 next action만 요약한다.

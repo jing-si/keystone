@@ -27,11 +27,11 @@ key:
 3. `author/00_key-index.md`
    - `keystone-author`의 기준서(3)와 작업서(4) creation/revision contract를 정의한다.
 4. `reader/00_key-index.md`
-   - `keystone-reader`의 trigger, mode, read-only boundary, output contract,
-     mismatch handling을 정의한다.
+   - `keystone-reader`의 session orientation, docs-first context readiness, lazy repository scope,
+     recursion guard, read-only boundary와 output contract를 정의한다.
 5. `linker/00_key-index.md`
-   - `keystone-linker`의 artifact discovery, impact analysis, stale/gap review, source surface
-     handoff, worker assignment seed output을 정의한다.
+   - `keystone-linker`의 permissionless owner/ref index readiness, optional graph projection,
+     artifact discovery, impact/stale/gap review와 source surface handoff를 정의한다.
 6. `coordinator/00_key-index.md`
    - `keystone-coordinator`의 worker assignment/report, bounded worker routing, report,
      review, verification, acceptance flow를 정의한다.

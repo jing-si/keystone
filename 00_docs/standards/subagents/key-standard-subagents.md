@@ -1,5 +1,7 @@
 ---
 doc_type: standard
+document_lifecycle: active
+approval: {state: pending}
 key:
   id: key.standard.subagent
   refs:
@@ -460,7 +462,8 @@ requested_scope_change:
 1. 받은 Goal 밖으로 scope를 넓히지 않는다.
 2. 전체 작업서(4)를 재해석하지 않는다.
 3. 추가 subagent를 생성하지 않는다.
-4. Main acceptance 없이 progress를 `accepted` 또는 `complete`로 바꾸지 않는다.
+4. Completion evidence 없이 `work_status: complete`로 바꾸거나 Main acceptance 없이
+   `approval.state: accepted`로 바꾸지 않는다.
 5. 승인되지 않은 source authority, acceptance criteria, status semantics를 바꾸지 않는다.
 6. 민감한 정보, local-only path, private data가 필요하면 멈추고 보고한다.
 7. Worker output은 원천 문서(2)나 Main decision을 대체하지 않는다.
@@ -515,3 +518,22 @@ Subagent 기준은 다음 방법으로 검증한다.
 12. 외부 코딩 스킬은 Coordinator를 대체하지 않고 injected skill로만 사용되어야 한다.
 13. 외부 코딩 스킬이 요구하는 절차가 assignment boundary를 넘으면 worker가 멈추고 보고해야
     한다.
+
+<!-- key: id=key.standard.subagent.permissionless-linker-exception refs=key.role.linker key.topic.artifact-graph key.boundary.read-only -->
+## Permissionless Linker subagent 예외
+
+Coordinator의 user-permission requirement는 file-changing worker delegation과 project scope를
+위임하는 orchestration에 적용한다. Main, Reader 또는 다른 Keystone skill은 fresh artifact context가
+필요할 때 source-write authority가 없는 Linker subagent를 별도 사용자 또는 Coordinator 허락 없이
+호출할 수 있다. 이 예외는 다음 경계 안에서만 유효하다.
+
+1. 허용: source scan, owner/ref index readiness, optional typed graph projection, impact/stale/gap
+   interpretation, transaction/repository validation과 internal handoff payload 생성.
+2. 허용되는 write: repository 밖의 disposable derived cache에 대한 single-writer 갱신뿐이다.
+3. 금지: repository source 수정, scope 확장, worker/subagent 생성, project 의미 결정, patch acceptance,
+   Main/user acceptance와 사용자 대신의 선택.
+4. Linker output은 기본적으로 내부 payload이며 사용자에게 관리 절차나 raw payload를 노출하지
+   않는다. 사용자 작업에 영향을 주는 gap, risk 또는 decision만 상위 응답이 요약한다.
+5. Reader -> Linker와 Linker -> Reader 호출은 serialized recursion guard를 전달하고 initiating
+   lane으로 재진입하지 않는다.
+6. 이 예외는 Coordinator의 일반 delegation authority나 file-changing worker 허락을 확대하지 않는다.

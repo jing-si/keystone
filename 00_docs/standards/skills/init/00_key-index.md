@@ -1,6 +1,6 @@
 ---
 doc_type: standard_index
-status: active
+document_lifecycle: active
 approval:
   state: accepted
   accepted_by: main
@@ -20,7 +20,7 @@ key:
 
 1. `key-standard-init.md`
    - `keystone-init`의 inspect, initialize, repair, scaffold write authority, 질문 경계,
-     Author/Clarify handoff와 초기화 검증을 정의한다.
+     Author/Clarify handoff, session readiness와의 경계, 초기화 검증을 정의한다.
 
 <!-- key: id=key.standard.skill.init.index.parent-standard refs=key.doc.standard key.topic.bootstrap -->
 ## 상위 기준서

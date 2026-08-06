@@ -1,5 +1,7 @@
 ---
 doc_type: standard
+document_lifecycle: active
+approval: {state: pending}
 key:
   id: key.standard.skill.clarify
   refs:
@@ -503,3 +505,15 @@ Clarify 기준은 다음 방법으로 검증한다.
    - Clarify 관련 기준서를 읽어 link와 scope consistency 확인
 12. 프로젝트 로컬 Clarify 기준서가 없어도 설치된 contract로 한 topic 질문과 resume 결과를
     제공할 수 있어야 한다.
+
+<!-- key: id=key.standard.skill.clarify.internal-management-boundary refs=key.role.clarify key.role.linker key.topic.question-flow key.boundary.scope-control -->
+## 내부 index/graph 관리와 사용자 결정 경계
+
+1. Owner/ref index 생성 위치, cache refresh, docs/repository scan 시점, transaction/repository
+   validation scope 같은 accepted 운영 규칙은 사용자 decision topic이 아니다.
+2. Clarify는 permissionless Linker의 scan/index/validation 방법을 사용자에게 선택시키지 않는다.
+   Cache/index 실패는 source fallback과 risk report로 처리한다.
+3. Linker evidence가 서로 양립 가능한 project meaning, policy, scope 또는 authority 선택을 남길
+   때만 한 high-impact question을 만든다. Coverage debt만으로 scope 확대를 묻지 않는다.
+4. 검증 요구를 기록하는 decision/edit plan은 `requires_verification_of`를 사용하고 실제 evidence를
+   얻기 전 `verifies`로 승격하지 않는다.

@@ -20,7 +20,8 @@ key:
    - `keystone-clarify`의 목적, trigger/non-trigger, 한 topic 질문 수집,
      decision completeness check, decision recording hint, incomplete result,
      affected document/artifact 후보, Init 질문 경계, handoff/resume, impact update와
-     stop condition을 정의한다. 소비 프로젝트 로컬 Clarify 기준서는 runtime 선행 조건이 아니다.
+     내부 index 관리와 실제 사용자 결정 경계, stop condition을 정의한다. 소비 프로젝트 로컬
+     Clarify 기준서는 runtime 선행 조건이 아니다.
 
 <!-- key: id=key.standard.skill.clarify.index.parent-standard refs=key.role.clarify key.doc.standard key.topic.document-system -->
 ## 상위 기준서

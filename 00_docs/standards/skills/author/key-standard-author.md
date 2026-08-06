@@ -1,11 +1,9 @@
 ---
 doc_type: standard
 created_at: "2026-06-10"
-status: active
+document_lifecycle: active
 approval:
-  state: accepted
-  accepted_at: "2026-08-05"
-  accepted_by: main
+  state: pending
 key:
   id: key.standard.skill.author
   refs:
@@ -328,7 +326,8 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
    - 현재 문서 안의 단순 오탈자
    - 문장 하나의 미세한 표현 수정
    - 의미 변화 없는 formatting
-3. Main acceptance 없이 작업을 complete 또는 accepted로 표시하지 않는다.
+3. Completion evidence가 있으면 `work_status: complete`로 표시할 수 있지만 Main acceptance 없이
+   `approval.state: accepted`로 표시하지 않는다.
 4. Worker `DONE`만으로 진행 상태를 완료로 바꾸지 않는다.
 5. Acceptance state, status semantics, `active_steps`가 바뀌면 명시적으로 보고한다.
 6. Progress update가 작업서(4)의 scope나 completion criteria를 바꾸면 중단한다.
@@ -412,8 +411,9 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
 
 1. Author가 승인 범위에서 문서 의미나 독립 metadata item을 변경하면 path, locator, semantic
    summary와 raw-byte SHA-256 baseline을 가진 `document_delta`를 만든다.
-2. Graph-relevant delta는 Linker synchronization을 자동 시작한다. 이 trigger는 Author scope를
-   넓히거나 Coordinator permission, acceptance를 만들지 않는다.
+2. Graph-relevant delta가 다른 source surface patch를 요구할 때만 Linker synchronization
+   transaction을 시작한다. 단일 document surface 변경은 direct apply 뒤 index refresh로 끝내며,
+   어느 경로도 Author scope, Coordinator permission 또는 acceptance를 만들지 않는다.
 3. Linker만 canonical node/relation/provenance/locator/lifecycle mutation을 결정한다. Author는
    새 typed relation을 독자적으로 확정하거나 Linker mutation을 재해석하지 않는다.
 4. Author는 Linker가 제안한 자기 surface의 exact patch를 문서 의미와 대조하고 patch별로
@@ -544,9 +544,11 @@ source surface의 코드 앵커(18)는 Author가 직접 수정하지 않는다.
    step dependency·acceptance gate를 임의로 만들지 않는다.
 2. Gate의 `dependency`가 declared target을 가리키는지, `steps` ID가 존재하는지,
    `steps`/`work_completion` 중 하나 이상이 있는지, duplicate/self-reference를 검증한다.
-3. Structured metadata와 legacy HTML을 함께 쓰지 않고 migration 중 둘 다 있으면
+3. 별도 accepted exception이 없으면 required gate condition은 target의
+   `work_status: complete`와 `approval.state: accepted`를 모두 작성한다.
+4. Structured metadata와 legacy HTML을 함께 쓰지 않고 migration 중 둘 다 있으면
    structured 우선과 충돌을 명시한다.
-4. Dependency 판정으로 progress/work status, assignment, cancellation 또는 acceptance를 자동 수정하지 않는다.
+5. Dependency 판정으로 progress/work status, assignment, cancellation 또는 acceptance를 자동 수정하지 않는다.
 
 <!-- key: id=key.standard.skill.author.output-contract refs=key.role.author key.contract.output -->
 ## Output contract
@@ -599,7 +601,8 @@ author_patch_report:
 
 규칙은 다음과 같다.
 
-1. `progress_updates`는 Main acceptance 없이 `accepted` 또는 `complete`로 전이하지 않는다.
+1. `progress_updates`는 completion evidence 없이 `work_status: complete`로 전이하지 않고 Main
+   acceptance 없이 `approval.state: accepted`로 전이하지 않는다.
 2. `no_edit_candidates`는 관련 후보를 검토했지만 수정 권한이나 의미 영향이 충분하지 않아
    남긴 문서다.
 3. `source_decision`은 수락된 결정(6), 승인된 edit instruction, 또는 명시한 working assumption을
@@ -686,3 +689,20 @@ Author 기준은 다음 방법으로 검증한다.
 17. 새 문서의 `created_at`, accepted 문서의 현재 `approval.accepted_at`, 새 결정의 `결정일`과
     optional temporal field가 Bootstrap 기준과 일치해야 한다.
 18. 기존 문서 날짜를 추측하거나 일반 `updated_at`을 추가하지 않아야 한다.
+
+<!-- key: id=key.standard.skill.author.reference-index-contract refs=key.role.author key.role.linker key.topic.keystone-metadata key.topic.artifact-graph -->
+## Owner/ref authoring과 context invalidation
+
+1. 새로 만들거나 의미를 변경한 독립 standard/document item은 stable owner ID를 검토하고 다른
+   owner를 가리킬 때는 duplicate ID가 아니라 `refs`를 쓴다.
+2. Acceptance criterion이나 claim의 검증 요구는 `requires_verification_of`로 작성한다. 실제 test
+   artifact 또는 verification result가 수행한 evidence만 `verifies`를 선언한다.
+3. Declared metadata만 source에 작성한다. Effective `document_lifecycle`, `governed_by`, authority와
+   approval은 document -> section -> item 상속으로 계산하며 파생값을 child마다 복제하지 않는다.
+4. 승인 범위의 단일 document surface 변경은 Author가 직접 적용하고 Linker에 affected docs scope
+   index invalidation/refresh를 알린다. Typed graph가 관련돼도 다른 surface patch가 필요하지 않으면
+   transaction을 강제하지 않는다.
+5. 둘 이상의 source surface patch가 함께 필요한 경우에만 Linker transaction을 사용한다. Author는
+   자기 document surface만 attest/apply하며 cache/index file을 원천 문서처럼 수정하지 않는다.
+6. Author write 뒤 downstream skill은 stale Reader context를 재사용하지 않고 affected path-set/digest
+   scope를 refresh한다.

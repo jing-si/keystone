@@ -1,11 +1,9 @@
 ---
 doc_type: standard
 created_at: "2026-07-20"
-status: active
+document_lifecycle: active
 approval:
-  state: accepted
-  accepted_at: "2026-08-05"
-  accepted_by: main
+  state: pending
 key:
   id: key.standard.bootstrap
   refs:
@@ -265,3 +263,19 @@ key:
 4. 일반 repository 조사는 Reader나 특정 호스트 mode의 선행 조건이 아니어야 한다.
 5. 초기화 질문과 실제 프로젝트 의미 결정이 분리되어야 한다.
 6. 사용자 초기화 거부, partial, conflict에서 기존 파일을 덮어쓰지 않아야 한다.
+
+<!-- key: id=key.standard.bootstrap.context-readiness refs=key.topic.bootstrap key.topic.work-recovery key.role.reader key.role.linker -->
+## 초기화와 session context readiness 분리
+
+Init은 Keystone foundation이 없거나 partial/conflicted인 프로젝트의 inspect/initialize/repair를
+소유한다. 이미 usable foundation이 있는 프로젝트에서 사용자가 세션 시작에 Reader를 명시 호출해
+project context를 복구하는 것은 Init이 아니라 Reader context readiness다.
+
+1. Reader는 configured document root를 우선 읽고 docs discovery scope의 path set/raw-byte digest를
+   Linker external index freshness와 대조한다.
+2. Code/config/schema/test repository scan은 초기화나 session orientation의 필수 조건이 아니며
+   artifact context가 실제로 필요한 요청에서 lazy하게 수행한다.
+3. Cache/index miss, corruption 또는 write failure는 foundation 상태를 `partial`로 바꾸지 않는다.
+   Reader/Linker는 source 직접 탐색으로 fail-soft fallback한다.
+4. Owner/ref index와 typed graph projection은 source에서 재생성 가능하고 repository 밖에 있으며
+   초기화 scaffold나 소비 프로젝트의 권위 문서가 아니다.

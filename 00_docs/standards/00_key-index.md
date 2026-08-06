@@ -21,26 +21,25 @@ key:
 
 1. 전체 공통 기준서: `01_key-project-standard.md`
    - Keystone의 원천 문서(2), 기준서(3), 작업서(4), 진행 기록(5), 결정(6), 파생
-     에이전트 문서(8), 아티팩트 그래프(14), `standards/`와 `works/` tree, 스킬 역할, verification 정책을
-     정의한다.
+     에이전트 문서(8), owner/ref-first 탐색, 선택적 아티팩트 그래프(14), context readiness,
+     `standards/`와 `works/` tree, 스킬 역할, verification 정책을 정의한다.
 2. Bootstrap 기준서 색인: `bootstrap/00_key-index.md`
    - 런타임 권위 경계, 초기화 상태, R000, User Decision과 Main 수락, handoff/resume,
      fail-soft를 정의한다.
 3. Subagent 기준서 색인: `subagents/00_key-index.md`
    - Keystone helper/subagent의 bounded worker model, purpose preset, authority, injected
-     skill contract, report status, 실행 환경 경계, 공통 금지와 stop condition을
-     정의한다.
+     skill contract, report status, permissionless read-only Linker 예외, 실행 환경 경계,
+     공통 금지와 stop condition을 정의한다.
 4. 스킬별 기준서 색인: `skills/00_key-index.md`
    - Keystone 스킬별 child 기준서로 이동하기 위한 색인이다.
 5. Artifact Graph 기준서 색인: `artifacts/00_key-index.md`
-   - source document, decision, work, capability, code, config, schema, API, test artifact의 metadata,
-     ownership boundary, relation, locator, stale/gap handling, impact candidate 기준으로 이동하기 위한
-     색인이다.
+   - source-owned ID/ref index, optional typed graph, declared/effective metadata, relation,
+     locator, transaction/repository validation, stale/gap과 impact 기준으로 이동하기 위한 색인이다.
 6. Init 기준서: `skills/init/key-standard-init.md`
    - `keystone-init`의 inspect/initialize/repair, 고정 scaffold, R000과 resume 계약을 정의한다.
 7. Reader 기준서: `skills/reader/key-standard-reader.md`
-   - `keystone-reader`의 trigger, mode, read-only boundary, output contract,
-     mismatch handling을 정의한다.
+   - `keystone-reader`의 session orientation, docs-first context readiness, lazy repository scope,
+     read-only boundary와 output contract를 정의한다.
 8. Author 기준서: `skills/author/key-standard-author.md`
    - `keystone-author`의 기준서(3)와 작업서(4) creation/revision, clarify result 적용,
      progress update boundary를 정의한다.
@@ -48,8 +47,8 @@ key:
    - `keystone-clarify`의 topic-scoped decision collection, reflection, edit plan,
      Author handoff를 정의한다.
 10. Linker 기준서: `skills/linker/key-standard-linker.md`
-   - `keystone-linker`의 operational graph interpretation, artifact discovery, impact analysis,
-     stale/gap review, source surface handoff, worker assignment seed output을 정의한다.
+   - `keystone-linker`의 permissionless owner/ref index readiness, optional graph interpretation,
+     artifact discovery, impact/stale/gap review와 source surface handoff를 정의한다.
 11. Coordinator 기준서: `skills/coordinator/key-standard-coordinator.md`
    - `keystone-coordinator`의 worker assignment/report, routing, report, review,
      verification, acceptance flow를 정의한다.

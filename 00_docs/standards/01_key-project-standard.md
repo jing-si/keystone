@@ -1,11 +1,9 @@
 ---
 doc_type: standard
 created_at: "2026-05-31"
-status: active
+document_lifecycle: active
 approval:
-  state: accepted
-  accepted_at: "2026-08-05"
-  accepted_by: main
+  state: pending
 key:
   id: key.standard.project
   refs:
@@ -638,8 +636,8 @@ Generated reverse index나 cache는 source of truth가 아니라 탐색 최적�
 <!-- key: id=key.standard.project.std-keystone-019 refs=key.topic.keystone-metadata key.topic.temporal-metadata key.topic.status key.topic.acceptance -->
 ### STD-KEYSTONE-019: 문서 lifecycle, approval, 시간 metadata와 작업 상태를 분리한다
 
-1. 문서 lifecycle은 `draft`, `active`, `superseded`, `archived`를 사용한다.
-2. 문서 approval은 `pending`, `accepted`, 필요한 경우 `rejected`를 사용한다.
+1. 문서 lifecycle은 `document_lifecycle: draft | active | superseded | archived`를 사용한다.
+2. 문서 approval은 `approval.state: pending | accepted | rejected`를 사용한다.
 3. `accepted`는 lifecycle이 아니며, 작업 진행 상태·Main 결과 수락·산출물 lifecycle과도
    별도 namespace다.
 4. 의미 변경은 approval을 `pending`으로 돌린다. 의미 없는 형식 변경은 비의미 변경임을
@@ -714,25 +712,26 @@ Generated reverse index나 cache는 source of truth가 아니라 탐색 최적�
    candidate로 보고한다.
 4. 영향 범위나 의미 변경이 불확실하면 수정 전에 멈추고 추가 조사를 한다. 실제 User
    Decision이 필요한 경우에만 사용자에게 묻는다.
-5. 진행 기록(5)은 main acceptance 없이 accepted 또는 complete로 바꾸지 않는다.
+5. 진행 기록(5)은 completion evidence 없이 `work_status: complete`로 바꾸지 않고 Main acceptance
+   없이 `approval.state: accepted`로 바꾸지 않는다.
 
 <!-- key: id=key.standard.project.std-keystone-024 refs=key.topic.document-system key.topic.skill-contract key.role.subagent -->
 ### STD-KEYSTONE-024: 진행 상태(progress status)와 report status는 별개다
 
-Progress status는 workflow state이고, subagent report status는 report outcome이다.
+Work execution status는 workflow state이고, subagent report status는 report outcome이다.
 
-Progress status 값은 다음과 같다.
+`work_status` 값은 다음과 같다.
 
 1. `planned`
-2. `ready`
-3. `in_progress`
-4. `assigned`
-5. `reported`
-6. `reviewing`
-7. `verifying`
-8. `accepted`
-9. `blocked`
-10. `superseded`
+2. `in_progress`
+3. `blocked`
+4. `complete`
+5. `cancelled`
+6. `superseded`
+
+`ready`, `assigned`, `reported`, `reviewing`, `verifying`처럼 세부 실행 phase가 필요하면 별도
+workflow substate로 기록하며 `work_status` vocabulary에 섞지 않는다. `accepted`는 오직
+`approval.state`에 사용한다.
 
 Subagent report status 값과 의미는 `standards/subagents/key-standard-subagents.md`를 따른다.
 
@@ -1153,21 +1152,24 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
    나타내는 source -> target typed relation이며 자동 status mutation이나 scheduling 명령이 아니다.
 2. `work_gates`는 dependency target의 조건이 source의 어느 step 또는 work completion에
    적용되는지 표현하는 execution contract다.
-3. Legacy work-level `depends_on`에 명시적 gate가 없으면 source 시작을 차단하지 않고
+3. Project가 별도 accepted exception을 정의하지 않으면 required gate는 target의
+   `work_status: complete`와 `approval.state: accepted`를 모두 요구한다.
+4. Legacy work-level `depends_on`에 명시적 gate가 없으면 source 시작을 차단하지 않고
    work completion gate 후보로 해석한다.
-4. Dependency 판정은 `satisfied`, `waiting`, `unresolvable`, `invalid`, `unknown`을 사용하고
+5. Dependency 판정은 `satisfied`, `waiting`, `unresolvable`, `invalid`, `unknown`을 사용하고
    lifecycle, approval, work status와 분리한다.
-5. Structured metadata과 legacy HTML이 함께 있으면 structured metadata를 우선하고 충돌을 보고한다.
-6. Missing target, duplicate, self-reference, invalid step은 `invalid` 또는 `unresolvable`로 분리하고
+6. Structured metadata과 legacy HTML이 함께 있으면 structured metadata를 우선하고 충돌을 보고한다.
+7. Missing target, duplicate, self-reference, invalid step은 `invalid` 또는 `unresolvable`로 분리하고
    dependency만으로 work status를 바꾸거나 worker를 자동 할당·취소하지 않는다.
-7. Step gate cycle은 work node만이 아니라 source/target step과 completion event를 펼친
+8. Step gate cycle은 work node만이 아니라 source/target step과 completion event를 펼친
    expanded event graph에서 판정해 false cycle을 피한다.
-8. 상세 schema, cancelled/superseded target과 compatibility 판정은 Artifact Graph 기준서를 따른다.
+9. 상세 schema, cancelled/superseded target과 compatibility 판정은 Artifact Graph 기준서를 따른다.
 
 <!-- key: id=key.standard.project.std-keystone-055 refs=key.topic.acceptance key.topic.progress-update key.topic.verification key.topic.work-recovery -->
 ### STD-KEYSTONE-055: Acceptance finalization은 기존 상태 체계를 보강한다
 
-1. Main acceptance는 현재 처리한 Step의 기존 progress status를 `accepted`로 전이한다.
+1. 실행 완료는 `work_status: complete`, Main acceptance는 `approval.state: accepted`로 서로
+   독립적으로 기록한다. `accepted`를 work execution status로 사용하지 않는다.
 2. Finalization은 새 progress/work/lifecycle/approval 상태가 아니라 기존 Progress 또는 Change Set의
    `finalization.state: pending | in_progress | complete | waived` 하위 상태다.
 3. 현재 Step 수용 후 해당 Step과 상태를 집계·노출하는 Work, Round, root index, Context Map을
@@ -1185,8 +1187,10 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
 <!-- key: id=key.standard.project.std-keystone-056 refs=key.topic.artifact-graph key.topic.finalization key.topic.verification key.role.linker key.role.author key.role.coordinator -->
 ### STD-KEYSTONE-056: Graph synchronization은 acceptance finalization을 additive하게 확장한다
 
-1. 문서 또는 repository 의미 변경이 graph-relevant이면 현재 Progress 또는 Change Set에
-   `graph_sync.required: true`와 disposition을 기록하고 synchronization transaction을 시작한다.
+1. 단일 source surface 안에서 끝나는 ID/ref 또는 metadata 변경은 해당 surface owner가 직접
+   갱신하고 Linker가 파생 index를 refresh한다. 둘 이상의 source surface를 함께 정합화해야
+   할 때만 현재 Progress 또는 Change Set에 `graph_sync.required: true`와 disposition을 기록하고
+   synchronization transaction을 시작한다.
 2. Disposition은 최소 `required | not_applicable | deferred`를 사용한다. `not_applicable`과
    `deferred`에는 근거가 필요하며 required transaction은 `verified` evidence가 있어야
    finalization을 `complete`로 만들 수 있다.
@@ -1197,11 +1201,52 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
 5. 이 확장은 R004의 accepted 문서·진행 기록을 소급 수정하지 않고 이후 finalization runtime에
    additive하게 적용한다.
 
+<!-- key: id=key.standard.project.std-keystone-057 refs=key.topic.artifact-graph key.topic.keystone-metadata key.topic.work-recovery -->
+### STD-KEYSTONE-057: Source-owned owner/ref index를 기본 탐색 계약으로 사용한다
+
+1. 독립적으로 참조하거나 변경할 의미가 있는 standard, code, config, schema, test artifact는
+   stable `key.id`를 정확히 한 source owner에 선언한다. 다른 source는 같은 ID를 소유하지 않고
+   `key.refs` 또는 안전한 language anchor의 `refs`로 참조한다.
+2. Owner/ref index는 source path와 locator를 모은 재생성 가능한 외부 파생물이며 source of truth,
+   acceptance evidence 또는 별도 중앙 registry가 아니다.
+3. Typed relation은 multi-hop 탐색, semantic role, dependency, verification evidence 또는 reuse
+   분석이 필요한 경우에만 선언한다. 단순 직접 탐색은 owner/ref index로 충족한다.
+4. Declared metadata는 source가 소유하고 effective metadata는 document -> section -> item
+   순서로 파생한다. `document_lifecycle`, `governed_by`, source authority와 approval은 상속할 수
+   있지만 `id`, `supersedes`와 일반 typed relation은 상속하지 않는다. 자식은 부모 authority나
+   approval을 확대할 수 없다.
+
+<!-- key: id=key.standard.project.std-keystone-058 refs=key.topic.progress-update key.topic.acceptance key.topic.work-sequence -->
+### STD-KEYSTONE-058: 실행, 승인과 dependency 상태 namespace를 분리한다
+
+1. 문서 상태는 `document_lifecycle`, 작업 실행 상태는 `work_status`, 승인은 `approval.state`로
+   기록하고 initialization, context readiness, transaction, finalization, verification 상태와
+   혼용하지 않는다.
+2. 기본 required dependency gate는 target의 `work_status: complete`와
+   `approval.state: accepted`를 모두 요구한다. 두 조건 중 하나만 충족하면 `waiting`이다.
+3. `cancelled`와 `superseded`는 execution terminal state일 수 있지만 dependency 충족으로
+   간주하지 않는다. 별도 accepted exception이 있을 때만 optional/alternative gate로 처리한다.
+
+<!-- key: id=key.standard.project.std-keystone-059 refs=key.role.reader key.role.linker key.topic.work-recovery key.boundary.read-only -->
+### STD-KEYSTONE-059: Reader context readiness와 permissionless Linker를 내부 관리 경계로 둔다
+
+1. 사용자가 세션 시작에 Reader를 명시 호출하면 Reader는 document root와 active work를 읽고
+   docs discovery scope의 index readiness를 확인한다.
+2. Reader는 source read-only다. Source-write authority가 없는 Linker subagent는 별도 사용자나
+   Coordinator 허락 없이 scan, external index/cache refresh, graph interpretation과 validation을
+   수행할 수 있다. Source 수정, scope 확장, worker 생성, 의미 결정과 acceptance는 금지한다.
+3. Repository source scan은 code/artifact context가 실제로 필요한 때 lazy하게 수행한다.
+   Cache 실패나 miss는 source 직접 탐색으로 fail-soft fallback하며 사용자 작업을 막지 않는다.
+4. Freshness token은 worktree identity, discovery scope의 path set과 각 source raw-byte digest를
+   포함한다. Git HEAD, mtime 또는 cache timestamp만으로 fresh를 선언하지 않는다.
+5. Reader -> Linker와 Linker -> Reader handoff는 serialized recursion guard를 전달한다. 호출된
+   lane은 initiating lane을 다시 호출하지 않는다.
+
 <!-- key: id=key.standard.project.active-work refs=key.topic.document-system key.topic.work-round -->
 ## 관련 active work
 
 - `00_docs/works/00_key-index.md`
-- `00_docs/works/r005-artifact-graph-synchronization/00_key-index.md`
+- `00_docs/works/r006-reference-index-context-readiness/00_key-index.md`
 
 <!-- key: id=key.standard.project.child-standards refs=key.topic.skill-contract key.topic.document-system -->
 ## 관련 child 기준서
