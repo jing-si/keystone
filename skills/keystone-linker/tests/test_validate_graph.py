@@ -15,6 +15,33 @@ RUNNER = Path(__file__).parents[1] / "scripts" / "run_graph_validation.py"
 
 
 class GraphValidatorCliTest(unittest.TestCase):
+    def test_requirement_and_verification_evidence_directions_are_distinct(self):
+        companion = {"schema_version": 1,
+            "source": {"path": "graph.bin", "surface": "companion_metadata", "baseline_digest": "absent"},
+            "nodes": [
+                {"id": "key.acceptance", "kind": "claim", "artifact_kind": "none", "locator": {"path": "graph.bin"}},
+                {"id": "key.claim", "kind": "claim", "artifact_kind": "none", "locator": {"path": "graph.bin"}},
+                {"id": "key.test", "kind": "output_artifact", "artifact_kind": "test", "locator": {"path": "graph.bin"}},
+            ],
+            "relations": [
+                {"source": "key.acceptance", "relation": "requires_verification_of", "target": "key.claim"},
+                {"source": "key.test", "relation": "verifies", "target": "key.claim"},
+                {"source": "key.test", "relation": "requires_verification_of", "target": "key.claim"},
+                {"source": "key.acceptance", "relation": "verifies", "target": "key.claim"},
+            ]}
+        for node in companion["nodes"]:
+            node["lifecycle"] = "active"
+            node["provenance"] = {"produced_from": [], "governed_by": []}
+        for relation in companion["relations"]:
+            relation["evidence"] = "declared"
+            relation["lifecycle"] = "active"
+            relation["provenance"] = {"surface": "companion_metadata",
+                                      "locator": {"path": "graph.bin"}, "attested_by": None}
+        self.write("graph.bin.keystone.json", json.dumps(companion))
+        _, payload = self.run_validator("--source", "graph.bin")
+
+        self.assertEqual(2, [item["code"] for item in payload["diagnostics"]].count("invalid_relation_direction"))
+
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.root = Path(self.directory.name)

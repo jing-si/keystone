@@ -34,3 +34,6 @@ external SQLite generation, optional typed graph, recursion guard와 corrupt-cac
 - GREEN: 신규 owner/ref 및 context readiness test가 source-only reconstruction과 cache fallback을 검증
 - Runtime surface: `skills/keystone-linker/scripts/graph_runtime/{index_model,scanner,index_store,query,readiness}.py`
 - Runtime contract: `skills/keystone-linker/references/reference-index-runtime.md`
+- Review hardening: discovery byte snapshot, strict cache schema/freshness validation, bounded document
+  root/companion discovery, declared-only typed projection, locator-gap diagnostics와
+  `requires_verification_of` parser/validator alignment를 추가했다.

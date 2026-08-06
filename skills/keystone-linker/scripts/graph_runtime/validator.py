@@ -23,10 +23,7 @@ TRANSACTION_STATES = {
     "proposed", "awaiting_attestation", "ready_to_apply", "applying",
     "partially_applied", "verified", "conflicted", "failed",
 }
-RELATION_NAMES = {
-    "produces", "provides", "uses", "implements", "verifies", "depends_on",
-    "governed_by", "documents", "supersedes", "derived_from",
-}
+RELATION_NAMES = {item.value for item in RelationType}
 NODE_KINDS = {"source_document", "document_section", "document_item", "claim", "decision",
               "work_order", "work_step", "capability", "output_artifact", "verification_result"}
 ARTIFACT_KINDS = {"skill_source", "code", "config", "schema", "api", "test", "generated_file",
@@ -153,10 +150,14 @@ def _direction_valid(relation: Relation, nodes: Mapping[str, Node]) -> bool:
                      or (target_kind == "output_artifact" and target.artifact_kind.value == "api")))
     if name == "documents":
         return source_kind in {"source_document", "document_section", "document_item"} and target_kind == "output_artifact"
+    if name == "requires_verification_of":
+        return source_kind in {"document_item", "claim"} and (
+            target_kind in {"capability", "decision", "claim"} or
+            (target_kind == "output_artifact" and target.artifact_kind.value in {"api", "code"}))
     if name == "verifies":
         return ((source_kind == "output_artifact" and source.artifact_kind.value == "test")
                 or source_kind == "verification_result") and (
-                    target_kind in {"capability", "decision"} or
+                    target_kind in {"capability", "decision", "claim"} or
                     (target_kind == "output_artifact" and target.artifact_kind.value in {"api", "code"}))
     if name == "governed_by":
         return source_kind == "output_artifact" and target_kind in {"source_document", "decision"}

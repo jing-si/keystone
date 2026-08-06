@@ -10,7 +10,9 @@ readiness API. They are not a user-facing command and do not make the SQLite gen
 - `scanner.ReferenceScanner` discovers a bounded path set, hashes raw bytes, reconstructs owners,
   refs, diagnostics, and an optional typed projection.
 - `index_store.SQLiteIndexStore` accepts a caller-provided cache path outside the repository and
-  replaces one immutable generation inside `BEGIN IMMEDIATE`.
+  replaces one schema-versioned immutable generation inside `BEGIN IMMEDIATE`. A loaded payload is
+  accepted only when its scope, worktree, entries, and recomputed digest exactly match the requested
+  source generation.
 - `query.owner_for(...)` and `query.refs_to(...)` query immutable results without touching source.
 
 The caller supplies the repository root, external cache path, configured document root, and optional
@@ -26,5 +28,7 @@ companion metadata remain authoritative. Parsed source text is data only: the ru
 instructions, imports project code, runs project commands, edits source, or grants acceptance.
 
 Docs readiness never materializes a typed graph. Repository enrichment may request one explicitly;
-only declared parser relations are projected. `CallTrace` is serialized as JSON and rejects a lane
+only declared parser relations are projected; inferred reverse provenance is excluded. Discovery
+retains the exact bytes covered by its freshness token so a later scan cannot combine an old token
+with newer source. `CallTrace` is serialized as JSON and rejects a lane
 already present in the chain, allowing Reader → Linker once while blocking Reader → Linker → Reader.

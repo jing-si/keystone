@@ -1,4 +1,5 @@
 import sqlite3
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -68,6 +69,21 @@ class ContextReadinessTests(unittest.TestCase):
     def test_corrupt_cache_fails_soft_to_source(self):
         self.cache.parent.mkdir(parents=True)
         self.cache.write_bytes(b"not sqlite")
+
+        readiness = context_readiness(self.root, self.cache, initiator="reader")
+
+        self.assertEqual({"key.context"}, {item.id for item in readiness.result.owners})
+        self.assertEqual("source_fallback", readiness.cache_status)
+        self.assertIn("cache_unavailable", {item.code for item in readiness.diagnostics})
+
+    def test_forged_cache_payload_fails_soft_to_source(self):
+        first = context_readiness(self.root, self.cache, initiator="reader")
+        connection = sqlite3.connect(str(self.cache))
+        payload = json.loads(connection.execute("SELECT payload FROM generations").fetchone()[0])
+        payload["freshness"]["scope"] = "repository"
+        connection.execute("UPDATE generations SET payload = ?", (json.dumps(payload),))
+        connection.commit()
+        connection.close()
 
         readiness = context_readiness(self.root, self.cache, initiator="reader")
 

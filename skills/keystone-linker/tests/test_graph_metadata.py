@@ -26,6 +26,20 @@ from graph_runtime.model import (
 
 
 class GraphMetadataTest(unittest.TestCase):
+    def test_requires_verification_requirement_is_distinct_from_evidence(self):
+        text = """<!-- keystone: id=key.acceptance kind=claim requires_verification_of=key.claim -->
+# Acceptance
+<!-- keystone: id=key.claim kind=claim -->
+# Claim
+<!-- keystone: id=key.test kind=output_artifact artifact_kind=test verifies=key.claim -->
+# Test
+"""
+        result = parse_source(text, "standard.md", MarkdownAdapter())
+
+        relations = {(item.source, item.relation, item.target) for item in result.snapshot.relations}
+        self.assertIn(("key.acceptance", RelationType.REQUIRES_VERIFICATION_OF, "key.claim"), relations)
+        self.assertIn(("key.test", RelationType.VERIFIES, "key.claim"), relations)
+
     def test_canonical_and_flat_frontmatter_normalize_equally(self):
         canonical = """---
 key:

@@ -1,5 +1,6 @@
 import hashlib
 import json
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -102,6 +103,36 @@ class ReferenceIndexTests(unittest.TestCase):
         self.assertEqual(1, len(typed.typed_graph.edges))
         self.assertEqual("implements", typed.typed_graph.edges[0].relation)
 
+    def test_typed_projection_excludes_inferred_provenance_edges(self):
+        self.write("00_docs/work.md", """<!-- keystone: id=key.work kind=work_order -->
+# Work
+<!-- keystone: id=key.output kind=output_artifact produced_from=key.work -->
+# Output
+""")
+
+        result = ReferenceScanner(self.root).scan(
+            ScanScope.REPOSITORY, include_typed_graph=True)
+
+        self.assertEqual((), result.typed_graph.edges)
+
+    def test_owner_without_machine_locator_is_diagnosed(self):
+        self.write("src/App.kt", "// keystone: id=key.app kind=output_artifact\nclass App\n")
+
+        result = ReferenceScanner(self.root).scan(ScanScope.REPOSITORY)
+
+        self.assertIn("locator_gap", {item.code for item in result.diagnostics})
+
+    def test_discovery_snapshot_retains_exact_bytes_across_mutation(self):
+        source = self.write("00_docs/a.md", "<!-- keystone: id=key.before kind=claim -->\n# Before\n")
+        scanner = ReferenceScanner(self.root)
+        discovery = scanner.discover(ScanScope.DOCS)
+        source.write_text("<!-- keystone: id=key.after kind=claim -->\n# After\n", encoding="utf-8")
+
+        result = scanner.scan_discovery(discovery)
+
+        self.assertEqual({"key.before"}, {item.id for item in result.owners})
+        self.assertEqual(discovery.freshness, result.freshness)
+
     def test_repository_discovers_source_adjacent_companion(self):
         source = self.write("src/worker.py", "def run():\n    pass\n")
         digest = "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest()
@@ -126,6 +157,35 @@ class ReferenceIndexTests(unittest.TestCase):
         self.assertEqual("src/worker.py", owner_for(result, "key.artifact.worker").path)
         self.assertNotIn("unsupported_surface", {item.code for item in result.diagnostics})
         self.assertNotEqual(initial.digest, changed.digest)
+
+    def test_document_root_and_companion_sources_cannot_escape_scope(self):
+        outside = Path(self.temp.name) / "outside"
+        outside.mkdir()
+        (outside / "secret.md").write_text(
+            "<!-- keystone: id=key.secret kind=claim -->\n# Secret\n", encoding="utf-8")
+        with self.assertRaises(ValueError):
+            ReferenceScanner(self.root, document_root=str(outside))
+        with self.assertRaises(ValueError):
+            ReferenceScanner(self.root, document_root="../outside")
+        link = self.root / "linked-docs"
+        link.symlink_to(outside, target_is_directory=True)
+        with self.assertRaises(ValueError):
+            ReferenceScanner(self.root, document_root="linked-docs")
+
+        source = self.write("src/worker.py", "pass\n")
+        digest = "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest()
+        companion = {
+            "schema_version": 1,
+            "source": {"path": "src/worker.py", "surface": "companion_metadata",
+                       "baseline_digest": digest},
+            "nodes": [{"id": "key.worker", "kind": "output_artifact", "artifact_kind": "code",
+                       "locator": {"path": "src/worker.py", "symbol": "worker"},
+                       "lifecycle": "active", "provenance": {"produced_from": [], "governed_by": []}}],
+            "relations": [],
+        }
+        self.write("src/worker.py.keystone.json", json.dumps(companion))
+        excluded = ReferenceScanner(self.root, excludes=("src/worker.py",)).scan(ScanScope.REPOSITORY)
+        self.assertNotIn("key.worker", {item.id for item in excluded.owners})
 
     def test_source_content_is_passive_data(self):
         marker = Path(self.temp.name) / "must-not-exist"

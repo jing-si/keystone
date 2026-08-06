@@ -40,6 +40,7 @@ class RelationType(WireEnum):
     PROVIDES = "provides"
     USES = "uses"
     IMPLEMENTS = "implements"
+    REQUIRES_VERIFICATION_OF = "requires_verification_of"
     VERIFIES = "verifies"
     DEPENDS_ON = "depends_on"
     GOVERNED_BY = "governed_by"

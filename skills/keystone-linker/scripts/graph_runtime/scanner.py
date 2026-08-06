@@ -19,6 +19,7 @@ class Discovery:
     scope: ScanScope
     paths: Tuple[Path, ...]
     freshness: FreshnessToken
+    contents: Tuple[Tuple[str, bytes], ...]
 
 
 _IGNORED_DIRS = frozenset({".git", ".worktrees", "__pycache__", "node_modules"})
@@ -28,15 +29,25 @@ class ReferenceScanner:
     def __init__(self, repository_root, *, document_root="00_docs",
                  includes: Sequence[str] = (), excludes: Sequence[str] = ()):
         self.root = Path(repository_root).resolve()
-        self.document_root = document_root
+        declared_root = Path(document_root)
+        if declared_root.is_absolute() or ".." in declared_root.parts:
+            raise ValueError("document_root must be repository-relative and cannot escape root")
+        resolved_document_root = (self.root / declared_root).resolve()
+        try:
+            resolved_document_root.relative_to(self.root)
+        except ValueError as error:
+            raise ValueError("document_root resolves outside repository") from error
+        self.document_root = declared_root.as_posix()
+        self._document_root_path = resolved_document_root
         self.includes = tuple(includes)
         self.excludes = tuple(excludes)
 
     def discover(self, scope: ScanScope) -> Discovery:
         scope = ScanScope(scope)
-        base = self.root / self.document_root if scope == ScanScope.DOCS else self.root
+        base = self._document_root_path if scope == ScanScope.DOCS else self.root
         paths = tuple(sorted(self._paths(base, scope), key=lambda item: item.as_posix()))
-        entries = tuple(FreshnessEntry(self._relative(path), _digest(path.read_bytes())) for path in paths)
+        contents = tuple((self._relative(path), path.read_bytes()) for path in paths)
+        entries = tuple(FreshnessEntry(relative, _digest(raw)) for relative, raw in contents)
         identity = self._worktree_identity()
         body = {
             "worktree_identity": identity,
@@ -48,7 +59,7 @@ class ReferenceScanner:
             "sha256:" + hashlib.sha256(json.dumps(body, separators=(",", ":"),
                                                    sort_keys=True).encode("utf-8")).hexdigest(),
         )
-        return Discovery(scope, paths, token)
+        return Discovery(scope, paths, token, contents)
 
     def scan(self, scope: ScanScope, *, include_typed_graph: bool = False) -> IndexResult:
         return self.scan_discovery(self.discover(scope), include_typed_graph=include_typed_graph)
@@ -58,20 +69,20 @@ class ReferenceScanner:
         refs = []
         edges = []
         diagnostics = []
+        raw_by_path = dict(discovery.contents)
         for path in discovery.paths:
             relative = self._relative(path)
             if relative.endswith(".keystone.json"):
                 source_relative = relative[:-len(".keystone.json")]
-                source_path = self.root / source_relative
                 try:
-                    companion_text = path.read_text(encoding="utf-8")
+                    companion_text = raw_by_path[relative].decode("utf-8")
                 except UnicodeDecodeError:
                     diagnostics.append(IndexDiagnostic("unsupported_encoding", "companion is not UTF-8", relative))
                     continue
                 parsed = parse_source(
                     "", source_relative, None, companion_text=companion_text,
-                    companion_path=relative, companion_source_exists=source_path.exists(),
-                    companion_source_bytes=source_path.read_bytes() if source_path.exists() else None,
+                    companion_path=relative, companion_source_exists=source_relative in raw_by_path,
+                    companion_source_bytes=raw_by_path.get(source_relative),
                 )
                 diagnostics.extend(IndexDiagnostic(item.code, item.message, item.path)
                                    for item in parsed.diagnostics)
@@ -84,15 +95,20 @@ class ReferenceScanner:
                             relative))
                     else:
                         owners[node.id] = owner
+                    if not _has_machine_locator(node.locator):
+                        diagnostics.append(IndexDiagnostic(
+                            "locator_gap", "owner has no machine-checkable locator: %s" % node.id,
+                            relative))
                 if include_typed_graph:
                     edges.extend(TypedEdge(item.source, item.relation.value, item.target)
-                                 for item in parsed.snapshot.relations)
+                                 for item in parsed.snapshot.relations
+                                 if item.evidence.value == "declared")
                 continue
             adapter = adapter_for_path(relative)
             if adapter is None:
                 continue
             try:
-                text = path.read_text(encoding="utf-8")
+                text = raw_by_path[relative].decode("utf-8")
             except UnicodeDecodeError:
                 diagnostics.append(IndexDiagnostic("unsupported_encoding", "source is not UTF-8", relative))
                 continue
@@ -107,6 +123,10 @@ class ReferenceScanner:
                         "duplicate_owner", "owner ID is declared more than once: %s" % node.id, relative))
                 else:
                     owners[node.id] = owner
+                if not _has_machine_locator(node.locator):
+                    diagnostics.append(IndexDiagnostic(
+                        "locator_gap", "owner has no machine-checkable locator: %s" % node.id,
+                        relative))
             for block, _construct, label in adapter.metadata_blocks(text):
                 try:
                     data = _metadata(block)
@@ -124,7 +144,8 @@ class ReferenceScanner:
                     continue
             if include_typed_graph:
                 edges.extend(TypedEdge(item.source, item.relation.value, item.target)
-                             for item in parsed.snapshot.relations)
+                             for item in parsed.snapshot.relations
+                             if item.evidence.value == "declared")
         owner_ids = set(owners)
         for ref in refs:
             if ref.target_id not in owner_ids:
@@ -146,21 +167,34 @@ class ReferenceScanner:
             if path.is_symlink() or not path.is_file():
                 continue
             relative = self._relative(path)
-            parts = Path(relative).parts
-            if any(part in _IGNORED_DIRS for part in parts):
+            if not self._admitted(relative):
                 continue
-            if self.excludes and any(Path(relative).match(pattern) for pattern in self.excludes):
-                continue
-            if self.includes and not any(Path(relative).match(pattern) for pattern in self.includes):
-                continue
+            companion_source = None
+            if relative.endswith(".keystone.json"):
+                source_relative = relative[:-len(".keystone.json")]
+                source = Path(str(path)[:-len(".keystone.json")])
+                if source.is_file():
+                    if source.is_symlink() or not self._admitted(source_relative):
+                        continue
+                    try:
+                        source.resolve().relative_to(self.root)
+                    except ValueError:
+                        continue
+                    companion_source = source
             if (scope == ScanScope.DOCS or adapter_for_path(relative) is not None or
                     relative.endswith(".keystone.json")):
                 found.add(path)
-                if relative.endswith(".keystone.json"):
-                    source = Path(str(path)[:-len(".keystone.json")])
-                    if source.is_file():
-                        found.add(source)
+                if companion_source is not None:
+                    found.add(companion_source)
         return found
+
+    def _admitted(self, relative: str) -> bool:
+        parts = Path(relative).parts
+        if any(part in _IGNORED_DIRS for part in parts):
+            return False
+        if self.excludes and any(Path(relative).match(pattern) for pattern in self.excludes):
+            return False
+        return not self.includes or any(Path(relative).match(pattern) for pattern in self.includes)
 
     def _relative(self, path: Path) -> str:
         return path.resolve().relative_to(self.root).as_posix()
@@ -179,3 +213,8 @@ class ReferenceScanner:
 
 def _digest(value: bytes) -> str:
     return "sha256:" + hashlib.sha256(value).hexdigest()
+
+
+def _has_machine_locator(locator) -> bool:
+    return any((locator.heading, locator.symbol, locator.test_name,
+                locator.config_key, locator.schema_name))
