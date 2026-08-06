@@ -2,10 +2,17 @@
 
 import json
 import hashlib
+import errno
 import os
 import sqlite3
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
+
+try:
+    import fcntl
+except ImportError:  # Safe fallback: structural cache recovery stays fail-soft.
+    fcntl = None
 
 from .index_model import (
     FreshnessEntry, FreshnessToken, IndexDiagnostic, IndexResult, OwnerRecord,
@@ -72,21 +79,20 @@ class SQLiteIndexStore:
     def recover(self, result: IndexResult) -> None:
         """Atomically replace only a structurally unusable disposable cache."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        descriptor, temporary = tempfile.mkstemp(prefix=self.path.name + ".", suffix=".repair",
-                                                 dir=str(self.path.parent))
-        os.close(descriptor)
-        temporary_path = Path(temporary)
-        try:
-            temporary_path.unlink()
-            _write_generation(temporary_path, result, timeout=self.timeout)
-            os.replace(str(temporary_path), str(self.path))
-        except sqlite3.Error as error:
-            _raise_sqlite(error)
-        except OSError as error:
-            raise StoreUnavailable(str(error)) from error
-        finally:
-            if temporary_path.exists():
-                temporary_path.unlink()
+        with _target_recovery_lock(self.path):
+            descriptor, temporary = tempfile.mkstemp(
+                prefix=self.path.name + ".", suffix=".repair", dir=str(self.path.parent))
+            os.close(descriptor)
+            temporary_path = Path(temporary)
+            try:
+                _write_generation(temporary_path, result, timeout=self.timeout)
+                os.replace(str(temporary_path), str(self.path))
+            except sqlite3.Error as error:
+                _raise_sqlite(error)
+            except OSError as error:
+                raise StoreUnavailable(str(error)) from error
+            finally:
+                _cleanup_repair_files(temporary_path)
 
 
 def _encode(result: IndexResult) -> str:
@@ -135,6 +141,40 @@ def _raise_sqlite(error: sqlite3.Error) -> None:
     if "locked" in message or "busy" in message:
         raise CacheBusy(str(error)) from error
     raise CacheCorrupt(str(error)) from error
+
+
+@contextmanager
+def _target_recovery_lock(path: Path):
+    if fcntl is None:
+        raise StoreUnavailable("atomic cache recovery lock is unavailable on this platform")
+    try:
+        descriptor = os.open(str(path), os.O_RDWR)
+    except OSError as error:
+        raise StoreUnavailable(str(error)) from error
+    try:
+        try:
+            fcntl.lockf(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise CacheBusy("cache is locked during recovery") from error
+        except OSError as error:
+            if error.errno in {errno.EACCES, errno.EAGAIN}:
+                raise CacheBusy("cache is locked during recovery") from error
+            raise StoreUnavailable(str(error)) from error
+        yield
+    finally:
+        try:
+            fcntl.lockf(descriptor, fcntl.LOCK_UN)
+        finally:
+            os.close(descriptor)
+
+
+def _cleanup_repair_files(path: Path) -> None:
+    for candidate in (path, Path(str(path) + "-wal"), Path(str(path) + "-shm"),
+                      Path(str(path) + "-journal")):
+        try:
+            candidate.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def _decode(payload: str, expected: FreshnessToken) -> IndexResult:

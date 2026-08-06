@@ -1,10 +1,16 @@
 import sqlite3
 import json
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from graph_runtime.index_model import CallTrace, RecursionBlocked
+from graph_runtime.index_store import SQLiteIndexStore, StoreUnavailable
+from graph_runtime import index_store
 from graph_runtime.readiness import context_readiness
 from graph_runtime.scanner import ScanScope
 
@@ -156,6 +162,67 @@ class ContextReadinessTests(unittest.TestCase):
         finally:
             connection.rollback()
             connection.close()
+
+    def test_recovery_preserves_corrupt_or_old_cache_under_sqlite_write_locks(self):
+        for index, (kind, mode) in enumerate(
+                (("corrupt", "IMMEDIATE"), ("corrupt", "EXCLUSIVE"),
+                 ("old_schema", "IMMEDIATE"), ("old_schema", "EXCLUSIVE"))):
+            with self.subTest(kind=kind, mode=mode):
+                cache = Path(self.temp.name) / ("race-%d" % index) / "index.sqlite3"
+                cache.parent.mkdir(parents=True)
+                if kind == "corrupt":
+                    context_readiness(self.root, cache, initiator="reader")
+                    writer = sqlite3.connect(str(cache))
+                    payload = json.loads(writer.execute("SELECT payload FROM generations").fetchone()[0])
+                    payload["owners"].append(["key.forged", "forged", None])
+                    writer.execute("UPDATE generations SET payload = ?", (json.dumps(payload),))
+                    writer.commit()
+                    writer.close()
+                else:
+                    writer = sqlite3.connect(str(cache))
+                    writer.execute(
+                        "CREATE TABLE generations (freshness_digest TEXT PRIMARY KEY, payload TEXT NOT NULL)")
+                    writer.commit()
+                    writer.close()
+                before = cache.read_bytes()
+                lock = subprocess.Popen(
+                    [sys.executable, "-c", (
+                        "import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); "
+                        "c.execute('BEGIN '+sys.argv[2]); print('locked',flush=True); "
+                        "sys.stdin.readline(); c.rollback(); c.close()"), str(cache), mode],
+                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                self.assertEqual("locked", lock.stdout.readline().strip())
+                try:
+                    readiness = context_readiness(self.root, cache, initiator="reader")
+                    self.assertEqual("source_fallback", readiness.cache_status)
+                    self.assertEqual(before, cache.read_bytes())
+                finally:
+                    lock.communicate("\n", timeout=5)
+
+    def test_repair_file_and_sidecars_are_cleaned_after_injected_write_failure(self):
+        self.cache.parent.mkdir(parents=True)
+        self.cache.write_bytes(b"corrupt")
+        repair = self.cache.parent / "known.repair"
+        descriptor = os.open(str(repair), os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o600)
+        store = SQLiteIndexStore(self.cache, repository_root=self.root)
+        result = context_readiness(
+            self.root, self.cache.parent / "seed.sqlite3", initiator="reader").result
+
+        def fail_write(path, _result, *, timeout):
+            Path(str(path) + "-wal").write_bytes(b"wal")
+            Path(str(path) + "-shm").write_bytes(b"shm")
+            Path(str(path) + "-journal").write_bytes(b"journal")
+            raise sqlite3.OperationalError("injected write failure")
+
+        with mock.patch.object(index_store.tempfile, "mkstemp", return_value=(descriptor, str(repair))), \
+                mock.patch.object(index_store, "_write_generation", side_effect=fail_write):
+            with self.assertRaises(StoreUnavailable):
+                store.recover(result)
+
+        self.assertFalse(repair.exists())
+        self.assertFalse(Path(str(repair) + "-wal").exists())
+        self.assertFalse(Path(str(repair) + "-shm").exists())
+        self.assertFalse(Path(str(repair) + "-journal").exists())
 
     def test_busy_single_writer_fails_soft_without_losing_source_result(self):
         context_readiness(self.root, self.cache, initiator="reader")

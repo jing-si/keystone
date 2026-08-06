@@ -29,8 +29,11 @@ companion metadata remain authoritative. Parsed source text is data only: the ru
 instructions, imports project code, runs project commands, edits source, or grants acceptance.
 
 Structural corruption and unsupported cache schemas are recoverable because the cache is disposable:
-the store builds a complete sibling SQLite file and atomically replaces the invalid cache. Busy or
-locked caches are never replaced; that invocation remains source-only and a later invocation retries.
+the store acquires a non-blocking target-file write lock, keeps the securely created sibling repair
+file, builds a complete SQLite generation there, and performs a same-directory atomic replace. Repair
+files and SQLite sidecars are removed on failure. If the platform cannot provide the recovery lock,
+recovery stays fail-soft. `BEGIN IMMEDIATE`/`BEGIN EXCLUSIVE` busy or locked caches are never replaced;
+that invocation remains source-only and a later invocation retries.
 
 Docs readiness never materializes a typed graph. Repository enrichment may request one explicitly;
 only declared parser relations are projected; inferred reverse provenance is excluded. Discovery

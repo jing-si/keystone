@@ -39,3 +39,5 @@ external SQLite generation, optional typed graph, recursion guard와 corrupt-cac
   `requires_verification_of` parser/validator alignment를 추가했다.
 - Cache reuse hardening: complete payload checksum, immutable relative-path/byte scan, structural cache
   atomic recovery와 locked-cache non-destructive fallback을 검증했다.
+- Recovery race hardening: secure sibling repair file을 유지하고 target write lock 뒤 same-directory
+  atomic replace하며 failure sidecar cleanup과 IMMEDIATE/EXCLUSIVE lock 보존을 검증했다.
