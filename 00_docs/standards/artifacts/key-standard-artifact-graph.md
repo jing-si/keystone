@@ -1,7 +1,7 @@
 ---
 doc_type: standard
 document_lifecycle: active
-approval: {state: pending}
+approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: main}
 key:
   id: key.standard.artifact.graph
   refs:

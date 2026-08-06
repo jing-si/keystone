@@ -3,7 +3,9 @@ doc_type: standard
 created_at: "2026-05-31"
 document_lifecycle: active
 approval:
-  state: pending
+  state: accepted
+  accepted_at: "2026-08-06"
+  accepted_by: main
 key:
   id: key.standard.project
   refs:

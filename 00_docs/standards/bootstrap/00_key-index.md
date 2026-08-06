@@ -2,7 +2,9 @@
 doc_type: standard_index
 document_lifecycle: active
 approval:
-  state: pending
+  state: accepted
+  accepted_at: "2026-08-06"
+  accepted_by: main
 key:
   id: key.standard.bootstrap.index
   refs:
