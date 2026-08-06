@@ -3,7 +3,7 @@ doc_type: work_order
 created_at: "2026-08-06"
 document_lifecycle: active
 approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: user}
-work_status: in_progress
+work_status: complete
 key:
   id: key.work.reference-index-contract-standard.order
   refs: [key.doc.work, key.topic.artifact-graph, key.topic.keystone-metadata, key.topic.work-recovery, key.topic.change-set]
@@ -53,13 +53,13 @@ Exclude:
 
 ## Completion Criteria
 
-- [ ] Owner/ref-first identity와 optional typed graph가 공통 기준에 정의된다.
-- [ ] Work execution과 approval 및 dependency 조건이 분리된다.
-- [ ] Verification requirement/evidence와 declared/effective metadata가 분리된다.
-- [ ] Reader·Linker readiness, freshness, cache authority와 recursion guard가 정의된다.
-- [ ] Direct refresh와 transaction, transaction/repository validation 범위가 분리된다.
-- [ ] 모든 관련 skill 기준과 index가 같은 계약을 가리킨다.
-- [ ] Historical accepted work를 소급 수정하지 않는다.
+- [x] Owner/ref-first identity와 optional typed graph가 공통 기준에 정의된다.
+- [x] Work execution과 approval 및 dependency 조건이 분리된다.
+- [x] Verification requirement/evidence와 declared/effective metadata가 분리된다.
+- [x] Reader·Linker readiness, freshness, cache authority와 recursion guard가 정의된다.
+- [x] Direct refresh와 transaction, transaction/repository validation 범위가 분리된다.
+- [x] 모든 관련 skill 기준과 index가 같은 계약을 가리킨다.
+- [x] Historical accepted work를 소급 수정하지 않는다.
 
 ## Verification
 

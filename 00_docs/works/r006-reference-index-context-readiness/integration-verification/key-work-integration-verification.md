@@ -3,7 +3,7 @@ doc_type: work_order
 created_at: "2026-08-06"
 document_lifecycle: active
 approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: user}
-work_status: planned
+work_status: complete
 key:
   id: key.work.r006-integration-verification.order
   refs: [key.doc.work, key.topic.verification, key.topic.work-recovery, key.topic.finalization, key.topic.change-set]
@@ -39,11 +39,11 @@ Exclude:
 
 ## Completion Criteria
 
-- [ ] Cross-skill readiness와 invalidation scenario가 통과한다.
-- [ ] Cache failure가 source-authoritative fallback을 깨지 않는다.
-- [ ] Temporary install package가 repo-local 계약과 일치한다.
-- [ ] 전체 관련 test와 `git diff --check`가 통과한다.
-- [ ] R006 S01-S04가 complete and accepted로 finalization된다.
+- [x] Cross-skill readiness와 invalidation scenario가 통과한다.
+- [x] Cache failure가 source-authoritative fallback을 깨지 않는다.
+- [x] Temporary install package가 repo-local 계약과 일치한다.
+- [x] 전체 관련 test와 `git diff --check`가 통과한다.
+- [x] R006 S01-S04가 complete and accepted로 finalization된다.
 
 ## Stop Conditions
 

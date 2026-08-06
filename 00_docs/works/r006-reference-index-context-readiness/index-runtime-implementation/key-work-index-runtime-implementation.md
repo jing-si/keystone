@@ -3,7 +3,7 @@ doc_type: work_order
 created_at: "2026-08-06"
 document_lifecycle: active
 approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: user}
-work_status: planned
+work_status: complete
 key:
   id: key.work.index-runtime-implementation.order
   refs: [key.doc.work, key.topic.artifact-graph, key.topic.work-recovery, key.topic.verification, key.topic.change-set]
@@ -39,12 +39,12 @@ Exclude:
 
 ## Completion Criteria
 
-- [ ] Source-only reconstruction과 unique owner/ref lookup이 동작한다.
-- [ ] Dirty/untracked/path-set 변경이 freshness를 무효화한다.
-- [ ] Corrupt/missing cache는 source fallback으로 복구된다.
-- [ ] Typed graph는 요청할 때만 materialize된다.
-- [ ] Reader↔Linker recursion이 차단된다.
-- [ ] 기존 Linker test가 함께 통과한다.
+- [x] Source-only reconstruction과 unique owner/ref lookup이 동작한다.
+- [x] Dirty/untracked/path-set 변경이 freshness를 무효화한다.
+- [x] Corrupt/missing cache는 source fallback으로 복구된다.
+- [x] Typed graph는 요청할 때만 materialize된다.
+- [x] Reader↔Linker recursion이 차단된다.
+- [x] 기존 Linker test가 함께 통과한다.
 
 ## Stop Conditions
 

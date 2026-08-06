@@ -3,7 +3,7 @@ doc_type: progress
 created_at: "2026-08-06"
 document_lifecycle: active
 approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: user}
-work_status: in_progress
+work_status: complete
 key:
   id: key.work.r006-integration-verification.progress
   refs: [key.topic.progress-update, key.topic.verification, key.topic.finalization]
@@ -14,9 +14,9 @@ key:
 ## 현재 상태
 
 - Step: S04
-- Work status: in_progress
+- Work status: complete
 - Approval state: accepted
-- Active: true
+- Active: false
 
 ## Prerequisite
 
@@ -47,7 +47,16 @@ Installer는 temporary staging에서 package를 먼저 검증하고 같은 이�
 - Author full regression와 temporary install smoke: 63 tests passed
 - Installer shell syntax와 `git diff --check`: pass
 
-## 다음 작업
+## 최종 검증과 수락
 
-독립 review를 받고 발견 사항을 보정한다. Review acceptance 전까지 S04와 R006은
-`in_progress`를 유지한다.
+- R006 contract: 7 tests passed
+- Runtime contract: 4 tests passed
+- Linker full regression: 125 tests passed
+- Author full regression와 temporary install smoke: 63 tests passed
+- Reader integration: 2 tests passed
+- Installer shell syntax와 `git diff --check`: pass
+- Historical compatibility: 기준 커밋 `875cbff` 대비 R003-R005 accepted work 기록 변경 없음
+- Independent review: standards, skill source, runtime, tests와 installer의 Critical/Important finding 없음
+
+Main acceptance 후 S04를 complete and accepted로 종료했다. 실제 global install, publication,
+브라우저 검증과 external consumer pilot은 이 round의 명시적 범위 밖이며 검증하지 않았다.

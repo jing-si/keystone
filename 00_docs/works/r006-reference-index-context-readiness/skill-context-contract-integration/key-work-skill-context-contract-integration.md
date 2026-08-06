@@ -3,7 +3,7 @@ doc_type: work_order
 created_at: "2026-08-06"
 document_lifecycle: active
 approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: user}
-work_status: planned
+work_status: complete
 key:
   id: key.work.skill-context-contract-integration.order
   refs: [key.doc.work, key.topic.skill-contract, key.topic.work-recovery, key.topic.change-set]
@@ -37,10 +37,10 @@ Exclude:
 
 ## Completion Criteria
 
-- [ ] 관련 skill source가 S01 기준과 일치한다.
-- [ ] Permissionless Linker 호출이 Coordinator authority를 확장하지 않는다.
-- [ ] Readiness payload와 cache는 사용자에게 기본 노출되지 않는다.
-- [ ] Contract와 regression test가 통과한다.
+- [x] 관련 skill source가 S01 기준과 일치한다.
+- [x] Permissionless Linker 호출이 Coordinator authority를 확장하지 않는다.
+- [x] Readiness payload와 cache는 사용자에게 기본 노출되지 않는다.
+- [x] Contract와 regression test가 통과한다.
 
 ## Stop Conditions
 
