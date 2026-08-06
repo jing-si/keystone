@@ -24,5 +24,13 @@ key:
 
 ## 다음 작업
 
-S02가 complete and accepted되어 S03을 활성화했다. Owner/ref와 freshness 실패 test를
-먼저 작성한 뒤 최소 external-cache runtime을 구현한다.
+S02가 complete and accepted되어 S03을 활성화했다. Owner/ref, freshness, docs/repository scope,
+external SQLite generation, optional typed graph, recursion guard와 corrupt-cache fail-soft를 TDD로
+구현했다. 독립 review와 Main acceptance 전까지 work status는 `in_progress`로 유지한다.
+
+## 구현 증거
+
+- RED: `graph_runtime.index_store`, `graph_runtime.index_model` 부재로 신규 수용 test 2개 module이 실패
+- GREEN: 신규 owner/ref 및 context readiness test가 source-only reconstruction과 cache fallback을 검증
+- Runtime surface: `skills/keystone-linker/scripts/graph_runtime/{index_model,scanner,index_store,query,readiness}.py`
+- Runtime contract: `skills/keystone-linker/references/reference-index-runtime.md`
