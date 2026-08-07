@@ -36,7 +36,7 @@ global_state:
 - Work status: in_progress
 - Approval state: pending
 - Active: true
-- Next action: release/eval security hardening을 재검증한 뒤 외부 reviewer evidence로 clean RC
-  gate를 실행하고 Main acceptance를 요청한다.
+- Next action: Main이 S01의 implemented correctness hardening과 verification evidence를 검토한다.
+  Phase/work-state/agent/whole-flow/release closure는 R010/S02-S05에서 이어간다.
 
 Active steps: [R010/S01]

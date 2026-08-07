@@ -38,7 +38,8 @@ Include:
   evidence와 work-completion gate actual-state 검증
 - Finalization global state의 round/Step prefix, source category와 status semantic invariant
 - Retired impact seed와 명백한 parser false-positive 회귀 방지
-- Agent-level scenario와 clean-checkout release gate의 fail-closed 실행 근거
+- Agent-level scenario 명세·evidence validator와 clean-checkout release gate의 fail-closed
+  security/plan 기반
 
 Exclude:
 
@@ -46,6 +47,8 @@ Exclude:
 - Python 외부 dependency 추가
 - Repository-wide metadata migration과 unrelated refactor/formatting
 - Correctness와 무관한 adjacency/cache 성능 최적화
+- 실제 skill invocation·transcript·review evidence 생성과 반복 agent eval 실행: R010/S04
+- Whole-flow self-host, independent CI/RC 실행, version transition과 terminal finalization: R010/S05
 
 <!-- key: id=key.work.production-control-plane-hardening.order.source-context refs=key.section.source-context key.topic.artifact-graph -->
 ## Source Context
@@ -101,10 +104,10 @@ Exclude:
       finalization, repository readiness와 full graph validation이 통과한다.
 - [x] Release gate가 inherited execution environment, 축소된 plan, malformed success envelope,
       stale/ambiguous evidence와 untrusted reviewer key를 fail-closed로 거절한다.
-- [ ] 독립 reviewer가 12개 agent scenario evidence를 외부 root에서 서명하고 clean checkout의 RC
-      gate가 통과한다.
-- [ ] Main acceptance 뒤 schema-v5 terminal finalization을 기록하고 clean production gate가
-      통과한다.
+- [x] Phase-separated closure, shared work state, actual agent evidence와 terminal RC/finalization을
+      R010/S02-S05의 reviewable goal로 분리하고 S01의 implemented correctness 범위와 구분했다.
+- [ ] Main이 S01의 implemented correctness hardening과 verification evidence를 검토해 acceptance를
+      결정한다. S01 acceptance는 S02/S03의 completion gate이며 R010 terminal acceptance가 아니다.
 
 <!-- key: id=key.work.production-control-plane-hardening.order.stop refs=key.boundary.stop-condition -->
 ## Stop Conditions

@@ -26,7 +26,8 @@ key:
 - Approval state: pending
 - Active: true
 - Finalization state: pending
-- Resume point: 외부 reviewer가 12개 agent scenario를 실행·서명하고 clean RC gate를 실행한다.
+- Resume point: Main이 S01의 implemented correctness hardening과 verification evidence를 검토한다.
+  후속 phase/work-state/agent/whole-flow/release closure는 R010/S02-S05에서 복구한다.
 
 Active steps: [R010/S01]
 
@@ -77,21 +78,26 @@ Active steps: [R010/S01]
     153/153, repository readiness와 full graph validation은 256/256이며 skipped/omitted/
     declared-only source는 0이다. Historical R008/R009 finalization과 external-cache compileall도
     통과했다.
+15. 2026-08-07: 사용자의 평균 8.5 목표에 따라 S01의 잔여 agent/release/terminal 책임을
+    R010/S02-S05로 분리했다. S01은 완료된 correctness hardening과 그 verification review만
+    소유하며, 이 이관은 Main acceptance나 terminal finalization을 주장하지 않는다.
 
 ## 현재 검증 경계
 
 - Core correctness suite, release/eval security 34개 회귀와 actual-corpus graph/historical validation은
   통과했다.
-- 현재 checkout은 R010 구현 변경이 미커밋 상태이므로 clean preflight가 의도대로 첫 단계에서
-  중단한다.
+- S01 구현 hardening은 commit `a85bd2324323f88e6257345557e5d10ea20b1f8c`에 결속돼 있다.
+  현재 checkout의 planned Work 문서 변경은 별도 acceptance 대상이므로 clean release evidence로
+  사용하지 않는다.
 - Context Map은 `active_round: R010`이므로 production profile의 current-finalization 단계는 아직
   통과하면 안 된다.
-- 실제 model transcript/evidence와 독립 reviewer HMAC/key trust material은 저장소에 포함하지
-  않았으며, 이 evidence가 없으면 RC gate는 완료되지 않는다.
+- 실제 model transcript/evidence 생성 runtime과 독립 reviewer workflow는 R010/S04가 소유하고,
+  그 evidence를 소비하는 RC/production closure는 R010/S05가 소유한다.
 - HMAC은 key holder의 attestation을 증명하지만 실제 model 실행과 reviewer 독립성을 스스로
   증명하지는 않는다. 이 운영 trust boundary는 Main acceptance에서 별도로 확인한다.
 
 ## 다음 작업
 
-1. Clean commit candidate에서 외부 evidence root와 독립 reviewer key로 12개 scenario를 기록·서명한다.
-2. RC gate 통과 후 Main acceptance를 받고 schema-v5 finalization과 production gate를 수행한다.
+1. Main이 S01의 implemented correctness 범위와 verification evidence를 검토한다.
+2. S02/S03은 authority-chain과 graph/source correctness 후속 항목을 실행한다.
+3. S04는 shared work state와 actual agent eval을, S05는 whole-flow/RC/finalization을 수행한다.
