@@ -1,7 +1,7 @@
 """Pure source-reading helpers for the finalization validator."""
 
 import re
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Dict, List, Optional, Tuple
 
 
@@ -20,7 +20,17 @@ def resolve_scoped_path(root: Path,
                         value: Any) -> Tuple[Optional[Path], Optional[str]]:
     if not isinstance(value, str) or not value.strip():
         return None, "missing"
-    candidate = (root / value).resolve()
+    relative = PurePosixPath(value)
+    if relative.is_absolute() or ".." in relative.parts:
+        return None, "outside"
+    if (
+        "\\" in value
+        or relative.as_posix() != value
+        or any(part in {"", "."} for part in relative.parts)
+    ):
+        return None, "noncanonical"
+    root = root.resolve()
+    candidate = root.joinpath(*relative.parts).resolve()
     try:
         candidate.relative_to(root)
     except ValueError:
@@ -45,11 +55,11 @@ def scalar_from_text(content: str, field: str) -> Optional[str]:
     """Read a scalar from frontmatter, or from a standalone mapping fixture."""
     frontmatter = frontmatter_from_text(content)
     source = frontmatter if frontmatter is not None else content
-    match = re.search(
+    matches = re.findall(
         rf"(?m)^{re.escape(field)}\s*:\s*['\"]?([^\n'\"]+)['\"]?\s*$",
         source,
     )
-    return match.group(1).strip() if match else None
+    return matches[0].strip() if len(matches) == 1 else None
 
 
 def finalization_scalar(content: str, field: str) -> Optional[str]:
@@ -69,17 +79,23 @@ def frontmatter_mapping_scalar(content: str, mapping: str,
                                field: str) -> Optional[str]:
     frontmatter = frontmatter_from_text(content)
     source = frontmatter if frontmatter is not None else content
-    block = re.search(
-        rf"(?ms)^{re.escape(mapping)}:\s*\n((?:^[ \t]+.*\n?)*)",
+    blocks = re.findall(
+        rf"(?m)^{re.escape(mapping)}:\s*\n((?:^[ \t]+.*\n?)*)",
         source,
     )
-    if block:
-        match = re.search(
+    inline = re.findall(
+        rf"(?m)^{re.escape(mapping)}\s*:\s*\{{([^}}]*)\}}\s*$",
+        source,
+    )
+    if len(blocks) + len(inline) != 1:
+        return None
+    if blocks:
+        matches = re.findall(
             rf"(?m)^\s+{re.escape(field)}\s*:\s*['\"]?([^\n'\"]+)['\"]?\s*$",
-            block.group(1),
+            blocks[0],
         )
-        return match.group(1).strip() if match else None
-    return inline_mapping_scalar(source, mapping, field)
+        return matches[0].strip() if len(matches) == 1 else None
+    return inline_mapping_field(inline[0], field)
 
 
 def frontmatter_mapping_list(content: str, mapping: str,
@@ -87,19 +103,23 @@ def frontmatter_mapping_list(content: str, mapping: str,
     """Read a canonical inline string list from a frontmatter mapping."""
     frontmatter = frontmatter_from_text(content)
     source = frontmatter if frontmatter is not None else content
-    block = re.search(
-        rf"(?ms)^{re.escape(mapping)}:\s*\n((?:^[ \t]+.*\n?)*)",
+    blocks = re.findall(
+        rf"(?m)^{re.escape(mapping)}:\s*\n((?:^[ \t]+.*\n?)*)",
         source,
     )
-    if not block:
-        return None
-    match = re.search(
-        rf"(?m)^\s+{re.escape(field)}\s*:\s*\[([^\]]*)\]\s*$",
-        block.group(1),
+    inline = re.findall(
+        rf"(?m)^{re.escape(mapping)}\s*:\s*\{{([^}}]*)\}}\s*$",
+        source,
     )
-    if not match:
+    if len(blocks) != 1 or inline:
         return None
-    raw = match.group(1).strip()
+    matches = re.findall(
+        rf"(?m)^\s+{re.escape(field)}\s*:\s*\[([^\]]*)\]\s*$",
+        blocks[0],
+    )
+    if len(matches) != 1:
+        return None
+    raw = matches[0].strip()
     if not raw:
         return []
     values = []
@@ -113,23 +133,41 @@ def frontmatter_mapping_list(content: str, mapping: str,
 
 def inline_mapping_scalar(content: str, mapping: str,
                           field: str) -> Optional[str]:
-    outer = re.search(
+    outer = re.findall(
         rf"(?m)^\s*{re.escape(mapping)}\s*:\s*\{{([^}}]*)\}}\s*$", content
     )
-    if not outer:
+    if len(outer) != 1:
         return None
-    inner = re.search(
-        rf"(?:^|,)\s*{re.escape(field)}\s*:\s*['\"]?([^,'\"]+)['\"]?\s*(?:,|$)",
-        outer.group(1),
-    )
-    return inner.group(1).strip() if inner else None
+    return inline_mapping_field(outer[0], field)
+
+
+def inline_mapping_field(content: str, field: str) -> Optional[str]:
+    values = []
+    for part in content.split(","):
+        match = re.fullmatch(
+            rf"\s*{re.escape(field)}\s*:\s*['\"]?([^'\"]+)['\"]?\s*",
+            part,
+        )
+        if match:
+            values.append(match.group(1).strip())
+    return values[0] if len(values) == 1 else None
 
 
 def active_steps_from_text(content: str) -> Optional[List[str]]:
-    match = re.search(
-        r"(?im)^\s*(?:[-*]\s*)?(?:active[_ ]steps|현재\s*active[_ ]steps)\s*:\s*([^\n]+)$",
-        content,
+    frontmatter = re.match(
+        r"\A---\r?\n.*?\r?\n---(?:\r?\n|\Z)", content, re.DOTALL
     )
-    if not match:
+    source = content[frontmatter.end():] if frontmatter else content
+    matches = re.findall(
+        r"(?im)^\s*(?:[-*]\s*)?(?:active[_ ]steps|현재\s*active[_ ]steps)\s*:\s*([^\n]+)$",
+        source,
+    )
+    structured = frontmatter_mapping_list(content, "global_state", "active_steps")
+    if not matches:
+        return structured
+    if len(matches) != 1:
         return None
-    return re.findall(STEP_REF_PATTERN, match.group(1))
+    body = re.findall(STEP_REF_PATTERN, matches[0])
+    if structured is not None and structured != body:
+        return None
+    return body

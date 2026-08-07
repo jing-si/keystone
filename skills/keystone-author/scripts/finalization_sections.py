@@ -62,6 +62,23 @@ SINGULAR_CURRENT_STEP_PATTERNS = (
 )
 
 
+class DuplicateJsonKey(ValueError):
+    pass
+
+
+def _reject_duplicate_keys(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise DuplicateJsonKey("duplicate JSON key: %s" % key)
+        value[key] = item
+    return value
+
+
+def _loads_json_strict(value: str) -> Any:
+    return json.loads(value, object_pairs_hook=_reject_duplicate_keys)
+
+
 def validate_finalization_closure(root: Path, manifest: Dict[str, Any],
                                   schema_version: Any) -> List[Dict[str, str]]:
     """Validate finalization state, legacy compatibility, and graph closure."""
@@ -209,8 +226,8 @@ def validate_finalization_closure(root: Path, manifest: Dict[str, Any],
                         ))
                     else:
                         try:
-                            graph_manifest = json.loads(content or "")
-                        except json.JSONDecodeError:
+                            graph_manifest = _loads_json_strict(content or "")
+                        except (json.JSONDecodeError, DuplicateJsonKey):
                             graph_manifest = None
                         graph_transaction = (
                             graph_manifest.get("transaction")

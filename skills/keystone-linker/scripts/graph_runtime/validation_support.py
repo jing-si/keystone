@@ -1,7 +1,7 @@
 """Shared diagnostic and path primitives for graph validation."""
 
 from dataclasses import asdict
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Dict, Iterable
 
 from .model import Diagnostic, Severity
@@ -12,9 +12,21 @@ def diagnostic(code: str, message: str, path: str = None, *,
     return Diagnostic(code=code, message=message, severity=severity, path=path)
 
 
+def canonical_relative_path(relative: Any) -> str:
+    if not isinstance(relative, str) or not relative or "\\" in relative:
+        raise ValueError("source path must be a non-empty canonical POSIX path")
+    candidate = PurePosixPath(relative)
+    if (
+        candidate.is_absolute()
+        or candidate.as_posix() != relative
+        or any(part in {"", ".", ".."} for part in candidate.parts)
+    ):
+        raise ValueError("source path must be a canonical repository-relative path")
+    return candidate.as_posix()
+
+
 def safe_path(root: Path, relative: str) -> Path:
-    if not isinstance(relative, str) or not relative:
-        raise ValueError("source path must be a non-empty string")
+    relative = canonical_relative_path(relative)
     candidate = (root / relative).resolve()
     try:
         candidate.relative_to(root.resolve())

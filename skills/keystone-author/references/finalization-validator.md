@@ -37,7 +37,7 @@ Stdout is one JSON object containing `schema_version`, `status`, `diagnostics`, 
 
 ```json
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "acceptance_ref": "R004/S02/main-acceptance",
   "steps": [
     {
@@ -179,9 +179,10 @@ The live validator never returns success for a version-1 or version-2 `finalizat
 and version 1 cannot contain `graph_sync`. Previously completed
 R004 records are historical acceptance evidence: rerunning this validator does not newly approve
 their completion, cancel their acceptance, or require a retroactive state edit. Version 3 preserves
-previously completed records and their graph evidence as a compatibility wire. Any new completion or
-graph-relevant finalization uses version 4. Version 4 retains the version-3 graph assessment and adds
-per-accepted-Step and repository-global source binding:
+previously completed records and their graph evidence as a compatibility wire. Version 4 preserves
+the accepted per-Step and four-source equality contract. Any new completion or graph-relevant
+finalization uses version 5. Version 5 retains version-4 closure and adds semantic Step, event-Round,
+source-role, `doc_type`, path, and key binding:
 
 ```json
 {
@@ -220,14 +221,23 @@ same `active_steps` set as the manifest. Every `active_steps` ref must resolve
 to a declared Step with an active status. Execution and approval transitions must name refs in
 `accepted_steps`.
 Every accepted Step has exactly one `in_progress` to `complete` execution transition and
-exactly one `pending` to `accepted` approval transition with evidence. In schema version 4, every
+exactly one `pending` to `accepted` approval transition with evidence. In schema versions 4 and 5, every
 accepted Step also declares `finalization_state` and `finalization_acceptance_ref`; both must match its
 Progress frontmatter, and a complete event requires all accepted Steps complete under the manifest
-acceptance ref. Version 4 `global_state` binds `active_round`, `latest_accepted_round`, and
+acceptance ref. Versions 4 and 5 `global_state` bind `active_round`, `latest_accepted_round`, and
 `active_steps` to four distinct paths—work index, round index, root index, and Context Map—and checks
 each source's expected frontmatter `key.id`. Body examples cannot provide or override these values.
 `active_round: none` is the canonical no-active-round value and is valid only when `active_steps` is
-empty.
+empty. Version 5 additionally requires canonical accepted Step refs from exactly one event Round,
+binds the work and round source path/key to that event Round, binds root index and Context Map to their
+canonical global identity, and validates each source's category `doc_type`. Active Step refs must be
+canonical and their round prefix must equal `active_round`; the event Round remains recoverable when
+the terminal active Round is `none`. The event round index must be `active` while that Round is active
+and `accepted` at terminal closure; a terminal event Work must be `complete`.
+`latest_accepted_round` must resolve to exactly one canonical `doc_type: work_round` index below the
+root works-index directory, with matching round path/key identity and `round_status: accepted`, even
+when another event Round is active. Terminal `active_round: none` is invalid while any canonical
+`doc_type: work` index in that tree has `work_status: planned`, `in_progress`, or `blocked`.
 Future-Step partial work
 belongs in `early_work` with a declared target, cause, completed and remaining scope, and
 `status_effect: none`. Duplicate namespace/value claims by different owners are validation failures.

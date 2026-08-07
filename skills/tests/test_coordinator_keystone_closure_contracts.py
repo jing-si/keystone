@@ -111,12 +111,42 @@ class CoordinatorKeystoneClosureContractTest(unittest.TestCase):
             self.assertIn(term, installed)
 
     def test_installed_package_contains_executable_closure_validator(self):
-        self.assertTrue(
-            (ROOT / "skills/keystone-coordinator/scripts/validate_closure.py").is_file()
-        )
+        for relative in (
+            "skills/keystone-coordinator/scripts/validate_closure.py",
+            "skills/keystone-coordinator/scripts/closure_actual_state.py",
+            "skills/keystone-coordinator/scripts/closure_v2.py",
+        ):
+            self.assertTrue((ROOT / relative).is_file())
         self.assertTrue(
             (ROOT / "skills/keystone-coordinator/references/closure-validator.md").is_file()
         )
+
+    def test_actual_state_v2_contract_is_consistent_across_surfaces(self):
+        standard = read("00_docs/standards/skills/coordinator/key-standard-coordinator.md")
+        installed = read("skills/keystone-coordinator/SKILL.md")
+        reference = read("skills/keystone-coordinator/references/closure-validator.md")
+
+        for term in (
+            "schema v2",
+            "assignment_digest",
+            "context_digest",
+            "change_kind",
+            "resulting_digest",
+            "graph_relevant",
+            "--root",
+            "--assignment",
+            "closure_step_ref",
+            "escaping symlink",
+            "status: error",
+            "Linker runner",
+            "Author runner",
+        ):
+            with self.subTest(term=term):
+                self.assertIn(term, standard + installed + reference)
+
+        self.assertIn("legacy_schema_not_authoritative", read(
+            "skills/keystone-coordinator/scripts/validate_closure.py"
+        ))
 
     def test_worker_assignment_example_has_no_duplicate_mapping_keys(self):
         contract = read("skills/keystone-coordinator/SKILL.md")

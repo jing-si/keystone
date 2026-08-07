@@ -101,11 +101,11 @@ def codes(result):
 
 
 class ClosureValidationTest(unittest.TestCase):
-    def test_valid_orchestration_is_ready_for_main_acceptance(self):
+    def test_valid_legacy_orchestration_is_non_authoritative(self):
         result = validate_manifest(orchestration_manifest())
 
-        self.assertEqual("pass", result["status"])
-        self.assertEqual([], result["diagnostics"])
+        self.assertEqual("fail", result["status"])
+        self.assertEqual({"legacy_schema_not_authoritative"}, codes(result))
 
     def test_direct_execution_allows_only_default_worker_contract(self):
         manifest = orchestration_manifest()
@@ -115,7 +115,10 @@ class ClosureValidationTest(unittest.TestCase):
         ]
         manifest["worker_report"]["execution_mode"] = "direct_execution"
 
-        self.assertEqual("pass", validate_manifest(manifest)["status"])
+        self.assertEqual(
+            {"legacy_schema_not_authoritative"},
+            codes(validate_manifest(manifest)),
+        )
 
     def test_orchestration_requires_an_external_skill(self):
         manifest = orchestration_manifest()
@@ -214,7 +217,10 @@ class ClosureValidationTest(unittest.TestCase):
         manifest = orchestration_manifest()
         manifest["context_pack"]["dependency_status"] = "waiting"
         manifest["context_pack"]["active_step_gates"] = [gate]
-        self.assertEqual("pass", validate_manifest(manifest)["status"])
+        self.assertEqual(
+            {"legacy_schema_not_authoritative"},
+            codes(validate_manifest(manifest)),
+        )
 
         gate["result"] = "invalid"
         result_codes = codes(validate_manifest(manifest))
@@ -264,7 +270,10 @@ class ClosureValidationTest(unittest.TestCase):
         manifest["worker_report"]["changed_files"] = []
         manifest["worker_report"]["artifact_deltas"] = []
 
-        self.assertEqual("pass", validate_manifest(manifest)["status"])
+        self.assertEqual(
+            {"legacy_schema_not_authoritative"},
+            codes(validate_manifest(manifest)),
+        )
 
     def test_artifact_delta_kind_and_one_to_one_changed_surface_are_required(self):
         manifest = orchestration_manifest()
@@ -329,7 +338,10 @@ class ClosureValidationTest(unittest.TestCase):
             "evidence": ["Main acceptance recorded"],
         }
 
-        self.assertEqual("pass", validate_manifest(manifest)["status"])
+        self.assertEqual(
+            {"legacy_schema_not_authoritative"},
+            codes(validate_manifest(manifest)),
+        )
 
         manifest["keystone_closure"]["finalization"]["acceptance_ref"] = ""
         self.assertIn("finalization_acceptance_ref_missing", codes(validate_manifest(manifest)))
@@ -406,7 +418,7 @@ class ClosureValidationTest(unittest.TestCase):
         self.assertEqual("fail", payload["status"])
         self.assertGreater(payload["summary"]["errors"], 0)
 
-    def test_cli_returns_zero_for_complete_pre_acceptance_closure(self):
+    def test_cli_rejects_legacy_pre_acceptance_authority(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "manifest.json"
             path.write_text(json.dumps(orchestration_manifest()), encoding="utf-8")
@@ -418,9 +430,9 @@ class ClosureValidationTest(unittest.TestCase):
             )
 
         payload = json.loads(process.stdout)
-        self.assertEqual(0, process.returncode)
-        self.assertEqual("pass", payload["status"])
-        self.assertEqual([], payload["diagnostics"])
+        self.assertEqual(1, process.returncode)
+        self.assertEqual("fail", payload["status"])
+        self.assertEqual({"legacy_schema_not_authoritative"}, codes(payload))
 
     def test_cli_preserves_error_envelope_for_unicode_decode_error(self):
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -232,6 +232,67 @@ class FinalizationValidatorCliTest(unittest.TestCase):
         }
         return manifest
 
+    def upgrade_to_v5(self, manifest):
+        self.upgrade_to_v4(manifest)
+        manifest["schema_version"] = 5
+        source_specs = [
+            (
+                "work_index", "docs/r004-fixture/work/00_key-index.md", "work",
+                "key.work.fixture.index", "event_round",
+            ),
+            (
+                "round_index", "docs/r004-fixture/00_key-index.md", "work_round",
+                "key.work.round.r004-fixture.index", "event_round",
+            ),
+            (
+                "root_index", "docs/root-index.md", "work_round_index",
+                "key.work.index", "global",
+            ),
+            (
+                "context_map", "docs/context-map.md", "context_map",
+                "key.context-map", "global",
+            ),
+        ]
+        for category, path, doc_type, key_id, round_role in source_specs:
+            source_path = self.root / path
+            source_path.parent.mkdir(parents=True, exist_ok=True)
+            status = (
+                "work_status: complete\n" if category == "work_index"
+                else "round_status: active\n" if category == "round_index"
+                else ""
+            )
+            source_path.write_text(
+                "---\n"
+                f"doc_type: {doc_type}\n"
+                f"{status}"
+                f"key: {{id: {key_id}}}\n"
+                "global_state:\n"
+                "  active_round: R004\n"
+                "  latest_accepted_round: R003\n"
+                "  active_steps: []\n"
+                "---\n# State\n",
+                encoding="utf-8",
+            )
+        manifest["global_state"]["sources"] = [
+            {
+                "category": category,
+                "path": path,
+                "key_id": key_id,
+            }
+            for category, path, _doc_type, key_id, _round_role in source_specs
+        ]
+        accepted_round = self.root / "docs" / "r003-accepted" / "00_key-index.md"
+        accepted_round.parent.mkdir(parents=True, exist_ok=True)
+        accepted_round.write_text(
+            "---\n"
+            "doc_type: work_round\n"
+            "round_status: accepted\n"
+            "key: {id: key.work.round.r003-accepted.index}\n"
+            "---\n# Accepted Round\n",
+            encoding="utf-8",
+        )
+        return manifest
+
     def run_finalization_runner(self, manifest):
         manifest_path = self.root / "manifest.json"
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
@@ -271,6 +332,30 @@ class FinalizationValidatorCliTest(unittest.TestCase):
             check=False,
         )
         payload = json.loads(process.stdout) if process.stdout else None
+
+        self.assertEqual(2, process.returncode)
+        self.assert_diagnostic(payload, "manifest_invalid_json")
+
+    def test_duplicate_manifest_key_is_an_invocation_error(self):
+        manifest_path = self.root / "manifest.json"
+        raw = json.dumps(self.valid_manifest())
+        raw = raw.replace(
+            '{"schema_version": 1,',
+            '{"schema_version": 999, "schema_version": 1,',
+            1,
+        )
+        manifest_path.write_text(raw, encoding="utf-8")
+
+        process = subprocess.run(
+            [
+                sys.executable, str(SCRIPT), "--root", str(self.root),
+                "--manifest", str(manifest_path),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        payload = json.loads(process.stdout)
 
         self.assertEqual(2, process.returncode)
         self.assert_diagnostic(payload, "manifest_invalid_json")
@@ -431,6 +516,316 @@ class FinalizationValidatorCliTest(unittest.TestCase):
         process, payload = self.run_validator(manifest)
 
         self.assertEqual(0, process.returncode, payload)
+
+    def test_schema_v5_accepts_strict_category_identity_and_round_roles(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v5(manifest)
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(0, process.returncode, payload)
+
+    def test_schema_v5_live_state_requires_one_accepted_latest_round_index(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v5(manifest)
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+        latest = self.root / "docs" / "r003-accepted" / "00_key-index.md"
+        latest.write_text(
+            latest.read_text(encoding="utf-8").replace(
+                "round_status: accepted", "round_status: active"
+            ),
+            encoding="utf-8",
+        )
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "latest_accepted_round_status_invalid")
+
+        latest.unlink()
+        manifest["global_state"]["latest_accepted_round"] = "R002"
+        for source in manifest["global_state"]["sources"]:
+            path = self.root / source["path"]
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    "latest_accepted_round: R003",
+                    "latest_accepted_round: R002",
+                ),
+                encoding="utf-8",
+            )
+        process, payload = self.run_validator(manifest)
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "latest_accepted_round_index_unresolved")
+
+    def test_schema_v5_rejects_ambiguous_latest_round_indexes(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v5(manifest)
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+        duplicate = self.root / "docs" / "r003-duplicate" / "00_key-index.md"
+        duplicate.parent.mkdir(parents=True)
+        duplicate.write_text(
+            "---\n"
+            "doc_type: work_round\n"
+            "round_status: accepted\n"
+            "key: {id: key.work.round.r003-duplicate.index}\n"
+            "---\n# Duplicate Round\n",
+            encoding="utf-8",
+        )
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "latest_accepted_round_index_ambiguous")
+
+    def test_schema_v5_rejects_active_step_outside_active_round(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v5(manifest)
+        manifest["active_steps"] = ["R005/S01"]
+        manifest["global_state"]["active_steps"] = ["R005/S01"]
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "active_step_round_mismatch")
+
+    def test_schema_v5_terminal_state_uses_accepted_step_event_round(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v5(manifest)
+        manifest["global_state"].update(
+            active_round="none",
+            latest_accepted_round="R004",
+        )
+        for source in manifest["global_state"]["sources"]:
+            path = self.root / source["path"]
+            path.write_text(
+                path.read_text(encoding="utf-8")
+                .replace("active_round: R004", "active_round: none")
+                .replace("latest_accepted_round: R003", "latest_accepted_round: R004")
+                .replace("round_status: active", "round_status: accepted"),
+                encoding="utf-8",
+            )
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(0, process.returncode, payload)
+
+    def test_schema_v5_terminal_state_rejects_other_active_work_index(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v5(manifest)
+        manifest["global_state"].update(
+            active_round="none",
+            latest_accepted_round="R004",
+        )
+        for source in manifest["global_state"]["sources"]:
+            path = self.root / source["path"]
+            path.write_text(
+                path.read_text(encoding="utf-8")
+                .replace("active_round: R004", "active_round: none")
+                .replace("latest_accepted_round: R003", "latest_accepted_round: R004")
+                .replace("round_status: active", "round_status: accepted"),
+                encoding="utf-8",
+            )
+        other_work = (
+            self.root / "docs" / "r005-other" / "active-work" / "00_key-index.md"
+        )
+        other_work.parent.mkdir(parents=True)
+        other_work.write_text(
+            "---\n"
+            "doc_type: work\n"
+            "work_status: in_progress\n"
+            "key: {id: key.work.other-active.index}\n"
+            "---\n# Other Active Work\n",
+            encoding="utf-8",
+        )
+        distractor = (
+            self.root / "docs" / "r005-other" / "progress" / "00_key-index.md"
+        )
+        distractor.parent.mkdir(parents=True)
+        distractor.write_text(
+            "---\n"
+            "doc_type: progress\n"
+            "work_status: in_progress\n"
+            "key: {id: key.work.progress-lookalike.index}\n"
+            "---\n# Not a Work Index\n",
+            encoding="utf-8",
+        )
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "terminal_active_work_remaining")
+
+    def test_schema_v5_rejects_mixed_accepted_event_rounds(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v5(manifest)
+        manifest["accepted_steps"].append("R005/S03")
+        manifest["steps"].append({"ref": "R005/S03"})
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "accepted_step_event_round_invalid")
+
+    def test_schema_v5_rejects_round_status_semantic_drift(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v5(manifest)
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+        round_path = self.root / manifest["global_state"]["sources"][1]["path"]
+        round_path.write_text(
+            round_path.read_text(encoding="utf-8").replace(
+                "round_status: active", "round_status: accepted"
+            ),
+            encoding="utf-8",
+        )
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "round_status_semantics_invalid")
+
+    def test_schema_v5_rejects_category_doc_type_key_and_round_role_lies(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v5(manifest)
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+        work_source = manifest["global_state"]["sources"][0]
+        path = self.root / work_source["path"]
+        misleading = self.root / "docs" / "work-v5.md"
+        misleading.write_text(
+            path.read_text(encoding="utf-8")
+            .replace("doc_type: work", "doc_type: context_map")
+            .replace("key.work.fixture.index", "key.context-map"),
+            encoding="utf-8",
+        )
+        work_source["path"] = "docs/work-v5.md"
+        work_source["key_id"] = "key.context-map"
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "global_state_source_doc_type_mismatch")
+        self.assert_diagnostic(payload, "global_state_source_key_semantics_invalid")
+        self.assert_diagnostic(payload, "global_state_source_round_role_invalid")
+
+    def test_schema_v5_rejects_duplicate_frontmatter_semantics(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v5(manifest)
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+        round_path = self.root / manifest["global_state"]["sources"][1]["path"]
+        round_path.write_text(
+            round_path.read_text(encoding="utf-8")
+            .replace(
+                "doc_type: work_round\n",
+                "doc_type: work_round\ndoc_type: context_map\n",
+            )
+            .replace(
+                "round_status: active\n",
+                "round_status: active\nround_status: accepted\n",
+            ),
+            encoding="utf-8",
+        )
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "global_state_source_doc_type_mismatch")
+        self.assert_diagnostic(payload, "round_status_semantics_invalid")
+
+    def test_schema_v5_rejects_mixed_mapping_frontmatter_semantics(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v5(manifest)
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+        round_path = self.root / manifest["global_state"]["sources"][1]["path"]
+        round_path.write_text(
+            round_path.read_text(encoding="utf-8").replace(
+                "key: {id: key.work.round.r004-fixture.index}\n",
+                "key:\n"
+                "  id: key.work.round.r004-fixture.index\n"
+                "key: {id: key.context-map}\n",
+            ),
+            encoding="utf-8",
+        )
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "global_state_source_key_semantics_invalid")
+
+    def test_schema_v5_round_roles_use_canonical_resolved_paths(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v5(manifest)
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+        work_source = manifest["global_state"]["sources"][0]
+        original = self.root / work_source["path"]
+        outside = self.root / "docs" / "forged-work.md"
+        outside.write_bytes(original.read_bytes())
+        work_source["path"] = "docs/r004-fixture/../forged-work.md"
+
+        alias_process, alias_payload = self.run_validator(manifest)
+
+        self.assertEqual(1, alias_process.returncode)
+        self.assert_diagnostic(alias_payload, "global_state_source_unavailable")
+
+        link = self.root / "docs" / "r004-fixture" / "linked-work.md"
+        link.symlink_to(outside)
+        work_source["path"] = "docs/r004-fixture/linked-work.md"
+
+        link_process, link_payload = self.run_validator(manifest)
+
+        self.assertEqual(1, link_process.returncode)
+        self.assert_diagnostic(link_payload, "global_state_source_round_role_invalid")
 
     def test_schema_v4_represents_no_active_round_only_with_no_active_steps(self):
         manifest = self.valid_manifest()
@@ -688,6 +1083,21 @@ class FinalizationValidatorCliTest(unittest.TestCase):
         self.assertEqual(1, process.returncode)
         self.assert_diagnostic(payload, "schema_version_unsupported")
 
+        manifest["schema_version"] = True
+        process, payload = self.run_validator(manifest)
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "schema_version_unsupported")
+
+    def test_schema_v5_rejects_unknown_top_level_field(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v5(manifest)
+        manifest["unexpected"] = "must fail closed"
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "manifest_field_unknown")
+
     def test_schema_v2_requires_graph_sync_assessment(self):
         manifest = self.valid_manifest()
         manifest["schema_version"] = 2
@@ -830,6 +1240,22 @@ class FinalizationValidatorCliTest(unittest.TestCase):
         self.assertEqual(0, process.returncode, payload)
         self.assertEqual("pass", payload["status"])
 
+    def test_graph_validation_manifest_rejects_duplicate_json_keys(self):
+        transaction = self.verified_graph_transaction()
+        manifest = self.graph_complete_manifest(transaction)
+        graph_path = self.root / "graph-validation.json"
+        raw = graph_path.read_text(encoding="utf-8").replace(
+            '"state": "verified"',
+            '"state": "failed", "state": "verified"',
+            1,
+        )
+        graph_path.write_text(raw, encoding="utf-8")
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "graph_sync_evidence_malformed")
+
     def test_deferred_graph_sync_blocks_complete_but_not_in_progress(self):
         manifest = self.valid_manifest()
         manifest["schema_version"] = 2
@@ -935,6 +1361,56 @@ class FinalizationRunnerCliTest(unittest.TestCase):
 
                 self.assertEqual(2, process.returncode)
                 self.assertEqual("validator_execution_failed", payload["diagnostics"][0]["code"])
+
+    def test_duplicate_key_in_child_envelope_fails_closed(self):
+        fake = self.root / "duplicate-envelope.py"
+        fake.write_text(
+            "print('{\"schema_version\":1,\"status\":\"pass\","
+            "\"diagnostics\":[],\"summary\":{\"errors\":9,"
+            "\"errors\":0,\"warnings\":0}}')\n",
+            encoding="utf-8",
+        )
+
+        process, payload = self.run_runner(fake)
+
+        self.assertEqual(2, process.returncode)
+        self.assertEqual(
+            "validator_execution_failed", payload["diagnostics"][0]["code"]
+        )
+
+    def test_duplicate_graph_and_extension_envelopes_fail_closed(self):
+        duplicate = (
+            "print('{\"schema_version\":1,\"status\":\"pass\","
+            "\"diagnostics\":[],\"summary\":{\"errors\":9,"
+            "\"errors\":0,\"warnings\":0}}')\n"
+        )
+        duplicate_graph = self.root / "duplicate-graph.py"
+        duplicate_graph.write_text(duplicate, encoding="utf-8")
+
+        process, payload = self.run_graph_runner(duplicate_graph)
+
+        self.assertEqual(2, process.returncode)
+        self.assertEqual(
+            "graph_validation_output_malformed", payload["diagnostics"][0]["code"]
+        )
+
+        passing_graph = self.root / "passing-graph.py"
+        passing_graph.write_text(
+            "import json\nprint(json.dumps({'schema_version':1,'status':'pass',"
+            "'diagnostics':[],'summary':{'errors':0,'warnings':0}}))\n",
+            encoding="utf-8",
+        )
+        duplicate_extension = self.root / "duplicate-extension.py"
+        duplicate_extension.write_text(duplicate, encoding="utf-8")
+
+        process, payload = self.run_graph_runner(
+            passing_graph, extension=duplicate_extension
+        )
+
+        self.assertEqual(2, process.returncode)
+        self.assertEqual(
+            "validator_execution_failed", payload["diagnostics"][0]["code"]
+        )
 
     def test_malformed_diagnostics_and_summary_fail_closed(self):
         cases = [

@@ -26,6 +26,12 @@ repository include/exclude patterns. Cache freshness is the digest of worktree i
 sorted relative path set, and each path's raw-byte SHA-256 digest. Git HEAD, timestamps, and mtimes are
 not freshness evidence.
 
+Discovery groups each logical source and its adjacent `.keystone.json` file into one SourceUnit before
+parsing. Companion-only declarations are canonical, inline-only declarations are canonical, and dual
+declarations emit `metadata_surface_conflict`; the index never merges both surfaces or counts the
+companion as an independent owner source. A source-unit policy change increments the disposable cache
+schema so an older graph view is rebuilt from source.
+
 ## Failure and trust boundary
 
 Missing, stale, locked, unwritable, or corrupt cache state falls back to the current source scan and
@@ -62,4 +68,6 @@ stable gate ID, source and dependency IDs, Step/work-completion scope, observed 
 approval, canonical result, blocking/optional meaning, origin, reason, and deterministic cycle-event
 evidence. The scanner derives the Work/Step registry only from the immutable discovery generation.
 Legacy-only work dependencies become non-start-blocking work-completion candidates; invalid gates do
-not mutate progress, assign work, cancel work, or grant acceptance.
+not mutate progress, assign work, cancel work, or grant acceptance. Flat `depends_on` metadata on a
+non-Work artifact remains a typed semantic relation and never creates a legacy work-completion
+candidate.

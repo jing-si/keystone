@@ -1,7 +1,7 @@
 ---
 doc_type: standard
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: main}
+approval: {state: pending}
 key:
   id: key.standard.skill.coordinator
   refs:
@@ -413,6 +413,11 @@ Assignment의 goal, purpose, authority, scope, forbidden changes, execution envi
 return report contract는 모든 worker에게 적용되는 Keystone 기본 경계다. 외부 코딩 스킬(12)이
 명시된 경우 해당 스킬은 `injected_skills`로 들어가지만 이 기본 경계를 대체하지 않는다.
 
+Agent-facing worker assignment는 위의 풍부한 handoff shape를 유지한다. Actual-state validator에는
+그중 authority-bearing subset과 pre-work full snapshot만 가진 strict schema-v2 assignment
+projection을 전달한다. Full report도 validator reference가 정의한 strict closure projection으로
+정규화하며, unknown field나 report의 자기신고를 actual-state evidence로 사용하지 않는다.
+
 <!-- key: id=key.standard.skill.coordinator.injected-skill-selection refs=key.role.coordinator key.topic.external-assist key.topic.skill-contract key.standard.subagent -->
 ### Injected skill selection contract
 
@@ -460,6 +465,8 @@ Worker report는 다음 shape을 우선 사용한다.
 ```yaml
 worker_report:
   assignment_id:
+  assignment_digest:
+  context_digest:
   execution_mode: direct_execution | orchestration
   status: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | NEEDS_SCOPE_CHANGE | BLOCKED
   status_reason:
@@ -642,7 +649,8 @@ Coordinator는 direct/delegated 구현을 같은 closure workflow로 회수한�
    성공 보고와 무관하게 `accept_candidate`를 만들지 않는다.
 8. Pre-acceptance closure가 완료되면 Main acceptance 후보로 전달한다. Post-acceptance decision은
    `keystone_closure.acceptance_ref`와 non-empty `acceptance_evidence`를 기록한 경우에만 실행한다.
-   Author의 schema-v3 finalization, ready Context Pack/report/scope/verification/sync evidence가
+   Author의 canonical schema-v5 finalization과 ready Context Pack/report/scope/verification/sync
+   evidence가
    모두 있고 finalization이 `complete` 또는 concrete `waiver_reason`을 기록한 explicitly `waived`
    상태일 때만 Coordinator `closure_complete`를 기록한다.
 
@@ -650,13 +658,42 @@ Installed Coordinator package의 `scripts/validate_closure.py`는 이 gate를 di
 exit code로 검사한다. Validator는 source edit, graph mutation, Main acceptance 또는 Author
 finalization 권한을 가지지 않는다.
 
+9. 새 authority-bearing closure는 manifest schema v2를 사용한다. 구현 전 Coordinator-owned
+   assignment projection은 assignment ID, execution mode, purpose, authority, goal, Context Pack,
+   injected skill IDs/modes, normalized scope와 전체 pre-work repository path/raw-byte digest snapshot을
+   별도 immutable input으로 보존한다.
+10. Validator는 `--root`, `--assignment`, `--manifest`, external evidence root를 입력받아 현재
+    repository snapshot에서 added/modified/deleted path를 직접 계산한다. 이 path set,
+    baseline/resulting digest와 report/artifact delta가 정확히 같지 않거나 allowed/excluded scope를
+    벗어나면 실패한다. Root와 host-controlled evidence root는 실제 directory여야 하고 evidence는
+    repository snapshot 밖에 둔다. Allowed selector와 겹치는 ancestor/descendant escaping symlink도
+    실패한다.
+11. Report와 review의 assignment ID/digest, Context Pack digest, execution/purpose/authority/goal,
+    `skill_usage`는 immutable assignment와 같아야 한다. Authority-bearing object의 unknown field는
+    fail-closed다.
+12. Required graph sync는 exact delta-set에 결속된 Linker validation manifest와 transaction ID를
+    요구하고 canonical schema-v2 verified transaction에 대해 package-owned Linker runner를
+    실행한다. Post-acceptance decision은 acceptance ref와 non-empty unique accepted Steps가 같은
+    Author manifest를 요구하고 package-owned Author runner를 실행한다.
+13. Manifest schema v1은 historical diagnostic compatibility만 제공하며 `accept_candidate` 또는
+    `closure_complete` authority를 만들 수 없다. Diagnostic envelope schema와 manifest schema는
+    서로 다른 version contract다.
+14. Step closure는 assignment Step 안의 concrete `closure_step_ref`를 기록한다. V2 gate projection은
+    Step-only와 Work-only scope를 각 array에 분리하고 misfiled, duplicate, out-of-assignment 또는
+    evidence-free non-satisfied gate를 실패로 처리한다. Root/evidence read, runner availability,
+    timeout, output parsing 또는 child runner execution failure는 `status: error`와 exit 2를 유지한다.
+15. Author schema v4는 Author runner의 historical read compatibility로만 남는다. 신규 Coordinator
+    schema-v2 `closure_complete` authority는 semantic round/category invariant가 있는 Author
+    schema-v5 evidence만 허용한다.
+
 <!-- key: id=key.standard.skill.coordinator.graph-synchronization refs=key.role.coordinator key.role.linker key.topic.artifact-graph key.topic.verification key.topic.change-set -->
 ## Artifact delta와 graph synchronization
 
 1. Coordinator는 direct execution 또는 허락된 assignment에서 repository implementation이나
    anchor 의미 변경을 발견하면 changed surface마다 `artifact_delta`를 수집한다.
-2. Delta는 source surface, changed locator, semantic summary와 target source의 UTF-8 raw-byte
-   SHA-256 baseline을 가진다. Graph-relevant delta가 복수 source surface patch를 요구할 때만
+2. Delta는 source surface, `added | modified | deleted` change kind, changed locator, semantic
+   summary, target source의 baseline/resulting raw-byte SHA-256와 `graph_relevant`를 가진다.
+   Graph-relevant delta가 복수 source surface patch를 요구할 때만
    Linker synchronization transaction을 시작한다. 단일 surface 변경은 direct refresh로 끝내며
    어느 경로도 current scope, Coordinator permission, worker authority 또는 acceptance를 확대하지 않는다.
 3. Linker만 canonical graph mutation과 exact per-surface patch를 결정한다. Coordinator/Main과
@@ -679,9 +716,12 @@ finalization 권한을 가지지 않는다.
 artifact_delta:
   kind: artifact_delta
   source_surface:
+  change_kind: added | modified | deleted
   changed_locators: []
   semantic_summary:
   baseline_digest: sha256:<64-lowercase-hex> | absent
+  resulting_digest: sha256:<64-lowercase-hex> | absent
+  graph_relevant: true | false
 graph_attestations:
   - patch_id:
     decision: confirm | reject | needs_revision

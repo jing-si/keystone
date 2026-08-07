@@ -33,6 +33,7 @@ from .model import (
 )
 from .relation_policy import policy_for
 from .patch_replay import PATCH_FORMATS, digest_bytes, replay_patch
+from .validation_support import canonical_relative_path
 
 
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -150,8 +151,12 @@ def plan_graph_sync(
         evidence: Evidence = Evidence.DECLARED,
         direct_relation_case: Optional[DirectRelationCase] = None,
         direct_relation_reason: Optional[str] = None,
+        transaction_schema_version: int = 2,
 ) -> GraphTransaction:
     """Plan exact requested after-states; never infer semantics or write sources."""
+    if (type(transaction_schema_version) is not int
+            or transaction_schema_version not in {1, 2}):
+        raise ValueError("transaction_schema_version must be 1 or 2")
     try:
         admitted = Evidence(evidence)
     except ValueError as error:
@@ -239,6 +244,9 @@ def plan_graph_sync(
     patches = []
     if len(set(patch_specs)) != len(patch_specs):
         raise ValueError("duplicate patch specs are not allowed")
+    target_paths = [canonical_relative_path(spec.target_path) for spec in patch_specs]
+    if len(set(target_paths)) != len(target_paths):
+        raise ValueError("each physical target may have only one patch")
     for spec in patch_specs:
         _validate_digest(spec.baseline_digest)
         enhanced_patch = any(
@@ -248,7 +256,11 @@ def plan_graph_sync(
                 spec.baseline_content,
             )
         )
-        if enhanced_patch:
+        if transaction_schema_version == 1 and enhanced_patch:
+            raise ValueError("schema-v1 patch cannot contain schema-v2 executable fields")
+        if transaction_schema_version == 2 and not enhanced_patch:
+            raise ValueError("schema-v2 requires every patch to be executable")
+        if transaction_schema_version == 2:
             if spec.patch_format not in PATCH_FORMATS:
                 raise ValueError("enhanced patch requires a supported patch_format")
             if not isinstance(spec.patch_body, str):
@@ -296,19 +308,17 @@ def plan_graph_sync(
                 _patch_links_observed(mutation, patch) for patch in patches):
             raise ValueError("observed mutation requires an exact owning surface patch")
     transaction_material = {
+        "schema_version": transaction_schema_version,
         "scope_ref": scope_ref,
         "deltas": normalized_deltas,
         "mutations": mutations,
         "patches": patches,
     }
-    schema_version = 2 if any(
-        patch.patch_format is not None for patch in patches
-    ) else 1
     return GraphTransaction(
         transaction_id=_stable_id("graph-tx", transaction_material),
         scope_ref=scope_ref,
         input_deltas=normalized_deltas,
         canonical_mutations=mutations,
         surface_patches=patches,
-        schema_version=schema_version,
+        schema_version=transaction_schema_version,
     )

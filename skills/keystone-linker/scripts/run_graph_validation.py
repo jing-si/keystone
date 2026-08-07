@@ -7,6 +7,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+from graph_runtime.companion import load_authoritative_json
+
+
+_ENVELOPE_FIELDS = {"schema_version", "status", "diagnostics", "summary"}
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -27,8 +32,17 @@ def failure(code, message):
             "summary": {"errors": 1, "warnings": 0}}
 
 
-def valid_envelope(payload, returncode):
-    if not isinstance(payload, dict) or payload.get("schema_version") != 1:
+def valid_envelope(payload, returncode, *, allow_coverage=False):
+    if not isinstance(payload, dict):
+        return False
+    expected_fields = set(_ENVELOPE_FIELDS)
+    if "coverage" in payload:
+        if not allow_coverage or not isinstance(payload["coverage"], dict):
+            return False
+        expected_fields.add("coverage")
+    if (set(payload) != expected_fields
+            or type(payload.get("schema_version")) is not int
+            or payload.get("schema_version") != 1):
         return False
     diagnostics, summary = payload.get("diagnostics"), payload.get("summary")
     if not isinstance(diagnostics, list) or not isinstance(summary, dict):
@@ -44,7 +58,7 @@ def valid_envelope(payload, returncode):
             and payload.get("status") == expected)
 
 
-def execute(command, timeout):
+def execute(command, timeout, *, allow_coverage=False):
     try:
         process = subprocess.run(command, capture_output=True, text=True, check=False, timeout=timeout)
     except subprocess.TimeoutExpired:
@@ -52,10 +66,12 @@ def execute(command, timeout):
     except (OSError, subprocess.SubprocessError) as error:
         return None, None, ("validator_execution_failed", str(error))
     try:
-        payload = json.loads(process.stdout)
-    except (json.JSONDecodeError, TypeError):
+        payload = load_authoritative_json(process.stdout)
+    except (TypeError, ValueError):
         return process, None, ("validator_output_malformed", "validator output is not JSON")
-    if not valid_envelope(payload, process.returncode):
+    if not valid_envelope(
+        payload, process.returncode, allow_coverage=allow_coverage
+    ):
         return process, payload, ("validator_output_malformed", "validator diagnostic envelope is invalid")
     return process, payload, None
 
@@ -74,7 +90,11 @@ def main():
     for flag, value in (("--manifest", args.manifest), ("--transaction", args.transaction)):
         if value:
             forwarded.extend((flag, value))
-    process, core, problem = execute([sys.executable, str(validator), *forwarded], args.timeout_seconds)
+    process, core, problem = execute(
+        [sys.executable, str(validator), *forwarded],
+        args.timeout_seconds,
+        allow_coverage=True,
+    )
     if problem or process.returncode == 2:
         payload = failure(*(problem or ("validator_execution_failed", "core validator returned exit 2")))
         print(json.dumps(payload, sort_keys=True))

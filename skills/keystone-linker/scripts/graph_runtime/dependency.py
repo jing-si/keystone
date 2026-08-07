@@ -319,7 +319,7 @@ def evaluate_dependency_sources(sources: Sequence[DependencySource]) -> Dependen
             candidate = DependencyTargetState(source.work_status, source.approval_state)
             if current is None or (not current.work_status and candidate.work_status):
                 targets[source.source_id] = candidate
-        if source.legacy_dependencies:
+        if source.is_work and source.legacy_dependencies:
             legacy_dependencies[source.source_id] = source.legacy_dependencies
         if source.structured_dependencies:
             structured_dependencies[source.source_id] = source.structured_dependencies

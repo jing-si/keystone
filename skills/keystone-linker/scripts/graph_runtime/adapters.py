@@ -1,4 +1,6 @@
+import io
 import re
+import tokenize
 from dataclasses import dataclass
 from typing import Iterable, Optional, Protocol, Tuple
 
@@ -38,15 +40,20 @@ def _following_construct_context(text: str, end: int):
 def _fenced_ranges(text: str):
     ranges = []
     opened = None
-    for match in re.finditer(r"^[ \t]*(`{3,}|~{3,}).*$", text, re.MULTILINE):
-        marker = match.group(1)[0]
+    pattern = r"^[ ]{0,3}(`{3,}|~{3,})([^\r\n]*)$"
+    for match in re.finditer(pattern, text, re.MULTILINE):
+        token = match.group(1)
+        marker = token[0]
         if opened is None:
-            opened = (marker, match.start())
-        elif opened[0] == marker:
-            ranges.append((opened[1], match.end()))
+            if marker == "`" and "`" in match.group(2):
+                continue
+            opened = (marker, len(token), match.start())
+        elif (opened[0] == marker and len(token) >= opened[1]
+              and not match.group(2).strip()):
+            ranges.append((opened[2], match.end()))
             opened = None
     if opened is not None:
-        ranges.append((opened[1], len(text)))
+        ranges.append((opened[2], len(text)))
     return tuple(ranges)
 
 
@@ -64,6 +71,13 @@ def _inside_inline_code(text: str, position: int) -> bool:
         elif length == opener_length:
             opener_length = None
     return opener_length is not None
+
+
+def _inside_passive_markdown_line(text: str, position: int) -> bool:
+    line_start = text.rfind("\n", 0, position) + 1
+    prefix = text[line_start:position]
+    return bool(prefix.startswith("\t") or re.match(r" {4,}", prefix)
+                or re.match(r" {0,3}>", prefix))
 
 
 @dataclass(frozen=True)
@@ -102,7 +116,9 @@ class MarkdownAdapter:
                 ))
         pending = None
         for match in re.finditer(r"<!--(.*?)-->", text, re.DOTALL):
-            if _in_ranges(match.start(), fenced) or _inside_inline_code(text, match.start()):
+            if (_in_ranges(match.start(), fenced)
+                    or _inside_inline_code(text, match.start())
+                    or _inside_passive_markdown_line(text, match.start())):
                 continue
             line_start = text.rfind("\n", 0, match.start()) + 1
             if text[line_start:match.start()].lstrip().startswith("|"):
@@ -234,11 +250,34 @@ class YamlAdapter(GenericLineCommentAdapter):
 
 
 @dataclass(frozen=True)
+class PythonAdapter:
+    surface: str = "code_anchor"
+
+    def metadata_blocks(self, text: str):
+        try:
+            tokens = tokenize.generate_tokens(io.StringIO(text).readline)
+            for token in tokens:
+                if token.type != tokenize.COMMENT:
+                    continue
+                match = re.match(r"#\s*(?:keystone|key):\s*(.+)$", token.string)
+                if match:
+                    yield match.group(1).strip(), None, None
+        except (IndentationError, tokenize.TokenError):
+            return
+
+
+@dataclass(frozen=True)
 class XmlAdapter:
     surface: str = "config_anchor"
 
     def metadata_blocks(self, text: str):
+        cdata = tuple(
+            (match.start(), match.end())
+            for match in re.finditer(r"<!\[CDATA\[.*?\]\]>", text, re.DOTALL)
+        )
         for match in re.finditer(r"<!--\s*(?:keystone|key):\s*(.*?)\s*-->", text, re.DOTALL):
+            if _in_ranges(match.start(), cdata):
+                continue
             yield match.group(1).strip(), None, None
 
 
@@ -257,6 +296,8 @@ def adapter_for_path(path: str) -> Optional[Adapter]:
     if suffix in {"js", "jsx", "ts", "tsx", "c", "cc", "cpp", "h", "hpp", "swift",
                   "go", "rs", "cs"}:
         return GenericLineCommentAdapter()
-    if suffix in {"py", "pyi", "sh", "bash", "zsh"}:
+    if suffix in {"py", "pyi"}:
+        return PythonAdapter()
+    if suffix in {"sh", "bash", "zsh"}:
         return GenericLineCommentAdapter(marker="#")
     return None

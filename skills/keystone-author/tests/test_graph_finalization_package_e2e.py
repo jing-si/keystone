@@ -222,6 +222,7 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
                                             if before_relations.get(key) != rel),
             requested_relation_removals=tuple(key for key in before_relations if key not in after_relations),
             patch_specs=specs,
+            transaction_schema_version=1,
         )
         current = begin_attestation(transaction)
         for patch in transaction.surface_patches:

@@ -107,6 +107,37 @@ class TransactionWireValidationTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "lifecycle"):
             migrate_snapshot_wire_v1_to_v2(invalid)
 
+    def test_snapshot_schema_version_requires_an_exact_integer(self):
+        snapshot = GraphSnapshot(
+            nodes=(self.source, self.target),
+            relations=(self.relation,),
+        )
+        wire = graph_snapshot_wire(snapshot)
+        node, relation = wire["nodes"][0], wire["relations"][0]
+
+        for invalid_version in (True, 1.0):
+            with self.subTest(boundary="serialization-argument", value=invalid_version):
+                with self.assertRaisesRegex(ValueError, "schema_version"):
+                    graph_snapshot_wire(snapshot, schema_version=invalid_version)
+            with self.subTest(boundary="serialization-model", value=invalid_version):
+                with self.assertRaisesRegex(ValueError, "schema_version"):
+                    graph_snapshot_wire(GraphSnapshot(
+                        nodes=snapshot.nodes,
+                        relations=snapshot.relations,
+                        schema_version=invalid_version,
+                    ))
+            with self.subTest(boundary="node-predicate", value=invalid_version):
+                self.assertFalse(is_node_wire(node, invalid_version))
+            with self.subTest(boundary="relation-predicate", value=invalid_version):
+                self.assertFalse(is_relation_wire(relation, invalid_version))
+            with self.subTest(boundary="snapshot-argument", value=invalid_version):
+                self.assertFalse(is_snapshot_wire(wire, invalid_version))
+            with self.subTest(boundary="snapshot-wire", value=invalid_version):
+                self.assertFalse(is_snapshot_wire(
+                    dict(wire, schema_version=invalid_version),
+                    1,
+                ))
+
     def test_digest_wire_accepts_absent_or_lowercase_sha256_only(self):
         self.assertTrue(is_digest_wire("absent"))
         self.assertTrue(is_digest_wire("sha256:" + "a" * 64))
@@ -124,6 +155,11 @@ class TransactionWireValidationTest(unittest.TestCase):
         self.assertTrue(is_mechanical_envelope(passing))
         self.assertTrue(mechanical_envelope_passes(passing))
         self.assertFalse(is_mechanical_envelope(inconsistent))
+        for invalid_version in (True, 1.0):
+            with self.subTest(value=invalid_version):
+                self.assertFalse(is_mechanical_envelope(
+                    dict(passing, schema_version=invalid_version)
+                ))
 
     def test_mutation_delta_applies_canonical_add_without_mutating_baseline(self):
         baseline = graph_snapshot_wire(GraphSnapshot())
@@ -141,6 +177,13 @@ class TransactionWireValidationTest(unittest.TestCase):
         self.assertEqual([node_wire], result["nodes"])
         self.assertEqual(result, normalized_wire(result))
         self.assertIsNone(apply_mutation_delta(result, (mutation,)))
+
+        for invalid_version in (True, 1.0):
+            with self.subTest(value=invalid_version):
+                self.assertIsNone(apply_mutation_delta(
+                    dict(baseline, schema_version=invalid_version),
+                    (),
+                ))
 
 
 if __name__ == "__main__":

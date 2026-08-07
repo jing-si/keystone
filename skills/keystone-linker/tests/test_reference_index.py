@@ -366,6 +366,45 @@ plain body
         self.assertNotIn("unsupported_surface", {item.code for item in result.diagnostics})
         self.assertNotEqual(initial.digest, changed.digest)
 
+    def test_supported_source_and_companion_use_one_canonical_source_unit(self):
+        source = self.write("src/worker.py", "def run():\n    pass\n")
+        digest = "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest()
+        companion = {
+            "schema_version": 1,
+            "source": {"path": "src/worker.py", "surface": "companion_metadata",
+                       "baseline_digest": digest},
+            "nodes": [{
+                "id": "key.artifact.companion", "kind": "output_artifact",
+                "artifact_kind": "code",
+                "locator": {"path": "src/worker.py", "symbol": "run"},
+                "lifecycle": "active",
+                "provenance": {"produced_from": [], "governed_by": []},
+            }],
+            "relations": [],
+        }
+        self.write("src/worker.py.keystone.json", json.dumps(companion))
+
+        companion_only = ReferenceScanner(self.root).scan(ScanScope.REPOSITORY)
+        self.assertEqual(
+            {"key.artifact.companion"},
+            {item.id for item in companion_only.owners},
+        )
+
+        source.write_text(
+            "# keystone: id=key.artifact.inline kind=output_artifact\n"
+            "def run():\n    pass\n",
+            encoding="utf-8",
+        )
+        conflicted = ReferenceScanner(self.root).scan(ScanScope.REPOSITORY)
+
+        self.assertFalse(conflicted.owners)
+        self.assertEqual(
+            1,
+            [item.code for item in conflicted.diagnostics].count(
+                "metadata_surface_conflict"
+            ),
+        )
+
     def test_document_root_and_companion_sources_cannot_escape_scope(self):
         outside = Path(self.temp.name) / "outside"
         outside.mkdir()

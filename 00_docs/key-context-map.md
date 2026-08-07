@@ -14,14 +14,15 @@ key:
     - key.topic.initialization
     - key.topic.runtime-independence
 global_state:
-  active_round: none
+  active_round: R010
   latest_accepted_round: R009
-  active_steps: []
+  active_steps: [R010/S01]
 ---
 
 # 프로젝트 컨텍스트 맵
 
-활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 active work round는 없으며, 최신 accepted round는
+활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 active work round는
+`00_docs/works/r010-production-control-plane-hardening/`이며, 최신 accepted round는
 `00_docs/works/r009-coordinator-keystone-closure/`이다.
 
 <!-- key: id=key.context-map.project refs=key.doc.source key.topic.skill-contract key.topic.bootstrap -->
@@ -86,6 +87,7 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
 | R007 Contract Execution Reconciliation | `00_docs/works/r007-contract-execution-reconciliation/00_key-index.md` | accepted | 문서 계약 실행 정합화와 Python convention·점진적 리팩터링 완료 |
 | R008 Skill Graph and Self-Host Runtime Closure | `00_docs/works/r008-skill-graph-traceability/00_key-index.md` | accepted | readiness부터 dependency·transaction·finalization까지 self-host workflow 정합화·검증 완료 |
 | R009 Coordinator Keystone Closure | `00_docs/works/r009-coordinator-keystone-closure/00_key-index.md` | accepted | Coordinator context provisioning, closure gate와 local installation parity를 complete and accepted로 기록 |
+| R010 Production Control Plane Hardening | `00_docs/works/r010-production-control-plane-hardening/00_key-index.md` | active | lifecycle·transaction·source interpretation·actual-state closure와 release evidence를 fail-closed로 정합화 |
 | Document Tree Setup | `00_docs/works/r001-bootstrap-keystone/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
 | Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | accepted | 전체 공통 기준서 |
 | Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서 |
@@ -182,7 +184,8 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 <!-- key: id=key.context-map.section refs=key.topic.work-sequence key.topic.document-system key.topic.work-round -->
 ## 현재 작업 단계
 
-현재 active round는 없으며 최신 accepted round는 R009 Coordinator Keystone Closure다. R009/S01은
+현재 active round는 R010 Production Control Plane Hardening이며 active Step은 R010/S01이다.
+최신 accepted round는 R009 Coordinator Keystone Closure다. R009/S01은
 사용자 independent-first direction으로 R008과 독립적으로 먼저 수락됐고, 이후 R008/S01-S07도
 complete and accepted로 닫혔다. R001 S00-S07은 accepted 이력으로 보존되고, 미수락
 S08 Skill Creation과 S09 Integration Verification은 superseded다. R002의
@@ -203,7 +206,7 @@ companion/repository validation, transaction/finalization, graph lifecycle과 wi
 순서대로 정합화하고, 마지막에 핵심 skill runtime traceability와 self-host E2E로 전체 경로를
 검증한다.
 
-Active steps: []
+Active steps: [R010/S01]
 
 | Step | 제목 | 목적 |
 |---|---|---|
@@ -214,6 +217,7 @@ Active steps: []
 | R008/S05 | Transaction and Finalization Hardening | complete — executable patch replay, typed retry와 schema-v4 multi-Step/global closure를 구현했다 |
 | R008/S06 | Graph Lifecycle and Wire Compatibility | complete — lifecycle/evidence impact, retired relation validation과 graph wire v2 compatibility를 정합화했다 |
 | R008/S07 | Skill Runtime Traceability and Self-Host E2E | complete — 최소 runtime·test relation과 actual-corpus self-host workflow를 검증했다 |
+| R010/S01 | Production Control Plane Hardening | in_progress — zero-base review의 P0/P1 actual-state correctness와 production gate를 구현·검증한다 |
 
 <!-- key: id=key.context-map.planned-keystone-skills refs=key.topic.skill-contract key.topic.bootstrap -->
 ## Keystone 스킬 구현 상태

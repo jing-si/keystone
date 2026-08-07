@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Optional, Tuple
 
 from .dependency import WorkGate, parse_work_gates
+from .lifecycle_policy import relation_lifecycle_for_node
 from .metadata_support import metadata_strings
 from .model import (
     Diagnostic,
@@ -64,6 +65,7 @@ def build_source_relations(
             for code, message in gate_diagnostics
         )
 
+    relation_lifecycle = relation_lifecycle_for_node(node.lifecycle)
     relations = {
         (node.id, relation_type.value, target): Relation(
             node.id,
@@ -71,7 +73,7 @@ def build_source_relations(
             target,
             Evidence.DECLARED,
             Provenance(surface=surface, locator=locator),
-            node.lifecycle,
+            relation_lifecycle,
         )
         for relation_type, target in relation_values
     }
@@ -88,7 +90,7 @@ def build_source_relations(
                         surface="derived_produced_from",
                         locator=locator,
                     ),
-                    node.lifecycle,
+                    relation_lifecycle,
                 )
     return SourceRelationResult(
         relations=tuple(relations.values()),

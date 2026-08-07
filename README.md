@@ -59,6 +59,33 @@ CODEX_HOME=/path/to/codex-home bash ./reinstall-local-keystone-skills.sh
 
 Restart Codex after installation so the updated skill definitions are loaded.
 
+## Release Verification
+
+The repository release gate runs only from a clean checkout. The RC profile verifies package tests,
+readiness, full graph reconstruction, historical finalization compatibility, Coordinator actual-state
+closure, installer parity and rollback, and independently attested agent-behavior evidence. List the
+planned phases without executing them with:
+
+```bash
+/bin/sh scripts/run_release_gate.sh --profile rc --list
+```
+
+Use the shell launcher for authoritative release checks. It starts the gate with an isolated Python
+runtime and a minimal environment; direct invocation of the Python entrypoint is intended only for
+development tests and is not release evidence.
+
+An actual RC run also requires an external evidence root, results manifest, reviewer key, trusted
+reviewer ID, and a separately configured key fingerprint. The 12 required scenarios are defined in
+[`scripts/agent_eval_scenarios.json`](scripts/agent_eval_scenarios.json); the validator fails closed when
+the evidence or trust material is absent, stale, malformed, symlinked, or not bound to the current
+commit and release-package bytes.
+
+Use the `production` profile only after Main acceptance and schema-v5 finalization have placed the
+Context Map in terminal `active_round: none` state. Production adds validation of the latest accepted
+Round's current finalization manifest. Reviewer HMAC proves possession of the configured key; release
+operators must still establish reviewer independence and that the recorded agent execution actually
+occurred.
+
 ## Starting a Project
 
 For a project without Keystone documents, invoke `keystone-init` directly. A
@@ -155,6 +182,7 @@ Artifact Graph synchronization contracts; consult these sources for current stat
 - [`00_docs/works/00_key-index.md`](00_docs/works/00_key-index.md)
 - [`00_docs/works/r008-skill-graph-traceability/00_key-index.md`](00_docs/works/r008-skill-graph-traceability/00_key-index.md)
 - [`00_docs/works/r009-coordinator-keystone-closure/00_key-index.md`](00_docs/works/r009-coordinator-keystone-closure/00_key-index.md)
+- [`00_docs/works/r010-production-control-plane-hardening/00_key-index.md`](00_docs/works/r010-production-control-plane-hardening/00_key-index.md)
 
 The older `work-package-doc-architect` and `subagent-work-coordinator` projects
 remain historical prototype references, not runtime dependencies.

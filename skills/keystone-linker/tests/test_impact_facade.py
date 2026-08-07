@@ -12,6 +12,9 @@ from graph_runtime.model import (
     Locator,
     Node,
     NodeKind,
+    Lifecycle,
+    Relation,
+    RelationType,
 )
 from graph_runtime.planner import (
     ImpactGrade as PlannerImpactGrade,
@@ -47,6 +50,45 @@ class ImpactFacadeCharacterizationTest(unittest.TestCase):
             changed_seed_candidates(GraphSnapshot(nodes=(node,)), (node.id,)),
             planner_changed_seed_candidates(GraphSnapshot(nodes=(node,)), (node.id,)),
         )
+
+    def test_retired_seed_is_excluded_and_deprecated_seed_is_informational(self):
+        target = Node(
+            "key.code.target",
+            NodeKind.OUTPUT_ARTIFACT,
+            ArtifactKind.CODE,
+            Locator("src/target.py", symbol="target"),
+        )
+        for lifecycle in (
+            Lifecycle.SUPERSEDED,
+            Lifecycle.ARCHIVED,
+            Lifecycle.REMOVED,
+        ):
+            with self.subTest(lifecycle=lifecycle):
+                seed = Node(
+                    "key.cap.seed",
+                    NodeKind.CAPABILITY,
+                    locator=Locator("docs/seed.md"),
+                    lifecycle=lifecycle,
+                )
+                relation = Relation(target.id, RelationType.PROVIDES, seed.id)
+                self.assertEqual(
+                    (),
+                    changed_seed_candidates(
+                        GraphSnapshot((seed, target), (relation,)), (seed.id,)
+                    ),
+                )
+
+        deprecated = Node(
+            "key.cap.seed",
+            NodeKind.CAPABILITY,
+            locator=Locator("docs/seed.md"),
+            lifecycle=Lifecycle.DEPRECATED,
+        )
+        relation = Relation(target.id, RelationType.PROVIDES, deprecated.id)
+        candidates = changed_seed_candidates(
+            GraphSnapshot((deprecated, target), (relation,)), (deprecated.id,)
+        )
+        self.assertEqual(ImpactGrade.INFORMATIONAL, candidates[0].grade)
 
 
 if __name__ == "__main__":

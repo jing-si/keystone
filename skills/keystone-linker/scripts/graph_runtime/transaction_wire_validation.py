@@ -4,6 +4,7 @@ import json
 import re
 from typing import Any, Sequence
 
+from .lifecycle_policy import node_lifecycle_admitted, node_lifecycle_domain
 from .model import RelationType
 
 
@@ -123,15 +124,11 @@ def _metadata_wire_valid(value: Any, *, effective: bool) -> bool:
     )
 
 
-_DOCUMENT_NODE_KINDS = {
-    "source_document", "document_section", "document_item", "claim", "decision",
-    "work_order", "work_step", "capability",
-}
-
-
 def is_node_wire(value: Any, schema_version: int = 1) -> bool:
     required = {"id", "kind", "artifact_kind", "locator", "lifecycle", "provenance"}
     optional = {"declared_metadata", "effective_metadata", "parent_id"}
+    if type(schema_version) is not int:
+        return False
     if schema_version == 2:
         required.add("lifecycle_domain")
     elif schema_version != 1:
@@ -156,11 +153,10 @@ def is_node_wire(value: Any, schema_version: int = 1) -> bool:
     }
     if schema_version == 2:
         domain = value.get("lifecycle_domain")
-        expected_domain = "document" if kind in _DOCUMENT_NODE_KINDS else "artifact"
-        lifecycle_valid = domain == expected_domain and (
-            lifecycle in {"draft", "active", "superseded", "archived"}
-            if domain == "document"
-            else lifecycle in {"active", "deprecated", "removed"}
+        expected_domain = node_lifecycle_domain(kind)
+        lifecycle_valid = (
+            domain == expected_domain
+            and node_lifecycle_admitted(kind, lifecycle)
         )
     return (
         metadata_valid
@@ -178,6 +174,8 @@ def is_node_wire(value: Any, schema_version: int = 1) -> bool:
 def is_relation_wire(value: Any, schema_version: int = 1,
                      allow_inferred: bool = False) -> bool:
     required = {"source", "relation", "target", "evidence", "provenance", "lifecycle"}
+    if type(schema_version) is not int:
+        return False
     if schema_version == 2:
         required.add("lifecycle_domain")
     elif schema_version != 1:
@@ -207,8 +205,11 @@ def is_relation_wire(value: Any, schema_version: int = 1,
 def is_snapshot_wire(value: Any, schema_version: int,
                      allow_inferred: bool = True) -> bool:
     return (
-        isinstance(value, dict)
+        type(schema_version) is int
+        and schema_version in {1, 2}
+        and isinstance(value, dict)
         and set(value) == {"schema_version", "nodes", "relations"}
+        and type(value.get("schema_version")) is int
         and value.get("schema_version") == schema_version
         and isinstance(value.get("nodes"), list)
         and all(is_node_wire(node, schema_version) for node in value["nodes"])
@@ -233,7 +234,9 @@ def is_mechanical_envelope(value: Any) -> bool:
     }:
         return False
     diagnostics, summary = value.get("diagnostics"), value.get("summary")
-    if value.get("schema_version") != 1 or value.get("status") not in {"pass", "fail"}:
+    if (type(value.get("schema_version")) is not int
+            or value.get("schema_version") != 1
+            or value.get("status") not in {"pass", "fail"}):
         return False
     if not isinstance(diagnostics, list) or not isinstance(summary, dict):
         return False
@@ -260,6 +263,7 @@ def mechanical_envelope_passes(value: Any) -> bool:
 
 def apply_mutation_delta(baseline: Any, mutations: Sequence[Any]):
     if (not isinstance(baseline, dict)
+            or type(baseline.get("schema_version")) is not int
             or baseline.get("schema_version") not in {1, 2}):
         return None
     if (
@@ -317,9 +321,7 @@ def migrate_snapshot_wire_v1_to_v2(value: Any):
     migrated = json.loads(json.dumps(value))
     migrated["schema_version"] = 2
     for node in migrated["nodes"]:
-        node["lifecycle_domain"] = (
-            "document" if node["kind"] in _DOCUMENT_NODE_KINDS else "artifact"
-        )
+        node["lifecycle_domain"] = node_lifecycle_domain(node["kind"])
     for relation in migrated["relations"]:
         relation["lifecycle_domain"] = "relation"
     if not is_snapshot_wire(migrated, 2, allow_inferred=True):

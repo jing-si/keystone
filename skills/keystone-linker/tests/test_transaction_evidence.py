@@ -8,6 +8,129 @@ from graph_runtime.transaction_evidence import validate_transaction_evidence
 
 
 class TransactionEvidenceTest(unittest.TestCase):
+    def test_duplicate_physical_patch_target_is_rejected(self):
+        patch = {
+            "patch_id": "p1",
+            "owner": "main",
+            "surface": "code_anchor",
+            "target_path": "src/example.py",
+            "exact_patch": "first",
+            "required": True,
+            "baseline_digest": "absent",
+        }
+        duplicate = dict(patch, patch_id="p2", exact_patch="second")
+
+        result = validate_transaction_evidence(
+            {
+                "schema_version": 1,
+                "surface_patches": [patch, duplicate],
+                "attestations": [],
+                "apply_results": [],
+            },
+            root=None,
+            mutations=(),
+        )
+
+        self.assertIn(
+            "patch_target_duplicate",
+            {item.code for item in result.diagnostics},
+        )
+
+    def test_path_aliases_and_symlinks_cannot_duplicate_physical_target(self):
+        patch = {
+            "patch_id": "p1",
+            "owner": "main",
+            "surface": "code_anchor",
+            "target_path": "src/example.py",
+            "exact_patch": "first",
+            "required": True,
+            "baseline_digest": "absent",
+        }
+        noncanonical = dict(
+            patch,
+            patch_id="p2",
+            target_path="src/../src/example.py",
+            exact_patch="second",
+        )
+        invalid = validate_transaction_evidence(
+            {
+                "schema_version": 1,
+                "surface_patches": [patch, noncanonical],
+                "attestations": [],
+                "apply_results": [],
+            },
+            root=None,
+            mutations=(),
+        )
+        self.assertIn(
+            "patch_target_invalid",
+            {item.code for item in invalid.diagnostics},
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "src"
+            source.mkdir()
+            (source / "example.py").write_text("before\n", encoding="utf-8")
+            (root / "alias").symlink_to(source, target_is_directory=True)
+            symlink_alias = dict(
+                patch,
+                patch_id="p2",
+                target_path="alias/example.py",
+                exact_patch="second",
+            )
+            duplicate = validate_transaction_evidence(
+                {
+                    "schema_version": 1,
+                    "surface_patches": [patch, symlink_alias],
+                    "attestations": [],
+                    "apply_results": [],
+                },
+                root=root,
+                mutations=(),
+            )
+        self.assertIn(
+            "patch_target_duplicate",
+            {item.code for item in duplicate.diagnostics},
+        )
+
+    def test_schema_v2_applied_digest_must_equal_planned_after_digest(self):
+        body = "after\n"
+        expected = "sha256:" + hashlib.sha256(body.encode("utf-8")).hexdigest()
+        patch = {
+            "patch_id": "p1",
+            "owner": "author",
+            "surface": "document_metadata",
+            "target_path": "source.md",
+            "baseline_digest": "absent",
+            "exact_patch": body,
+            "patch_format": "full_replacement",
+            "patch_body": body,
+            "expected_after_digest": expected,
+            "baseline_content": None,
+            "required": True,
+        }
+        result = validate_transaction_evidence(
+            {
+                "schema_version": 2,
+                "surface_patches": [patch],
+                "attestations": [],
+                "apply_results": [{
+                    "patch_id": "p1",
+                    "result": "applied",
+                    "resulting_digest": "sha256:" + "f" * 64,
+                    "evidence": "written",
+                }],
+            },
+            root=None,
+            mutations=(),
+        )
+
+        self.assertIn(
+            "resulting_digest_expected_mismatch",
+            {item.code for item in result.diagnostics},
+        )
+
     def test_unified_diff_replay_checks_context_and_applies_hunks(self):
         patch = (
             "--- a/source.md\n+++ b/source.md\n"

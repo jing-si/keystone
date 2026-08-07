@@ -48,6 +48,44 @@ class GraphValidationIntegrationTest(unittest.TestCase):
         self.assertEqual(2, bad.returncode)
         self.assertEqual("validator_output_malformed", bad_payload["diagnostics"][0]["code"])
 
+    def test_runner_rejects_duplicate_unknown_and_boolean_envelopes(self):
+        outputs = {
+            "duplicate": (
+                '{"schema_version":1,"status":"fail","status":"pass",'
+                '"diagnostics":[],"summary":{"errors":0,"warnings":0}}'
+            ),
+            "nested-duplicate": (
+                '{"schema_version":1,"status":"pass","diagnostics":[],'
+                '"summary":{"errors":1,"errors":0,"warnings":0}}'
+            ),
+            "unknown": (
+                '{"schema_version":1,"status":"pass","diagnostics":[],'
+                '"summary":{"errors":0,"warnings":0},"forged":true}'
+            ),
+            "boolean-schema": (
+                '{"schema_version":true,"status":"pass","diagnostics":[],'
+                '"summary":{"errors":0,"warnings":0}}'
+            ),
+        }
+        for name, output in outputs.items():
+            with self.subTest(name=name):
+                validator = self.root / (name + ".py")
+                validator.write_text(
+                    "print(%r)\n" % output, encoding="utf-8"
+                )
+                process, payload = self.run_runner(
+                    "--validator", str(validator)
+                )
+                self.assertEqual(2, process.returncode)
+                self.assertEqual(
+                    "validator_output_malformed",
+                    payload["diagnostics"][0]["code"],
+                )
+                self.assertEqual(
+                    {"schema_version", "status", "diagnostics", "summary"},
+                    set(payload),
+                )
+
     def test_extension_is_additive_and_cannot_suppress_core_diagnostics(self):
         extension = self.root / "extension.py"
         extension.write_text(
@@ -59,6 +97,10 @@ class GraphValidationIntegrationTest(unittest.TestCase):
 
         self.assertEqual(1, process.returncode)
         self.assertIn("missing_target", [item["code"] for item in payload["diagnostics"]])
+        self.assertEqual(
+            {"schema_version", "status", "diagnostics", "summary"},
+            set(payload),
+        )
 
     def test_runner_preserves_repository_coverage_evidence(self):
         manifest = self.root / "manifest.json"

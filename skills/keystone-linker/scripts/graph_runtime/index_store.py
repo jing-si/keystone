@@ -33,7 +33,7 @@ class CacheBusy(StoreUnavailable):
     pass
 
 
-CACHE_SCHEMA_VERSION = 5
+CACHE_SCHEMA_VERSION = 6
 MAX_GENERATIONS = 4
 
 

@@ -23,6 +23,11 @@ normalize the companion target to the logical identity; attestation, baseline, a
 resulting-digest checks remain bound to the physical companion bytes. Binary source bytes are never
 decoded as text. Only the companion JSON must be UTF-8.
 
+Scanner, readiness, reconstruction, and validation use one SourceUnit selection policy. An adjacent
+companion with no inline Keystone declarations is canonical even for a supported text extension. An
+inline declaration without a companion is canonical. If both surfaces declare Keystone metadata, the
+runtime emits `metadata_surface_conflict` and does not merge or choose one silently.
+
 GraphSnapshot v1 writes the strict node core `id`, `kind`, `artifact_kind`, `locator`, `lifecycle`, and
 `provenance`; its permissive reader also accepts historical `parent_id`, `declared_metadata`, and
 `effective_metadata`. Canonical v2 adds those metadata fields when applicable and always adds
@@ -32,17 +37,23 @@ The canonical relation fields are `source`, `relation`, `target`, `evidence`, `p
 `draft | active | superseded | archived`, artifact lifecycle is `active | deprecated | removed`, and
 relation lifecycle is `active | deprecated | archived | removed`. V1→v2 migration derives the domain
 from node kind and fails on incompatible lifecycle combinations instead of guessing.
+Source-derived relation lifecycle is normalized separately from node lifecycle:
+`draft | active -> active`, `superseded | archived -> archived`, and `deprecated | removed` retain
+their value. A canonical active document replacement targets `superseded`; a canonical active
+artifact replacement targets `deprecated | removed`.
 `inferred` evidence is excluded from canonical mutations. A verified transaction uses
 `reconstruction: {baseline: <GraphSnapshot>, result: <GraphSnapshot>}`. Applying every canonical
 mutation to `baseline` must produce exactly `result`, which must also equal source-only reconstruction.
 
-New executable transactions use transaction schema version 2. Every surface patch carries
+Planner calls default to transaction schema version 2. Every surface patch carries
 `patch_format: unified_diff | full_replacement`, identical `exact_patch`/`patch_body`, UTF-8
 `baseline_content` (or null when `baseline_digest: absent`), and `expected_after_digest`. Validation
 recomputes the baseline digest, replays the patch without relying on current file bytes, and checks the
-expected digest. A failed v2 transaction carries `failure_reason`; only `transient_io` admits an
-unchanged-input retry. Transaction schema version 1 remains the compatibility wire for historical
-descriptive patches.
+expected digest. Each physical `target_path` appears at most once, and an applied
+`resulting_digest` must equal the planned `expected_after_digest` as well as the actual file digest.
+A failed v2 transaction carries `failure_reason`; only `transient_io` admits an unchanged-input retry.
+Transaction schema version 1 remains the explicit-opt-in compatibility wire for historical descriptive
+patches; descriptive/executable mixed transactions are invalid.
 
 The Python model is converted with `transaction_wire(transaction, baseline_snapshot=...)`. It emits only
 the accepted canonical transaction fields and always represents `mechanical_validation` as

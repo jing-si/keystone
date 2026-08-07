@@ -1,7 +1,7 @@
 ---
 doc_type: standard
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: main}
+approval: {state: pending}
 key:
   id: key.standard.skill.linker
   refs:
@@ -323,15 +323,19 @@ Transaction trigger는 current scope, Coordinator permission, worker assignment 
 4. Artifact Graph 기준서의 canonical node/relation/provenance/locator/lifecycle schema와 relation
    direction을 사용한다.
 5. Markdown metadata, safe language anchor 또는 `<source>.keystone.json` companion 중 해당
-   surface의 canonical representation을 골라 exact patch를 만든다. 중앙 registry를 만들지 않는다.
+   surface의 canonical representation을 공통 `SourceUnit` 정책으로 골라 exact patch를 만든다.
+   Companion만 선언하면 companion, inline만 선언하면 inline을 사용하고 둘 다 Keystone
+   declaration을 가지면 merge하지 않고 `metadata_surface_conflict`로 실패한다. 중앙 registry를
+   만들지 않는다.
 6. Attestation이 모두 `confirm`이고 baseline이 유효할 때만 apply handoff를 ready로 만든다.
 7. Apply 후 source를 cache 없이 재구성하고 mutation과 일치하는지 비교한다. Derived cache는
    선택적·비권위이며 source mismatch 시 폐기한다.
 8. Orphan relation, removed target을 향한 active relation, unresolved locator와 duplicate ID를
    mechanical failure로 보고한다. Active semantic relation이 retired source에서 시작하거나
    retired target을 향하는 경우도 failure다. 단, active source가 declared 또는 owner-attested
-   observed evidence로 deprecated/removed target을 향해 canonical `supersedes`를 선언한 경우만
-   허용한다. Retired ID의 history/provenance reference는 허용한다.
+   observed evidence로 document-domain의 `superseded` target 또는 artifact-domain의
+   `deprecated | removed` target을 향해 canonical `supersedes`를 선언한 경우만 허용한다.
+   Retired ID의 history/provenance reference는 허용한다.
 9. 신규 graph snapshot과 transaction은 wire schema v2를 사용한다. Node는
    `lifecycle_domain: document | artifact`, relation은 `lifecycle_domain: relation`을 명시한다.
    v1 strict core serializer와 historical conditional-metadata parser는 0.x 전체와 최초 stable
@@ -516,6 +520,13 @@ Schema v2 mutation의 node/relation `before`와 `after`, reconstruction snapshot
 허용한다. v1 snapshot은 deterministic migration 후 같은 normalized v2 wire와 일치해야 하며,
 domain에 맞지 않는 lifecycle은 추정 변환하지 않고 실패한다.
 
+Source-derived relation lifecycle은 node lifecycle을 그대로 복사하지 않고
+`draft | active -> active`, `superseded | archived -> archived`, `deprecated -> deprecated`,
+`removed -> removed`로 정규화한다. 신규 transaction planner는 schema v2를 기본으로 하고 모든
+patch의 executable field를 요구한다. Schema v1 descriptive transaction은 명시적 legacy opt-in
+에서만 만들며 mixed patch와 같은 physical `target_path`의 복수 patch를 거부한다. V2 applied
+result의 `resulting_digest`는 planned `expected_after_digest`와 같아야 한다.
+
 `candidate_budget`은 후보가 많아 output을 줄였을 때만 사용한다. Linker는 `required` 후보를
 자의적으로 숨기지 않으며, 생략이 필요하면 `omitted_summary`에 evidence type, keyword, path
 범위, 생략 이유를 남긴다.
@@ -585,10 +596,13 @@ Graph metadata나 relation의 단순 부재는 stop condition이 아니다.
 
 1. Linker는 `depends_on`을 source -> target semantic relation으로 정규화하고 `work_gates`를
    relation과 분리된 execution evidence로 해석한다.
-2. Relation target, gate scope/condition, legacy conflict, duplicate/self/invalid step을 검증하고
+2. Flat legacy dependency의 completion candidate는 Work source에서만 만든다. Output artifact의
+   flat `depends_on`과 structured dependency는 semantic relation으로 유지하되 legacy Work gate로
+   승격하지 않는다.
+3. Relation target, gate scope/condition, legacy conflict, duplicate/self/invalid step을 검증하고
    cycle은 expanded event graph evidence가 있을 때만 확정한다.
-3. Dependency 판정을 work status mutation, automatic assignment/cancellation/acceptance로 바꾸지 않는다.
-4. Graph evidence가 부족하면 `unknown`/`unresolvable`과 필요한 Author/Main handoff를 보고한다.
+4. Dependency 판정을 work status mutation, automatic assignment/cancellation/acceptance로 바꾸지 않는다.
+5. Graph evidence가 부족하면 `unknown`/`unresolvable`과 필요한 Author/Main handoff를 보고한다.
 
 ## Verification
 

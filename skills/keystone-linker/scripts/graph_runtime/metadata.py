@@ -17,6 +17,7 @@ from .model import (
 )
 from .source_hierarchy import build_source_node
 from .source_relations import RELATION_TYPES, build_source_relations
+from .source_unit import SourceSurface, resolve_source_unit
 from .yaml_subset import MetadataError, parse_yaml_subset
 
 
@@ -126,7 +127,9 @@ def _metadata(text: str) -> Dict[str, Any]:
     for field in ("doc_type", "work_status", "step_ref", "work_ref"):
         if field in raw:
             data["_" + field] = raw[field]
-    if legacy_dependencies:
+    if legacy_dependencies and (
+            not structured_dependencies
+            or set(legacy_dependencies) != set(structured_dependencies)):
         data["_legacy_dependencies"] = legacy_dependencies
     if structured_dependencies:
         data["_structured_dependencies"] = structured_dependencies
@@ -232,6 +235,22 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
                  companion_path: Optional[str] = None,
                  companion_source_exists: Optional[bool] = None,
                  companion_source_bytes: Optional[bytes] = None) -> ParseResult:
+    if adapter is not None and companion_text is not None:
+        unit = resolve_source_unit(
+            path,
+            text.encode("utf-8"),
+            companion_text.encode("utf-8"),
+        )
+        if unit.diagnostics:
+            return ParseResult(diagnostics=unit.diagnostics)
+        if unit.surface == SourceSurface.COMPANION:
+            return parse_companion(
+                companion_text,
+                companion_path or path + ".keystone.json",
+                path,
+                source_exists=companion_source_exists,
+                source_bytes=companion_source_bytes,
+            )
     if adapter is None:
         if companion_text is None:
             diagnostic = Diagnostic("unsupported_surface", "no mechanically safe adapter or companion", path=path)

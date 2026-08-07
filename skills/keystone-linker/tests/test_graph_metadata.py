@@ -7,6 +7,7 @@ from graph_runtime.adapters import (
     GenericLineCommentAdapter,
     KotlinJavaAdapter,
     MarkdownAdapter,
+    PythonAdapter,
     SqlAdapter,
     XmlAdapter,
     YamlAdapter,
@@ -200,6 +201,44 @@ key: {id: key.doc.real, kind: source_document}
         self.assertEqual({"key.doc.real", "key.claim.real"},
                          {node.id for node in result.snapshot.nodes})
         self.assertFalse(result.diagnostics)
+
+    def test_markdown_indented_and_blockquoted_examples_are_passive(self):
+        source = """---
+key: {id: key.doc.real, kind: source_document}
+---
+    <!-- key: id=key.example.indented kind=claim -->
+> <!-- key: id=key.example.quote kind=claim -->
+> ```markdown
+> <!-- key: id=key.example.quote_fence kind=claim -->
+> ```
+"""
+        result = parse_source(source, "docs/real.md", MarkdownAdapter())
+
+        self.assertEqual(["key.doc.real"], [node.id for node in result.snapshot.nodes])
+        self.assertFalse(result.diagnostics)
+
+    def test_python_metadata_like_strings_are_passive_but_comments_parse(self):
+        source = '''EXAMPLE = "# keystone: id=key.fake.string kind=output_artifact"
+BLOCK = """
+# keystone: id=key.fake.block kind=output_artifact
+"""
+# keystone: id=key.code.real kind=output_artifact artifact_kind=code
+def real():
+    pass
+'''
+        result = parse_source(source, "src/example.py", adapter_for_path("src/example.py"))
+
+        self.assertEqual(["key.code.real"], [node.id for node in result.snapshot.nodes])
+
+    def test_xml_cdata_metadata_example_is_passive(self):
+        source = """<root>
+<![CDATA[<!-- keystone: id=key.fake.cdata kind=output_artifact -->]]>
+<!-- keystone: id=key.config.real kind=output_artifact artifact_kind=config -->
+</root>
+"""
+        result = parse_source(source, "config/example.xml", XmlAdapter())
+
+        self.assertEqual(["key.config.real"], [node.id for node in result.snapshot.nodes])
 
     def test_adjacent_compact_comments_extend_one_owner(self):
         source = """<!-- keystone: id=key.code.skill kind=output_artifact artifact_kind=skill_source -->
@@ -403,7 +442,7 @@ key.lifecycle: active
         source = """---
 key: {id: key.doc.items, kind: source_document}
 ---
-<!-- key: id=key.section.one lifecycle=deprecated -->
+<!-- key: id=key.section.one lifecycle=superseded -->
 ## One
 <!--
 key:
@@ -421,10 +460,31 @@ key:
         self.assertEqual("One", nodes["key.section.one"].locator.heading)
         self.assertEqual("Rule one", nodes["key.rule.one"].locator.symbol)
         self.assertEqual("ROW-1", nodes["key.row.one"].locator.symbol)
-        self.assertEqual(Lifecycle.DEPRECATED, nodes["key.section.one"].lifecycle)
+        self.assertEqual(Lifecycle.SUPERSEDED, nodes["key.section.one"].lifecycle)
         self.assertIn(
             ("key.rule.one", RelationType.VERIFIES, "key.claim.one"),
             {(r.source, r.relation, r.target) for r in result.snapshot.relations},
+        )
+
+    def test_source_parser_rejects_node_lifecycle_outside_kind_domain(self):
+        document = parse_source(
+            "---\nkey: {id: key.claim.old, kind: claim, lifecycle: deprecated}\n---\n",
+            "docs/claim.md",
+            MarkdownAdapter(),
+        )
+        artifact = parse_source(
+            "# keystone: id=key.code.old kind=output_artifact lifecycle=superseded",
+            "src/old.py",
+            PythonAdapter(),
+        )
+
+        self.assertIn(
+            "node_lifecycle_domain_invalid",
+            {item.code for item in document.diagnostics},
+        )
+        self.assertIn(
+            "node_lifecycle_domain_invalid",
+            {item.code for item in artifact.diagnostics},
         )
 
     def test_all_comment_surfaces_produce_same_declared_graph(self):

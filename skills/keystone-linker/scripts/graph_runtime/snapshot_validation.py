@@ -1,13 +1,18 @@
 """Source reconstruction and source-derived snapshot validation."""
 
-import json
 import re
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
-from .adapters import adapter_for_path
+from .companion import load_authoritative_json
 from .metadata import parse_source
-from .lifecycle_policy import RETIRED_LIFECYCLES, replacement_evidence_admitted
+from .lifecycle_policy import (
+    RETIRED_LIFECYCLES,
+    node_lifecycle_admitted,
+    node_lifecycle_domain,
+    relation_lifecycle_admitted,
+    replacement_evidence_admitted,
+)
 from .model import (
     Diagnostic,
     Evidence,
@@ -18,16 +23,15 @@ from .model import (
     RelationType,
 )
 from .relation_policy import relation_direction_allowed
+from .source_unit import COMPANION_SUFFIX, SourceSurface, resolve_source_unit
 from .validation_support import diagnostic, safe_path
 
 
 RELATION_NAMES = {item.value for item in RelationType}
-
-
 def _companion_relation_vocabulary(text: str, path: str) -> Tuple[Diagnostic, ...]:
     try:
-        value = json.loads(text)
-    except (json.JSONDecodeError, TypeError):
+        value = load_authoritative_json(text)
+    except (TypeError, ValueError):
         return ()
     relations = value.get("relations") if isinstance(value, dict) else None
     if not isinstance(relations, list):
@@ -60,41 +64,38 @@ def reconstruct(
     findings: List[Diagnostic] = []
     for relative in sorted(set(sources)):
         source_path = safe_path(root, relative)
-        adapter = adapter_for_path(relative)
-        if adapter is not None:
-            if source_bytes is not None:
-                raw_source = source_bytes.get(relative)
-            else:
-                raw_source = source_path.read_bytes() if source_path.is_file() else None
-            if raw_source is None:
-                raise FileNotFoundError(relative)
-            result = parse_source(raw_source.decode("utf-8"), relative, adapter)
+        companion_relative = relative + COMPANION_SUFFIX
+        companion_path = safe_path(root, companion_relative)
+        if source_bytes is not None:
+            raw_source = source_bytes.get(relative)
+            raw_companion = source_bytes.get(companion_relative)
         else:
-            companion_relative = relative + ".keystone.json"
-            companion_path = safe_path(root, companion_relative)
-            if source_bytes is not None:
-                raw_companion = source_bytes.get(companion_relative)
-            else:
-                raw_companion = (
-                    companion_path.read_bytes() if companion_path.is_file() else None
-                )
-            if raw_companion is None:
-                raise FileNotFoundError(relative)
+            raw_source = source_path.read_bytes() if source_path.is_file() else None
+            raw_companion = (
+                companion_path.read_bytes() if companion_path.is_file() else None
+            )
+        unit = resolve_source_unit(relative, raw_source, raw_companion)
+        findings.extend(unit.diagnostics)
+        if unit.surface is None:
+            if unit.diagnostics:
+                continue
+            raise FileNotFoundError(relative)
+        if unit.surface == SourceSurface.INLINE:
+            result = parse_source(
+                unit.source_bytes.decode("utf-8"), relative, unit.adapter
+            )
+        else:
             companion_text = raw_companion.decode("utf-8")
-            findings.extend(_companion_relation_vocabulary(companion_text, companion_relative))
-            if source_bytes is not None:
-                raw_source = source_bytes.get(relative)
-                exists = relative in source_bytes
-            else:
-                exists = source_path.is_file()
-                raw_source = source_path.read_bytes() if exists else None
+            findings.extend(_companion_relation_vocabulary(
+                companion_text, companion_relative
+            ))
             result = parse_source(
                 "",
                 relative,
                 None,
                 companion_text=companion_text,
                 companion_path=companion_relative,
-                companion_source_exists=exists,
+                companion_source_exists=raw_source is not None,
                 companion_source_bytes=raw_source,
             )
         nodes.extend(result.snapshot.nodes)
@@ -170,13 +171,19 @@ def _canonical_replacement_targets_retired(relation: Relation,
     """Admit only the canonical active new -> supersedes -> retired-old exception."""
     source = nodes.get(relation.source)
     target = nodes.get(relation.target)
+    if source is None or target is None:
+        return False
+    target_lifecycle_admitted = (
+        target.lifecycle == Lifecycle.SUPERSEDED
+        if node_lifecycle_domain(target.kind) == "document"
+        else target.lifecycle in {Lifecycle.DEPRECATED, Lifecycle.REMOVED}
+    )
     return bool(
-        source is not None and target is not None
-        and relation.relation == RelationType.SUPERSEDES
+        relation.relation == RelationType.SUPERSEDES
         and relation.lifecycle == Lifecycle.ACTIVE
         and replacement_evidence_admitted(relation)
         and source.lifecycle == Lifecycle.ACTIVE
-        and target.lifecycle in {Lifecycle.DEPRECATED, Lifecycle.REMOVED}
+        and target_lifecycle_admitted
     )
 
 
@@ -186,6 +193,17 @@ def validate_snapshot(root: Path, snapshot: GraphSnapshot,
     by_id: Dict[str, Node] = {}
     duplicate_ids = set()
     for node in snapshot.nodes:
+        if not node_lifecycle_admitted(node.kind, node.lifecycle):
+            finding = Diagnostic(
+                "node_lifecycle_domain_invalid",
+                "%s node cannot use %s lifecycle" % (
+                    node_lifecycle_domain(node.kind), node.lifecycle.value,
+                ),
+                path=node.locator.path,
+                locator=node.locator,
+            )
+            if finding not in findings:
+                findings.append(finding)
         if node.id in by_id:
             duplicate_ids.add(node.id)
         else:
@@ -249,6 +267,12 @@ def validate_snapshot(root: Path, snapshot: GraphSnapshot,
         ))
 
     for relation in snapshot.relations:
+        if not relation_lifecycle_admitted(relation.lifecycle):
+            findings.append(diagnostic(
+                "relation_lifecycle_domain_invalid",
+                "relation cannot use %s lifecycle" % relation.lifecycle.value,
+                relation.provenance.locator.path if relation.provenance.locator else None,
+            ))
         if relation.source not in by_id:
             if (relation.relation == RelationType.PRODUCES
                     and relation.evidence == Evidence.INFERRED

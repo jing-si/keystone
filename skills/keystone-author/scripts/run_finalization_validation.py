@@ -11,6 +11,23 @@ from pathlib import Path
 DIAGNOSTIC_SCHEMA_VERSION = 1
 
 
+class DuplicateJsonKey(ValueError):
+    pass
+
+
+def reject_duplicate_keys(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise DuplicateJsonKey("duplicate JSON key: %s" % key)
+        value[key] = item
+    return value
+
+
+def loads_json_strict(value):
+    return json.loads(value, object_pairs_hook=reject_duplicate_keys)
+
+
 def emit(reason_code, message):
     print(json.dumps({
         "schema_version": DIAGNOSTIC_SCHEMA_VERSION,
@@ -36,7 +53,9 @@ def parse_args():
 
 
 def validate_envelope(payload, returncode):
-    if not isinstance(payload, dict) or payload.get("schema_version") != DIAGNOSTIC_SCHEMA_VERSION:
+    schema_version = payload.get("schema_version") if isinstance(payload, dict) else None
+    if (not isinstance(payload, dict) or type(schema_version) is not int
+            or schema_version != DIAGNOSTIC_SCHEMA_VERSION):
         return "Validator output must be a JSON object."
     status = payload.get("status")
     diagnostics = payload.get("diagnostics")
@@ -84,8 +103,8 @@ def execute(command, timeout_seconds):
     except (OSError, subprocess.SubprocessError) as error:
         return None, None, f"Validator execution failed: {error}"
     try:
-        payload = json.loads(process.stdout)
-    except (json.JSONDecodeError, TypeError):
+        payload = loads_json_strict(process.stdout)
+    except (json.JSONDecodeError, TypeError, DuplicateJsonKey):
         return process, None, "Validator output was not parseable JSON."
     envelope_error = validate_envelope(payload, process.returncode)
     return process, payload, envelope_error
@@ -105,8 +124,8 @@ def merged_payload(*payloads):
 
 def read_graph_sync(manifest_path):
     try:
-        manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError):
+        manifest = loads_json_strict(Path(manifest_path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError, DuplicateJsonKey):
         return None
     graph_sync = manifest.get("graph_sync") if isinstance(manifest, dict) else None
     return graph_sync if isinstance(graph_sync, dict) else None
@@ -120,8 +139,8 @@ def execute_graph(command, timeout_seconds):
     except (OSError, subprocess.SubprocessError) as error:
         return None, None, ("graph_validation_execution_failed", f"Graph validation failed: {error}")
     try:
-        payload = json.loads(process.stdout)
-    except (json.JSONDecodeError, TypeError):
+        payload = loads_json_strict(process.stdout)
+    except (json.JSONDecodeError, TypeError, DuplicateJsonKey):
         return process, None, ("graph_validation_output_malformed", "Graph validation output was not parseable JSON.")
     envelope_error = validate_envelope(payload, process.returncode)
     if envelope_error or payload.get("schema_version") != 1:

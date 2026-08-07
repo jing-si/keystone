@@ -1,7 +1,7 @@
 ---
 doc_type: standard
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: main}
+approval: {state: pending}
 key:
   id: key.standard.artifact.graph
   refs:
@@ -192,6 +192,12 @@ parser는 기존 `declared_metadata`, `effective_metadata`, `parent_id` 확장�
 v2로 수렴한다. V1 read compatibility는 0.x와 첫 stable 1.0까지 유지하며 제거에는 별도 accepted
 migration decision과 consumer evidence가 필요하다.
 
+Node lifecycle과 relation lifecycle은 서로 다른 domain이므로 source node 값을 relation에 그대로
+복사하지 않는다. Source-derived relation은 `draft | active -> active`,
+`superseded | archived -> archived`, `deprecated -> deprecated`, `removed -> removed`로 정규화한다.
+Source parser와 snapshot validator는 node kind, lifecycle domain, lifecycle 조합을 같은 정책으로
+검사한다.
+
 Locator는 path와 함께 heading, symbol, test name, config key 또는 schema name처럼 parser가
 기계적으로 확인 가능한 field만 canonical mutation에 사용한다. 자유 자연어만 있는 locator는
 note일 수 있지만 apply target은 아니다. Relation은 항상 `source relation target` 방향으로
@@ -212,6 +218,13 @@ Markdown source document metadata는 frontmatter와 item comment가 canonical이
 source의 language comment anchor가 안전하고 구조적으로 표현 가능하면 이를 canonical로 쓰고,
 그렇지 않거나 복수 relation·locator·lifecycle을 보존해야 하면 source-adjacent companion
 `<source>.keystone.json`을 canonical anchor surface로 쓴다. 중앙 registry는 만들지 않는다.
+
+Scanner, readiness, reconstruction과 validator는 하나의 logical `SourceUnit` 해석을 공유한다.
+Adjacent companion만 Keystone declaration을 가지면 companion을 canonical surface로 사용하고,
+inline declaration만 있으면 inline surface를 사용한다. 두 surface가 모두 Keystone declaration을
+가지면 merge하거나 임의 precedence를 적용하지 않고 `metadata_surface_conflict`로 실패한다.
+Companion을 선택한 경우에도 logical identity는 원본 source이고 physical patch·generation digest는
+companion을 포함한 실제 byte surface에 결속한다.
 
 Companion file은 `schema_version: 1`, `source`, `nodes`, `relations`를 가진 UTF-8 JSON object다.
 `source`는 `{path: <repository-relative-path>, surface: <surface-kind>, baseline_digest:
@@ -274,10 +287,14 @@ graph_transaction:
 Linker schema v2 proposal은 executable per-surface patch, UTF-8 baseline content 또는 absent의
 `null`, baseline digest와 expected-after digest를 포함한다. Validator는 현재 source 상태와
 무관하게 baseline→patch→expected digest를 replay한다. Schema v1은 기존 설명형 `exact_patch`
-transaction의 읽기·검증 호환 wire로만 유지한다. Owner는 자기 surface의 의미와
+transaction의 읽기·검증 호환 wire로만 유지하며 신규 planner 호출은 v2를 기본값으로 사용한다.
+V1 생성은 명시적 legacy compatibility opt-in에서만 허용하고 한 transaction 안에서 v1 설명형
+patch와 v2 executable patch를 혼합하지 않는다. 한 transaction에는 physical `target_path`마다
+patch를 하나만 둘 수 있다. Owner는 자기 surface의 의미와
 patch만 attestation한다. `reject`는 proposal과 source evidence가 양립하지 않음을 뜻하며
 `conflicted`, `needs_revision`은 Linker 재계획을 요구한다. Apply 직전 baseline이 다르면 patch를
 쓰지 않고 `stale_baseline`으로 기록한다. Apply 결과는 `applied | failed | stale_baseline`만 쓴다.
+Schema v2의 `applied.resulting_digest`는 해당 patch의 `expected_after_digest`와 정확히 같아야 한다.
 
 허용 전이는 다음과 같다.
 
@@ -296,7 +313,8 @@ patch만 attestation한다. `reject`는 proposal과 source evidence가 양립하
    요구한다.
 
 `verified`는 모든 required patch의 `confirm`, apply 직전 baseline 일치, 모든 required result의
-`applied`, Linker의 source 재구성 결과가 canonical mutation과 일치함, mechanical validator
+`applied`, 각 resulting digest와 planned expected-after digest의 일치, Linker의 source 재구성
+결과가 canonical mutation과 일치함, mechanical validator
 통과가 모두 있을 때만 terminal success다. 일부 patch 적용 뒤 중단되면 `partially_applied`로
 남기고 이미 적용한 result/digest를 보존한다. Resume은 current digest와 recorded resulting
 digest가 같은 patch는 재적용하지 않고, 남은 patch baseline을 다시 확인한다. Orphan relation,
@@ -565,11 +583,13 @@ Typed relation은 source에서 target으로 읽는다. Reverse relation은 sourc
 
 1. Declared active relation은 표의 기본 grade를 유지할 수 있다. Owner-attested observed는
    `strong_candidate`, unattested observed와 inferred는 `weak_candidate`를 넘지 않는다.
-2. Deprecated relation 또는 target node는 `informational`을 넘지 않는다. Archived, superseded,
-   removed relation/node는 active traversal에서 제외한다.
+2. Deprecated relation 또는 target node는 `informational`을 넘지 않는다. Deprecated seed도
+   downstream grade를 `informational`로 제한한다. Archived, superseded, removed relation/node와
+   seed는 active traversal에서 제외한다.
 3. Active semantic relation의 source 또는 target이 retired이면 diagnostic이다. 단, active
-   source가 declared 또는 owner-attested observed evidence로 deprecated/removed target을 향해
-   `supersedes`하는 canonical replacement만 허용한다.
+   source가 declared 또는 owner-attested observed evidence로 document-domain의 `superseded`
+   target 또는 artifact-domain의 `deprecated | removed` target을 향해 `supersedes`하는 canonical
+   replacement만 허용한다.
 4. 이 grade는 review priority이며 자동 edit, assignment 또는 acceptance 권한이 아니다.
 
 5. 모든 import, call, filename overlap을 typed relation으로 승격하지 않는다.
@@ -618,8 +638,10 @@ work_gates:
 5. `optional: true`는 target 미충족을 blocking으로 사용하지 않는다는 뜻이지 relation이나
    검증을 삭제한다는 뜻이 아니다.
 6. Legacy `<!-- keystone: depends_on=... -->`은 structured metadata가 없을 때만 relation
-   evidence로 읽는다. 역사적 work-level dependency에 gate가 없으면 source start는 허용하고
-   `work_completion: true`인 후보로 보고한다.
+   evidence로 읽는다. 역사적 Work source의 work-level dependency에 gate가 없을 때만 source
+   start는 허용하고 `work_completion: true`인 후보로 보고한다. Work가 아닌 artifact의 flat
+   `depends_on`은 typed semantic relation으로만 유지하고 legacy completion candidate를 만들지
+   않는다.
 7. Structured/legacy target이 다르면 structured를 우선하고 `invalid` 또는 source conflict를 보고한다.
 
 Dependency evaluation은 다음을 사용한다.

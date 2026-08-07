@@ -1,7 +1,7 @@
 ---
 doc_type: standard
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: main}
+approval: {state: pending}
 key:
   id: key.standard.subagent
   refs:
@@ -311,17 +311,26 @@ change, verification, 관련 기준서·작업서·진행 기록과 필요한 Re
 포함한다. 전체 문서 corpus를 worker에게 재해석시키는 것은 Context Pack이 아니다.
 
 구현 뒤 direct 또는 delegated output은 같은 canonical worker report로 정규화한다.
+Coordinator actual-state closure에서는 worker report가 immutable assignment의 raw-byte digest와
+Context Pack canonical digest를 함께 반환한다. `changed_files`와 artifact delta는 worker의 추정이
+아니라 pre-work snapshot과 current repository bytes의 차이와 같아야 한다.
 
 ```yaml
 worker_report:
+  assignment_id:
+  assignment_digest:
+  context_digest:
   execution_mode: direct_execution | orchestration
   changed_files: []
   artifact_deltas:
     - kind: artifact_delta
       source_surface:
+      change_kind: added | modified | deleted
       changed_locators: []
       semantic_summary:
       baseline_digest: sha256:<64-lowercase-hex> | absent
+      resulting_digest: sha256:<64-lowercase-hex> | absent
+      graph_relevant: true | false
   document_sync:
     disposition: required | not_applicable | deferred
     state: complete | not_applicable | pending | blocked

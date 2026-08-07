@@ -20,6 +20,9 @@ from .model import (
     patch_owner_matches_surface,
     patch_source_identity,
 )
+from .patch_replay import PATCH_FORMATS, digest_bytes, replay_patch
+from .transaction_wire_validation import is_digest_wire
+from .validation_support import canonical_relative_path
 
 
 @dataclass(frozen=True)
@@ -28,7 +31,14 @@ class AttemptHistory:
     prior_attempts: Tuple[GraphTransaction, ...] = ()
 
 
+def _require_schema_version(transaction: GraphTransaction) -> None:
+    if (type(transaction.schema_version) is not int
+            or transaction.schema_version not in {1, 2}):
+        raise ValueError("transaction schema_version must be 1 or 2")
+
+
 def _require(transaction: GraphTransaction, *states: TransactionState) -> None:
+    _require_schema_version(transaction)
     if transaction.state not in states:
         allowed = ", ".join(state.value for state in states)
         raise ValueError("transaction must be %s" % allowed)
@@ -39,11 +49,63 @@ def _required_patches(transaction: GraphTransaction):
 
 
 def _require_patch_invariants(transaction: GraphTransaction) -> None:
+    _require_schema_version(transaction)
+    target_paths = [
+        canonical_relative_path(patch.target_path)
+        for patch in transaction.surface_patches
+    ]
+    if len(set(target_paths)) != len(target_paths):
+        raise ValueError("each physical target may have only one patch")
     if any(not patch_owner_matches_surface(patch.owner, patch.surface, patch.target_path)
            for patch in transaction.surface_patches):
         raise ValueError("patch owner does not own the described surface")
     if transaction.canonical_mutations and not _required_patches(transaction):
         raise ValueError("graph-changing transaction requires at least one required patch")
+    for patch in transaction.surface_patches:
+        executable_fields = (
+            patch.patch_format,
+            patch.patch_body,
+            patch.expected_after_digest,
+            patch.baseline_content,
+        )
+        if transaction.schema_version == 1:
+            if any(value is not None for value in executable_fields):
+                raise ValueError("schema-v1 patch cannot contain schema-v2 executable fields")
+            continue
+        if (
+            patch.patch_format not in PATCH_FORMATS
+            or not isinstance(patch.patch_body, str)
+            or patch.exact_patch != patch.patch_body
+            or not is_digest_wire(patch.expected_after_digest or "")
+            or patch.expected_after_digest == "absent"
+        ):
+            raise ValueError("schema-v2 requires every patch to be executable")
+        if patch.baseline_digest == "absent":
+            if patch.baseline_content is not None:
+                raise ValueError("absent baseline requires null baseline_content")
+            baseline = b""
+        elif not isinstance(patch.baseline_content, str):
+            raise ValueError("schema-v2 patch requires baseline_content")
+        else:
+            baseline = patch.baseline_content.encode("utf-8")
+            if digest_bytes(baseline) != patch.baseline_digest:
+                raise ValueError("baseline_content does not match baseline_digest")
+        try:
+            replayed = replay_patch(baseline, patch.patch_format, patch.patch_body)
+        except ValueError as error:
+            raise ValueError("schema-v2 patch cannot be replayed: %s" % error) from error
+        if digest_bytes(replayed) != patch.expected_after_digest:
+            raise ValueError("schema-v2 patch does not produce expected_after_digest")
+
+
+def _require_application_digest(transaction: GraphTransaction,
+                                result: ApplicationResult) -> None:
+    if transaction.schema_version != 2 or result.result != ApplicationStatus.APPLIED:
+        return
+    patches = {patch.patch_id: patch for patch in transaction.surface_patches}
+    patch = patches.get(result.patch_id)
+    if patch is not None and result.resulting_digest != patch.expected_after_digest:
+        raise ValueError("applied resulting_digest must equal expected_after_digest")
 
 
 def _mutation_surface(mutation):
@@ -129,6 +191,9 @@ def record_application(transaction: GraphTransaction,
         raise ValueError("application result references unknown patch")
     if any(item.patch_id == result.patch_id for item in transaction.apply_results):
         raise ValueError("patch is already applied or already has a result")
+    if result.result == ApplicationStatus.APPLIED and not result.resulting_digest:
+        raise ValueError("applied result requires resulting_digest")
+    _require_application_digest(transaction, result)
     results = transaction.apply_results + (result,)
     if result.result == ApplicationStatus.FAILED:
         reason = FailureReason.UNKNOWN if failure_reason is None else FailureReason(failure_reason)
@@ -143,8 +208,6 @@ def record_application(transaction: GraphTransaction,
     if result.result == ApplicationStatus.STALE_BASELINE:
         return replace(transaction, apply_results=results, state=TransactionState.CONFLICTED,
                        conflict_reason=ConflictReason.STALE_BASELINE)
-    if not result.resulting_digest:
-        raise ValueError("applied result requires resulting_digest")
     applied_ids = {item.patch_id for item in results if item.result == ApplicationStatus.APPLIED}
     required_ids = {patch.patch_id for patch in _required_patches(transaction)}
     state = (TransactionState.APPLYING if required_ids <= applied_ids
@@ -222,6 +285,8 @@ def finalize_transaction(transaction: GraphTransaction,
                 if item.decision == AttestationDecision.CONFIRM}
     applied = {item.patch_id: item for item in transaction.apply_results
                if item.result == ApplicationStatus.APPLIED}
+    for result in applied.values():
+        _require_application_digest(transaction, result)
     if not required <= confirms or not required <= set(applied):
         raise ValueError("all required patches must be confirmed and applied before verification")
     for patch_id in required:
@@ -248,6 +313,7 @@ def finalize_transaction(transaction: GraphTransaction,
 
 def new_attempt(history: AttemptHistory, revised: GraphTransaction) -> AttemptHistory:
     _require(history.current, TransactionState.CONFLICTED, TransactionState.FAILED)
+    _require_schema_version(revised)
     if revised.state != TransactionState.PROPOSED:
         raise ValueError("new attempt must start proposed")
     if revised.transaction_id == history.current.transaction_id:

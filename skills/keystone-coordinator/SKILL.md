@@ -239,6 +239,28 @@ Run the package-local validator described in
 [references/closure-validator.md](references/closure-validator.md). It is diagnostic-only: it does not
 edit sources, decide graph meaning, grant acceptance, or complete Author finalization.
 
+New authority-bearing validation uses Coordinator closure manifest schema v2. Before execution,
+persist an immutable validator assignment projection outside the repository source tree when possible.
+It contains the assignment ID, execution mode, purpose, authority, exact goal, bounded Context Pack,
+injected skill IDs/modes, normalized scope, and the full pre-work repository path/raw-byte digest
+snapshot. After execution, invoke the validator with `--root`, `--assignment`, `--manifest`, and an
+existing host-controlled external `--evidence-root`. Manifest schema v1 remains readable for diagnostics but cannot authorize
+`accept_candidate` or `closure_complete`.
+
+The validator derives added, modified, and deleted paths from the immutable snapshot and current root.
+It compares that set with the report, checks actual baseline/resulting digests and allowed/excluded
+scope, binds report/review to assignment and Context Pack digests, matches `skill_usage` to injected
+skills, and applies work-completion gates when `closure_target: work`. A Step closure names one
+assignment-scoped `closure_step_ref`; Step-only and Work-only gate projections are kept in their
+matching arrays, and misfiled or duplicate gates fail closed. Required graph sync accepts only a
+schema-v2 verified transaction and invokes the package-owned Linker runner; every post-acceptance
+decision invokes the package-owned Author runner against canonical Author finalization schema v5.
+Schema v4 remains historical Author read compatibility and cannot authorize a new Coordinator
+closure. Missing roots/evidence, unavailable runners,
+timeouts, malformed output, and child runner execution errors remain diagnostic `error` rather than an
+ordinary closure finding.
+Coordinator evidence strings never substitute for these checks.
+
 ## Artifact Delta and Graph Synchronization
 
 Within an already permitted implementation scope, collect one `artifact_delta` for every changed
@@ -253,9 +275,12 @@ canonical delta and maps to finalization `not_applicable`.
 artifact_deltas:
   - kind: artifact_delta
     source_surface:
+    change_kind: added | modified | deleted
     changed_locators: []
     semantic_summary:
     baseline_digest: sha256:<64-lowercase-hex> | absent
+    resulting_digest: sha256:<64-lowercase-hex> | absent
+    graph_relevant: true | false
 graph_attestations:
   - patch_id:
     owner: main | coordinator
@@ -437,11 +462,19 @@ Pack must explicitly carry its accepted-decisions array (use `[]` only when none
 criteria, scope boundaries, forbidden changes, verification expectations, and artifact/Reader/Author
 context status plus evidence. `ready` and `not_applicable` require evidence; `blocked` prevents readiness.
 
+The rich `worker_assignment` above remains the agent-facing handoff. The schema-v2 closure validator
+uses a strict immutable projection with only `schema_version`, `assignment_id`, `execution_mode`,
+`purpose`, `authority`, `goal`, `context_pack`, injected skill IDs/modes, normalized `scope`, and
+`baseline_snapshot`. The full worker report is likewise projected to the strict closure fields described
+in the validator reference. Unknown authority-bearing fields must not be smuggled into either projection.
+
 Worker report:
 
 ```yaml
 worker_report:
   assignment_id:
+  assignment_digest:
+  context_digest:
   execution_mode: direct_execution | orchestration
   status: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | NEEDS_SCOPE_CHANGE | BLOCKED
   status_reason:
@@ -543,9 +576,10 @@ the structured `document_sync`, `metadata_sync`, and `graph_sync` results above.
 
 Only `DONE` is ready for an `accept_candidate`. `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`,
 `NEEDS_SCOPE_CHANGE`, and `BLOCKED` remain non-ready until their named concern or blocker is resolved.
-The worker report's `execution_mode` must match its manifest. `changed_files` and `artifact_deltas` are
-explicit arrays; genuine no-change uses `[]` for both. Each changed file has exactly one delta with
-`kind: artifact_delta`.
+The worker report's `execution_mode` must match its assignment. `changed_files` and `artifact_deltas`
+are explicit arrays; genuine no-change uses `[]` for both. Each actual changed file has exactly one
+delta with `kind: artifact_delta`, `change_kind`, baseline/resulting digests, and `graph_relevant`.
+Schema-v2 validation derives the change set from repository bytes instead of trusting `scope_check`.
 
 For every post-acceptance decision, record acceptance separately from finalization:
 
@@ -553,10 +587,15 @@ For every post-acceptance decision, record acceptance separately from finalizati
 keystone_closure:
   acceptance_ref:
   acceptance_evidence: []
+  accepted_steps: []
   finalization:
     state: complete | waived | blocked
     acceptance_ref:
     evidence: []
+    manifest_path:
+    manifest_digest:
+    envelope_digest:
+    runner_status: pass | fail | error
     waiver_reason: # required when state is waived
 ```
 

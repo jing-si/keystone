@@ -127,7 +127,8 @@ class GraphGoldenScaleTest(unittest.TestCase):
                             patch_specs=(patch,), evidence=Evidence.INFERRED)
 
         observed = plan_graph_sync(GraphSnapshot(), (delta,), "S04", requested_nodes_after=(node,),
-                                   patch_specs=(patch,), evidence=Evidence.OBSERVED)
+                                   patch_specs=(patch,), evidence=Evidence.OBSERVED,
+                                   transaction_schema_version=1)
         awaiting = begin_attestation(observed)
         self.assertEqual(TransactionState.AWAITING_ATTESTATION, awaiting.state)
         with self.assertRaisesRegex(ValueError, "ready_to_apply"):
@@ -145,7 +146,7 @@ class GraphGoldenScaleTest(unittest.TestCase):
 
         moved = replace(implementation, locator=Locator("src/moved_impl.py"))
         move = plan_graph_sync(baseline, (delta,), "S04", requested_nodes_after=(moved,),
-                               patch_specs=(patch,))
+                               patch_specs=(patch,), transaction_schema_version=1)
         self.assertEqual(implementation.id, move.canonical_mutations[0].after.id)
         self.assertEqual(MutationOperation.UPDATE, move.canonical_mutations[0].operation)
 
@@ -158,6 +159,7 @@ class GraphGoldenScaleTest(unittest.TestCase):
             requested_relations_after=(history,),
             requested_relation_removals=((inbound.source, inbound.relation, inbound.target),),
             patch_specs=(patch,),
+            transaction_schema_version=1,
         )
         self.assertEqual(4, len(replacement.canonical_mutations))
         final = GraphSnapshot((retired, successor, implementation), (history,))
@@ -168,66 +170,136 @@ class GraphGoldenScaleTest(unittest.TestCase):
         self.assertNotIn("missing_target", codes)
         self.assertNotIn("active_relation_to_retired", codes)
 
-    def test_active_canonical_supersedes_may_target_deprecated_or_removed_only(self):
+    def test_active_canonical_supersedes_uses_domain_specific_retired_lifecycle(self):
         self.write("docs/replacement.md", "replacement nodes")
+        self.write("src/replacement.py", "replacement artifacts")
+        document_successor = Node(
+            "key.claim.new", NodeKind.CLAIM,
+            locator=Locator("docs/replacement.md"),
+        )
+        document_retired = Node(
+            "key.claim.old", NodeKind.CLAIM,
+            locator=Locator("docs/replacement.md"),
+            lifecycle=Lifecycle.SUPERSEDED,
+        )
+        document_relation = Relation(
+            document_successor.id,
+            RelationType.SUPERSEDES,
+            document_retired.id,
+        )
+        document_codes = {item.code for item in validate_snapshot(
+            self.root,
+            GraphSnapshot(
+                (document_successor, document_retired), (document_relation,)
+            ),
+        )}
+        self.assertNotIn("active_relation_to_retired", document_codes)
+
         self.write("src/provider.py", "provider")
         for retired_lifecycle in (Lifecycle.DEPRECATED, Lifecycle.REMOVED):
             with self.subTest(retired_lifecycle=retired_lifecycle.value):
-                successor = Node("key.cap.new", NodeKind.CAPABILITY,
-                                 locator=Locator("docs/replacement.md"))
-                retired = Node("key.cap.old", NodeKind.CAPABILITY,
-                               locator=Locator("docs/replacement.md"),
-                               lifecycle=retired_lifecycle)
-                replacement = Relation(successor.id, RelationType.SUPERSEDES, retired.id,
-                                       Evidence.DECLARED, lifecycle=Lifecycle.ACTIVE)
+                successor = Node(
+                    "key.code.new", NodeKind.OUTPUT_ARTIFACT, ArtifactKind.CODE,
+                    Locator("src/replacement.py", symbol="new"),
+                )
+                retired = Node(
+                    "key.code.old", NodeKind.OUTPUT_ARTIFACT, ArtifactKind.CODE,
+                    Locator("src/replacement.py", symbol="old"),
+                    lifecycle=retired_lifecycle,
+                )
+                replacement = Relation(
+                    successor.id, RelationType.SUPERSEDES, retired.id,
+                    Evidence.DECLARED, lifecycle=Lifecycle.ACTIVE,
+                )
                 findings = validate_snapshot(
                     self.root, GraphSnapshot((successor, retired), (replacement,)))
                 self.assertNotIn("active_relation_to_retired", {item.code for item in findings})
 
-                provider = Node("key.code.provider", NodeKind.OUTPUT_ARTIFACT, ArtifactKind.CODE,
-                                Locator("src/provider.py"))
-                ordinary = Relation(provider.id, RelationType.PROVIDES, retired.id)
-                ordinary_codes = {item.code for item in validate_snapshot(
-                    self.root, GraphSnapshot((provider, retired), (ordinary,)))}
-                self.assertIn("active_relation_to_retired", ordinary_codes)
+        wrong_document = replace(document_retired, lifecycle=Lifecycle.DEPRECATED)
+        wrong_artifact = Node(
+            "key.code.superseded", NodeKind.OUTPUT_ARTIFACT, ArtifactKind.CODE,
+            Locator("src/replacement.py", symbol="superseded"),
+            lifecycle=Lifecycle.SUPERSEDED,
+        )
+        for successor, retired in (
+            (document_successor, wrong_document),
+            (Node(
+                "key.code.current", NodeKind.OUTPUT_ARTIFACT, ArtifactKind.CODE,
+                Locator("src/replacement.py", symbol="current"),
+            ), wrong_artifact),
+        ):
+            relation = Relation(successor.id, RelationType.SUPERSEDES, retired.id)
+            codes = {item.code for item in validate_snapshot(
+                self.root, GraphSnapshot((successor, retired), (relation,))
+            )}
+            self.assertIn("node_lifecycle_domain_invalid", codes)
+            self.assertIn("active_relation_to_retired", codes)
 
-                removed_successor = replace(successor, lifecycle=Lifecycle.REMOVED)
-                removed_source_codes = {item.code for item in validate_snapshot(
-                    self.root, GraphSnapshot((removed_successor, retired), (replacement,)))}
-                self.assertIn("active_relation_to_retired", removed_source_codes)
-                self.assertIn("active_relation_from_retired", removed_source_codes)
+        invalid_relation = replace(
+            document_relation,
+            lifecycle=Lifecycle.SUPERSEDED,
+        )
+        invalid_relation_codes = {item.code for item in validate_snapshot(
+            self.root,
+            GraphSnapshot((document_successor, document_retired), (invalid_relation,)),
+        )}
+        self.assertIn("relation_lifecycle_domain_invalid", invalid_relation_codes)
 
-                unattested_observed = replace(replacement, evidence=Evidence.OBSERVED)
-                observed_codes = {item.code for item in validate_snapshot(
-                    self.root, GraphSnapshot((successor, retired), (unattested_observed,)))}
-                self.assertIn("active_relation_to_retired", observed_codes)
+    def test_canonical_replacement_still_requires_active_declared_source(self):
+        self.write("docs/replacement.md", "replacement nodes")
+        self.write("src/provider.py", "provider")
+        successor = Node("key.claim.new", NodeKind.CLAIM,
+                         locator=Locator("docs/replacement.md"))
+        retired = Node("key.claim.old", NodeKind.CLAIM,
+                       locator=Locator("docs/replacement.md"),
+                       lifecycle=Lifecycle.SUPERSEDED)
+        replacement = Relation(successor.id, RelationType.SUPERSEDES, retired.id,
+                               Evidence.DECLARED, lifecycle=Lifecycle.ACTIVE)
 
-                invalid_attestation = replace(
-                    unattested_observed,
-                    provenance=replace(unattested_observed.provenance, attested_by="reviewer"),
-                )
-                invalid_codes = {item.code for item in validate_snapshot(
-                    self.root, GraphSnapshot((successor, retired), (invalid_attestation,)))}
-                self.assertIn("active_relation_to_retired", invalid_codes)
+        provider = Node("key.code.provider", NodeKind.OUTPUT_ARTIFACT, ArtifactKind.CODE,
+                        Locator("src/provider.py"))
+        ordinary = Relation(provider.id, RelationType.PROVIDES, retired.id)
+        ordinary_codes = {item.code for item in validate_snapshot(
+            self.root, GraphSnapshot((provider, retired), (ordinary,)))}
+        self.assertIn("active_relation_to_retired", ordinary_codes)
 
-                wrong_surface_owner = replace(
-                    unattested_observed,
-                    provenance=Provenance(surface="document_metadata",
-                                          locator=Locator("docs/replacement.md"),
-                                          attested_by=PatchOwner.MAIN.value),
-                )
-                wrong_owner_codes = {item.code for item in validate_snapshot(
-                    self.root, GraphSnapshot((successor, retired), (wrong_surface_owner,)))}
-                self.assertIn("active_relation_to_retired", wrong_owner_codes)
+        removed_successor = replace(successor, lifecycle=Lifecycle.REMOVED)
+        removed_source_codes = {item.code for item in validate_snapshot(
+            self.root, GraphSnapshot((removed_successor, retired), (replacement,)))}
+        self.assertIn("active_relation_to_retired", removed_source_codes)
+        self.assertIn("active_relation_from_retired", removed_source_codes)
 
-                inferred = replace(replacement, evidence=Evidence.INFERRED)
-                inferred_codes = {item.code for item in validate_snapshot(
-                    self.root, GraphSnapshot((successor, retired), (inferred,)))}
-                self.assertIn("active_relation_to_retired", inferred_codes)
+        unattested_observed = replace(replacement, evidence=Evidence.OBSERVED)
+        observed_codes = {item.code for item in validate_snapshot(
+            self.root, GraphSnapshot((successor, retired), (unattested_observed,)))}
+        self.assertIn("active_relation_to_retired", observed_codes)
 
-                missing_codes = {item.code for item in validate_snapshot(
-                    self.root, GraphSnapshot((successor,), (replacement,)))}
-                self.assertIn("missing_target", missing_codes)
+        invalid_attestation = replace(
+            unattested_observed,
+            provenance=replace(unattested_observed.provenance, attested_by="reviewer"),
+        )
+        invalid_codes = {item.code for item in validate_snapshot(
+            self.root, GraphSnapshot((successor, retired), (invalid_attestation,)))}
+        self.assertIn("active_relation_to_retired", invalid_codes)
+
+        wrong_surface_owner = replace(
+            unattested_observed,
+            provenance=Provenance(surface="document_metadata",
+                                  locator=Locator("docs/replacement.md"),
+                                  attested_by=PatchOwner.MAIN.value),
+        )
+        wrong_owner_codes = {item.code for item in validate_snapshot(
+            self.root, GraphSnapshot((successor, retired), (wrong_surface_owner,)))}
+        self.assertIn("active_relation_to_retired", wrong_owner_codes)
+
+        inferred = replace(replacement, evidence=Evidence.INFERRED)
+        inferred_codes = {item.code for item in validate_snapshot(
+            self.root, GraphSnapshot((successor, retired), (inferred,)))}
+        self.assertIn("active_relation_to_retired", inferred_codes)
+
+        missing_codes = {item.code for item in validate_snapshot(
+            self.root, GraphSnapshot((successor,), (replacement,)))}
+        self.assertIn("missing_target", missing_codes)
 
         for lifecycle in (Lifecycle.SUPERSEDED, Lifecycle.ARCHIVED):
             with self.subTest(lifecycle=lifecycle.value):
@@ -243,11 +315,11 @@ class GraphGoldenScaleTest(unittest.TestCase):
 
     def test_observed_supersedes_owner_attestation_survives_reconstruction_validation(self):
         self.write("docs/observed-replacement.md", "replacement")
-        successor = Node("key.cap.observed.new", NodeKind.CAPABILITY,
+        successor = Node("key.claim.observed.new", NodeKind.CLAIM,
                          locator=Locator("docs/observed-replacement.md"))
-        retired = Node("key.cap.observed.old", NodeKind.CAPABILITY,
+        retired = Node("key.claim.observed.old", NodeKind.CLAIM,
                        locator=Locator("docs/observed-replacement.md"),
-                       lifecycle=Lifecycle.REMOVED)
+                       lifecycle=Lifecycle.SUPERSEDED)
         observed = Relation(
             successor.id, RelationType.SUPERSEDES, retired.id, Evidence.OBSERVED,
             Provenance(surface="document_metadata",
@@ -257,10 +329,11 @@ class GraphGoldenScaleTest(unittest.TestCase):
                       baseline_digest="sha256:" + "4" * 64)
         patch = PatchSpec(PatchOwner.AUTHOR, PatchSurface.DOCUMENT_METADATA,
                           "docs/observed-replacement.md", delta.baseline_digest,
-                          "<!-- key: supersedes=key.cap.observed.old -->")
+                          "<!-- key: supersedes=key.claim.observed.old -->")
         planned = plan_graph_sync(
             GraphSnapshot((successor, retired)), (delta,), "S04",
-            requested_relations_after=(observed,), patch_specs=(patch,))
+            requested_relations_after=(observed,), patch_specs=(patch,),
+            transaction_schema_version=1)
         awaiting = begin_attestation(planned)
         confirmed = record_attestation(
             awaiting,

@@ -9,9 +9,9 @@ key:
     - key.topic.document-system
     - key.doc.source
 global_state:
-  active_round: none
+  active_round: R010
   latest_accepted_round: R009
-  active_steps: []
+  active_steps: [R010/S01]
 ---
 
 # 작업서(4) round 색인
@@ -34,6 +34,7 @@ global_state:
 | R007 | Contract Execution Reconciliation | `r007-contract-execution-reconciliation/00_key-index.md` | accepted | 문서 계약 실행 정합화와 Python convention·점진적 리팩터링을 완료했다 |
 | R008 | Skill Graph and Self-Host Runtime Closure | `r008-skill-graph-traceability/00_key-index.md` | accepted | readiness부터 dependency·transaction·finalization까지 self-host workflow를 정합화하고 검증했다 |
 | R009 | Coordinator Keystone Closure | `r009-coordinator-keystone-closure/00_key-index.md` | accepted | Coordinator context provisioning, closure gate, local installation parity를 complete and accepted로 기록한다 |
+| R010 | Production Control Plane Hardening | `r010-production-control-plane-hardening/00_key-index.md` | active | cross-runtime correctness와 actual-state production gate를 구현·검증한다 |
 
 <!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work key.topic.work-round -->
 ## 공통 결정
@@ -45,8 +46,8 @@ global_state:
 
 1. 프로젝트 전체 방향은 `00_docs/key-context-map.md`를 먼저 읽는다.
 2. 공통 기준과 용어는 `00_docs/standards/01_key-project-standard.md`를 따른다.
-3. 현재 active round가 있으면 이 파일의 `Work rounds` 표를 권위로 삼는다. 현재 active round는 없으며,
-   최신 accepted round는 R009다.
+3. 현재 active round가 있으면 이 파일의 `Work rounds` 표를 권위로 삼는다. 현재 active round는
+   R010이며, 최신 accepted round는 R009다.
 4. Round 내부 실행 순서는 해당 round의 `00_key-index.md`에서 확인한다.
 5. 각 work의 세부 목표와 검증은 해당 work node의 `key-work-{slug}.md`에서 확인한다.
 6. 각 work의 진행 상태는 해당 work node의 `key-progress.md`에서 확인한다.

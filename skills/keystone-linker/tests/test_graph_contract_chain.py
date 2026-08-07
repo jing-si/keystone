@@ -115,6 +115,7 @@ key: {id: key.doc.contract, kind: source_document}
         transaction = plan_graph_sync(
             baseline, (delta,), "R007/S01",
             requested_relations_after=(relation,), patch_specs=(patch,),
+            transaction_schema_version=1,
         )
         transaction = begin_attestation(transaction)
         transaction = record_attestation(transaction, SurfaceAttestation(

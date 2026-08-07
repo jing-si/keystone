@@ -4,6 +4,7 @@ from graph_runtime.dependency import (
     DependencyStatus,
     DependencyTargetState,
     evaluate_dependency_graph,
+    evaluate_dependency_sources,
     parse_work_gates,
 )
 from graph_runtime.adapters import MarkdownAdapter
@@ -78,6 +79,40 @@ class DependencyRuntimeTest(unittest.TestCase):
         self.assertTrue(evaluation.work_completion)
         self.assertEqual(DependencyStatus.WAITING, evaluation.status)
         self.assertTrue(evaluation.blocking)
+
+    def test_flat_non_work_dependency_stays_typed_without_completion_gate(self):
+        parsed = parse_source(
+            """<!-- key: id=key.claim.source kind=claim depends_on=key.claim.target -->
+# Claim
+""",
+            "docs/claim.md",
+            MarkdownAdapter(),
+        )
+
+        self.assertEqual(1, len(parsed.snapshot.relations))
+        self.assertFalse(parsed.dependency_sources[0].is_work)
+        self.assertEqual(
+            (), evaluate_dependency_sources(parsed.dependency_sources).evaluations
+        )
+
+    def test_structured_work_dependency_never_becomes_legacy_completion_gate(self):
+        parsed = parse_source(
+            """---
+key:
+  id: key.work.source
+  kind: work_order
+  depends_on: [key.work.target]
+  relations:
+    depends_on: [key.work.target]
+---
+""",
+            "docs/work.md",
+            MarkdownAdapter(),
+        )
+
+        source = parsed.dependency_sources[0]
+        self.assertEqual(("key.work.target",), source.structured_dependencies)
+        self.assertEqual((), source.legacy_dependencies)
 
     def test_optional_waiting_gate_is_not_blocking(self):
         result = evaluate_dependency_graph(

@@ -13,6 +13,7 @@ from .index_model import (
     RefRecord, TypedEdge, TypedGraph,
 )
 from .metadata import parse_reference_declaration, parse_source
+from .source_unit import COMPANION_SUFFIX, SourceSurface, resolve_source_unit
 from .yaml_subset import MetadataError
 
 
@@ -162,51 +163,57 @@ class ReferenceScanner:
         diagnostics = list(discovery.diagnostics)
         dependency_sources = []
         raw_by_path = {source.relative: source.raw_bytes for source in discovery.sources}
-        for source in discovery.sources:
-            relative = source.relative
-            if relative.endswith(".keystone.json"):
-                source_relative = relative[:-len(".keystone.json")]
+        logical_paths = {
+            (path[:-len(COMPANION_SUFFIX)]
+             if path.endswith(COMPANION_SUFFIX) else path)
+            for path in raw_by_path
+        }
+        for relative in sorted(logical_paths):
+            companion_relative = relative + COMPANION_SUFFIX
+            try:
+                unit = resolve_source_unit(
+                    relative,
+                    raw_by_path.get(relative),
+                    raw_by_path.get(companion_relative),
+                )
+            except UnicodeDecodeError:
+                diagnostics.append(IndexDiagnostic(
+                    "unsupported_encoding", "source is not UTF-8", relative
+                ))
+                continue
+            diagnostics.extend(IndexDiagnostic(item.code, item.message, item.path)
+                               for item in unit.diagnostics)
+            if unit.surface is None:
+                continue
+            if unit.surface == SourceSurface.COMPANION:
                 try:
-                    companion_text = source.raw_bytes.decode("utf-8")
+                    companion_text = unit.companion_bytes.decode("utf-8")
                 except UnicodeDecodeError:
-                    diagnostics.append(IndexDiagnostic("unsupported_encoding", "companion is not UTF-8", relative))
+                    diagnostics.append(IndexDiagnostic(
+                        "unsupported_encoding", "companion is not UTF-8",
+                        companion_relative,
+                    ))
                     continue
                 parsed = parse_source(
-                    "", source_relative, None, companion_text=companion_text,
-                    companion_path=relative, companion_source_exists=source_relative in raw_by_path,
-                    companion_source_bytes=raw_by_path.get(source_relative),
+                    "",
+                    relative,
+                    None,
+                    companion_text=companion_text,
+                    companion_path=companion_relative,
+                    companion_source_exists=unit.source_bytes is not None,
+                    companion_source_bytes=unit.source_bytes,
                 )
-                diagnostics.extend(IndexDiagnostic(item.code, item.message, item.path)
-                                   for item in parsed.diagnostics)
-                dependency_sources.extend(parsed.dependency_sources)
-                for node in parsed.snapshot.nodes:
-                    locator = _owner_locator(node)
-                    owner = OwnerRecord(node.id, node.locator.path, locator)
-                    owner_counts[node.id] = owner_counts.get(node.id, 0) + 1
-                    if owner_counts[node.id] > 1:
-                        diagnostics.append(IndexDiagnostic(
-                            "duplicate_owner", "owner ID is declared more than once: %s" % node.id,
-                            relative))
-                    owners.append(owner)
-                    if not _has_machine_locator(node):
-                        diagnostics.append(IndexDiagnostic(
-                            "locator_gap", "owner has no machine-checkable locator: %s" % node.id,
-                            relative, "warning"))
-                if include_typed_graph:
-                    edges.extend(TypedEdge(item.source, item.relation.value, item.target)
-                                 for item in parsed.snapshot.relations
-                                 if item.evidence.value == "declared")
-                continue
-            adapter = adapter_for_path(relative)
-            if adapter is None:
-                continue
-            try:
-                text = source.raw_bytes.decode("utf-8")
-            except UnicodeDecodeError:
-                diagnostics.append(IndexDiagnostic("unsupported_encoding", "source is not UTF-8", relative))
-                continue
-            parsed = parse_source(text, relative, adapter)
-            diagnostics.extend(IndexDiagnostic(item.code, item.message, item.path) for item in parsed.diagnostics)
+            else:
+                try:
+                    text = unit.source_bytes.decode("utf-8")
+                except UnicodeDecodeError:
+                    diagnostics.append(IndexDiagnostic(
+                        "unsupported_encoding", "source is not UTF-8", relative
+                    ))
+                    continue
+                parsed = parse_source(text, relative, unit.adapter)
+            diagnostics.extend(IndexDiagnostic(item.code, item.message, item.path)
+                               for item in parsed.diagnostics)
             dependency_sources.extend(parsed.dependency_sources)
             nodes_by_id = {node.id: node for node in parsed.snapshot.nodes}
             for node in parsed.snapshot.nodes:
@@ -221,20 +228,21 @@ class ReferenceScanner:
                     diagnostics.append(IndexDiagnostic(
                         "locator_gap", "owner has no machine-checkable locator: %s" % node.id,
                         relative, "warning"))
-            for block, _construct, label in adapter.metadata_blocks(text):
-                try:
-                    declaration = parse_reference_declaration(block)
-                    if declaration is None:
+            if unit.surface == SourceSurface.INLINE:
+                for block, _construct, label in unit.adapter.metadata_blocks(text):
+                    try:
+                        declaration = parse_reference_declaration(block)
+                        if declaration is None:
+                            continue
+                        source_id, targets = declaration
+                        locator = label
+                        if source_id in nodes_by_id:
+                            locator = _owner_locator(nodes_by_id[source_id]) or label
+                        for target in targets:
+                            refs.append(RefRecord(source_id, target, relative, locator))
+                    except (MetadataError, TypeError, ValueError):
+                        # The canonical parser already reports malformed metadata.
                         continue
-                    source_id, targets = declaration
-                    locator = label
-                    if source_id in nodes_by_id:
-                        locator = _owner_locator(nodes_by_id[source_id]) or label
-                    for target in targets:
-                        refs.append(RefRecord(source_id, target, relative, locator))
-                except (MetadataError, TypeError, ValueError):
-                    # The canonical parser already reports malformed metadata.
-                    continue
             if include_typed_graph:
                 edges.extend(TypedEdge(item.source, item.relation.value, item.target)
                              for item in parsed.snapshot.relations

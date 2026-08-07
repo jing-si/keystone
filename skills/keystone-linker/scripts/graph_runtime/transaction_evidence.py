@@ -8,7 +8,7 @@ from typing import Any, FrozenSet, Optional, Sequence, Tuple
 from .model import Diagnostic, PatchOwner, PatchSurface, patch_owner_matches_surface
 from .patch_replay import PATCH_FORMATS, digest_bytes, replay_patch
 from .transaction_wire_validation import is_digest_wire
-from .validation_support import diagnostic, safe_path
+from .validation_support import canonical_relative_path, diagnostic, safe_path
 
 
 @dataclass(frozen=True)
@@ -50,6 +50,7 @@ def validate_transaction_evidence(
         )
 
     patch_by_id = {}
+    patch_by_target = {}
     schema_version = value.get("schema_version")
     for patch in patches:
         if not isinstance(patch, dict):
@@ -103,13 +104,26 @@ def validate_transaction_evidence(
                 "patch_target_missing",
                 "surface patch target_path is required",
             ))
-        elif root is not None:
+        physical_target = None
+        if isinstance(patch.get("target_path"), str) and patch["target_path"]:
             try:
-                safe_path(root, patch["target_path"])
+                physical_target = canonical_relative_path(patch["target_path"])
+                if root is not None:
+                    physical_target = str(safe_path(root, patch["target_path"]))
             except ValueError as error:
                 findings.append(diagnostic(
                     "patch_target_invalid", str(error), patch["target_path"]
                 ))
+        target_path = patch.get("target_path")
+        if physical_target is not None:
+            if physical_target in patch_by_target:
+                findings.append(diagnostic(
+                    "patch_target_duplicate",
+                    "physical patch target is duplicated: %s" % target_path,
+                    target_path,
+                ))
+            else:
+                patch_by_target[physical_target] = patch
         if not isinstance(patch.get("exact_patch"), str) or not patch["exact_patch"]:
             findings.append(diagnostic(
                 "patch_exact_patch_invalid",
@@ -311,7 +325,21 @@ def validate_transaction_evidence(
                 "resulting_digest_invalid",
                 "applied result requires a sha256 digest",
             ))
-        elif item.get("result") == "applied" and root is not None:
+        elif (
+            item.get("result") == "applied"
+            and schema_version == 2
+            and resulting_digest != patch.get("expected_after_digest")
+        ):
+            findings.append(diagnostic(
+                "resulting_digest_expected_mismatch",
+                "applied resulting_digest does not match expected_after_digest",
+                patch.get("target_path"),
+            ))
+        if (
+            item.get("result") == "applied"
+            and is_digest_wire(resulting_digest or "")
+            and root is not None
+        ):
             try:
                 target = safe_path(root, patch.get("target_path"))
             except ValueError as error:

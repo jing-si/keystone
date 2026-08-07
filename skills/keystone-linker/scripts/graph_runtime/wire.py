@@ -2,6 +2,7 @@
 
 from typing import Any, Dict, Optional, Sequence
 
+from .lifecycle_policy import node_lifecycle_domain
 from .model import (
     Diagnostic,
     GraphRelevance,
@@ -13,6 +14,7 @@ from .model import (
     Relation,
     SCHEMA_VERSION,
 )
+from .validation_support import canonical_relative_path
 
 
 def _locator_wire(locator: Locator) -> Dict[str, Any]:
@@ -39,16 +41,6 @@ def _provenance_wire(provenance: Provenance) -> Dict[str, Any]:
     return result
 
 
-_DOCUMENT_NODE_KINDS = {
-    "source_document", "document_section", "document_item", "claim", "decision",
-    "work_order", "work_step", "capability",
-}
-
-
-def _node_lifecycle_domain(node: Node) -> str:
-    return "document" if node.kind.value in _DOCUMENT_NODE_KINDS else "artifact"
-
-
 def _node_wire(node: Node, schema_version: int = 1) -> Dict[str, Any]:
     result = {
         "id": node.id,
@@ -59,7 +51,7 @@ def _node_wire(node: Node, schema_version: int = 1) -> Dict[str, Any]:
         "provenance": _provenance_wire(node.provenance),
     }
     if schema_version >= 2:
-        result["lifecycle_domain"] = _node_lifecycle_domain(node)
+        result["lifecycle_domain"] = node_lifecycle_domain(node.kind)
     if schema_version >= 2 and any((
         node.declared_lifecycle is not None,
         node.declared_approval_state is not None,
@@ -113,7 +105,7 @@ def graph_snapshot_wire(snapshot: GraphSnapshot,
                         schema_version: Optional[int] = None) -> Dict[str, Any]:
     """Serialize a source-derived graph snapshot to its canonical wire."""
     version = snapshot.schema_version if schema_version is None else schema_version
-    if version not in {1, 2}:
+    if type(version) is not int or version not in {1, 2}:
         raise ValueError("graph snapshot schema_version must be 1 or 2")
     return {
         "schema_version": version,
@@ -160,8 +152,27 @@ def _mechanical_envelope(diagnostics: Sequence[Diagnostic]) -> Dict[str, Any]:
 def transaction_wire(
         transaction: GraphTransaction, *,
         baseline_snapshot: Optional[GraphSnapshot] = None,
-) -> Dict[str, Any]:
+    ) -> Dict[str, Any]:
     """Serialize exactly the accepted canonical transaction wire."""
+    if (type(transaction.schema_version) is not int
+            or transaction.schema_version not in {1, 2}):
+        raise ValueError("transaction schema_version must be 1 or 2")
+    target_paths = [
+        canonical_relative_path(patch.target_path)
+        for patch in transaction.surface_patches
+    ]
+    if len(set(target_paths)) != len(target_paths):
+        raise ValueError("each physical target may have only one patch")
+    if transaction.schema_version == 1 and any(
+        any(value is not None for value in (
+            patch.patch_format,
+            patch.patch_body,
+            patch.expected_after_digest,
+            patch.baseline_content,
+        ))
+        for patch in transaction.surface_patches
+    ):
+        raise ValueError("schema-v1 patch cannot contain schema-v2 executable fields")
     if transaction.reconstruction is not None and baseline_snapshot is None:
         raise ValueError("reconstruction serialization requires its baseline snapshot")
     reconstruction = (

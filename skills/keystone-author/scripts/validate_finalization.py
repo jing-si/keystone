@@ -30,6 +30,39 @@ from finalization_support import (
 
 
 DIAGNOSTIC_SCHEMA_VERSION = 1
+V5_MANIFEST_FIELDS = {
+    "schema_version",
+    "acceptance_ref",
+    "steps",
+    "accepted_steps",
+    "execution_transitions",
+    "approval_transitions",
+    "active_steps",
+    "active_step_sources",
+    "global_state",
+    "early_work",
+    "finalization",
+    "graph_sync",
+    "impact_candidates",
+    "namespace_entries",
+}
+
+
+class DuplicateJsonKey(ValueError):
+    pass
+
+
+def reject_duplicate_keys(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise DuplicateJsonKey("duplicate JSON key: %s" % key)
+        value[key] = item
+    return value
+
+
+def loads_json_strict(value: str) -> Any:
+    return json.loads(value, object_pairs_hook=reject_duplicate_keys)
 
 
 def output(status: str, diagnostics: List[Dict[str, str]]) -> None:
@@ -55,25 +88,38 @@ def validate_manifest(root: Path, manifest: Dict[str, Any]) -> List[Dict[str, st
     findings: List[Dict[str, str]] = []
 
     schema_version = manifest.get("schema_version")
-    if schema_version not in {1, 2, 3, 4}:
+    if type(schema_version) is not int or schema_version not in {1, 2, 3, 4, 5}:
         findings.append(diagnostic(
-            "schema_version_unsupported", "schema_version must be 1, 2, 3, or 4."
+            "schema_version_unsupported",
+            "schema_version must be 1, 2, 3, 4, or 5.",
         ))
+    elif schema_version == 5:
+        for field in sorted(set(manifest) - V5_MANIFEST_FIELDS):
+            findings.append(diagnostic(
+                "manifest_field_unknown",
+                "schema_version 5 does not allow unknown top-level field: %s." % field,
+            ))
+
+    compatibility_version = 4 if schema_version == 5 else schema_version
 
     if not isinstance(manifest.get("acceptance_ref"), str) or not manifest["acceptance_ref"].strip():
         findings.append(diagnostic("acceptance_ref_missing", "acceptance_ref must be a non-empty string."))
 
-    step_findings, steps = validate_steps_and_transitions(root, manifest, schema_version)
+    step_findings, steps = validate_steps_and_transitions(
+        root, manifest, compatibility_version
+    )
     findings.extend(step_findings)
 
-    findings.extend(validate_finalization_closure(root, manifest, schema_version))
+    findings.extend(validate_finalization_closure(
+        root, manifest, compatibility_version
+    ))
 
     findings.extend(validate_early_work(manifest.get("early_work"), steps))
 
     findings.extend(validate_global_state(root, manifest, schema_version))
 
     findings.extend(validate_impact_candidates(
-        root, manifest.get("impact_candidates"), schema_version
+        root, manifest.get("impact_candidates"), compatibility_version
     ))
     findings.extend(validate_namespace_entries(manifest.get("namespace_entries")))
 
@@ -96,9 +142,10 @@ def main() -> int:
     if not manifest_path.is_file():
         return invocation_error("manifest_unavailable", "--manifest must resolve to an existing file.", args.manifest)
     try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as error:
-        return invocation_error("manifest_invalid_json", f"Manifest is not valid JSON: {error.msg}.", args.manifest)
+        manifest = loads_json_strict(manifest_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, DuplicateJsonKey) as error:
+        message = getattr(error, "msg", str(error))
+        return invocation_error("manifest_invalid_json", f"Manifest is not valid JSON: {message}.", args.manifest)
     except (OSError, UnicodeError) as error:
         return invocation_error("manifest_unreadable", f"Cannot read manifest: {error}.", args.manifest)
     if not isinstance(manifest, dict):

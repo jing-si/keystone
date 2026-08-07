@@ -79,7 +79,7 @@ def validate_transaction_input(
             "unsupported transaction state: %s" % state,
         ))
     schema_version = value.get("schema_version")
-    if schema_version not in {1, 2}:
+    if type(schema_version) is not int or schema_version not in {1, 2}:
         findings.append(diagnostic(
             "transaction_schema_invalid",
             "transaction schema_version must be 1 or 2",

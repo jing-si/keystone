@@ -8,7 +8,7 @@ from pathlib import Path
 
 from graph_runtime.model import Evidence, RelationType
 from graph_runtime.validator import reconstruct
-from validate_graph import coverage_severity, generation_findings
+from validate_graph import capture_sources, coverage_severity, generation_findings
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "validate_graph.py"
@@ -99,6 +99,59 @@ key: {id: key.doc.graph, kind: source_document}
         second, second_payload = self.run_validator("--manifest", str(manifest))
 
         self.assertEqual((0, first_payload), (second.returncode, second_payload))
+
+    def test_authoritative_json_rejects_duplicates_and_boolean_schema_versions(self):
+        self.write("source.md", "---\nkey: {id: key.doc, kind: source_document}\n---\n")
+        duplicate = self.write(
+            "duplicate.json",
+            '{"schema_version":1,"sources":["source.md"],'
+            '"transaction":{"schema_version":1,"schema_version":2}}',
+        )
+        duplicate_process, duplicate_payload = self.run_validator(
+            "--manifest", str(duplicate)
+        )
+        bool_manifest = self.write(
+            "bool-manifest.json", '{"schema_version":true,"sources":["source.md"]}'
+        )
+        bool_manifest_process, bool_manifest_payload = self.run_validator(
+            "--manifest", str(bool_manifest)
+        )
+        bool_transaction = self.write(
+            "bool-transaction.json",
+            '{"schema_version":true,"transaction_id":"tx-bool",'
+            '"scope_ref":"R010/S01","state":"proposed","input_deltas":[],'
+            '"canonical_mutations":[],"surface_patches":[],"attestations":[],'
+            '"apply_results":[]}',
+        )
+        bool_transaction_process, bool_transaction_payload = self.run_validator(
+            "--source", "source.md", "--transaction", str(bool_transaction)
+        )
+
+        self.assertEqual(2, duplicate_process.returncode)
+        self.assert_code(duplicate_payload, "manifest_invalid")
+        self.assertEqual(2, bool_manifest_process.returncode)
+        self.assert_code(bool_manifest_payload, "manifest_invalid")
+        self.assertEqual(1, bool_transaction_process.returncode)
+        self.assert_code(bool_transaction_payload, "transaction_schema_invalid")
+
+    def test_duplicate_companion_relation_key_is_only_malformed_companion(self):
+        self.write(
+            "asset.bin.keystone.json",
+            '{"schema_version":1,"source":{"path":"asset.bin",'
+            '"surface":"companion_metadata","baseline_digest":"absent"},'
+            '"nodes":[],"relations":[{"source":"key.a",'
+            '"relation":"uses","relation":"invented","target":"key.b",'
+            '"evidence":"declared","provenance":{"surface":'
+            '"companion_metadata","locator":{"path":"asset.bin"},'
+            '"attested_by":null},"lifecycle":"active"}]}',
+        )
+
+        process, payload = self.run_validator("--source", "asset.bin")
+
+        self.assertEqual(1, process.returncode)
+        codes = [item["code"] for item in payload["diagnostics"]]
+        self.assertIn("malformed_companion", codes)
+        self.assertNotIn("invalid_relation_vocabulary", codes)
 
     def test_repository_scope_auto_discovers_sources_and_reports_manifest_coverage(self):
         self.write("a.md", "---\nkey: {id: key.a, kind: source_document}\n---\n")
@@ -372,7 +425,7 @@ key:
   kind: source_document
   produced_from: [key.removed.work]
 ---
-<!-- key: id=key.old kind=capability lifecycle=removed -->
+<!-- key: id=key.old kind=capability lifecycle=archived -->
 ## Old
 """)
         process, payload = self.run_validator("--source", "history.md")
@@ -913,6 +966,62 @@ export function runtime() {}
         self.assertEqual(1, len(matches))
         self.assertEqual(Evidence.DECLARED, matches[0].evidence)
         self.assertFalse(diagnostics)
+
+    def test_reconstruction_rejects_inline_and_companion_metadata_conflict(self):
+        source = self.write(
+            "source.py",
+            "# keystone: id=key.source.inline kind=output_artifact\npass\n",
+        )
+        digest = "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest()
+        companion = {
+            "schema_version": 1,
+            "source": {"path": "source.py", "surface": "companion_metadata",
+                       "baseline_digest": digest},
+            "nodes": [{
+                "id": "key.source.companion", "kind": "output_artifact",
+                "artifact_kind": "code", "locator": {"path": "source.py"},
+                "lifecycle": "active",
+                "provenance": {"produced_from": [], "governed_by": []},
+            }],
+            "relations": [],
+        }
+        self.write("source.py.keystone.json", json.dumps(companion))
+
+        snapshot, diagnostics = reconstruct(self.root, ("source.py",))
+
+        self.assertFalse(snapshot.nodes)
+        self.assertIn(
+            "metadata_surface_conflict", {item.code for item in diagnostics}
+        )
+
+    def test_supported_companion_bytes_are_part_of_captured_generation(self):
+        self.write("source.py", "pass\n")
+        self.write("source.py.keystone.json", "{}")
+
+        captured, absent = capture_sources(self.root, ("source.py",))
+
+        self.assertEqual(
+            {"source.py", "source.py.keystone.json"}, set(captured)
+        )
+        self.assertFalse(absent)
+
+    def test_supported_companion_reconstructs_with_absent_logical_source(self):
+        self.write("generated.py.keystone.json", json.dumps({
+            "schema_version": 1,
+            "source": {
+                "path": "generated.py",
+                "surface": "companion_metadata",
+                "baseline_digest": "absent",
+            },
+            "nodes": [],
+            "relations": [],
+        }))
+
+        process, payload = self.run_validator("--source", "generated.py")
+
+        self.assertEqual(0, process.returncode, payload)
+        self.assertEqual("pass", payload["status"])
+        self.assertEqual({"errors": 0, "warnings": 0}, payload["summary"])
 
     def test_validator_enforces_owner_surface_matrix_and_required_patch_invariant(self):
         node = {"id": "key.new", "kind": "capability", "artifact_kind": "none",

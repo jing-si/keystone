@@ -1,5 +1,6 @@
 import hashlib
 import unittest
+from dataclasses import replace
 
 from graph_runtime.model import (
     ArtifactKind,
@@ -49,12 +50,28 @@ class GraphPlannerTests(unittest.TestCase):
                 Relation(self.test.id, RelationType.VERIFIES, self.capability.id),
             ),
         )
+        baseline = "before\n"
+        baseline_digest = "sha256:" + hashlib.sha256(baseline.encode()).hexdigest()
+        patch_body = "<!-- key: id=key.capability.new -->\n"
         self.delta = Delta(DeltaKind.DOCUMENT, "00_docs/feature.md",
                            (Locator("00_docs/feature.md", heading="Feature"),),
-                           "declare capability", "sha256:" + "1" * 64)
+                           "declare capability", baseline_digest)
         self.patch = PatchSpec(PatchOwner.AUTHOR, PatchSurface.DOCUMENT_METADATA,
-                               "00_docs/feature.md", "sha256:" + "1" * 64,
-                               "<!-- key: id=key.capability.new -->")
+                               "00_docs/feature.md", baseline_digest, patch_body,
+                               patch_format="full_replacement",
+                               patch_body=patch_body,
+                               expected_after_digest="sha256:" + hashlib.sha256(
+                                   patch_body.encode()).hexdigest(),
+                               baseline_content=baseline)
+
+    def _legacy_patch(self, exact_patch="describe patch"):
+        return PatchSpec(
+            self.patch.owner,
+            self.patch.surface,
+            self.patch.target_path,
+            self.patch.baseline_digest,
+            exact_patch,
+        )
 
     def test_plan_emits_exact_add_mutation_and_stable_patch_id(self):
         new_node = Node("key.capability.new", NodeKind.CAPABILITY,
@@ -129,7 +146,8 @@ class GraphPlannerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "owning surface"):
             plan_graph_sync(self.snapshot, (self.delta,), "scope:s02",
                             requested_nodes_after=(new_node,), patch_specs=(unrelated_patch,),
-                            evidence=Evidence.OBSERVED)
+                            evidence=Evidence.OBSERVED,
+                            transaction_schema_version=1)
 
     def test_direct_item_to_artifact_requires_named_bounded_case_and_reason(self):
         direct = Relation(self.item.id, RelationType.DOCUMENTS, self.code.id)
@@ -231,7 +249,7 @@ class GraphPlannerTests(unittest.TestCase):
                           self.patch.target_path, "sha256:" + "2" * 64, self.patch.exact_patch)
         with self.assertRaisesRegex(ValueError, "baseline"):
             plan_graph_sync(self.snapshot, (self.delta,), "scope:s02",
-                            patch_specs=(wrong,))
+                            patch_specs=(wrong,), transaction_schema_version=1)
 
     def test_executable_patch_selects_schema_v2_and_preserves_replay_fields(self):
         baseline = "before\n"
@@ -284,12 +302,19 @@ class GraphPlannerTests(unittest.TestCase):
             )
 
     def test_delta_and_patch_input_order_does_not_change_transaction(self):
+        code_baseline = "old code\n"
+        code_body = "new code\n"
         artifact_delta = Delta(DeltaKind.ARTIFACT, "src/feature.py",
                                (Locator("src/feature.py", symbol="Feature"),),
-                               "anchor update", "sha256:" + "2" * 64)
+                               "anchor update", "sha256:" + hashlib.sha256(
+                                   code_baseline.encode()).hexdigest())
         code_patch = PatchSpec(PatchOwner.MAIN, PatchSurface.CODE_ANCHOR,
                                "src/feature.py", artifact_delta.baseline_digest,
-                               "// keystone: id=key.artifact.feature")
+                               code_body, patch_format="full_replacement",
+                               patch_body=code_body,
+                               expected_after_digest="sha256:" + hashlib.sha256(
+                                   code_body.encode()).hexdigest(),
+                               baseline_content=code_baseline)
         first = plan_graph_sync(self.snapshot, (self.delta, artifact_delta), "scope:s02",
                                 patch_specs=(self.patch, code_patch))
         second = plan_graph_sync(self.snapshot, (artifact_delta, self.delta), "scope:s02",
@@ -315,9 +340,129 @@ class GraphPlannerTests(unittest.TestCase):
                                                          relation.target),))
 
     def test_duplicate_patch_specs_are_rejected(self):
+        legacy = self._legacy_patch()
         with self.assertRaisesRegex(ValueError, "duplicate patch"):
             plan_graph_sync(self.snapshot, (self.delta,), "scope:s02",
-                            patch_specs=(self.patch, self.patch))
+                            patch_specs=(legacy, legacy),
+                            transaction_schema_version=1)
+
+    def test_duplicate_physical_patch_target_is_rejected(self):
+        legacy = self._legacy_patch()
+        duplicate = self._legacy_patch("different patch")
+        with self.assertRaisesRegex(ValueError, "physical target"):
+            plan_graph_sync(
+                self.snapshot,
+                (self.delta,),
+                "scope:s02",
+                patch_specs=(legacy, duplicate),
+                transaction_schema_version=1,
+            )
+
+    def test_noncanonical_physical_patch_target_alias_is_rejected(self):
+        legacy = self._legacy_patch()
+        alias = replace(
+            legacy,
+            target_path="00_docs/../00_docs/feature.md",
+            exact_patch="aliased patch",
+        )
+
+        with self.assertRaisesRegex(ValueError, "canonical repository-relative"):
+            plan_graph_sync(
+                self.snapshot,
+                (self.delta,),
+                "scope:s02",
+                patch_specs=(legacy, alias),
+                transaction_schema_version=1,
+            )
+
+    def test_transaction_schema_defaults_v2_and_v1_is_explicit_legacy(self):
+        body = "after\n"
+        executable = PatchSpec(
+            PatchOwner.AUTHOR,
+            PatchSurface.DOCUMENT_METADATA,
+            self.patch.target_path,
+            "absent",
+            body,
+            patch_format="full_replacement",
+            patch_body=body,
+            expected_after_digest="sha256:" + hashlib.sha256(body.encode()).hexdigest(),
+            baseline_content=None,
+        )
+
+        current = plan_graph_sync(
+            self.snapshot, (), "scope:s02", patch_specs=(executable,)
+        )
+        legacy = plan_graph_sync(
+            self.snapshot,
+            (self.delta,),
+            "scope:s02",
+            patch_specs=(self._legacy_patch(),),
+            transaction_schema_version=1,
+        )
+
+        self.assertEqual(2, current.schema_version)
+        self.assertEqual(1, legacy.schema_version)
+        self.assertNotEqual(
+            plan_graph_sync(GraphSnapshot(), (), "scope:s02").transaction_id,
+            plan_graph_sync(
+                GraphSnapshot(), (), "scope:s02", transaction_schema_version=1
+            ).transaction_id,
+        )
+
+    def test_transaction_schema_rejects_non_executable_v2_and_v2_fields_in_v1(self):
+        with self.assertRaisesRegex(ValueError, "schema-v2.*executable"):
+            plan_graph_sync(
+                self.snapshot,
+                (self.delta,),
+                "scope:s02",
+                patch_specs=(self._legacy_patch(),),
+            )
+
+        body = "after\n"
+        executable = PatchSpec(
+            PatchOwner.AUTHOR,
+            PatchSurface.DOCUMENT_METADATA,
+            self.patch.target_path,
+            "absent",
+            body,
+            patch_format="full_replacement",
+            patch_body=body,
+            expected_after_digest="sha256:" + hashlib.sha256(body.encode()).hexdigest(),
+            baseline_content=None,
+        )
+        with self.assertRaisesRegex(ValueError, "schema-v1.*v2"):
+            plan_graph_sync(
+                self.snapshot,
+                (),
+                "scope:s02",
+                patch_specs=(executable,),
+                transaction_schema_version=1,
+            )
+        with self.assertRaisesRegex(ValueError, "schema-v2.*executable"):
+            legacy = PatchSpec(
+                self.patch.owner,
+                self.patch.surface,
+                "00_docs/legacy.md",
+                "absent",
+                "description",
+            )
+            plan_graph_sync(
+                self.snapshot,
+                (),
+                "scope:s02",
+                patch_specs=(executable, legacy),
+            )
+
+    def test_transaction_schema_version_requires_an_exact_integer(self):
+        for invalid_version in (True, 1.0):
+            with self.subTest(value=invalid_version):
+                with self.assertRaisesRegex(ValueError, "transaction_schema_version"):
+                    plan_graph_sync(
+                        GraphSnapshot(),
+                        (),
+                        "scope:schema-version",
+                        transaction_schema_version=invalid_version,
+                    )
 
     def test_direct_relation_case_must_match_bounded_artifact_kind(self):
         direct_code = Relation(self.item.id, RelationType.DOCUMENTS, self.code.id)
@@ -346,7 +491,13 @@ class GraphPlannerTests(unittest.TestCase):
         )
         for patch in forbidden:
             with self.subTest(patch=patch), self.assertRaisesRegex(ValueError, "owner.*surface"):
-                plan_graph_sync(self.snapshot, (self.delta,), "scope:s02", patch_specs=(patch,))
+                plan_graph_sync(
+                    self.snapshot,
+                    (self.delta,),
+                    "scope:s02",
+                    patch_specs=(patch,),
+                    transaction_schema_version=1,
+                )
 
     def test_document_companion_is_author_owned_and_repository_companion_is_main_owned(self):
         document = PatchSpec(PatchOwner.AUTHOR, PatchSurface.COMPANION_METADATA,
@@ -354,14 +505,25 @@ class GraphPlannerTests(unittest.TestCase):
         repository = PatchSpec(PatchOwner.MAIN, PatchSurface.COMPANION_METADATA,
                                "assets/feature.bin.keystone.json", "sha256:" + "3" * 64, "x")
         transaction = plan_graph_sync(self.snapshot, (self.delta,), "scope:s02",
-                                      patch_specs=(document, repository))
+                                      patch_specs=(document, repository),
+                                      transaction_schema_version=1)
         self.assertEqual(2, len(transaction.surface_patches))
 
     def test_graph_change_requires_at_least_one_required_patch(self):
         new_node = Node("key.capability.new", NodeKind.CAPABILITY,
                         locator=Locator("00_docs/feature.md"))
-        optional = PatchSpec(PatchOwner.AUTHOR, PatchSurface.DOCUMENT_METADATA,
-                             self.patch.target_path, self.patch.baseline_digest, "x", required=False)
+        optional = PatchSpec(
+            self.patch.owner,
+            self.patch.surface,
+            self.patch.target_path,
+            self.patch.baseline_digest,
+            self.patch.exact_patch,
+            required=False,
+            patch_format=self.patch.patch_format,
+            patch_body=self.patch.patch_body,
+            expected_after_digest=self.patch.expected_after_digest,
+            baseline_content=self.patch.baseline_content,
+        )
         with self.assertRaisesRegex(ValueError, "required patch"):
             plan_graph_sync(self.snapshot, (self.delta,), "scope:s02",
                             requested_nodes_after=(new_node,), patch_specs=(optional,))

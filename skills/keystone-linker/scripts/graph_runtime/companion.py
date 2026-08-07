@@ -5,6 +5,11 @@ import json
 import re
 from typing import Any, List, Optional
 
+from .lifecycle_policy import (
+    node_lifecycle_admitted,
+    node_lifecycle_domain,
+    relation_lifecycle_admitted,
+)
 from .metadata_support import metadata_strings, sorted_snapshot
 from .model import (
     ArtifactKind,
@@ -21,6 +26,26 @@ from .model import (
     SCHEMA_VERSION,
 )
 from .yaml_subset import MetadataError
+
+
+def load_authoritative_json(text: str) -> Any:
+    """Decode external JSON while rejecting duplicate keys at every depth."""
+    def object_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate JSON key: %s" % key)
+            result[key] = value
+        return result
+
+    def reject_constant(value):
+        raise ValueError("non-canonical JSON constant: %s" % value)
+
+    return json.loads(
+        text,
+        object_pairs_hook=object_pairs,
+        parse_constant=reject_constant,
+    )
 
 
 def parse_companion(
@@ -41,7 +66,7 @@ def parse_companion(
         )
         return ParseResult(diagnostics=(diagnostic,))
     try:
-        value = json.loads(text)
+        value = load_authoritative_json(text)
         _validate_root(value)
         source = value["source"]
         source_path = source["path"]
@@ -70,8 +95,28 @@ def parse_companion(
             _parse_relation(raw, expected_source_path)
             for raw in value["relations"]
         ]
+        diagnostics = []
+        for node in nodes:
+            if not node_lifecycle_admitted(node.kind, node.lifecycle):
+                diagnostics.append(Diagnostic(
+                    "node_lifecycle_domain_invalid",
+                    "%s node cannot use %s lifecycle" % (
+                        node_lifecycle_domain(node.kind), node.lifecycle.value,
+                    ),
+                    path=companion_path,
+                    locator=node.locator,
+                ))
+        for relation in relations:
+            if not relation_lifecycle_admitted(relation.lifecycle):
+                diagnostics.append(Diagnostic(
+                    "relation_lifecycle_domain_invalid",
+                    "relation cannot use %s lifecycle" % relation.lifecycle.value,
+                    path=companion_path,
+                    locator=relation.provenance.locator,
+                ))
         return ParseResult(
             sorted_snapshot(nodes, relations),
+            diagnostics=tuple(diagnostics),
             baseline_digest=str(baseline),
         )
     except (json.JSONDecodeError, MetadataError, KeyError, TypeError, ValueError) as error:

@@ -10,13 +10,14 @@ from pathlib import Path
 from graph_runtime.validator import (
     diagnostic, envelope, reconstruct, validate_snapshot, validate_transaction,
 )
-from graph_runtime.adapters import adapter_for_path
 from graph_runtime.model import Severity, patch_source_identity
+from graph_runtime.companion import load_authoritative_json
 from graph_runtime.scanner import ReferenceScanner, ScanScope
+from graph_runtime.source_unit import COMPANION_SUFFIX, resolve_source_unit
 from graph_runtime.validation_support import safe_path
 
 
-_COMPANION_SUFFIX = ".keystone.json"
+_COMPANION_SUFFIX = COMPANION_SUFFIX
 _INCOMPLETE_DISCOVERY_CODES = {
     "scan_truncated", "source_too_large", "source_unreadable",
 }
@@ -41,19 +42,17 @@ def capture_sources(root, sources):
     absent = set()
     for relative in sorted(set(sources)):
         source_path = safe_path(root, relative)
-        if adapter_for_path(relative) is not None:
-            if not source_path.is_file():
-                raise FileNotFoundError(relative)
-            captured[relative] = source_path.read_bytes()
-            continue
         companion_relative = relative + _COMPANION_SUFFIX
         companion_path = safe_path(root, companion_relative)
-        if not companion_path.is_file():
+        raw_source = source_path.read_bytes() if source_path.is_file() else None
+        raw_companion = (
+            companion_path.read_bytes() if companion_path.is_file() else None
+        )
+        unit = resolve_source_unit(relative, raw_source, raw_companion)
+        if unit.surface is None and not unit.diagnostics:
             raise FileNotFoundError(relative)
-        captured[companion_relative] = companion_path.read_bytes()
-        if source_path.is_file():
-            captured[relative] = source_path.read_bytes()
-        else:
+        captured.update(unit.generation_items)
+        if raw_source is None:
             absent.add(relative)
     return captured, absent
 
@@ -140,8 +139,8 @@ def parse_args():
 
 def load_json(path, code):
     try:
-        return json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        return load_authoritative_json(Path(path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError) as error:
         raise RuntimeError((code, str(error))) from error
 
 
@@ -163,7 +162,10 @@ def main():
     try:
         if args.manifest:
             manifest = load_json(args.manifest, "manifest_invalid")
-            if not isinstance(manifest, dict) or manifest.get("schema_version") != 1 or not isinstance(manifest.get("sources"), list):
+            if (not isinstance(manifest, dict)
+                    or type(manifest.get("schema_version")) is not int
+                    or manifest.get("schema_version") != 1
+                    or not isinstance(manifest.get("sources"), list)):
                 raise RuntimeError(("manifest_invalid", "manifest requires schema_version 1 and sources array"))
             allowed_manifest = {"schema_version", "sources", "transaction", "scope", "coverage"}
             unknown_manifest = sorted(set(manifest) - allowed_manifest)
@@ -186,6 +188,13 @@ def main():
                 raise RuntimeError(("manifest_coverage_invalid", "manifest coverage must be full or subset"))
         if args.transaction:
             transaction = load_json(args.transaction, "transaction_invalid")
+        if (isinstance(transaction, dict)
+                and type(transaction.get("schema_version")) is not int
+                and transaction.get("schema_version") in (1, 2)):
+            findings.append(diagnostic(
+                "transaction_schema_invalid",
+                "transaction schema_version must be the integer 1 or 2",
+            ))
         duplicates = sorted({source for source in sources if sources.count(source) > 1})
         for source in duplicates:
             findings.append(diagnostic("duplicate_manifest_source",

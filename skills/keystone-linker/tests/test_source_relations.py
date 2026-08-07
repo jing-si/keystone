@@ -14,6 +14,45 @@ from graph_runtime.source_relations import build_source_relations
 
 
 class SourceRelationsTest(unittest.TestCase):
+    def test_node_lifecycle_maps_to_relation_domain_for_all_source_paths(self):
+        expected = {
+            Lifecycle.DRAFT: Lifecycle.ACTIVE,
+            Lifecycle.ACTIVE: Lifecycle.ACTIVE,
+            Lifecycle.SUPERSEDED: Lifecycle.ARCHIVED,
+            Lifecycle.ARCHIVED: Lifecycle.ARCHIVED,
+            Lifecycle.DEPRECATED: Lifecycle.DEPRECATED,
+            Lifecycle.REMOVED: Lifecycle.REMOVED,
+        }
+        for node_lifecycle, relation_lifecycle in expected.items():
+            with self.subTest(node_lifecycle=node_lifecycle):
+                locator = Locator("src/example.py", symbol="Example")
+                node = Node(
+                    "key.code.example",
+                    NodeKind.OUTPUT_ARTIFACT,
+                    ArtifactKind.CODE,
+                    locator,
+                    node_lifecycle,
+                    Provenance(
+                        produced_from=("key.claim.example",),
+                        surface="code_anchor",
+                        locator=locator,
+                    ),
+                )
+
+                result = build_source_relations(
+                    {"uses": ["key.code.dependency"]},
+                    node,
+                    None,
+                    "code_anchor",
+                    locator.path,
+                    locator,
+                )
+
+                self.assertEqual(
+                    {relation_lifecycle},
+                    {relation.lifecycle for relation in result.relations},
+                )
+
     def test_declared_dependency_builds_gate_after_conflict_diagnostic(self):
         locator = Locator("00_docs/work.md")
         node = Node(

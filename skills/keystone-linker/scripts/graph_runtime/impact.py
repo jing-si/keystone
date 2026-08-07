@@ -191,11 +191,16 @@ def changed_seed_candidates(
     """Traverse typed direction rules and recursively retain required candidates."""
     seeds = frozenset(seed_ids)
     by_id = {node.id: node for node in snapshot.nodes}
+    admitted_seeds = frozenset(
+        seed_id for seed_id in seeds
+        if seed_id in by_id
+        and by_id[seed_id].lifecycle not in EXCLUDED_IMPACT_LIFECYCLES
+    )
     relations = tuple(sorted(
         snapshot.relations,
         key=lambda item: (item.source, item.relation.value, item.target),
     ))
-    queue = [(seed_id, (seed_id,)) for seed_id in sorted(seeds)]
+    queue = [(seed_id, (seed_id,)) for seed_id in sorted(admitted_seeds)]
     expanded = set()
     found = {}
     while queue:
@@ -217,6 +222,8 @@ def changed_seed_candidates(
             grade = _admitted_grade(relation, by_id[neighbor], grade)
             if grade is None:
                 continue
+            if by_id[current].lifecycle == Lifecycle.DEPRECATED:
+                grade = _cap_grade(grade, ImpactGrade.INFORMATIONAL)
             candidate_path = path
             prior = found.get(neighbor)
             if (prior is None

@@ -39,6 +39,7 @@ done
 AUTHOR_VALIDATOR="$REPO_ROOT/skills/keystone-author/scripts/validate_finalization.py"
 AUTHOR_VALIDATOR_RUNNER="$REPO_ROOT/skills/keystone-author/scripts/run_finalization_validation.py"
 AUTHOR_VALIDATOR_HOOK="$REPO_ROOT/skills/keystone-author/scripts/check_finalization_hook.sh"
+AUTHOR_FINALIZATION_GLOBAL="$REPO_ROOT/skills/keystone-author/scripts/finalization_global.py"
 if [ ! -f "$AUTHOR_VALIDATOR" ]; then
   echo "Missing Author validator: $AUTHOR_VALIDATOR" >&2
   exit 1
@@ -51,17 +52,23 @@ if [ ! -f "$AUTHOR_VALIDATOR_HOOK" ]; then
   echo "Missing Author validator hook wrapper: $AUTHOR_VALIDATOR_HOOK" >&2
   exit 1
 fi
+if [ ! -f "$AUTHOR_FINALIZATION_GLOBAL" ]; then
+  echo "Missing Author global-state validator: $AUTHOR_FINALIZATION_GLOBAL" >&2
+  exit 1
+fi
 
 LINKER_GRAPH_VALIDATOR="$REPO_ROOT/skills/keystone-linker/scripts/validate_graph.py"
 LINKER_GRAPH_RUNNER="$REPO_ROOT/skills/keystone-linker/scripts/run_graph_validation.py"
 LINKER_GRAPH_HOOK="$REPO_ROOT/skills/keystone-linker/scripts/check_graph_hook.sh"
 LINKER_GRAPH_RUNTIME="$REPO_ROOT/skills/keystone-linker/scripts/graph_runtime/validator.py"
 LINKER_REFERENCE_RUNTIME="$REPO_ROOT/skills/keystone-linker/scripts/graph_runtime/readiness.py"
+LINKER_SOURCE_UNIT="$REPO_ROOT/skills/keystone-linker/scripts/graph_runtime/source_unit.py"
 LINKER_GRAPH_REFERENCE="$REPO_ROOT/skills/keystone-linker/references/graph-runtime.md"
 LINKER_REFERENCE_CONTRACT="$REPO_ROOT/skills/keystone-linker/references/reference-index-runtime.md"
 LINKER_GRAPH_TEST="$REPO_ROOT/skills/keystone-linker/tests/test_validate_graph.py"
 for source in "$LINKER_GRAPH_VALIDATOR" "$LINKER_GRAPH_RUNNER" "$LINKER_GRAPH_HOOK" \
-  "$LINKER_GRAPH_RUNTIME" "$LINKER_REFERENCE_RUNTIME" "$LINKER_GRAPH_REFERENCE" \
+  "$LINKER_GRAPH_RUNTIME" "$LINKER_REFERENCE_RUNTIME" "$LINKER_SOURCE_UNIT" \
+  "$LINKER_GRAPH_REFERENCE" \
   "$LINKER_REFERENCE_CONTRACT" "$LINKER_GRAPH_TEST"; do
   if [ ! -f "$source" ]; then
     echo "Missing Linker graph validation package file: $source" >&2
@@ -71,10 +78,14 @@ done
 
 COORDINATOR_SKILL="$REPO_ROOT/skills/keystone-coordinator/SKILL.md"
 COORDINATOR_VALIDATOR="$REPO_ROOT/skills/keystone-coordinator/scripts/validate_closure.py"
+COORDINATOR_ACTUAL_STATE="$REPO_ROOT/skills/keystone-coordinator/scripts/closure_actual_state.py"
+COORDINATOR_V2="$REPO_ROOT/skills/keystone-coordinator/scripts/closure_v2.py"
 COORDINATOR_REFERENCE="$REPO_ROOT/skills/keystone-coordinator/references/closure-validator.md"
 COORDINATOR_TEST="$REPO_ROOT/skills/keystone-coordinator/tests/test_validate_closure.py"
+COORDINATOR_V2_TEST="$REPO_ROOT/skills/keystone-coordinator/tests/test_validate_closure_v2.py"
 for source in "$COORDINATOR_SKILL" "$COORDINATOR_VALIDATOR" "$COORDINATOR_REFERENCE" \
-  "$COORDINATOR_TEST"; do
+  "$COORDINATOR_ACTUAL_STATE" "$COORDINATOR_V2" "$COORDINATOR_TEST" \
+  "$COORDINATOR_V2_TEST"; do
   if [ ! -f "$source" ]; then
     echo "Missing Coordinator closure package file: $source" >&2
     exit 1
@@ -102,6 +113,7 @@ done
 INSTALLED_AUTHOR_VALIDATOR="$STAGED_SKILLS/keystone-author/scripts/validate_finalization.py"
 INSTALLED_AUTHOR_VALIDATOR_RUNNER="$STAGED_SKILLS/keystone-author/scripts/run_finalization_validation.py"
 INSTALLED_AUTHOR_VALIDATOR_HOOK="$STAGED_SKILLS/keystone-author/scripts/check_finalization_hook.sh"
+INSTALLED_AUTHOR_FINALIZATION_GLOBAL="$STAGED_SKILLS/keystone-author/scripts/finalization_global.py"
 if [ ! -f "$INSTALLED_AUTHOR_VALIDATOR" ]; then
   echo "Install failed for Author validator: $INSTALLED_AUTHOR_VALIDATOR" >&2
   exit 1
@@ -114,6 +126,10 @@ if [ ! -f "$INSTALLED_AUTHOR_VALIDATOR_HOOK" ]; then
   echo "Install failed for Author validator hook wrapper: $INSTALLED_AUTHOR_VALIDATOR_HOOK" >&2
   exit 1
 fi
+if [ ! -f "$INSTALLED_AUTHOR_FINALIZATION_GLOBAL" ]; then
+  echo "Install failed for Author global-state validator: $INSTALLED_AUTHOR_FINALIZATION_GLOBAL" >&2
+  exit 1
+fi
 python3 "$INSTALLED_AUTHOR_VALIDATOR" --help >/dev/null
 python3 "$INSTALLED_AUTHOR_VALIDATOR_RUNNER" --help >/dev/null
 bash -n "$INSTALLED_AUTHOR_VALIDATOR_HOOK"
@@ -123,12 +139,14 @@ INSTALLED_LINKER_GRAPH_RUNNER="$STAGED_SKILLS/keystone-linker/scripts/run_graph_
 INSTALLED_LINKER_GRAPH_HOOK="$STAGED_SKILLS/keystone-linker/scripts/check_graph_hook.sh"
 INSTALLED_LINKER_GRAPH_RUNTIME="$STAGED_SKILLS/keystone-linker/scripts/graph_runtime/validator.py"
 INSTALLED_LINKER_REFERENCE_RUNTIME="$STAGED_SKILLS/keystone-linker/scripts/graph_runtime/readiness.py"
+INSTALLED_LINKER_SOURCE_UNIT="$STAGED_SKILLS/keystone-linker/scripts/graph_runtime/source_unit.py"
 INSTALLED_LINKER_GRAPH_REFERENCE="$STAGED_SKILLS/keystone-linker/references/graph-runtime.md"
 INSTALLED_LINKER_REFERENCE_CONTRACT="$STAGED_SKILLS/keystone-linker/references/reference-index-runtime.md"
 INSTALLED_LINKER_GRAPH_TEST="$STAGED_SKILLS/keystone-linker/tests/test_validate_graph.py"
 for installed in "$INSTALLED_LINKER_GRAPH_VALIDATOR" "$INSTALLED_LINKER_GRAPH_RUNNER" \
   "$INSTALLED_LINKER_GRAPH_HOOK" "$INSTALLED_LINKER_GRAPH_RUNTIME" \
-  "$INSTALLED_LINKER_REFERENCE_RUNTIME" "$INSTALLED_LINKER_GRAPH_REFERENCE" \
+  "$INSTALLED_LINKER_REFERENCE_RUNTIME" "$INSTALLED_LINKER_SOURCE_UNIT" \
+  "$INSTALLED_LINKER_GRAPH_REFERENCE" \
   "$INSTALLED_LINKER_REFERENCE_CONTRACT" "$INSTALLED_LINKER_GRAPH_TEST"; do
   if [ ! -f "$installed" ]; then
     echo "Install failed for Linker graph validation package file: $installed" >&2
@@ -141,10 +159,15 @@ bash -n "$INSTALLED_LINKER_GRAPH_HOOK"
 
 INSTALLED_COORDINATOR_SKILL="$STAGED_SKILLS/keystone-coordinator/SKILL.md"
 INSTALLED_COORDINATOR_VALIDATOR="$STAGED_SKILLS/keystone-coordinator/scripts/validate_closure.py"
+INSTALLED_COORDINATOR_ACTUAL_STATE="$STAGED_SKILLS/keystone-coordinator/scripts/closure_actual_state.py"
+INSTALLED_COORDINATOR_V2="$STAGED_SKILLS/keystone-coordinator/scripts/closure_v2.py"
 INSTALLED_COORDINATOR_REFERENCE="$STAGED_SKILLS/keystone-coordinator/references/closure-validator.md"
 INSTALLED_COORDINATOR_TEST="$STAGED_SKILLS/keystone-coordinator/tests/test_validate_closure.py"
+INSTALLED_COORDINATOR_V2_TEST="$STAGED_SKILLS/keystone-coordinator/tests/test_validate_closure_v2.py"
 for installed in "$INSTALLED_COORDINATOR_SKILL" "$INSTALLED_COORDINATOR_VALIDATOR" \
-  "$INSTALLED_COORDINATOR_REFERENCE" "$INSTALLED_COORDINATOR_TEST"; do
+  "$INSTALLED_COORDINATOR_ACTUAL_STATE" "$INSTALLED_COORDINATOR_V2" \
+  "$INSTALLED_COORDINATOR_REFERENCE" "$INSTALLED_COORDINATOR_TEST" \
+  "$INSTALLED_COORDINATOR_V2_TEST"; do
   if [ ! -f "$installed" ]; then
     echo "Install failed for Coordinator closure package file: $installed" >&2
     exit 1
@@ -237,19 +260,27 @@ done
 FINAL_AUTHOR_VALIDATOR="$DEST_ROOT/keystone-author/scripts/validate_finalization.py"
 FINAL_AUTHOR_RUNNER="$DEST_ROOT/keystone-author/scripts/run_finalization_validation.py"
 FINAL_AUTHOR_HOOK="$DEST_ROOT/keystone-author/scripts/check_finalization_hook.sh"
+FINAL_AUTHOR_FINALIZATION_GLOBAL="$DEST_ROOT/keystone-author/scripts/finalization_global.py"
 FINAL_LINKER_VALIDATOR="$DEST_ROOT/keystone-linker/scripts/validate_graph.py"
 FINAL_LINKER_RUNNER="$DEST_ROOT/keystone-linker/scripts/run_graph_validation.py"
 FINAL_LINKER_HOOK="$DEST_ROOT/keystone-linker/scripts/check_graph_hook.sh"
 FINAL_REFERENCE_RUNTIME="$DEST_ROOT/keystone-linker/scripts/graph_runtime/readiness.py"
+FINAL_LINKER_SOURCE_UNIT="$DEST_ROOT/keystone-linker/scripts/graph_runtime/source_unit.py"
 FINAL_REFERENCE_CONTRACT="$DEST_ROOT/keystone-linker/references/reference-index-runtime.md"
 FINAL_COORDINATOR_SKILL="$DEST_ROOT/keystone-coordinator/SKILL.md"
 FINAL_COORDINATOR_VALIDATOR="$DEST_ROOT/keystone-coordinator/scripts/validate_closure.py"
+FINAL_COORDINATOR_ACTUAL_STATE="$DEST_ROOT/keystone-coordinator/scripts/closure_actual_state.py"
+FINAL_COORDINATOR_V2="$DEST_ROOT/keystone-coordinator/scripts/closure_v2.py"
 FINAL_COORDINATOR_REFERENCE="$DEST_ROOT/keystone-coordinator/references/closure-validator.md"
 FINAL_COORDINATOR_TEST="$DEST_ROOT/keystone-coordinator/tests/test_validate_closure.py"
+FINAL_COORDINATOR_V2_TEST="$DEST_ROOT/keystone-coordinator/tests/test_validate_closure_v2.py"
 for installed in "$FINAL_AUTHOR_VALIDATOR" "$FINAL_AUTHOR_RUNNER" "$FINAL_AUTHOR_HOOK" \
+  "$FINAL_AUTHOR_FINALIZATION_GLOBAL" \
   "$FINAL_LINKER_VALIDATOR" "$FINAL_LINKER_RUNNER" "$FINAL_LINKER_HOOK" \
-  "$FINAL_REFERENCE_RUNTIME" "$FINAL_REFERENCE_CONTRACT" "$FINAL_COORDINATOR_SKILL" \
-  "$FINAL_COORDINATOR_VALIDATOR" "$FINAL_COORDINATOR_REFERENCE" "$FINAL_COORDINATOR_TEST" \
+  "$FINAL_REFERENCE_RUNTIME" "$FINAL_LINKER_SOURCE_UNIT" "$FINAL_REFERENCE_CONTRACT" \
+  "$FINAL_COORDINATOR_SKILL" "$FINAL_COORDINATOR_VALIDATOR" \
+  "$FINAL_COORDINATOR_ACTUAL_STATE" "$FINAL_COORDINATOR_V2" \
+  "$FINAL_COORDINATOR_REFERENCE" "$FINAL_COORDINATOR_TEST" "$FINAL_COORDINATOR_V2_TEST" \
   "$DEST_ROOT/.keystone-install.json"; do
   if [ ! -f "$installed" ]; then
     echo "Final installed-package verification failed: $installed" >&2

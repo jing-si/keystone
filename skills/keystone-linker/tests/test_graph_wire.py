@@ -1,5 +1,6 @@
 import hashlib
 import unittest
+from dataclasses import replace
 
 from graph_runtime.model import (
     ApplicationResult,
@@ -67,6 +68,33 @@ class GraphWireTest(unittest.TestCase):
         self.assertEqual([], wire["mechanical_validation"]["diagnostics"])
         self.assertEqual((), validate_transaction(
             wire, source_snapshot=self.verified.reconstruction))
+
+    def test_transaction_schema_version_rejects_boolean_and_float_values(self):
+        baseline = GraphSnapshot()
+        valid_wire = transaction_wire(self.verified, baseline_snapshot=baseline)
+
+        for invalid_version in (True, 1.0):
+            with self.subTest(boundary="validation", value=invalid_version):
+                invalid_wire = dict(valid_wire, schema_version=invalid_version)
+                self.assertIn(
+                    "transaction_schema_invalid",
+                    {
+                        item.code for item in validate_transaction(
+                            invalid_wire,
+                            source_snapshot=self.verified.reconstruction,
+                        )
+                    },
+                )
+            with self.subTest(boundary="serialization", value=invalid_version):
+                invalid_transaction = replace(
+                    self.verified,
+                    schema_version=invalid_version,
+                )
+                with self.assertRaisesRegex(ValueError, "schema_version"):
+                    transaction_wire(
+                        invalid_transaction,
+                        baseline_snapshot=baseline,
+                    )
 
     # keystone: id=key.test.linker.graph-transaction-wire-contract kind=output_artifact artifact_kind=test verifies=key.code.linker.graph-transaction-validator locator.test_name=test_schema_v2_transaction_round_trips_canonical_lifecycle_wire
     def test_schema_v2_transaction_round_trips_canonical_lifecycle_wire(self):
@@ -136,6 +164,29 @@ class GraphWireTest(unittest.TestCase):
         conflicted_wire = transaction_wire(conflicted)
         self.assertEqual("needs_revision", conflicted_wire["conflict_reason"])
         self.assertEqual((), validate_transaction(conflicted_wire))
+
+    def test_v1_wire_cannot_hide_v2_patch_fields_or_path_aliases(self):
+        mixed = replace(
+            self.patch,
+            patch_format="full_replacement",
+            patch_body="after\n",
+            expected_after_digest="sha256:" + "a" * 64,
+            baseline_content="before\n",
+        )
+        with self.assertRaisesRegex(ValueError, "schema-v1 patch"):
+            transaction_wire(GraphTransaction(
+                "tx-mixed", "R010/S01", surface_patches=(mixed,)
+            ))
+
+        alias = replace(
+            self.patch,
+            patch_id="patch-alias",
+            target_path="src/../src/wire.py",
+        )
+        with self.assertRaisesRegex(ValueError, "canonical repository-relative"):
+            transaction_wire(GraphTransaction(
+                "tx-alias", "R010/S01", surface_patches=(self.patch, alias)
+            ))
 
     def test_transaction_rejects_unknown_root_fields(self):
         payload = transaction_wire(GraphTransaction("tx-unknown", "key.work.scope"))

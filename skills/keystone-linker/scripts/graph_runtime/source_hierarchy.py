@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import Any, Mapping, Optional, Tuple
 
+from .lifecycle_policy import node_lifecycle_admitted, node_lifecycle_domain
 from .metadata_support import metadata_strings
 from .model import (
     ApprovalState,
@@ -43,6 +44,15 @@ def build_source_node(
     effective_lifecycle = declared_lifecycle or (
         parent.lifecycle if parent is not None else Lifecycle.ACTIVE
     )
+    if not node_lifecycle_admitted(kind, effective_lifecycle):
+        diagnostics.append(Diagnostic(
+            "node_lifecycle_domain_invalid",
+            "%s node cannot use %s lifecycle" % (
+                node_lifecycle_domain(kind), effective_lifecycle.value,
+            ),
+            path=path,
+            locator=locator,
+        ))
 
     declared_approval = _approval(data.get("_approval_state"))
     effective_approval = (

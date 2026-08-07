@@ -2,6 +2,7 @@
 """Validate Coordinator context and Keystone closure evidence."""
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -27,10 +28,44 @@ PRE_ACCEPTANCE_DECISIONS = {"accept_candidate", "repair", "review", "verify", "e
 POST_ACCEPTANCE_DECISIONS = {"closure_complete", "repair", "escalate", "block"}
 DEFAULT_WORKER_SKILL = "keystone-default-bounded-worker"
 DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+V2_EXECUTION_ERROR_CODES = {
+    "v2_runtime_context_missing",
+    "v2_runtime_context_invalid",
+    "v2_validation_execution_failed",
+    "repository_root_unavailable",
+    "repository_snapshot_failed",
+    "repository_symlink_scan_failed",
+    "evidence_root_unavailable",
+    "evidence_unreadable",
+    "linker_runner_unavailable",
+    "author_runner_unavailable",
+    "runner_timeout",
+    "runner_execution_failed",
+    "runner_output_malformed",
+    "runner_reported_error",
+    "v2_runner_override_forbidden",
+}
 
 
 Diagnostic = Dict[str, str]
 Payload = Mapping[str, Any]
+
+
+class DuplicateJsonKey(ValueError):
+    pass
+
+
+def _reject_duplicate_keys(pairs: Sequence[Any]) -> Dict[str, Any]:
+    value: Dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise DuplicateJsonKey("duplicate JSON key: %s" % key)
+        value[key] = item
+    return value
+
+
+def _loads_json_strict(value: str) -> Any:
+    return json.loads(value, object_pairs_hook=_reject_duplicate_keys)
 
 
 def _diagnostic(code: str, message: str, path: str) -> Diagnostic:
@@ -60,7 +95,8 @@ def _is_list(value: Any) -> bool:
 
 
 def _validate_schema(manifest: Payload, diagnostics: List[Diagnostic]) -> None:
-    if manifest.get("schema_version") != SCHEMA_VERSION:
+    schema_version = manifest.get("schema_version")
+    if type(schema_version) is not int or schema_version != SCHEMA_VERSION:
         diagnostics.append(
             _diagnostic(
                 "schema_version_invalid",
@@ -680,12 +716,94 @@ def _validate_review(
             )
 
 
-def validate_manifest(manifest: Any) -> Dict[str, Any]:
+def validate_manifest(
+    manifest: Any,
+    *,
+    root: Optional[Path] = None,
+    assignment: Optional[Mapping[str, Any]] = None,
+    assignment_digest: Optional[str] = None,
+    evidence_root: Optional[Path] = None,
+    linker_runner: Optional[Path] = None,
+    author_runner: Optional[Path] = None,
+    timeout_seconds: float = 30.0,
+) -> Dict[str, Any]:
     diagnostics: List[Diagnostic] = []
     if not isinstance(manifest, Mapping):
         diagnostics.append(
             _diagnostic("manifest_invalid", "Manifest root must be an object.", "$")
         )
+    elif manifest.get("schema_version") == 2:
+        package_skills = Path(__file__).parents[2]
+        if linker_runner is None:
+            linker_runner = (
+                package_skills
+                / "keystone-linker"
+                / "scripts"
+                / "run_graph_validation.py"
+            )
+        if author_runner is None:
+            author_runner = (
+                package_skills
+                / "keystone-author"
+                / "scripts"
+                / "run_finalization_validation.py"
+            )
+        if (
+            root is None
+            or assignment is None
+            or not _has_text(assignment_digest)
+            or evidence_root is None
+        ):
+            diagnostics.append(
+                _diagnostic(
+                    "v2_runtime_context_missing",
+                    "Schema v2 requires repository root, immutable assignment, evidence root, "
+                    "and package-owned Linker/Author runners.",
+                    "schema_version",
+                )
+            )
+        elif not isinstance(assignment, Mapping):
+            diagnostics.append(
+                _diagnostic(
+                    "v2_runtime_context_invalid",
+                    "Schema v2 immutable assignment must be an object.",
+                    "assignment",
+                )
+            )
+        else:
+            from closure_v2 import validate_v2
+
+            try:
+                root = Path(root)
+                evidence_root = Path(evidence_root)
+                linker_runner = Path(linker_runner)
+                author_runner = Path(author_runner)
+            except (TypeError, ValueError) as error:
+                diagnostics.append(_diagnostic(
+                    "v2_runtime_context_invalid",
+                    f"Schema v2 runtime paths must be path-like: {error}",
+                    "schema_version",
+                ))
+            else:
+                try:
+                    diagnostics.extend(
+                        validate_v2(
+                            manifest,
+                            root=root,
+                            assignment=assignment,
+                            assignment_digest=assignment_digest,
+                            evidence_root=evidence_root,
+                            linker_runner=linker_runner,
+                            author_runner=author_runner,
+                            timeout_seconds=timeout_seconds,
+                        )
+                    )
+                except (OSError, RuntimeError, UnicodeError, TypeError, ValueError) as error:
+                    diagnostics.append(_diagnostic(
+                        "v2_validation_execution_failed",
+                        str(error),
+                        "schema_version",
+                    ))
     else:
         _validate_schema(manifest, diagnostics)
         _validate_execution_mode(manifest, diagnostics)
@@ -693,10 +811,27 @@ def validate_manifest(manifest: Any) -> Dict[str, Any]:
         report_ready = _validate_worker_report(manifest, diagnostics)
         closure_ready = _validate_closure(manifest, diagnostics)
         _validate_review(manifest, context_ready, report_ready, closure_ready, diagnostics)
+        decision = _mapping(manifest.get("coordinator_review")).get("decision")
+        if manifest.get("schema_version") == 1 and decision in {
+            "accept_candidate",
+            "closure_complete",
+        }:
+            diagnostics.append(
+                _diagnostic(
+                    "legacy_schema_not_authoritative",
+                    "Coordinator closure schema v1 is diagnostic compatibility only and cannot "
+                    "authorize acceptance readiness or closure completion.",
+                    "schema_version",
+                )
+            )
 
+    execution_error = any(
+        item.get("code") in V2_EXECUTION_ERROR_CODES for item in diagnostics
+    )
+    status = "error" if execution_error else "fail" if diagnostics else "pass"
     return {
         "schema_version": SCHEMA_VERSION,
-        "status": "pass" if not diagnostics else "fail",
+        "status": status,
         "diagnostics": diagnostics,
         "summary": {"errors": len(diagnostics), "warnings": 0},
     }
@@ -715,21 +850,73 @@ def _error_result(code: str, message: str) -> Dict[str, Any]:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", required=True, type=Path)
+    parser.add_argument("--root", type=Path)
+    parser.add_argument("--assignment", type=Path)
+    parser.add_argument("--evidence-root", type=Path)
+    package_skills = Path(__file__).parents[2]
+    parser.add_argument(
+        "--linker-runner",
+        type=Path,
+        default=package_skills / "keystone-linker" / "scripts" / "run_graph_validation.py",
+    )
+    parser.add_argument(
+        "--author-runner",
+        type=Path,
+        default=package_skills / "keystone-author" / "scripts" / "run_finalization_validation.py",
+    )
+    parser.add_argument("--timeout-seconds", type=float, default=30.0)
     args = parser.parse_args(argv)
     try:
-        manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+        manifest_bytes = args.manifest.read_bytes()
+        manifest = _loads_json_strict(manifest_bytes.decode("utf-8"))
     except (OSError, UnicodeDecodeError) as exc:
         result = _error_result("manifest_unreadable", str(exc))
         print(json.dumps(result, ensure_ascii=False, sort_keys=True))
         return 2
-    except json.JSONDecodeError as exc:
+    except (json.JSONDecodeError, DuplicateJsonKey) as exc:
         result = _error_result("manifest_json_invalid", str(exc))
         print(json.dumps(result, ensure_ascii=False, sort_keys=True))
         return 2
 
-    result = validate_manifest(manifest)
+    assignment = None
+    assignment_digest = None
+    if isinstance(manifest, Mapping) and manifest.get("schema_version") == 2:
+        if args.root is None or args.assignment is None:
+            result = _error_result(
+                "v2_runtime_context_missing",
+                "Schema v2 requires --root and --assignment.",
+            )
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 2
+        try:
+            assignment_bytes = args.assignment.read_bytes()
+            assignment = _loads_json_strict(assignment_bytes.decode("utf-8"))
+        except (OSError, UnicodeDecodeError) as exc:
+            result = _error_result("assignment_unreadable", str(exc))
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 2
+        except (json.JSONDecodeError, DuplicateJsonKey) as exc:
+            result = _error_result("assignment_json_invalid", str(exc))
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 2
+        if not isinstance(assignment, Mapping):
+            result = _error_result("assignment_invalid", "Assignment root must be an object.")
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 2
+        assignment_digest = "sha256:" + hashlib.sha256(assignment_bytes).hexdigest()
+
+    result = validate_manifest(
+        manifest,
+        root=args.root,
+        assignment=assignment,
+        assignment_digest=assignment_digest,
+        evidence_root=args.evidence_root or args.manifest.parent,
+        linker_runner=args.linker_runner,
+        author_runner=args.author_runner,
+        timeout_seconds=args.timeout_seconds,
+    )
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
-    return 0 if result["status"] == "pass" else 1
+    return {"pass": 0, "fail": 1, "error": 2}[result["status"]]
 
 
 if __name__ == "__main__":

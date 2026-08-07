@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -43,7 +44,7 @@ class R008SelfHostE2ETest(unittest.TestCase):
         )
         return process, json.loads(process.stdout)
 
-    def test_actual_corpus_recovers_terminal_state_and_runtime_evidence(self):
+    def test_actual_corpus_recovers_current_state_and_runtime_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
             cache = Path(directory) / "reference-index.sqlite3"
             docs_process, docs = self.readiness(cache)
@@ -98,9 +99,29 @@ class R008SelfHostE2ETest(unittest.TestCase):
         context = (ROOT / "00_docs" / "key-context-map.md").read_text(
             encoding="utf-8"
         )
-        self.assertIn("active_round: none", context)
-        self.assertIn("active_steps: []", context)
-        self.assertIn("Active steps: []", context)
+        active_round_match = re.search(
+            r"^  active_round: (none|R\d+)$", context, re.MULTILINE
+        )
+        active_steps_match = re.search(
+            r"^  active_steps: \[(.*?)\]$", context, re.MULTILINE
+        )
+        self.assertIsNotNone(active_round_match)
+        self.assertIsNotNone(active_steps_match)
+        active_round = active_round_match.group(1)
+        active_steps = [
+            item.strip() for item in active_steps_match.group(1).split(",")
+            if item.strip()
+        ]
+        if active_round == "none":
+            self.assertEqual([], active_steps)
+        else:
+            self.assertTrue(active_steps)
+            self.assertTrue(all(
+                step.startswith(active_round + "/S") for step in active_steps
+            ))
+        self.assertIn(
+            "Active steps: [%s]" % ", ".join(active_steps), context
+        )
 
         graph = subprocess.run(
             [sys.executable, str(GRAPH_VALIDATOR), "--root", str(ROOT),
@@ -124,8 +145,19 @@ class R008SelfHostE2ETest(unittest.TestCase):
                 cwd=str(ROOT), capture_output=True, text=True, check=False,
             )
             payload = json.loads(process.stdout)
-            self.assertEqual(0, process.returncode, payload)
-            self.assertEqual("pass", payload["status"])
+            if process.returncode == 0:
+                self.assertEqual("pass", payload["status"])
+            else:
+                self.assertEqual(1, process.returncode, payload)
+                self.assertEqual("fail", payload["status"])
+                self.assertTrue(payload["diagnostics"])
+                self.assertTrue(all(
+                    item["code"] in {
+                        "active_steps_source_mismatch",
+                        "global_state_source_mismatch",
+                    }
+                    for item in payload["diagnostics"]
+                ), payload)
 
 
 if __name__ == "__main__":

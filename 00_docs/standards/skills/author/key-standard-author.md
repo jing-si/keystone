@@ -3,9 +3,7 @@ doc_type: standard
 created_at: "2026-06-10"
 document_lifecycle: active
 approval:
-  state: accepted
-  accepted_at: "2026-08-06"
-  accepted_by: main
+  state: pending
 key:
   id: key.standard.skill.author
   refs:
@@ -407,14 +405,21 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
    finalization을 `complete`로 전이하지 않는다.
 10. 미완료 graph sync는 Main acceptance를 취소하거나 progress를 되돌리지 않는다. R004의
     accepted 문서·기록을 수정하지 않고 이후 finalization에 additive하게 적용한다.
-11. 새 finalization은 schema v4를 사용한다. Acceptance event의 모든 accepted Step은 각 Progress
-    frontmatter의 `finalization.state`와 같은 acceptance ref에 결속한다.
+11. 새 finalization은 schema v5를 사용한다. Acceptance event의 모든 accepted Step은 canonical
+    Step ref를 사용하고 정확히 한 event Round에 속하며, 각 Progress frontmatter의
+    `finalization.state`와 같은 acceptance ref에 결속한다. Schema v4는 이미 기록된 완료 evidence의
+    validation compatibility로 보존한다.
 12. `active_round`, `latest_accepted_round`, `active_steps`는 Context Map, root works index, active
-    round index와 active work index의 서로 다른 path 및 기대 `key.id`에 결속한다. 네 source의
-    frontmatter structured state가 일치하지 않으면 complete로 전이하지 않는다. Schema v3까지는
-    이미 기록된 acceptance의 호환 wire로 보존한다.
+    round index와 active work index의 서로 다른 path에 결속한다. Work/round source의 path와
+    `key.id`는 acceptance event Round에, root/context source는 canonical global identity에 결속하며
+    네 source의 `doc_type`과 frontmatter structured state가 일치하지 않으면 complete로 전이하지
+    않는다. Event Round가 active이면 `round_status: active`, terminal이면
+    `round_status: accepted`여야 하며 terminal event Work는 `work_status: complete`여야 한다.
+    Schema v3까지는 이미 기록된 acceptance의 호환 wire로 보존한다.
 13. Repository에 active round가 없으면 `active_round: none`으로 부재를 명시한다. `none`은
-    `active_steps: []`일 때만 허용하며 active Step이 있으면 반드시 해당 `R\d+` round를 기록한다.
+    `active_steps: []`일 때만 허용하며 active Step이 있으면 각 canonical Step ref의 round prefix가
+    반드시 해당 `R\d+` active round와 일치해야 한다. Acceptance event Round는 terminal
+    `active_round: none`과 독립적으로 accepted Step ref에서 복구한다.
 
 <!-- key: id=key.standard.skill.author.graph-synchronization refs=key.role.author key.role.linker key.topic.artifact-graph key.topic.keystone-metadata key.topic.change-set -->
 ## Document delta와 graph synchronization

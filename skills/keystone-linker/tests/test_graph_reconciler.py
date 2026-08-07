@@ -1,3 +1,4 @@
+import hashlib
 import unittest
 from dataclasses import replace
 
@@ -70,6 +71,15 @@ class GraphReconcilerTests(unittest.TestCase):
     def test_required_confirmations_reach_ready_to_apply(self):
         transaction = self._confirmed()
         self.assertEqual(transaction.state, TransactionState.READY_TO_APPLY)
+
+    def test_reconciler_rejects_boolean_and_float_schema_versions(self):
+        for invalid_version in (True, 1.0):
+            with self.subTest(value=invalid_version):
+                with self.assertRaisesRegex(ValueError, "schema_version"):
+                    begin_attestation(replace(
+                        self.proposed,
+                        schema_version=invalid_version,
+                    ))
 
     def test_observed_mutation_cannot_be_ready_without_owner_confirmation(self):
         observed = replace(self.proposed, canonical_mutations=(replace(
@@ -212,6 +222,7 @@ class GraphReconcilerTests(unittest.TestCase):
             requested_nodes_after=(node,),
             patch_specs=(patch,),
             evidence=Evidence.OBSERVED,
+            transaction_schema_version=1,
         )
         patch_id = proposed.surface_patches[0].patch_id
         awaiting = begin_attestation(proposed)
@@ -362,6 +373,116 @@ class GraphReconcilerTests(unittest.TestCase):
         invalid = replace(self.proposed, surface_patches=(invalid_patch,))
         with self.assertRaisesRegex(ValueError, "owner.*surface"):
             begin_attestation(invalid)
+
+    def test_runtime_rejects_duplicate_physical_patch_target(self):
+        duplicate = replace(
+            self.patch_a,
+            patch_id="patch-duplicate",
+            owner=PatchOwner.AUTHOR,
+            surface=PatchSurface.COMPANION_METADATA,
+            target_path=self.patch_a.target_path,
+        )
+        invalid = replace(self.proposed, surface_patches=(self.patch_a, duplicate))
+
+        with self.assertRaisesRegex(ValueError, "physical target"):
+            begin_attestation(invalid)
+
+    def test_runtime_rejects_noncanonical_physical_target_alias(self):
+        alias = replace(
+            self.patch_a,
+            patch_id="patch-alias",
+            target_path="00_docs/../00_docs/feature.md",
+        )
+        invalid = replace(self.proposed, surface_patches=(self.patch_a, alias))
+
+        with self.assertRaisesRegex(ValueError, "canonical repository-relative"):
+            begin_attestation(invalid)
+
+    def test_schema_v2_application_digest_must_match_planned_digest(self):
+        baseline_content = "before\n"
+        baseline_digest = "sha256:" + hashlib.sha256(
+            baseline_content.encode("utf-8")
+        ).hexdigest()
+        expected = "sha256:" + hashlib.sha256(b"after\n").hexdigest()
+        patch = replace(
+            self.patch_a,
+            baseline_digest=baseline_digest,
+            exact_patch="after\n",
+            patch_format="full_replacement",
+            patch_body="after\n",
+            expected_after_digest=expected,
+            baseline_content=baseline_content,
+        )
+        proposed = replace(
+            self.proposed,
+            surface_patches=(patch,),
+            schema_version=2,
+        )
+        ready = record_attestation(
+            begin_attestation(proposed),
+            SurfaceAttestation(
+                patch.patch_id,
+                PatchOwner.AUTHOR,
+                AttestationDecision.CONFIRM,
+                "confirmed",
+            ),
+        )
+        applying = begin_application(ready, {patch.patch_id: patch.baseline_digest})
+
+        with self.assertRaisesRegex(ValueError, "expected_after_digest"):
+            record_application(
+                applying,
+                ApplicationResult(
+                    patch.patch_id,
+                    ApplicationStatus.APPLIED,
+                    "sha256:" + "f" * 64,
+                    "written",
+                ),
+            )
+
+    def test_finalize_defends_against_forged_schema_v2_result_digest(self):
+        baseline_content = "before\n"
+        baseline_digest = "sha256:" + hashlib.sha256(
+            baseline_content.encode("utf-8")
+        ).hexdigest()
+        expected = "sha256:" + hashlib.sha256(b"after\n").hexdigest()
+        patch = replace(
+            self.patch_a,
+            baseline_digest=baseline_digest,
+            exact_patch="after\n",
+            patch_format="full_replacement",
+            patch_body="after\n",
+            expected_after_digest=expected,
+            baseline_content=baseline_content,
+        )
+        attestation = SurfaceAttestation(
+            patch.patch_id,
+            PatchOwner.AUTHOR,
+            AttestationDecision.CONFIRM,
+            "confirmed",
+        )
+        forged = replace(
+            self.proposed,
+            surface_patches=(patch,),
+            attestations=(attestation,),
+            apply_results=(ApplicationResult(
+                patch.patch_id,
+                ApplicationStatus.APPLIED,
+                "sha256:" + "b" * 64,
+                "forged",
+            ),),
+            state=TransactionState.APPLYING,
+            schema_version=2,
+        )
+
+        with self.assertRaisesRegex(ValueError, "expected_after_digest"):
+            finalize_transaction(
+                forged,
+                GraphSnapshot(nodes=(self.node,)),
+                (),
+                {patch.patch_id: "sha256:" + "b" * 64},
+                baseline_snapshot=GraphSnapshot(),
+            )
 
 
 if __name__ == "__main__":

@@ -78,9 +78,13 @@ Apply these rules without depending on project-local Linker instructions:
     report a missing target as unresolved provenance or a metadata gap.
 16. Treat `revised_by` as revision-history evidence, not a typed relation or proof of authority,
    impact, supersession, production, or governance. Report ambiguous evidence as informational or unknown.
-17. Diagnose an active semantic relation whose source or target is retired. Preserve only the canonical
-    active `new -> supersedes -> deprecated|removed old` exception with declared or owner-attested
-    observed evidence.
+17. Diagnose an active semantic relation whose source or target is retired. Preserve only a canonical
+    active replacement with declared or owner-attested observed evidence: document-domain
+    `new -> supersedes -> superseded old`, or artifact-domain
+    `new -> supersedes -> deprecated|removed old`.
+18. Normalize source-derived relation lifecycle independently from node lifecycle:
+    `draft|active -> active`, `superseded|archived -> archived`, and preserve
+    `deprecated|removed` in the relation domain.
 
 ## When To Use
 
@@ -150,6 +154,9 @@ request it without Coordinator permission because it has no repository source-wr
    source file's raw-byte SHA-256 digest. Git HEAD, mtime, or a timestamp is insufficient.
 4. Docs scope discovers the configured document root. Repository scope uses explicit include/exclude
    rules and supported source/companion discovery, and runs lazily only when artifact context is needed.
+   Resolve inline and adjacent companion metadata as one logical SourceUnit: companion-only uses the
+   companion, inline-only uses inline metadata, and dual declarations fail with
+   `metadata_surface_conflict` instead of merging or applying implicit precedence.
 5. Cache failure returns fail-soft diagnostics and raw source results; it does not block orientation.
 6. Build an optional typed graph projection only for multi-hop, semantic-role, dependency,
    verification, or reuse queries. Broad similarity never creates a canonical edge.
@@ -173,7 +180,9 @@ request it without Coordinator permission because it has no repository source-wr
    direction and evidence strength. Never promote filename or keyword overlap into a declared
    typed relation.
    Interpret `depends_on` as source-to-target semantic evidence and keep `work_gates` as separate
-   execution evidence. Prefer structured metadata over legacy HTML dependency evidence and report conflicts.
+   execution evidence. Prefer structured metadata over legacy HTML dependency evidence and report
+   conflicts. Create a legacy completion candidate only for a Work source; never reinterpret an
+   output artifact's flat `depends_on` as a Work gate.
 6. Separate reuse candidates, test candidates, mechanical stale, semantic stale, and metadata gaps.
 7. Apply fail-soft handling when graph evidence is absent or sparse: return a partial report with
    inspected evidence, uninspectable areas, and gaps. Do not fail initialization, claim a missing
@@ -293,7 +302,10 @@ schema-versioned diagnostic envelope, not a bare diagnostic array. A CLI manifes
 canonical transaction in its `transaction` field; it does not silently discard synchronization-envelope
 fields.
 Schema version 1 remains a read/validation compatibility wire for historical descriptive
-`exact_patch` transactions. New executable transactions use schema version 2.
+`exact_patch` transactions and requires explicit legacy planner opt-in. New planner calls default to
+schema version 2 and require every patch to be executable. Do not mix descriptive and executable
+patches, emit more than one patch for a physical `target_path`, or accept an applied
+`resulting_digest` that differs from the patch's `expected_after_digest`.
 
 ## Document Item Metadata
 
@@ -647,6 +659,10 @@ Verify Linker behavior by checking:
     widening scope or permission.
 18. Only owner attestations, baseline-safe apply results, source reconstruction, and mechanical
     validation can produce a verified transaction; partial apply and new attempts remain resumable.
+19. Inline and companion declarations resolve through one SourceUnit and conflicting declarations fail
+    closed without producing two graph views.
+20. Document and artifact supersession use their own lifecycle domains, retired seeds do not start
+    active traversal, and deprecated seeds cannot exceed informational grade.
 
 Suggested checks:
 
