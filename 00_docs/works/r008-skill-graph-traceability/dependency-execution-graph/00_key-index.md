@@ -2,8 +2,8 @@
 doc_type: work
 created_at: "2026-08-06"
 document_lifecycle: active
-approval: {state: pending}
-work_status: in_progress
+approval: {state: accepted, accepted_at: "2026-08-07", accepted_by: main}
+work_status: complete
 key:
   id: key.work.dependency-execution-graph.index
   refs:
@@ -28,9 +28,9 @@ risk_level: high
 ## 현재 상태
 
 - Step: R008/S03
-- Work status: in_progress
-- Approval state: pending
-- Active: true
-- Next action: invalid source Step과 two-work cycle RED fixtures를 작성한다.
+- Work status: complete
+- Approval state: accepted
+- Active: false
+- Next action: R008/S04 Companion and Repository Validation을 진행한다.
 
-Active steps: [R008/S03]
+Active steps: []

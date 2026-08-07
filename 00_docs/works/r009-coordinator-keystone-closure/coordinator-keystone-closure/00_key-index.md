@@ -34,6 +34,6 @@ risk_level: high
 - Approval state: accepted (2026-08-06, main)
 - Active: false
 - Execution note: R009/S01은 R008과 독립적으로 complete and accepted 되었다.
-- Next action: 없음. R008은 독립 active round로 계속 복구한다.
+- Next action: 없음. R008과 R009는 complete and accepted이며 active round는 없다.
 
 Active steps: []

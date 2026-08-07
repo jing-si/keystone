@@ -42,25 +42,73 @@ def read_scoped_file(root: Path, value: Any) -> Tuple[
 
 
 def scalar_from_text(content: str, field: str) -> Optional[str]:
+    """Read a scalar from frontmatter, or from a standalone mapping fixture."""
+    frontmatter = frontmatter_from_text(content)
+    source = frontmatter if frontmatter is not None else content
     match = re.search(
-        rf"(?m)^\s*{re.escape(field)}\s*:\s*['\"]?([^\n'\"]+)['\"]?\s*$",
-        content,
+        rf"(?m)^{re.escape(field)}\s*:\s*['\"]?([^\n'\"]+)['\"]?\s*$",
+        source,
     )
     return match.group(1).strip() if match else None
 
 
 def finalization_scalar(content: str, field: str) -> Optional[str]:
-    block = re.search(r"(?ms)^finalization:\s*\n((?:^[ \t]+.*\n?)*)", content)
-    if block:
-        return scalar_from_text(block.group(1), field)
-    return inline_mapping_scalar(content, "finalization", field)
+    return frontmatter_mapping_scalar(content, "finalization", field)
 
 
 def approval_scalar(content: str, field: str) -> Optional[str]:
-    block = re.search(r"(?ms)^approval:\s*\n((?:^[ \t]+.*\n?)*)", content)
+    return frontmatter_mapping_scalar(content, "approval", field)
+
+
+def frontmatter_from_text(content: str) -> Optional[str]:
+    match = re.match(r"\A---\r?\n(.*?)\r?\n---(?:\r?\n|\Z)", content, re.DOTALL)
+    return match.group(1) if match else None
+
+
+def frontmatter_mapping_scalar(content: str, mapping: str,
+                               field: str) -> Optional[str]:
+    frontmatter = frontmatter_from_text(content)
+    source = frontmatter if frontmatter is not None else content
+    block = re.search(
+        rf"(?ms)^{re.escape(mapping)}:\s*\n((?:^[ \t]+.*\n?)*)",
+        source,
+    )
     if block:
-        return scalar_from_text(block.group(1), field)
-    return inline_mapping_scalar(content, "approval", field)
+        match = re.search(
+            rf"(?m)^\s+{re.escape(field)}\s*:\s*['\"]?([^\n'\"]+)['\"]?\s*$",
+            block.group(1),
+        )
+        return match.group(1).strip() if match else None
+    return inline_mapping_scalar(source, mapping, field)
+
+
+def frontmatter_mapping_list(content: str, mapping: str,
+                             field: str) -> Optional[List[str]]:
+    """Read a canonical inline string list from a frontmatter mapping."""
+    frontmatter = frontmatter_from_text(content)
+    source = frontmatter if frontmatter is not None else content
+    block = re.search(
+        rf"(?ms)^{re.escape(mapping)}:\s*\n((?:^[ \t]+.*\n?)*)",
+        source,
+    )
+    if not block:
+        return None
+    match = re.search(
+        rf"(?m)^\s+{re.escape(field)}\s*:\s*\[([^\]]*)\]\s*$",
+        block.group(1),
+    )
+    if not match:
+        return None
+    raw = match.group(1).strip()
+    if not raw:
+        return []
+    values = []
+    for item in raw.split(","):
+        value = item.strip().strip("'\"")
+        if not value:
+            return None
+        values.append(value)
+    return values
 
 
 def inline_mapping_scalar(content: str, mapping: str,

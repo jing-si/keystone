@@ -7,8 +7,11 @@ from graph_runtime.model import (
     AttestationDecision,
     CanonicalMutation,
     ConflictReason,
+    Delta,
+    DeltaKind,
     Diagnostic,
     Evidence,
+    FailureReason,
     GraphSnapshot,
     GraphTransaction,
     Locator,
@@ -26,6 +29,7 @@ from graph_runtime.model import (
     SurfacePatch,
     TransactionState,
 )
+from graph_runtime.planner import PatchSpec, plan_graph_sync
 from graph_runtime.reconciler import (
     AttemptHistory,
     begin_application,
@@ -180,6 +184,71 @@ class GraphReconcilerTests(unittest.TestCase):
         self.assertEqual(verified.state, TransactionState.VERIFIED)
         self.assertEqual(verified.coverage_debt, ("legacy metadata gap",))
 
+    def test_binary_companion_uses_logical_locator_and_physical_patch_through_verify(self):
+        node = Node(
+            "key.asset.binary",
+            NodeKind.OUTPUT_ARTIFACT,
+            locator=Locator("assets/model.bin"),
+        )
+        baseline = "sha256:" + "c" * 64
+        delta = Delta(
+            DeltaKind.ARTIFACT,
+            "assets/model.bin.keystone.json",
+            (Locator("assets/model.bin"),),
+            "declare binary companion metadata",
+            baseline,
+        )
+        patch = PatchSpec(
+            PatchOwner.MAIN,
+            PatchSurface.COMPANION_METADATA,
+            "assets/model.bin.keystone.json",
+            baseline,
+            "replace companion metadata",
+        )
+        proposed = plan_graph_sync(
+            GraphSnapshot(),
+            (delta,),
+            "R008/S04",
+            requested_nodes_after=(node,),
+            patch_specs=(patch,),
+            evidence=Evidence.OBSERVED,
+        )
+        patch_id = proposed.surface_patches[0].patch_id
+        awaiting = begin_attestation(proposed)
+        ready = record_attestation(
+            awaiting,
+            SurfaceAttestation(
+                patch_id,
+                PatchOwner.MAIN,
+                AttestationDecision.CONFIRM,
+                "main confirms companion semantics",
+            ),
+        )
+        applying = begin_application(ready, {patch_id: baseline})
+        applied = record_application(
+            applying,
+            ApplicationResult(
+                patch_id,
+                ApplicationStatus.APPLIED,
+                "sha256:" + "d" * 64,
+                "companion written",
+            ),
+        )
+        verified = finalize_transaction(
+            applied,
+            GraphSnapshot(nodes=(node,)),
+            (),
+            {patch_id: "sha256:" + "d" * 64},
+            baseline_snapshot=GraphSnapshot(),
+        )
+
+        self.assertEqual(TransactionState.VERIFIED, verified.state)
+        self.assertEqual("assets/model.bin", node.locator.path)
+        self.assertEqual(
+            "assets/model.bin.keystone.json",
+            verified.surface_patches[0].target_path,
+        )
+
     def test_reconstruction_rejects_unintended_unchanged_graph_difference(self):
         applying = begin_application(self._confirmed(), {
             "patch-a": self.patch_a.baseline_digest,
@@ -246,6 +315,7 @@ class GraphReconcilerTests(unittest.TestCase):
 
     def test_failed_transient_retry_may_keep_baseline_and_preserves_history(self):
         failed = replace(self.proposed, state=TransactionState.FAILED,
+                         failure_reason=FailureReason.TRANSIENT_IO,
                          apply_results=(ApplicationResult(
                              "patch-a", ApplicationStatus.FAILED, evidence="transient io"),))
         retry = replace(self.proposed, transaction_id="tx-retry")
@@ -253,6 +323,29 @@ class GraphReconcilerTests(unittest.TestCase):
         self.assertEqual(history.current.state, TransactionState.PROPOSED)
         self.assertEqual(history.prior_attempts, (failed,))
         self.assertEqual(history.prior_attempts[0].apply_results[0].evidence, "transient io")
+
+    def test_non_transient_failed_retry_requires_changed_input(self):
+        failed = replace(
+            self.proposed,
+            state=TransactionState.FAILED,
+            failure_reason=FailureReason.PERMISSION_DENIED,
+            apply_results=(ApplicationResult(
+                "patch-a", ApplicationStatus.FAILED, evidence="permission denied"
+            ),),
+        )
+        unchanged = replace(self.proposed, transaction_id="tx-retry-denied")
+
+        with self.assertRaisesRegex(ValueError, "non-transient"):
+            new_attempt(AttemptHistory(failed), unchanged)
+
+        changed = replace(
+            unchanged,
+            surface_patches=(replace(self.patch_a, exact_patch="changed"), self.patch_b),
+        )
+        self.assertEqual(
+            TransactionState.PROPOSED,
+            new_attempt(AttemptHistory(failed), changed).current.state,
+        )
 
     def test_finalize_requires_authoritative_baseline_snapshot(self):
         with self.assertRaises(TypeError):

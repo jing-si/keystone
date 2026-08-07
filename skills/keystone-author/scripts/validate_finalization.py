@@ -12,6 +12,7 @@ from finalization_sections import (
     validate_impact_candidates,
     validate_namespace_entries,
 )
+from finalization_global import validate_global_state
 from finalization_steps import (
     validate_early_work,
     validate_steps_and_transitions,
@@ -49,12 +50,15 @@ def invocation_error(code: str, message: str, path: Optional[str] = None) -> int
     return 2
 
 
+# keystone: id=key.code.author.finalization-validator kind=output_artifact artifact_kind=code refs=key.standard.skill.author.acceptance-finalization locator.symbol=validate_manifest
 def validate_manifest(root: Path, manifest: Dict[str, Any]) -> List[Dict[str, str]]:
     findings: List[Dict[str, str]] = []
 
     schema_version = manifest.get("schema_version")
-    if schema_version not in {1, 2, 3}:
-        findings.append(diagnostic("schema_version_unsupported", "schema_version must be 1, 2, or 3."))
+    if schema_version not in {1, 2, 3, 4}:
+        findings.append(diagnostic(
+            "schema_version_unsupported", "schema_version must be 1, 2, 3, or 4."
+        ))
 
     if not isinstance(manifest.get("acceptance_ref"), str) or not manifest["acceptance_ref"].strip():
         findings.append(diagnostic("acceptance_ref_missing", "acceptance_ref must be a non-empty string."))
@@ -65,6 +69,8 @@ def validate_manifest(root: Path, manifest: Dict[str, Any]) -> List[Dict[str, st
     findings.extend(validate_finalization_closure(root, manifest, schema_version))
 
     findings.extend(validate_early_work(manifest.get("early_work"), steps))
+
+    findings.extend(validate_global_state(root, manifest, schema_version))
 
     findings.extend(validate_impact_candidates(
         root, manifest.get("impact_candidates"), schema_version

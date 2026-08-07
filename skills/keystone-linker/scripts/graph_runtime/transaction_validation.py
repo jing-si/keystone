@@ -15,6 +15,7 @@ def snapshot_wire(snapshot: GraphSnapshot) -> Dict[str, Any]:
     return graph_snapshot_wire(snapshot)
 
 
+# keystone: id=key.code.linker.graph-transaction-validator kind=output_artifact artifact_kind=code refs=key.standard.artifact.graph.transaction-wire locator.symbol=validate_transaction
 def validate_transaction(value: Any, root: Path = None,
                          source_snapshot: GraphSnapshot = None) -> Tuple[Diagnostic, ...]:
     if not isinstance(value, dict):

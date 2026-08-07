@@ -7,6 +7,8 @@
       "work_ref": "R007/contract-execution-reconciliation",
       "status": "complete",
       "approval_state": "accepted",
+      "finalization_state": "complete",
+      "finalization_acceptance_ref": "R007/main-acceptance",
       "progress_path": "00_docs/works/r007-contract-execution-reconciliation/contract-execution-reconciliation/key-progress.md"
     },
     {
@@ -14,6 +16,8 @@
       "work_ref": "R007/python-convention-incremental-refactoring",
       "status": "complete",
       "approval_state": "accepted",
+      "finalization_state": "complete",
+      "finalization_acceptance_ref": "R007/main-acceptance",
       "progress_path": "00_docs/works/r007-contract-execution-reconciliation/python-convention-incremental-refactoring/key-progress.md"
     }
   ],

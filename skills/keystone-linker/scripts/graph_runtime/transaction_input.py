@@ -41,6 +41,7 @@ TRANSACTION_FIELDS = {
     "apply_results",
     "state",
     "conflict_reason",
+    "failure_reason",
     "reconstruction",
     "mechanical_validation",
     "coverage_debt",
@@ -52,6 +53,7 @@ class TransactionInput:
     state: Any
     conflict_reason: Any
     mutations: Tuple[Any, ...]
+    failure_reason: Any = None
 
 
 @dataclass(frozen=True)
@@ -76,10 +78,11 @@ def validate_transaction_input(
             "transaction_state_invalid",
             "unsupported transaction state: %s" % state,
         ))
-    if value.get("schema_version") != 1:
+    schema_version = value.get("schema_version")
+    if schema_version not in {1, 2}:
         findings.append(diagnostic(
             "transaction_schema_invalid",
-            "transaction schema_version must be 1",
+            "transaction schema_version must be 1 or 2",
         ))
 
     conflict_reason = value.get("conflict_reason")
@@ -92,6 +95,25 @@ def validate_transaction_input(
         findings.append(diagnostic(
             "conflict_reason_unexpected",
             "only conflicted transactions may declare conflict_reason",
+        ))
+    failure_reason = value.get("failure_reason")
+    allowed_failure_reasons = {
+        "transient_io", "permission_denied", "validation_failed",
+        "source_conflict", "tool_failure", "unknown",
+    }
+    if failure_reason is not None and failure_reason not in allowed_failure_reasons:
+        findings.append(diagnostic(
+            "failure_reason_invalid", "transaction failure_reason is invalid"
+        ))
+    if state != "failed" and failure_reason is not None:
+        findings.append(diagnostic(
+            "failure_reason_unexpected",
+            "only failed transactions may declare failure_reason",
+        ))
+    if schema_version == 2 and state == "failed" and failure_reason is None:
+        findings.append(diagnostic(
+            "failure_reason_missing",
+            "schema-v2 failed transaction requires failure_reason",
         ))
     for field in ("transaction_id", "scope_ref"):
         if not isinstance(value.get(field), str) or not value[field]:
@@ -129,13 +151,14 @@ def validate_transaction_input(
             "canonical_mutations must be an array",
         ))
         mutations = []
-    findings.extend(_validate_mutations(mutations))
+    findings.extend(_validate_mutations(mutations, schema_version))
 
     return TransactionInputValidationResult(
         diagnostics=tuple(findings),
         transaction_input=TransactionInput(
             state=state,
             conflict_reason=conflict_reason,
+            failure_reason=failure_reason,
             mutations=tuple(mutations),
         ),
     )
@@ -166,7 +189,8 @@ def _is_input_delta(value: Any) -> bool:
     )
 
 
-def _validate_mutations(mutations: Sequence[Any]) -> Tuple[Diagnostic, ...]:
+def _validate_mutations(mutations: Sequence[Any],
+                        schema_version: Any = 1) -> Tuple[Diagnostic, ...]:
     findings = []
     mutation_identities = set()
     for index, mutation in enumerate(mutations):
@@ -195,7 +219,9 @@ def _validate_mutations(mutations: Sequence[Any]) -> Tuple[Diagnostic, ...]:
             ))
         else:
             findings.extend(
-                _validate_canonical_mutation(mutation, mutation_identities)
+                _validate_canonical_mutation(
+                    mutation, mutation_identities, schema_version
+                )
             )
     return tuple(findings)
 
@@ -203,6 +229,7 @@ def _validate_mutations(mutations: Sequence[Any]) -> Tuple[Diagnostic, ...]:
 def _validate_canonical_mutation(
     mutation: Dict[str, Any],
     mutation_identities: set,
+    schema_version: Any = 1,
 ) -> Tuple[Diagnostic, ...]:
     findings = []
     operation = mutation["operation"]
@@ -226,7 +253,7 @@ def _validate_canonical_mutation(
 
     entity_values = [item for item in (before, after) if item is not None]
     validator = is_node_wire if mutation["entity"] == "node" else is_relation_wire
-    if any(not validator(item) for item in entity_values):
+    if any(not validator(item, schema_version) for item in entity_values):
         findings.append(diagnostic(
             "mutation_%s_invalid" % mutation["entity"],
             "canonical mutation entity does not match the canonical wire",

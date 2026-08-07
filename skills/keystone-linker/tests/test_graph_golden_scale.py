@@ -86,6 +86,7 @@ class GraphGoldenScaleTest(unittest.TestCase):
 
         first, diagnostics = reconstruct(self.root, tuple(reversed(paths)))
         self.assertEqual((), diagnostics)
+        self.assertEqual(2, first.schema_version)
         golden = [
             ("key.asset.a", "generated_file", "assets/a.bin"),
             ("key.doc.a", "none", "docs/a.md"),
@@ -194,6 +195,7 @@ class GraphGoldenScaleTest(unittest.TestCase):
                 removed_source_codes = {item.code for item in validate_snapshot(
                     self.root, GraphSnapshot((removed_successor, retired), (replacement,)))}
                 self.assertIn("active_relation_to_retired", removed_source_codes)
+                self.assertIn("active_relation_from_retired", removed_source_codes)
 
                 unattested_observed = replace(replacement, evidence=Evidence.OBSERVED)
                 observed_codes = {item.code for item in validate_snapshot(
@@ -226,6 +228,18 @@ class GraphGoldenScaleTest(unittest.TestCase):
                 missing_codes = {item.code for item in validate_snapshot(
                     self.root, GraphSnapshot((successor,), (replacement,)))}
                 self.assertIn("missing_target", missing_codes)
+
+        for lifecycle in (Lifecycle.SUPERSEDED, Lifecycle.ARCHIVED):
+            with self.subTest(lifecycle=lifecycle.value):
+                source = Node("key.cap.source", NodeKind.CAPABILITY,
+                              locator=Locator("docs/replacement.md"), lifecycle=lifecycle)
+                target = Node("key.cap.target", NodeKind.CAPABILITY,
+                              locator=Locator("docs/replacement.md"), lifecycle=lifecycle)
+                relation = Relation(source.id, RelationType.USES, target.id)
+                codes = {item.code for item in validate_snapshot(
+                    self.root, GraphSnapshot((source, target), (relation,)))}
+                self.assertIn("active_relation_from_retired", codes)
+                self.assertIn("active_relation_to_retired", codes)
 
     def test_observed_supersedes_owner_attestation_survives_reconstruction_validation(self):
         self.write("docs/observed-replacement.md", "replacement")

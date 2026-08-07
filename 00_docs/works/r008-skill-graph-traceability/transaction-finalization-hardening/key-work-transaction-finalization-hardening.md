@@ -2,8 +2,8 @@
 doc_type: work_order
 created_at: "2026-08-06"
 document_lifecycle: active
-approval: {state: pending}
-work_status: planned
+approval: {state: accepted, accepted_at: "2026-08-07", accepted_by: main}
+work_status: complete
 key:
   id: key.work.transaction-finalization-hardening.order
   refs:
@@ -80,14 +80,14 @@ Exclude:
 <!-- key: id=key.work.transaction-finalization-hardening.order.completion refs=key.topic.acceptance key.topic.integration-verification -->
 ## Completion Criteria
 
-- [ ] 모든 required patch가 declared format과 executable body를 가진다.
-- [ ] Baseline bytes+patch가 expected after bytes와 resulting digest를 재현한다.
-- [ ] Non-transient failure는 unchanged input retry를 허용하지 않는다.
-- [ ] Verified transient failure만 preserved history와 새 transaction ID로 same-input retry된다.
-- [ ] 모든 accepted Step의 progress finalization state와 acceptance ref가 검사된다.
-- [ ] Context Map/root/round/work sources의 global state와 key identity가 일치한다.
-- [ ] Category source path 중복과 body example의 state 오인이 차단된다.
-- [ ] R007 multi-Step fixture를 compatibility mode 또는 명시적 migration으로 검증한다.
+- [x] 모든 required patch가 declared format과 executable body를 가진다.
+- [x] Baseline bytes+patch가 expected after bytes와 resulting digest를 재현한다.
+- [x] Non-transient failure는 unchanged input retry를 허용하지 않는다.
+- [x] Verified transient failure만 preserved history와 새 transaction ID로 same-input retry된다.
+- [x] 모든 accepted Step의 progress finalization state와 acceptance ref가 검사된다.
+- [x] Context Map/root/round/work sources의 global state와 key identity가 일치한다.
+- [x] Category source path 중복과 body example의 state 오인이 차단된다.
+- [x] R007 multi-Step fixture를 compatibility mode 또는 명시적 migration으로 검증한다.
 
 <!-- key: id=key.work.transaction-finalization-hardening.order.verification refs=key.topic.verification -->
 ## Verification

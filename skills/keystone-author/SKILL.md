@@ -72,9 +72,10 @@ A work order and progress record improve recoverability but are not artificial p
 After Main accepts one or more processed Steps, automatically run one bounded finalization for that
 acceptance event:
 
-1. Record the accepted Step execution as `work_status: complete` and approval as
+1. Record every accepted Step execution as `work_status: complete` and approval as
    `approval.state: accepted`, then set every applicable owning Progress and Change Set
-   `finalization.state` to `in_progress`. Do not introduce a global `finalized` lifecycle value.
+   frontmatter `finalization.state` and shared `acceptance_ref` to `in_progress`. Do not introduce a
+   global `finalized` lifecycle value or infer state from body examples.
 2. Change status directly only for each Step Main actually accepted. Evaluate the owning Work, Round,
    root works index, and Context Map against their own completion and representation conditions; never
    infer sibling or future-Step transitions.
@@ -101,11 +102,17 @@ acceptance event:
    validator exit `0`, semantic review, and Main's post-edit verification are all evidenced. Initial
    Step acceptance starts this process but is not post-edit verification. Use `waived` only for
    an explicitly recorded bootstrap or not-applicable case with reason and follow-up.
-8. Emit finalization manifest `schema_version: 3` and assess `graph_sync` as `required`,
+8. Emit new finalization manifest `schema_version: 4`. Bind each accepted Step to its Progress
+   `finalization_state` and `finalization_acceptance_ref`; bind `global_state.active_round`,
+   `global_state.latest_accepted_round`, and `global_state.active_steps` to distinct typed work-index, round-index, root-index,
+   and Context Map sources with their frontmatter `key.id`. Assess `graph_sync` as `required`,
    `not_applicable`, or `deferred`, with a reason. Required graph sync needs a bundled Linker validation
    manifest and matching verified transaction before finalization can complete. Version 1 is diagnostic
    compatibility for existing in-progress records only and can never approve `complete`. Version 2 is
    also compatibility-only for unfinished records and cannot approve a new `complete` finalization.
+   Version 3 remains the compatibility wire for previously completed records; do not rewrite historical
+   acceptance or graph evidence merely to make it current-state replayable.
+   Use `global_state.active_round: none` only when `active_steps` is empty.
 
 The finalization hard gate is scoped: while a Work has an incomplete required finalization, block only
 that same Work's next implement assignment, transition to `in_progress`, next-Step Main acceptance,
@@ -344,6 +351,6 @@ Check that:
     finalization completes; unavailable or failed execution remains fail-closed and resumable.
 14. Graph-relevant document deltas automatically reach Linker; Author attests and applies only its own
     baseline-matched patch and never declares verified independently.
-15. New finalization uses schema version 3, separates execution and approval transitions, records
-    graph_sync disposition, and accepts only bundled
-    verified transaction evidence for required synchronization.
+15. New finalization uses schema version 4, separates execution and approval transitions, validates
+    every accepted Progress and four-source global state, records graph_sync disposition, and accepts
+    only bundled verified transaction evidence for required synchronization.

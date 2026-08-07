@@ -31,8 +31,8 @@ Active steps: []
 | S01 | Coordinator Keystone Closure | `coordinator-keystone-closure/00_key-index.md` | complete and accepted | context provisioning, execution mode와 post-implementation closure gate를 구현·검증했다 |
 
 R009/S01은 사용자 지시로 R008과 독립적으로 먼저 수행되었으며, Main이 2026-08-06에 수락했다.
-초기 `early_work` 기록은 실행 이력으로 보존한다. R008은 별도의 active round로 유지하며 R009의
-dependency나 blocker가 아니다.
+초기 `early_work`와 당시 R008 active-round 보존 기록은 실행 이력으로 유지한다. 이후 R008도
+complete and accepted 되었으며 현재 active round는 없다.
 
 <!-- key: id=key.work.round.r009.boundaries refs=key.boundary.scope-control key.role.coordinator -->
 ## Round 경계
@@ -47,6 +47,6 @@ dependency나 blocker가 아니다.
 
 1. R009의 목표와 범위는 S01 Work Order를 읽는다.
 2. R009/S01 acceptance와 finalization evidence는 S01 Progress와 finalization manifest에서 복구한다.
-   R008은 독립 active-round namespace로 보존한다.
+   R008과 R009는 distinct accepted round namespace로 보존하고 현재 active Step은 없다.
 3. Coordinator contract 변경의 graph relevance는 Linker가 판단하고 source-document 변경은
    Author authority를 유지한다.

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from graph_runtime.model import Evidence, RelationType
 from graph_runtime.validator import reconstruct
+from validate_graph import coverage_severity, generation_findings
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "validate_graph.py"
@@ -53,6 +54,12 @@ class GraphValidatorCliTest(unittest.TestCase):
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
+        return path
+
+    def write_bytes(self, relative, value):
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(value)
         return path
 
     def run_validator(self, *arguments):
@@ -116,6 +123,162 @@ key: {id: key.doc.graph, kind: source_document}
                                          if item["code"] == "repository_coverage_debt"))
         self.assertEqual(1, full_process.returncode)
         self.assert_code(full, "repository_source_omitted")
+
+    def test_binary_companion_reconstructs_from_raw_source_bytes(self):
+        raw = b"\x00\xff\x80binary\x00"
+        self.write_bytes("asset.bin", raw)
+        companion = {
+            "schema_version": 1,
+            "source": {
+                "path": "asset.bin",
+                "surface": "companion_metadata",
+                "baseline_digest": "sha256:" + hashlib.sha256(raw).hexdigest(),
+            },
+            "nodes": [],
+            "relations": [],
+        }
+        self.write("asset.bin.keystone.json", json.dumps(companion))
+
+        process, payload = self.run_validator("--source", "asset.bin")
+
+        self.assertEqual(0, process.returncode, payload)
+
+    def test_binary_companion_is_complete_in_full_repository_discovery(self):
+        raw = b"\xff\x00model\x80"
+        self.write_bytes("assets/model.bin", raw)
+        self.write("assets/model.bin.keystone.json", json.dumps({
+            "schema_version": 1,
+            "source": {
+                "path": "assets/model.bin",
+                "surface": "companion_metadata",
+                "baseline_digest": "sha256:" + hashlib.sha256(raw).hexdigest(),
+            },
+            "nodes": [],
+            "relations": [],
+        }))
+        manifest = self.write("full.json", json.dumps({
+            "schema_version": 1,
+            "scope": "repository",
+            "coverage": "full",
+            "sources": ["assets/model.bin"],
+        }))
+
+        process, payload = self.run_validator("--manifest", str(manifest))
+
+        self.assertEqual(0, process.returncode, payload)
+        self.assertTrue(payload["coverage"]["complete"])
+        self.assertEqual(
+            ["assets/model.bin"], payload["coverage"]["parsed_sources"]
+        )
+
+    def test_companion_patch_target_maps_to_logical_validation_source(self):
+        companion = {
+            "schema_version": 1,
+            "source": {
+                "path": "asset.bin",
+                "surface": "companion_metadata",
+                "baseline_digest": "absent",
+            },
+            "nodes": [],
+            "relations": [],
+        }
+        companion_path = self.write("asset.bin.keystone.json", json.dumps(companion))
+        transaction = {
+            "schema_version": 1,
+            "transaction_id": "tx-companion",
+            "scope_ref": "R008/S04",
+            "state": "proposed",
+            "input_deltas": [],
+            "canonical_mutations": [],
+            "surface_patches": [{
+                "patch_id": "patch-companion",
+                "owner": "main",
+                "surface": "companion_metadata",
+                "target_path": "asset.bin.keystone.json",
+                "baseline_digest": "sha256:" + hashlib.sha256(companion_path.read_bytes()).hexdigest(),
+                "exact_patch": "update companion metadata",
+                "required": False,
+            }],
+            "attestations": [],
+            "apply_results": [],
+            "coverage_debt": [],
+        }
+
+        process, payload = self.run_validator(
+            "--source", "asset.bin", "--transaction", str(self.write("tx.json", json.dumps(transaction)))
+        )
+
+        self.assertEqual(0, process.returncode, payload)
+        self.assertNotIn("transaction_source_omission", [
+            item["code"] for item in payload["diagnostics"]
+        ])
+
+    def test_full_repository_coverage_fails_for_skipped_and_declared_only_sources(self):
+        self.write_bytes("large.md", b"x" * (5 * 1024 * 1024 + 1))
+        manifest = self.write("full.json", json.dumps({
+            "schema_version": 1,
+            "scope": "repository",
+            "coverage": "full",
+            "sources": ["large.md", "ghost.md"],
+        }))
+
+        process, payload = self.run_validator("--manifest", str(manifest))
+
+        self.assertEqual(1, process.returncode, payload)
+        self.assert_code(payload, "source_too_large")
+        self.assert_code(payload, "repository_declared_source_missing")
+        self.assertFalse(payload["coverage"]["complete"])
+        self.assertEqual(["large.md"], payload["coverage"]["skipped_sources"])
+        self.assertEqual(["ghost.md"], payload["coverage"]["declared_only_sources"])
+
+    def test_subset_repository_coverage_reports_explicit_omitted_and_skipped_sources(self):
+        self.write("a.md", "---\nkey: {id: key.a, kind: source_document}\n---\n")
+        self.write_bytes("large.md", b"x" * (5 * 1024 * 1024 + 1))
+        manifest = self.write("subset.json", json.dumps({
+            "schema_version": 1,
+            "scope": "repository",
+            "coverage": "subset",
+            "sources": [],
+        }))
+
+        process, payload = self.run_validator("--manifest", str(manifest))
+
+        self.assertEqual(0, process.returncode, payload)
+        self.assertEqual(["a.md"], payload["coverage"]["omitted_sources"])
+        self.assertEqual(["large.md"], payload["coverage"]["skipped_sources"])
+        self.assertFalse(payload["coverage"]["complete"])
+
+    def test_all_incomplete_discovery_reasons_are_coverage_sensitive(self):
+        for code in ("scan_truncated", "source_too_large", "source_unreadable"):
+            with self.subTest(code=code):
+                self.assertEqual(
+                    "error", coverage_severity(code, "full", None).value
+                )
+                self.assertEqual(
+                    "warning", coverage_severity(code, "subset", None).value
+                )
+
+    def test_captured_generation_is_reconstructed_and_later_change_fails_closed(self):
+        source = self.write(
+            "source.md",
+            "---\nkey: {id: key.before, kind: source_document}\n---\n",
+        )
+        captured = source.read_bytes()
+        source.write_text(
+            "---\nkey: {id: key.after, kind: source_document}\n---\n",
+            encoding="utf-8",
+        )
+
+        snapshot, diagnostics = reconstruct(
+            self.root, ["source.md"], {"source.md": captured}
+        )
+        changed = generation_findings(
+            self.root, {"source.md": captured}, set()
+        )
+
+        self.assertEqual((), diagnostics)
+        self.assertEqual(["key.before"], [node.id for node in snapshot.nodes])
+        self.assertEqual(["source_generation_changed"], [item.code for item in changed])
 
     def test_duplicate_manifest_sources_are_not_silently_deduplicated(self):
         self.write("a.md", "---\nkey: {id: key.a, kind: source_document}\n---\n")

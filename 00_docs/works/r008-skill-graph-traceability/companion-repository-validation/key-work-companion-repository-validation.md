@@ -2,8 +2,8 @@
 doc_type: work_order
 created_at: "2026-08-06"
 document_lifecycle: active
-approval: {state: pending}
-work_status: planned
+approval: {state: accepted, accepted_at: "2026-08-07", accepted_by: main}
+work_status: complete
 key:
   id: key.work.companion-repository-validation.order
   refs:
@@ -78,13 +78,28 @@ Exclude:
 <!-- key: id=key.work.companion-repository-validation.order.completion refs=key.topic.acceptance key.topic.integration-verification -->
 ## Completion Criteria
 
-- [ ] Non-UTF-8 binary companion이 discover→parse→plan→attest→apply→reconstruct→verify된다.
-- [ ] Companion patch target이 logical source omission으로 오진되지 않는다.
-- [ ] `coverage: full`은 budget/unreadable/truncation이 있으면 pass하지 않는다.
-- [ ] Full manifest의 missing, extra와 typo path가 양방향으로 진단된다.
-- [ ] Subset coverage debt는 warning과 explicit omitted/skipped evidence를 유지한다.
-- [ ] 한 validation envelope가 서로 다른 source generation을 혼합하지 않는다.
-- [ ] Existing UTF-8 companion과 supported adapter regression이 유지된다.
+- [x] Non-UTF-8 binary companion이 discover→parse→plan→attest→apply→reconstruct→verify된다.
+- [x] Companion patch target이 logical source omission으로 오진되지 않는다.
+- [x] `coverage: full`은 budget/unreadable/truncation이 있으면 pass하지 않는다.
+- [x] Full manifest의 missing, extra와 typo path가 양방향으로 진단된다.
+- [x] Subset coverage debt는 warning과 explicit omitted/skipped evidence를 유지한다.
+- [x] 한 validation envelope가 서로 다른 source generation을 혼합하지 않는다.
+- [x] Existing UTF-8 companion과 supported adapter regression이 유지된다.
+
+## Acceptance Result
+
+- Main acceptance: 2026-08-07
+- Companion identity: logical source와 physical companion patch target을 wire 변경 없이 내부
+  normalization으로 분리하고 owner/digest 검사는 physical target에 유지했다.
+- Binary safety: binary source는 raw bytes로만 digest를 확인하고 companion JSON만 UTF-8로
+  해석한다.
+- Coverage: repository envelope가 complete/path digest와 omitted, declared-only, skipped evidence를
+  반환하며 full은 fail-closed, subset은 explicit debt로 동작한다.
+- Generation: discovery/capture bytes로 reconstruct하고 종료 시 physical source generation을
+  재확인한다.
+- Verification: Linker 208 tests, actual repository 235/235 complete validation diagnostics 0와
+  `git diff --check`가 통과했다.
+- Graph sync: `not_applicable`; canonical source-owned graph mutation은 없다.
 
 <!-- key: id=key.work.companion-repository-validation.order.verification refs=key.topic.verification -->
 ## Verification

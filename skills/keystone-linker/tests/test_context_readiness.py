@@ -12,6 +12,7 @@ from graph_runtime.index_model import CallTrace, RecursionBlocked
 from graph_runtime.index_store import SQLiteIndexStore, StoreUnavailable
 from graph_runtime import index_store
 from graph_runtime.readiness import context_readiness
+from graph_runtime.readiness_cli import _response
 from graph_runtime.scanner import ScanScope
 from graph_runtime.scanner import ReferenceScanner
 
@@ -117,6 +118,10 @@ class ContextReadinessTests(unittest.TestCase):
             "refs": lambda value: value["refs"].append(["key.app", "key.context", "x", None]),
             "diagnostics": lambda value: value["diagnostics"].append(["forged", "forged", None]),
             "typed_edges": lambda value: value["typed_edges"].append(["key.app", "uses", "key.context"]),
+            "dependency_evaluations": lambda value: value["dependency_evaluations"].append([
+                "key.forged", "satisfied", False, "forged", "gate", "source", [],
+                True, False, "structured", "complete", "accepted", [],
+            ]),
             "schema_version": lambda value: value.__setitem__("schema_version", 999),
         }
         for index, (name, mutate) in enumerate(mutations.items()):
@@ -188,6 +193,18 @@ class ContextReadinessTests(unittest.TestCase):
         self.assertEqual("source_fallback", second.cache_status)
         self.assertFalse(self.cache.exists())
         self.assertFalse(first.result.freshness.complete)
+        payload = _response(first)
+        self.assertFalse(payload["complete"])
+        self.assertEqual(2, payload["coverage"]["discovered"])
+        self.assertEqual(0, payload["coverage"]["parsed"])
+        self.assertEqual(2, payload["coverage"]["skipped"])
+        self.assertEqual(
+            [
+                {"path": "00_docs/context.md", "reason": "source_too_large"},
+                {"path": "00_docs/large.md", "reason": "source_too_large"},
+            ],
+            payload["coverage"]["skipped_sources"],
+        )
 
     def test_locked_cache_is_preserved_and_not_replaced(self):
         context_readiness(self.root, self.cache, initiator="reader")
@@ -310,7 +327,96 @@ class ContextReadinessTests(unittest.TestCase):
         self.assertEqual(0, process.returncode, process.stderr)
         self.assertEqual("pass", payload["status"])
         self.assertEqual("docs", payload["scope"])
+        self.assertTrue(payload["complete"])
+        self.assertEqual(
+            {"discovered": 1, "parsed": 1, "skipped": 0},
+            {key: payload["coverage"][key]
+             for key in ("discovered", "parsed", "skipped")},
+        )
         self.assertEqual(["key.context"], [item["id"] for item in payload["owners"]])
+
+    def test_readiness_exposes_dependency_gate_scope_target_state_and_result(self):
+        work = self.root / "00_docs" / "works" / "source"
+        target = self.root / "00_docs" / "works" / "dependency-target"
+        work.mkdir(parents=True)
+        target.mkdir(parents=True)
+        (work / "order.md").write_text(
+            """---
+doc_type: work_order
+work_status: in_progress
+approval: {state: pending}
+key:
+  id: key.work.source
+  kind: work_order
+  relations:
+    depends_on:
+      - target: key.work.target
+work_gates:
+  - dependency: key.work.target
+    applies_to:
+      steps: [S01]
+    condition:
+      work_status: complete
+      approval_state: accepted
+---
+# Source
+""",
+            encoding="utf-8",
+        )
+        (work / "progress.md").write_text(
+            """---
+doc_type: progress
+work_status: in_progress
+step_ref: R010/S01
+work_ref: R010/source
+approval: {state: pending}
+key: {id: key.work.source.progress}
+---
+# Progress
+""",
+            encoding="utf-8",
+        )
+        (target / "order.md").write_text(
+            """---
+doc_type: work_order
+work_status: complete
+approval: {state: accepted}
+key: {id: key.work.target, kind: work_order}
+---
+# Target
+""",
+            encoding="utf-8",
+        )
+
+        request = json.dumps({
+            "repository_root": str(self.root),
+            "cache_path": str(self.cache),
+            "initiator": "reader",
+        })
+        process = subprocess.run(
+            [sys.executable, "-m", "graph_runtime.readiness_cli",
+             "--request-json", request, "--response-json", "-"],
+            capture_output=True,
+            text=True,
+            check=False,
+            env=dict(os.environ, PYTHONPATH=str(READINESS_CLI.parents[1])),
+        )
+        payload = json.loads(process.stdout)
+
+        self.assertEqual(0, process.returncode, process.stderr)
+        self.assertEqual(2, payload["schema_version"])
+        evaluation = payload["dependency_evaluations"][0]
+        self.assertTrue(evaluation["gate_id"])
+        self.assertEqual("key.work.source", evaluation["source"])
+        self.assertEqual("key.work.target", evaluation["dependency"])
+        self.assertEqual({"steps": ["S01"], "work_completion": False},
+                         evaluation["scope"])
+        self.assertEqual(
+            {"work_status": "complete", "approval_state": "accepted"},
+            evaluation["target_state"],
+        )
+        self.assertEqual("satisfied", evaluation["result"])
+        self.assertFalse(evaluation["blocking"])
 
 
 if __name__ == "__main__":

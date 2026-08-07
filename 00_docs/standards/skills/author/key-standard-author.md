@@ -407,6 +407,14 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
    finalization을 `complete`로 전이하지 않는다.
 10. 미완료 graph sync는 Main acceptance를 취소하거나 progress를 되돌리지 않는다. R004의
     accepted 문서·기록을 수정하지 않고 이후 finalization에 additive하게 적용한다.
+11. 새 finalization은 schema v4를 사용한다. Acceptance event의 모든 accepted Step은 각 Progress
+    frontmatter의 `finalization.state`와 같은 acceptance ref에 결속한다.
+12. `active_round`, `latest_accepted_round`, `active_steps`는 Context Map, root works index, active
+    round index와 active work index의 서로 다른 path 및 기대 `key.id`에 결속한다. 네 source의
+    frontmatter structured state가 일치하지 않으면 complete로 전이하지 않는다. Schema v3까지는
+    이미 기록된 acceptance의 호환 wire로 보존한다.
+13. Repository에 active round가 없으면 `active_round: none`으로 부재를 명시한다. `none`은
+    `active_steps: []`일 때만 허용하며 active Step이 있으면 반드시 해당 `R\d+` round를 기록한다.
 
 <!-- key: id=key.standard.skill.author.graph-synchronization refs=key.role.author key.role.linker key.topic.artifact-graph key.topic.keystone-metadata key.topic.change-set -->
 ## Document delta와 graph synchronization

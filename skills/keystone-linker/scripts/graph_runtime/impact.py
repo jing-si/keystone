@@ -4,7 +4,11 @@ from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Iterable, Sequence, Tuple
 
-from .model import GraphSnapshot, Node
+from .lifecycle_policy import (
+    EXCLUDED_IMPACT_LIFECYCLES,
+    observed_evidence_attested,
+)
+from .model import Evidence, GraphSnapshot, Lifecycle, Node
 from .relation_policy import RELATION_POLICY
 
 
@@ -68,6 +72,32 @@ def _candidate_sort_key(candidate: TraversalCandidate):
         _locator_key(candidate.node.locator),
         candidate.via,
     )
+
+
+def _cap_grade(grade: ImpactGrade, cap: ImpactGrade) -> ImpactGrade:
+    return grade if _GRADE_RANK[grade] <= _GRADE_RANK[cap] else cap
+
+
+def _admitted_grade(relation, node: Node, grade: ImpactGrade):
+    if relation.lifecycle in EXCLUDED_IMPACT_LIFECYCLES:
+        return None
+    if relation.lifecycle in {Lifecycle.DRAFT, Lifecycle.DEPRECATED}:
+        grade = _cap_grade(grade, ImpactGrade.INFORMATIONAL)
+    elif relation.evidence == Evidence.INFERRED:
+        grade = _cap_grade(grade, ImpactGrade.WEAK_CANDIDATE)
+    elif relation.evidence == Evidence.OBSERVED:
+        cap = (
+            ImpactGrade.STRONG_CANDIDATE
+            if observed_evidence_attested(relation)
+            else ImpactGrade.WEAK_CANDIDATE
+        )
+        grade = _cap_grade(grade, cap)
+
+    if node.lifecycle in EXCLUDED_IMPACT_LIFECYCLES:
+        return None
+    if node.lifecycle in {Lifecycle.DRAFT, Lifecycle.DEPRECATED}:
+        grade = _cap_grade(grade, ImpactGrade.INFORMATIONAL)
+    return grade
 
 
 def _candidate_wire(candidate: TraversalCandidate):
@@ -183,6 +213,9 @@ def changed_seed_candidates(
             else:
                 continue
             if neighbor in seeds or neighbor not in by_id:
+                continue
+            grade = _admitted_grade(relation, by_id[neighbor], grade)
+            if grade is None:
                 continue
             candidate_path = path
             prior = found.get(neighbor)

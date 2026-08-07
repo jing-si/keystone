@@ -56,7 +56,14 @@ def _in_ranges(position: int, ranges) -> bool:
 
 def _inside_inline_code(text: str, position: int) -> bool:
     line_start = text.rfind("\n", 0, position) + 1
-    return text[line_start:position].count("`") % 2 == 1
+    opener_length = None
+    for delimiter in re.finditer(r"`+", text[line_start:position]):
+        length = len(delimiter.group(0))
+        if opener_length is None:
+            opener_length = length
+        elif length == opener_length:
+            opener_length = None
+    return opener_length is not None
 
 
 @dataclass(frozen=True)

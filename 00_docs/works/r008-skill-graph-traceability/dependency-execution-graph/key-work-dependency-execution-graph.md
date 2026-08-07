@@ -2,8 +2,8 @@
 doc_type: work_order
 created_at: "2026-08-06"
 document_lifecycle: active
-approval: {state: pending}
-work_status: in_progress
+approval: {state: accepted, accepted_at: "2026-08-07", accepted_by: main}
+work_status: complete
 key:
   id: key.work.dependency-execution-graph.order
   refs:
@@ -75,14 +75,28 @@ Exclude:
 <!-- key: id=key.work.dependency-execution-graph.order.completion refs=key.topic.acceptance key.topic.integration-verification -->
 ## Completion Criteria
 
-- [ ] Missing source Work/Step과 invalid Step이 `invalid`로 진단된다.
-- [ ] Structured/legacy conflict와 duplicate/self/undeclared gate가 구분된다.
-- [ ] Legacy-only dependency가 non-start-blocking work-completion candidate로 노출된다.
-- [ ] Expanded event graph의 direct/indirect cycle이 deterministic SCC evidence로 검출된다.
-- [ ] Optional gate와 invalid gate의 blocking 의미가 구분된다.
-- [ ] Readiness CLI가 gate ID, scope, target state, result와 blocking을 반환한다.
-- [ ] Evaluation은 progress, assignment나 acceptance를 자동 변경하지 않는다.
-- [ ] R003 accepted simple-case regression이 유지된다.
+- [x] Missing source Work/Step과 invalid Step이 `invalid`로 진단된다.
+- [x] Structured/legacy conflict와 duplicate/self/undeclared gate가 구분된다.
+- [x] Legacy-only dependency가 non-start-blocking work-completion candidate로 노출된다.
+- [x] Expanded event graph의 direct/indirect cycle이 deterministic SCC evidence로 검출된다.
+- [x] Optional gate와 invalid gate의 blocking 의미가 구분된다.
+- [x] Readiness CLI가 gate ID, scope, target state, result와 blocking을 반환한다.
+- [x] Evaluation은 progress, assignment나 acceptance를 자동 변경하지 않는다.
+- [x] R003 accepted simple-case regression이 유지된다.
+
+## Acceptance Result
+
+- Main acceptance: 2026-08-07
+- Work/Step registry: immutable discovery generation의 work order와 progress Step을 물리적 Work
+  경계에서 결합하고 missing source Work/Step을 invalid evidence로 보존한다.
+- Dependency evaluation: legacy completion candidate, optional blocking, target state와
+  structured/legacy conflict를 canonical vocabulary로 반환한다.
+- Cycle: required gate만 source Step start/completion, Work completion과 target acceptance event로
+  펼친 deterministic SCC에서 판정한다.
+- Readiness/Coordinator: readiness schema v2가 typed evaluation을 반환하고 Coordinator는 required
+  active-Step blocking gate가 남은 accept candidate를 거부한다.
+- Graph sync: `not_applicable`. Dependency 실행 해석과 wire를 구현했지만 source-owned graph
+  node/relation 선언은 바뀌지 않았다.
 
 <!-- key: id=key.work.dependency-execution-graph.order.verification refs=key.topic.verification -->
 ## Verification

@@ -214,6 +214,7 @@ key: {id: key.doc.real, kind: source_document}
         self.assertEqual(("key.work.skill",), result.snapshot.nodes[0].provenance.produced_from)
         self.assertEqual(("key.standard.project",), result.snapshot.nodes[0].provenance.governed_by)
 
+    # keystone: id=key.test.linker.metadata-parser-contract kind=output_artifact artifact_kind=test verifies=key.code.linker.metadata-parser locator.test_name=test_compact_space_separated_multi_values_are_not_dropped
     def test_compact_space_separated_multi_values_are_not_dropped(self):
         source = """<!-- keystone: id=key.skill.example kind=output_artifact artifact_kind=skill_source -->
 <!-- keystone: refs=key.doc.one key.doc.two -->
@@ -250,6 +251,7 @@ key: {id: key.doc.real, kind: source_document}
 key: {id: key.doc.real, kind: source_document}
 ---
 Do not write `<!-- keystone: depends_on=key.old -->` syntax.
+Use ``<!-- key: id=key.claim.fake kind=claim -->`` as an example.
 """
         result = parse_source(source, "docs/real.md", MarkdownAdapter())
 

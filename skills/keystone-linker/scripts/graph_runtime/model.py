@@ -126,6 +126,21 @@ def patch_owner_matches_surface(owner: PatchOwner, surface: PatchSurface,
             else owner in {PatchOwner.MAIN, PatchOwner.COORDINATOR})
 
 
+def patch_source_identity(surface: PatchSurface, target_path: str) -> str:
+    """Map a physical patch target to the logical source represented by the patch."""
+    try:
+        surface = PatchSurface(surface)
+    except (TypeError, ValueError):
+        return target_path
+    if (
+        surface == PatchSurface.COMPANION_METADATA
+        and isinstance(target_path, str)
+        and target_path.endswith(".keystone.json")
+    ):
+        return target_path[:-len(".keystone.json")]
+    return target_path
+
+
 class AttestationDecision(WireEnum):
     CONFIRM = "confirm"
     REJECT = "reject"
@@ -154,6 +169,15 @@ class ConflictReason(WireEnum):
     REJECT = "reject"
     NEEDS_REVISION = "needs_revision"
     RECONSTRUCTION_MISMATCH = "reconstruction_mismatch"
+
+
+class FailureReason(WireEnum):
+    TRANSIENT_IO = "transient_io"
+    PERMISSION_DENIED = "permission_denied"
+    VALIDATION_FAILED = "validation_failed"
+    SOURCE_CONFLICT = "source_conflict"
+    TOOL_FAILURE = "tool_failure"
+    UNKNOWN = "unknown"
 
 
 class Severity(WireEnum):
@@ -257,6 +281,10 @@ class SurfacePatch:
     baseline_digest: str
     exact_patch: str
     required: bool = True
+    patch_format: Optional[str] = None
+    patch_body: Optional[str] = None
+    expected_after_digest: Optional[str] = None
+    baseline_content: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -295,6 +323,7 @@ class GraphTransaction:
     apply_results: Tuple[ApplicationResult, ...] = ()
     state: TransactionState = TransactionState.PROPOSED
     conflict_reason: Optional[ConflictReason] = None
+    failure_reason: Optional[FailureReason] = None
     reconstruction: Optional[GraphSnapshot] = None
     mechanical_validation: Tuple[Diagnostic, ...] = ()
     coverage_debt: Tuple[str, ...] = ()
@@ -307,6 +336,7 @@ class ParseResult:
     diagnostics: Tuple[Diagnostic, ...] = ()
     baseline_digest: Optional[str] = None
     work_gates: Tuple[Any, ...] = ()
+    dependency_sources: Tuple[Any, ...] = ()
 
 
 @dataclass(frozen=True)

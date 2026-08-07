@@ -2,8 +2,8 @@
 doc_type: work_order
 created_at: "2026-08-06"
 document_lifecycle: active
-approval: {state: pending}
-work_status: planned
+approval: {state: accepted, accepted_at: "2026-08-07", accepted_by: main}
+work_status: complete
 key:
   id: key.work.graph-lifecycle-wire-compatibility.order
   refs:
@@ -77,13 +77,13 @@ Exclude:
 <!-- key: id=key.work.graph-lifecycle-wire-compatibility.order.completion refs=key.topic.acceptance key.topic.integration-verification -->
 ## Completion Criteria
 
-- [ ] Declared/observed/inferred evidence가 승인된 maximum impact grade를 따른다.
-- [ ] Deprecated/archived/removed relation이 active required candidate로 오인되지 않는다.
-- [ ] Retired source에서 시작하는 active semantic relation이 진단된다.
-- [ ] Canonical supersedes exception은 source/target/evidence 조건을 계속 만족한다.
-- [ ] 기준서와 runtime의 node/relation lifecycle vocabulary가 version별로 일치한다.
-- [ ] Graph wire decision과 compatibility 기간이 Decision에 기록된다.
-- [ ] v1 fixture와 선택된 canonical wire의 migration/round-trip tests가 통과한다.
+- [x] Declared/observed/inferred evidence가 승인된 maximum impact grade를 따른다.
+- [x] Deprecated/archived/removed relation이 active required candidate로 오인되지 않는다.
+- [x] Retired source에서 시작하는 active semantic relation이 진단된다.
+- [x] Canonical supersedes exception은 source/target/evidence 조건을 계속 만족한다.
+- [x] 기준서와 runtime의 node/relation lifecycle vocabulary가 version별로 일치한다.
+- [x] Graph wire decision과 compatibility 기간이 Decision에 기록된다.
+- [x] v1 fixture와 선택된 canonical wire의 migration/round-trip tests가 통과한다.
 
 <!-- key: id=key.work.graph-lifecycle-wire-compatibility.order.verification refs=key.topic.verification -->
 ## Verification

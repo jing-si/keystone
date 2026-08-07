@@ -8,6 +8,7 @@ from .index_store import CacheBusy, CacheCorrupt, SQLiteIndexStore, StoreUnavail
 from .scanner import ReferenceScanner, ScanScope
 
 
+# keystone: id=key.code.linker.context-readiness kind=output_artifact artifact_kind=code refs=key.standard.skill.linker.reference-index-readiness locator.symbol=context_readiness
 def context_readiness(repository_root, cache_path, *, initiator, artifact_context=False,
                       include_typed_graph=False, trace=None, document_root="00_docs",
                       includes=(), excludes=()):

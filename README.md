@@ -153,7 +153,8 @@ Artifact Graph synchronization contracts; consult these sources for current stat
 - [`00_docs/standards/01_key-project-standard.md`](00_docs/standards/01_key-project-standard.md)
 - [`00_docs/standards/bootstrap/key-standard-bootstrap.md`](00_docs/standards/bootstrap/key-standard-bootstrap.md)
 - [`00_docs/works/00_key-index.md`](00_docs/works/00_key-index.md)
-- [`00_docs/works/r006-reference-index-context-readiness/00_key-index.md`](00_docs/works/r006-reference-index-context-readiness/00_key-index.md)
+- [`00_docs/works/r008-skill-graph-traceability/00_key-index.md`](00_docs/works/r008-skill-graph-traceability/00_key-index.md)
+- [`00_docs/works/r009-coordinator-keystone-closure/00_key-index.md`](00_docs/works/r009-coordinator-keystone-closure/00_key-index.md)
 
 The older `work-package-doc-architect` and `subagent-work-coordinator` projects
 remain historical prototype references, not runtime dependencies.

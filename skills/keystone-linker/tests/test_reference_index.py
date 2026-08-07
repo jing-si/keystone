@@ -4,6 +4,7 @@ import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from graph_runtime.index_store import SQLiteIndexStore
 from graph_runtime.query import owner_for, refs_to
@@ -81,24 +82,34 @@ class ReferenceIndexTests(unittest.TestCase):
             dangling,
         )
 
-    def test_repository_owner_ref_is_out_of_scope_warning_in_docs_scan(self):
+    def test_repository_owner_refs_are_out_of_scope_warnings_in_docs_scan(self):
+        targets = (
+            "key.skill.author", "key.code.author", "key.config.author",
+            "key.schema.author", "key.api.author", "key.test.author",
+        )
         self.write(
             "00_docs/standard.md",
-            "<!-- keystone: id=key.claim.consumer kind=claim refs=key.skill.author -->\n"
-            "# Consumer\n",
+            "<!-- keystone: id=key.claim.consumer kind=claim refs=%s -->\n# Consumer\n"
+            % " ".join(targets),
         )
-        self.write(
-            "skills/keystone-author/SKILL.md",
-            "<!-- keystone: id=key.skill.author kind=output_artifact "
-            "artifact_kind=skill_source -->\n# Author\n",
-        )
+        for target in targets:
+            suffix = target.split(".")[1]
+            artifact_kind = "skill_source" if suffix == "skill" else suffix
+            self.write(
+                "src/%s.py" % suffix,
+                "# keystone: id=%s kind=output_artifact artifact_kind=%s "
+                "locator.symbol=owner\ndef owner(): pass\n" % (target, artifact_kind),
+            )
 
         docs = ReferenceScanner(self.root).scan(ScanScope.DOCS)
         repository = ReferenceScanner(self.root).scan(ScanScope.REPOSITORY)
 
         self.assertNotIn("dangling_ref", {item.code for item in docs.diagnostics})
-        out_of_scope = next(item for item in docs.diagnostics if item.code == "out_of_scope_ref")
-        self.assertEqual("warning", out_of_scope.severity)
+        out_of_scope = [
+            item for item in docs.diagnostics if item.code == "out_of_scope_ref"
+        ]
+        self.assertEqual(6, len(out_of_scope))
+        self.assertTrue(all(item.severity == "warning" for item in out_of_scope))
         self.assertNotIn(
             "out_of_scope_ref",
             {item.code for item in repository.diagnostics},
@@ -265,6 +276,36 @@ plain body
 
         diagnostic = next(item for item in result.diagnostics if item.code == "source_too_large")
         self.assertEqual("warning", diagnostic.severity)
+
+    def test_file_byte_and_unreadable_budgets_report_incomplete_discovery(self):
+        first = self.write("00_docs/a.md", "12345678")
+        self.write("00_docs/b.md", "abcdefgh")
+
+        file_limited = ReferenceScanner(
+            self.root, max_files=1
+        ).discover(ScanScope.DOCS)
+        byte_limited = ReferenceScanner(
+            self.root, max_total_bytes=8
+        ).discover(ScanScope.DOCS)
+
+        original_read_bytes = Path.read_bytes
+
+        def unreadable(path):
+            if path.name == first.name:
+                raise OSError("fixture unreadable")
+            return original_read_bytes(path)
+
+        with patch.object(Path, "read_bytes", unreadable):
+            unreadable_result = ReferenceScanner(self.root).discover(ScanScope.DOCS)
+
+        self.assertIn("scan_truncated", {item.code for item in file_limited.diagnostics})
+        self.assertIn("scan_truncated", {item.code for item in byte_limited.diagnostics})
+        self.assertIn("source_unreadable", {
+            item.code for item in unreadable_result.diagnostics
+        })
+        self.assertFalse(file_limited.freshness.complete)
+        self.assertFalse(byte_limited.freshness.complete)
+        self.assertFalse(unreadable_result.freshness.complete)
 
     def test_discovery_snapshot_retains_exact_bytes_across_mutation(self):
         source = self.write("00_docs/a.md", "<!-- keystone: id=key.before kind=claim -->\n# Before\n")

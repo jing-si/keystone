@@ -1,7 +1,10 @@
 import unittest
 
 from graph_runtime.model import (
+    ApprovalState,
+    ArtifactKind,
     GraphSnapshot,
+    Lifecycle,
     Locator,
     Node,
     NodeKind,
@@ -14,7 +17,9 @@ from graph_runtime.transaction_wire_validation import (
     is_mechanical_envelope,
     is_node_wire,
     is_relation_wire,
+    is_snapshot_wire,
     mechanical_envelope_passes,
+    migrate_snapshot_wire_v1_to_v2,
     normalized_wire,
 )
 from graph_runtime.wire import graph_snapshot_wire
@@ -41,6 +46,66 @@ class TransactionWireValidationTest(unittest.TestCase):
 
         self.assertTrue(all(is_node_wire(item) for item in snapshot["nodes"]))
         self.assertTrue(all(is_relation_wire(item) for item in snapshot["relations"]))
+
+    def test_v1_serializer_is_strict_core_and_v1_parser_accepts_legacy_extensions(self):
+        extended = Node(
+            "key.claim.extended",
+            NodeKind.CLAIM,
+            locator=Locator("source.md"),
+            approval_state=ApprovalState.ACCEPTED,
+            declared_approval_state=ApprovalState.ACCEPTED,
+        )
+        node = graph_snapshot_wire(GraphSnapshot(nodes=(extended,)))["nodes"][0]
+
+        self.assertEqual(
+            {"id", "kind", "artifact_kind", "locator", "lifecycle", "provenance"},
+            set(node),
+        )
+        legacy_extended = dict(node)
+        legacy_extended.update({
+            "declared_metadata": {
+                "document_lifecycle": None,
+                "approval_state": "accepted",
+                "governed_by": [],
+                "source_authority": [],
+            },
+            "effective_metadata": {
+                "document_lifecycle": "active",
+                "approval_state": "accepted",
+                "governed_by": [],
+                "source_authority": [],
+            },
+            "parent_id": None,
+        })
+        self.assertTrue(is_node_wire(legacy_extended, 1))
+
+    def test_v1_migration_matches_canonical_v2_and_rejects_domain_conflict(self):
+        v1 = graph_snapshot_wire(GraphSnapshot(
+            nodes=(self.source, self.target), relations=(self.relation,)
+        ))
+        v2 = graph_snapshot_wire(GraphSnapshot(
+            nodes=(self.source, self.target), relations=(self.relation,),
+            schema_version=2,
+        ))
+
+        self.assertEqual(normalized_wire(v2), migrate_snapshot_wire_v1_to_v2(v1))
+        self.assertTrue(is_snapshot_wire(v1, 1))
+        self.assertTrue(is_snapshot_wire(v2, 2))
+        self.assertTrue(all(is_node_wire(item, 2) for item in v2["nodes"]))
+        self.assertTrue(all(is_relation_wire(item, 2) for item in v2["relations"]))
+
+        wrong_version = dict(v2, schema_version=1)
+        self.assertFalse(is_snapshot_wire(wrong_version, 1))
+
+        invalid = graph_snapshot_wire(GraphSnapshot(nodes=(Node(
+            "key.code.archived",
+            NodeKind.OUTPUT_ARTIFACT,
+            ArtifactKind.CODE,
+            Locator("target.py"),
+            Lifecycle.ARCHIVED,
+        ),)))
+        with self.assertRaisesRegex(ValueError, "lifecycle"):
+            migrate_snapshot_wire_v1_to_v2(invalid)
 
     def test_digest_wire_accepts_absent_or_lowercase_sha256_only(self):
         self.assertTrue(is_digest_wire("absent"))

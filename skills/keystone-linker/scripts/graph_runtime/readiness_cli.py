@@ -54,17 +54,42 @@ def _diagnostic(item):
 
 def _response(readiness):
     result = readiness.result
+    freshness = result.freshness
     diagnostics = [_diagnostic(item) for item in result.diagnostics + readiness.diagnostics]
     errors = sum(item["severity"] == "error" for item in diagnostics)
     warnings = sum(item["severity"] == "warning" for item in diagnostics)
+    discovered_paths = tuple(freshness.discovered_paths)
+    parsed_paths = tuple(item.path for item in freshness.entries)
+    parsed_set = frozenset(parsed_paths)
+    skipped_paths = tuple(path for path in discovered_paths if path not in parsed_set)
+    skip_reasons = {
+        item["path"]: item["code"]
+        for item in diagnostics
+        if item.get("path") in skipped_paths
+        and item["code"] in {"scan_truncated", "source_too_large", "source_unreadable"}
+    }
+    path_digest = "sha256:" + hashlib.sha256(json.dumps(
+        discovered_paths, ensure_ascii=False, separators=(",", ":")
+    ).encode("utf-8")).hexdigest()
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
         "status": "fail" if errors else "pass",
         "diagnostics": diagnostics,
         "summary": {"errors": errors, "warnings": warnings},
         "cache_status": readiness.cache_status,
         "scope": result.scope.value,
-        "freshness_digest": result.freshness.digest,
+        "freshness_digest": freshness.digest,
+        "complete": freshness.complete,
+        "coverage": {
+            "path_digest": path_digest,
+            "discovered": len(discovered_paths),
+            "parsed": len(parsed_paths),
+            "skipped": len(skipped_paths),
+            "skipped_sources": [
+                {"path": path, "reason": skip_reasons.get(path, "scan_truncated")}
+                for path in skipped_paths
+            ],
+        },
         "owners": [{"id": item.id, "path": item.path, "locator": item.locator}
                    for item in result.owners],
         "refs": [{"source_id": item.source_id, "target_id": item.target_id,
@@ -72,6 +97,25 @@ def _response(readiness):
         "typed_edges": (None if result.typed_graph is None else [
             {"source_id": item.source_id, "relation": item.relation,
              "target_id": item.target_id} for item in result.typed_graph.edges]),
+        "dependency_evaluations": [{
+            "gate_id": item.gate_id,
+            "source": item.source_id,
+            "dependency": item.dependency,
+            "scope": {
+                "steps": list(item.steps),
+                "work_completion": item.work_completion,
+            },
+            "target_state": {
+                "work_status": item.target_work_status,
+                "approval_state": item.target_approval_state,
+            },
+            "result": item.status.value,
+            "blocking": item.blocking,
+            "optional": item.optional,
+            "origin": item.origin,
+            "reason": item.reason,
+            "cycle_events": list(item.cycle_events),
+        } for item in result.dependency_evaluations],
         "trace": [{"lane": item.lane, "operation": item.operation}
                   for item in readiness.trace.entries],
     }
@@ -89,7 +133,7 @@ def main():
         exit_code = 1 if payload["summary"]["errors"] else 0
     except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as error:
         payload = {
-            "schema_version": 1, "status": "error",
+            "schema_version": 2, "status": "error",
             "diagnostics": [{"code": "readiness_execution_failed", "message": str(error),
                              "severity": "error"}],
             "summary": {"errors": 1, "warnings": 0},

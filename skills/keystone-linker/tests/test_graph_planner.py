@@ -1,3 +1,4 @@
+import hashlib
 import unittest
 
 from graph_runtime.model import (
@@ -6,6 +7,7 @@ from graph_runtime.model import (
     DeltaKind,
     Evidence,
     GraphSnapshot,
+    Lifecycle,
     Locator,
     MutationEvidence,
     MutationEntity,
@@ -194,12 +196,92 @@ class GraphPlannerTests(unittest.TestCase):
         self.assertEqual(by_id[self.capability.id], ImpactGrade.STRONG_CANDIDATE)
         self.assertNotIn(self.test.id, by_id)
 
+    def test_impact_grade_is_capped_by_evidence_and_lifecycle(self):
+        cases = (
+            (Evidence.DECLARED, Lifecycle.ACTIVE, Provenance(), ImpactGrade.REQUIRED),
+            (Evidence.OBSERVED, Lifecycle.ACTIVE, Provenance(), ImpactGrade.WEAK_CANDIDATE),
+            (Evidence.OBSERVED, Lifecycle.ACTIVE, Provenance(
+                surface="test_anchor",
+                locator=Locator("tests/test_feature.py"),
+                attested_by="main",
+            ), ImpactGrade.STRONG_CANDIDATE),
+            (Evidence.INFERRED, Lifecycle.ACTIVE, Provenance(), ImpactGrade.WEAK_CANDIDATE),
+            (Evidence.DECLARED, Lifecycle.DEPRECATED, Provenance(), ImpactGrade.INFORMATIONAL),
+        )
+        for evidence, lifecycle, provenance, expected in cases:
+            with self.subTest(evidence=evidence, lifecycle=lifecycle):
+                relation = Relation(
+                    self.test.id, RelationType.VERIFIES, self.capability.id,
+                    evidence, provenance, lifecycle,
+                )
+                snapshot = GraphSnapshot(self.snapshot.nodes, (relation,))
+                candidates = changed_seed_candidates(snapshot, (self.capability.id,))
+                self.assertEqual(expected, candidates[0].grade)
+
+        archived = Relation(
+            self.test.id, RelationType.VERIFIES, self.capability.id,
+            Evidence.DECLARED, lifecycle=Lifecycle.ARCHIVED,
+        )
+        self.assertEqual((), changed_seed_candidates(
+            GraphSnapshot(self.snapshot.nodes, (archived,)), (self.capability.id,)
+        ))
+
     def test_each_patch_baseline_must_match_its_source_delta(self):
         wrong = PatchSpec(PatchOwner.AUTHOR, PatchSurface.DOCUMENT_METADATA,
                           self.patch.target_path, "sha256:" + "2" * 64, self.patch.exact_patch)
         with self.assertRaisesRegex(ValueError, "baseline"):
             plan_graph_sync(self.snapshot, (self.delta,), "scope:s02",
                             patch_specs=(wrong,))
+
+    def test_executable_patch_selects_schema_v2_and_preserves_replay_fields(self):
+        baseline = "before\n"
+        body = "replacement\n"
+        baseline_digest = "sha256:" + hashlib.sha256(baseline.encode()).hexdigest()
+        delta = Delta(
+            self.delta.kind,
+            self.delta.source_surface,
+            self.delta.changed_locators,
+            self.delta.semantic_summary,
+            baseline_digest,
+        )
+        enhanced = PatchSpec(
+            PatchOwner.AUTHOR,
+            PatchSurface.DOCUMENT_METADATA,
+            self.patch.target_path,
+            baseline_digest,
+            body,
+            patch_format="full_replacement",
+            patch_body=body,
+            expected_after_digest="sha256:" + hashlib.sha256(body.encode()).hexdigest(),
+            baseline_content=baseline,
+        )
+
+        transaction = plan_graph_sync(
+            self.snapshot, (delta,), "scope:s02", patch_specs=(enhanced,)
+        )
+
+        self.assertEqual(2, transaction.schema_version)
+        self.assertEqual("full_replacement", transaction.surface_patches[0].patch_format)
+        self.assertEqual(body, transaction.surface_patches[0].patch_body)
+        self.assertEqual("sha256:" + hashlib.sha256(body.encode()).hexdigest(),
+                         transaction.surface_patches[0].expected_after_digest)
+        self.assertEqual(baseline, transaction.surface_patches[0].baseline_content)
+
+        invalid = PatchSpec(
+            PatchOwner.AUTHOR,
+            PatchSurface.DOCUMENT_METADATA,
+            self.patch.target_path,
+            baseline_digest,
+            "description",
+            patch_format="full_replacement",
+            patch_body=body,
+            expected_after_digest="sha256:" + "a" * 64,
+            baseline_content=baseline,
+        )
+        with self.assertRaisesRegex(ValueError, "exact_patch"):
+            plan_graph_sync(
+                self.snapshot, (delta,), "scope:s02", patch_specs=(invalid,)
+            )
 
     def test_delta_and_patch_input_order_does_not_change_transaction(self):
         artifact_delta = Delta(DeltaKind.ARTIFACT, "src/feature.py",

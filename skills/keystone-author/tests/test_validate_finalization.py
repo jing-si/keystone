@@ -33,9 +33,10 @@ class FinalizationValidatorCliTest(unittest.TestCase):
         (self.root / "docs").mkdir()
         (self.root / "docs" / "s02.md").write_text(
             "---\nwork_status: accepted\nstep_ref: R004/S02\n"
-            "work_ref: R004/finalization-runtime-validator\n---\n# S02\n\n"
+            "work_ref: R004/finalization-runtime-validator\n"
             "finalization:\n  state: in_progress\n"
-            "  acceptance_ref: R004/S02/main-acceptance\n",
+            "  acceptance_ref: R004/S02/main-acceptance\n"
+            "---\n# S02\n",
             encoding="utf-8",
         )
         (self.root / "docs" / "round.md").write_text(
@@ -196,6 +197,41 @@ class FinalizationValidatorCliTest(unittest.TestCase):
         source.write_text(content, encoding="utf-8")
         return manifest
 
+    def upgrade_to_v4(self, manifest):
+        self.upgrade_to_v3(manifest)
+        manifest["schema_version"] = 4
+        manifest["steps"][0].update(
+            finalization_state="in_progress",
+            finalization_acceptance_ref="R004/S02/main-acceptance",
+        )
+        source_specs = [
+            ("work_index", "docs/work-index.md", "key.work.index"),
+            ("round_index", "docs/round.md", "key.round.index"),
+            ("root_index", "docs/root-index.md", "key.root.index"),
+            ("context_map", "docs/context-map.md", "key.context-map"),
+        ]
+        for _, path, key_id in source_specs:
+            (self.root / path).write_text(
+                "---\n"
+                f"key: {{id: {key_id}}}\n"
+                "global_state:\n"
+                "  active_round: R004\n"
+                "  latest_accepted_round: R003\n"
+                "  active_steps: []\n"
+                "---\n# State\n",
+                encoding="utf-8",
+            )
+        manifest["global_state"] = {
+            "active_round": "R004",
+            "latest_accepted_round": "R003",
+            "active_steps": [],
+            "sources": [
+                {"category": category, "path": path, "key_id": key_id}
+                for category, path, key_id in source_specs
+            ],
+        }
+        return manifest
+
     def run_finalization_runner(self, manifest):
         manifest_path = self.root / "manifest.json"
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
@@ -208,6 +244,7 @@ class FinalizationValidatorCliTest(unittest.TestCase):
     def assert_diagnostic(self, payload, code):
         self.assertIn(code, [item["code"] for item in payload["diagnostics"]])
 
+    # keystone: id=key.test.author.finalization-validator-contract kind=output_artifact artifact_kind=test verifies=key.code.author.finalization-validator locator.test_name=test_valid_manifest_returns_machine_readable_pass
     def test_valid_manifest_returns_machine_readable_pass(self):
         process, payload = self.run_validator(self.valid_manifest())
 
@@ -367,6 +404,160 @@ class FinalizationValidatorCliTest(unittest.TestCase):
 
         self.assertEqual(1, process.returncode)
         self.assert_diagnostic(payload, "step_status_source_mismatch")
+
+    def test_body_examples_cannot_override_progress_frontmatter_state(self):
+        manifest = self.valid_manifest()
+        source = self.root / "docs" / "s02.md"
+        source.write_text(
+            source.read_text(encoding="utf-8")
+            + "\n```yaml\nwork_status: complete\napproval: {state: accepted}\n"
+              "finalization: {state: complete, acceptance_ref: forged}\n```\n",
+            encoding="utf-8",
+        )
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(0, process.returncode, payload)
+
+    def test_schema_v4_global_state_matches_distinct_typed_sources(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v4(manifest)
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(0, process.returncode, payload)
+
+    def test_schema_v4_represents_no_active_round_only_with_no_active_steps(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v4(manifest)
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+        manifest["global_state"]["active_round"] = "none"
+        for source in manifest["global_state"]["sources"]:
+            path = self.root / source["path"]
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    "active_round: R004", "active_round: none"
+                ),
+                encoding="utf-8",
+            )
+
+        process, payload = self.run_validator(manifest)
+        self.assertEqual(0, process.returncode, payload)
+
+        manifest["active_steps"] = ["R004/S02"]
+        manifest["global_state"]["active_steps"] = ["R004/S02"]
+        process, payload = self.run_validator(manifest)
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "global_state_active_round_mismatch")
+
+    def test_schema_v4_rejects_global_state_mismatch_and_body_override(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v4(manifest)
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+        source = self.root / "docs" / "context-map.md"
+        source.write_text(
+            source.read_text(encoding="utf-8").replace(
+                "latest_accepted_round: R003", "latest_accepted_round: R002"
+            )
+            + "\n```yaml\nglobal_state: {latest_accepted_round: R003}\n```\n",
+            encoding="utf-8",
+        )
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "global_state_source_mismatch")
+
+    def test_schema_v4_rejects_duplicate_source_path_and_wrong_key_identity(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v4(manifest)
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+        manifest["global_state"]["sources"][1]["path"] = "docs/work-index.md"
+        manifest["global_state"]["sources"][2]["key_id"] = "key.wrong"
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "global_state_source_path_duplicate")
+        self.assert_diagnostic(payload, "global_state_source_key_mismatch")
+
+    def test_complete_multi_step_finalization_checks_every_accepted_progress(self):
+        manifest = self.valid_manifest()
+        self.upgrade_to_v4(manifest)
+        manifest["acceptance_ref"] = "R004/main-acceptance"
+        manifest["steps"][0]["finalization_state"] = "complete"
+        manifest["steps"][0]["finalization_acceptance_ref"] = "R004/main-acceptance"
+        second_path = self.root / "docs" / "s03.md"
+        second_path.write_text(
+            "---\nwork_status: complete\napproval: {state: accepted}\n"
+            "step_ref: R004/S03\nwork_ref: R004/second\n"
+            "finalization: {state: in_progress, acceptance_ref: R004/main-acceptance}\n"
+            "---\n# S03\n",
+            encoding="utf-8",
+        )
+        manifest["steps"].append({
+            "ref": "R004/S03",
+            "work_ref": "R004/second",
+            "status": "complete",
+            "approval_state": "accepted",
+            "progress_path": "docs/s03.md",
+            "finalization_state": "complete",
+            "finalization_acceptance_ref": "R004/main-acceptance",
+        })
+        manifest["accepted_steps"].append("R004/S03")
+        manifest["execution_transitions"].append({
+            "ref": "R004/S03", "from": "in_progress", "to": "complete",
+        })
+        manifest["approval_transitions"].append({
+            "ref": "R004/S03", "from": "pending", "to": "accepted",
+            "evidence": "R004/S03/main-acceptance",
+        })
+        manifest["finalization"]["state"] = "complete"
+        manifest["finalization"]["evidence"].append("post_edit_verification")
+        source = self.root / "docs" / "s02.md"
+        source.write_text(
+            source.read_text(encoding="utf-8")
+            .replace("state: in_progress", "state: complete")
+            .replace("R004/S02/main-acceptance", "R004/main-acceptance"),
+            encoding="utf-8",
+        )
+        manifest["graph_sync"] = {
+            "required": False,
+            "disposition": "not_applicable",
+            "reason": "No graph mutation.",
+        }
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "accepted_step_finalization_source_mismatch")
+
+        second_path.write_text(
+            second_path.read_text(encoding="utf-8").replace(
+                "state: in_progress", "state: complete"
+            ),
+            encoding="utf-8",
+        )
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(0, process.returncode, payload)
 
     def test_manifest_active_steps_must_match_each_declared_source(self):
         manifest = self.valid_manifest()

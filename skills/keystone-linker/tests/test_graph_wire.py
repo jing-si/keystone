@@ -1,3 +1,4 @@
+import hashlib
 import unittest
 
 from graph_runtime.model import (
@@ -66,6 +67,47 @@ class GraphWireTest(unittest.TestCase):
         self.assertEqual([], wire["mechanical_validation"]["diagnostics"])
         self.assertEqual((), validate_transaction(
             wire, source_snapshot=self.verified.reconstruction))
+
+    # keystone: id=key.test.linker.graph-transaction-wire-contract kind=output_artifact artifact_kind=test verifies=key.code.linker.graph-transaction-validator locator.test_name=test_schema_v2_transaction_round_trips_canonical_lifecycle_wire
+    def test_schema_v2_transaction_round_trips_canonical_lifecycle_wire(self):
+        body = "after\n"
+        digest = "sha256:" + hashlib.sha256(body.encode("utf-8")).hexdigest()
+        patch = SurfacePatch(
+            "patch-wire-v2", PatchOwner.MAIN, PatchSurface.CODE_ANCHOR,
+            "src/wire.py", "absent", body, True,
+            patch_format="full_replacement", patch_body=body,
+            expected_after_digest=digest, baseline_content=None,
+        )
+        transaction = GraphTransaction(
+            "tx-wire-v2", "R008/S06",
+            canonical_mutations=(CanonicalMutation(
+                MutationOperation.ADD, MutationEntity.NODE, None, self.node,
+                Evidence.DECLARED,
+            ),),
+            surface_patches=(patch,),
+            attestations=(SurfaceAttestation(
+                patch.patch_id, PatchOwner.MAIN, AttestationDecision.CONFIRM,
+                "owner confirmed meaning",
+            ),),
+            apply_results=(ApplicationResult(
+                patch.patch_id, ApplicationStatus.APPLIED, digest,
+                "source write completed",
+            ),),
+            state=TransactionState.VERIFIED,
+            reconstruction=GraphSnapshot(nodes=(self.node,)),
+            schema_version=2,
+        )
+
+        wire = transaction_wire(transaction, baseline_snapshot=GraphSnapshot())
+
+        self.assertEqual(2, wire["reconstruction"]["baseline"]["schema_version"])
+        self.assertEqual(
+            "artifact",
+            wire["canonical_mutations"][0]["after"]["lifecycle_domain"],
+        )
+        self.assertEqual((), validate_transaction(
+            wire, source_snapshot=transaction.reconstruction,
+        ))
 
     def test_unfinished_and_failed_states_round_trip_without_promotion(self):
         proposed = GraphTransaction("tx-proposed", "R005/S03")

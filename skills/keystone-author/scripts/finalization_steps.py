@@ -7,6 +7,7 @@ from finalization_support import (
     active_steps_from_text,
     approval_scalar,
     diagnostic,
+    finalization_scalar,
     read_scoped_file,
     resolve_scoped_path,
     scalar_from_text,
@@ -81,7 +82,7 @@ def validate_steps_and_transitions(
                     f"from source {source_status}.",
                     step.get("progress_path"),
                 ))
-            if schema_version == 3:
+            if schema_version in {3, 4}:
                 if step.get("status") not in WORK_STATUSES:
                     findings.append(diagnostic(
                         "step_work_status_invalid",
@@ -141,7 +142,7 @@ def validate_steps_and_transitions(
                 f"Active step is not declared in steps: {ref}.",
             ))
         elif step.get("status") not in (
-                ACTIVE_WORK_STATUSES if schema_version == 3 else LEGACY_ACTIVE_STATUSES):
+                ACTIVE_WORK_STATUSES if schema_version in {3, 4} else LEGACY_ACTIVE_STATUSES):
             findings.append(diagnostic(
                 "active_step_status_invalid",
                 f"Active step {ref} has non-active status: {step.get('status')}.",
@@ -196,7 +197,7 @@ def validate_steps_and_transitions(
 
     for ref, step in steps.items():
         active_statuses = (
-            ACTIVE_WORK_STATUSES if schema_version == 3 else LEGACY_ACTIVE_STATUSES
+            ACTIVE_WORK_STATUSES if schema_version in {3, 4} else LEGACY_ACTIVE_STATUSES
         )
         if step.get("status") in active_statuses and ref not in seen_active:
             findings.append(diagnostic(
@@ -218,11 +219,65 @@ def validate_steps_and_transitions(
                 "accepted_step_unresolved", f"Accepted Step is not declared: {ref}."
             ))
 
-    if schema_version == 3:
+    if schema_version in {3, 4}:
         _validate_schema_v3_transitions(manifest, accepted_steps, steps, findings)
+        if schema_version == 4:
+            _validate_accepted_step_finalizations(
+                root, manifest, accepted_steps, steps, findings
+            )
     else:
         _validate_legacy_transitions(manifest, accepted_steps, findings)
     return findings, steps
+
+
+def _validate_accepted_step_finalizations(
+        root: Path, manifest: Dict[str, Any], accepted_steps: set,
+        steps: Dict[str, Dict[str, Any]], findings: List[Dict[str, str]],
+) -> None:
+    global_finalization = manifest.get("finalization")
+    global_state = (
+        global_finalization.get("state")
+        if isinstance(global_finalization, dict) else None
+    )
+    acceptance_ref = manifest.get("acceptance_ref")
+    for ref in sorted(accepted_steps):
+        step = steps.get(ref)
+        if not isinstance(step, dict):
+            continue
+        declared_state = step.get("finalization_state")
+        declared_acceptance = step.get("finalization_acceptance_ref")
+        if not all(
+            isinstance(value, str) and bool(value.strip())
+            for value in (declared_state, declared_acceptance)
+        ):
+            findings.append(diagnostic(
+                "accepted_step_finalization_missing",
+                f"Accepted Step {ref} requires finalization state and acceptance ref.",
+            ))
+            continue
+        content, error, source_path = read_scoped_file(root, step.get("progress_path"))
+        if error:
+            continue
+        source_state = finalization_scalar(content or "", "state")
+        source_acceptance = finalization_scalar(content or "", "acceptance_ref")
+        if source_state != declared_state or source_acceptance != declared_acceptance:
+            findings.append(diagnostic(
+                "accepted_step_finalization_source_mismatch",
+                f"Accepted Step {ref} finalization differs from its progress source.",
+                source_path,
+            ))
+        if global_state == "complete" and declared_state != "complete":
+            findings.append(diagnostic(
+                "accepted_step_finalization_incomplete",
+                f"Complete finalization requires Step {ref} finalization complete.",
+                source_path,
+            ))
+        if declared_acceptance != acceptance_ref:
+            findings.append(diagnostic(
+                "accepted_step_finalization_acceptance_mismatch",
+                f"Accepted Step {ref} finalization acceptance ref differs from manifest.",
+                source_path,
+            ))
 
 
 def _validate_schema_v3_transitions(

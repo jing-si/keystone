@@ -28,9 +28,11 @@ from .model import (
     PatchSurface,
     Relation,
     SurfacePatch,
+    patch_source_identity,
     patch_owner_matches_surface,
 )
 from .relation_policy import policy_for
+from .patch_replay import PATCH_FORMATS, digest_bytes, replay_patch
 
 
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -49,6 +51,10 @@ class PatchSpec:
     baseline_digest: str
     exact_patch: str
     required: bool = True
+    patch_format: Optional[str] = None
+    patch_body: Optional[str] = None
+    expected_after_digest: Optional[str] = None
+    baseline_content: Optional[str] = None
 
 
 def _wire(value):
@@ -127,7 +133,7 @@ def _mutation_surface(mutation: CanonicalMutation):
 
 def _patch_links_observed(mutation: CanonicalMutation, patch: SurfacePatch) -> bool:
     path, surface = _mutation_surface(mutation)
-    return bool(path and patch.target_path == path
+    return bool(path and patch_source_identity(patch.surface, patch.target_path) == path
                 and (surface is None or patch.surface.value == surface))
 
 
@@ -235,14 +241,51 @@ def plan_graph_sync(
         raise ValueError("duplicate patch specs are not allowed")
     for spec in patch_specs:
         _validate_digest(spec.baseline_digest)
+        enhanced_patch = any(
+            value is not None
+            for value in (
+                spec.patch_format, spec.patch_body, spec.expected_after_digest,
+                spec.baseline_content,
+            )
+        )
+        if enhanced_patch:
+            if spec.patch_format not in PATCH_FORMATS:
+                raise ValueError("enhanced patch requires a supported patch_format")
+            if not isinstance(spec.patch_body, str):
+                raise ValueError("enhanced patch requires patch_body")
+            if spec.exact_patch != spec.patch_body:
+                raise ValueError("enhanced patch exact_patch must equal patch_body")
+            _validate_digest(spec.expected_after_digest)
+            if spec.expected_after_digest == "absent":
+                raise ValueError("enhanced patch expected digest must be sha256")
+            if spec.baseline_digest == "absent":
+                if spec.baseline_content is not None:
+                    raise ValueError("absent baseline requires null baseline_content")
+                baseline = b""
+            elif not isinstance(spec.baseline_content, str):
+                raise ValueError("enhanced patch requires baseline_content")
+            else:
+                baseline = spec.baseline_content.encode("utf-8")
+                if digest_bytes(baseline) != spec.baseline_digest:
+                    raise ValueError("baseline_content does not match baseline digest")
+            try:
+                replayed = replay_patch(baseline, spec.patch_format, spec.patch_body)
+            except ValueError as error:
+                raise ValueError("enhanced patch cannot be replayed: %s" % error) from error
+            if digest_bytes(replayed) != spec.expected_after_digest:
+                raise ValueError("enhanced patch replay differs from expected digest")
         if not patch_owner_matches_surface(spec.owner, spec.surface, spec.target_path):
             raise ValueError("patch owner does not own the described surface")
         matching_delta = delta_by_path.get(spec.target_path)
         if matching_delta is not None and matching_delta.baseline_digest != spec.baseline_digest:
             raise ValueError("patch baseline must exactly match its source delta baseline")
         patch_id = _stable_id("patch", spec)
-        patches.append(SurfacePatch(patch_id, spec.owner, spec.surface, spec.target_path,
-                                    spec.baseline_digest, spec.exact_patch, spec.required))
+        patches.append(SurfacePatch(
+            patch_id, spec.owner, spec.surface, spec.target_path,
+            spec.baseline_digest, spec.exact_patch, spec.required,
+            spec.patch_format, spec.patch_body, spec.expected_after_digest,
+            spec.baseline_content,
+        ))
     patches = tuple(sorted(patches, key=lambda patch: (patch.target_path, patch.patch_id)))
     if len({patch.patch_id for patch in patches}) != len(patches):
         raise ValueError("duplicate patch IDs are not allowed")
@@ -258,10 +301,14 @@ def plan_graph_sync(
         "mutations": mutations,
         "patches": patches,
     }
+    schema_version = 2 if any(
+        patch.patch_format is not None for patch in patches
+    ) else 1
     return GraphTransaction(
         transaction_id=_stable_id("graph-tx", transaction_material),
         scope_ref=scope_ref,
         input_deltas=normalized_deltas,
         canonical_mutations=mutations,
         surface_patches=patches,
+        schema_version=schema_version,
     )

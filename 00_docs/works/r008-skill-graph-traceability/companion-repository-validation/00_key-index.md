@@ -2,8 +2,8 @@
 doc_type: work
 created_at: "2026-08-06"
 document_lifecycle: active
-approval: {state: pending}
-work_status: planned
+approval: {state: accepted, accepted_at: "2026-08-07", accepted_by: main}
+work_status: complete
 key:
   id: key.work.companion-repository-validation.index
   refs:
@@ -28,9 +28,9 @@ risk_level: high
 ## 현재 상태
 
 - Step: R008/S04
-- Work status: planned
-- Approval state: pending
+- Work status: complete
+- Approval state: accepted
 - Active: false
-- Next action: non-UTF-8 companion과 full-coverage omission RED E2E를 작성한다.
+- Next action: R008/S05 Transaction and Finalization Hardening을 진행한다.
 
 Active steps: []

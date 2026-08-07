@@ -47,7 +47,13 @@ Execution modes:
 The Context Pack explicitly declares its Main checkpoint, work refs and Steps, source documents,
 applicable standards, accepted-decisions array (empty only when explicit), completion criteria, scope
 boundaries, forbidden changes, verification expectations, and artifact/Reader/Author context status and
-evidence. `ready` and `not_applicable` context states require evidence; `blocked` is non-ready.
+evidence. It also preserves canonical `dependency_status`, explicit `active_step_gates`, and explicit
+`work_completion_gates`. Each gate retains its ID, source, target, scope, result, and blocking value.
+`ready` and `not_applicable` context states require evidence; `blocked` is non-ready. A required
+active-Step gate whose result is not `satisfied` prevents `accept_candidate`; work-completion gates
+remain separately visible and do not become an automatic Step-start block. Active-Step
+`invalid | unresolvable | unknown` evidence requires repair or additional evidence even when the gate
+was declared optional; optional `waiting` remains non-blocking.
 
 Only worker report status `DONE` is accepted for `accept_candidate`; `DONE_WITH_CONCERNS`,
 `NEEDS_CONTEXT`, `NEEDS_SCOPE_CHANGE`, and `BLOCKED` are non-ready. The report execution mode matches

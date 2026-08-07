@@ -9,6 +9,7 @@ from .model import (
     AttestationDecision,
     ConflictReason,
     Diagnostic,
+    FailureReason,
     GraphSnapshot,
     GraphTransaction,
     MutationEntity,
@@ -17,6 +18,7 @@ from .model import (
     SurfaceAttestation,
     TransactionState,
     patch_owner_matches_surface,
+    patch_source_identity,
 )
 
 
@@ -60,7 +62,7 @@ def _observed_link_sets(transaction: GraphTransaction):
         path, surface = _mutation_surface(mutation)
         matches = frozenset(
             patch.patch_id for patch in transaction.surface_patches
-            if path and patch.target_path == path
+            if path and patch_source_identity(patch.surface, patch.target_path) == path
             and (surface is None or patch.surface.value == surface)
         )
         links.append(matches)
@@ -118,7 +120,8 @@ def begin_application(transaction: GraphTransaction,
 
 
 def record_application(transaction: GraphTransaction,
-                       result: ApplicationResult) -> GraphTransaction:
+                       result: ApplicationResult,
+                       failure_reason: FailureReason = None) -> GraphTransaction:
     _require(transaction, TransactionState.APPLYING)
     _require_patch_invariants(transaction)
     patches = {patch.patch_id: patch for patch in transaction.surface_patches}
@@ -128,7 +131,15 @@ def record_application(transaction: GraphTransaction,
         raise ValueError("patch is already applied or already has a result")
     results = transaction.apply_results + (result,)
     if result.result == ApplicationStatus.FAILED:
-        return replace(transaction, apply_results=results, state=TransactionState.FAILED)
+        reason = FailureReason.UNKNOWN if failure_reason is None else FailureReason(failure_reason)
+        return replace(
+            transaction,
+            apply_results=results,
+            state=TransactionState.FAILED,
+            failure_reason=reason,
+        )
+    if failure_reason is not None:
+        raise ValueError("failure_reason is only valid for failed application")
     if result.result == ApplicationStatus.STALE_BASELINE:
         return replace(transaction, apply_results=results, state=TransactionState.CONFLICTED,
                        conflict_reason=ConflictReason.STALE_BASELINE)
@@ -228,7 +239,8 @@ def finalize_transaction(transaction: GraphTransaction,
     if any(item.severity == Severity.ERROR for item in mechanical_validation):
         return replace(transaction, reconstruction=reconstruction,
                        mechanical_validation=tuple(mechanical_validation),
-                       state=TransactionState.FAILED)
+                       state=TransactionState.FAILED,
+                       failure_reason=FailureReason.VALIDATION_FAILED)
     return replace(transaction, reconstruction=reconstruction,
                    mechanical_validation=tuple(mechanical_validation),
                    state=TransactionState.VERIFIED)
@@ -258,7 +270,14 @@ def new_attempt(history: AttemptHistory, revised: GraphTransaction) -> AttemptHi
             raise ValueError("reconstruction-mismatch attempt requires changed input")
         if reason is None and not baseline_changed:
             raise ValueError("legacy conflicted attempt requires at least one new baseline")
+    elif history.current.failure_reason != FailureReason.TRANSIENT_IO:
+        if (
+            history.current.canonical_mutations == revised.canonical_mutations
+            and history.current.surface_patches == revised.surface_patches
+            and prior_baselines == new_baselines
+        ):
+            raise ValueError("non-transient failed attempt requires changed input")
     clean = replace(revised, attestations=(), apply_results=(), reconstruction=None,
                     mechanical_validation=(), state=TransactionState.PROPOSED,
-                    conflict_reason=None)
+                    conflict_reason=None, failure_reason=None)
     return AttemptHistory(clean, history.prior_attempts + (history.current,))

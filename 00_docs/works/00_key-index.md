@@ -8,6 +8,10 @@ key:
     - key.topic.work-sequence
     - key.topic.document-system
     - key.doc.source
+global_state:
+  active_round: none
+  latest_accepted_round: R009
+  active_steps: []
 ---
 
 # 작업서(4) round 색인
@@ -28,7 +32,7 @@ key:
 | R005 | Artifact Graph Synchronization | `r005-artifact-graph-synchronization/00_key-index.md` | accepted | 기준서와 실제 산출물을 capability-first graph synchronization lifecycle로 연결했다 |
 | R006 | Reference Index and Context Readiness | `r006-reference-index-context-readiness/00_key-index.md` | accepted | source-owned ID/ref 탐색과 Reader·Linker context readiness를 구현·검증했다 |
 | R007 | Contract Execution Reconciliation | `r007-contract-execution-reconciliation/00_key-index.md` | accepted | 문서 계약 실행 정합화와 Python convention·점진적 리팩터링을 완료했다 |
-| R008 | Skill Graph and Self-Host Runtime Closure | `r008-skill-graph-traceability/00_key-index.md` | active | readiness부터 dependency·transaction·finalization까지 self-host workflow를 정합화한다 |
+| R008 | Skill Graph and Self-Host Runtime Closure | `r008-skill-graph-traceability/00_key-index.md` | accepted | readiness부터 dependency·transaction·finalization까지 self-host workflow를 정합화하고 검증했다 |
 | R009 | Coordinator Keystone Closure | `r009-coordinator-keystone-closure/00_key-index.md` | accepted | Coordinator context provisioning, closure gate, local installation parity를 complete and accepted로 기록한다 |
 
 <!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work key.topic.work-round -->
@@ -41,7 +45,7 @@ key:
 
 1. 프로젝트 전체 방향은 `00_docs/key-context-map.md`를 먼저 읽는다.
 2. 공통 기준과 용어는 `00_docs/standards/01_key-project-standard.md`를 따른다.
-3. 현재 active round가 있으면 이 파일의 `Work rounds` 표를 권위로 삼는다. 현재 active round는 R008이며,
+3. 현재 active round가 있으면 이 파일의 `Work rounds` 표를 권위로 삼는다. 현재 active round는 없으며,
    최신 accepted round는 R009다.
 4. Round 내부 실행 순서는 해당 round의 `00_key-index.md`에서 확인한다.
 5. 각 work의 세부 목표와 검증은 해당 work node의 `key-work-{slug}.md`에서 확인한다.

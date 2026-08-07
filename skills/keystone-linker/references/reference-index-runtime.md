@@ -11,12 +11,13 @@ readiness API. They do not make the SQLite generation authoritative.
   package-internal host wrapper. Its request supplies the same bounded inputs; when `cache_path` is
   omitted it derives an external cache under `CODEX_HOME/cache/keystone/<repository-hash>/`.
 - `scanner.ReferenceScanner` discovers a bounded path set, hashes raw bytes, reconstructs owners,
-  refs, diagnostics, and an optional typed projection.
+  refs, diagnostics, document-backed Work/Step dependency evaluations, and an optional typed
+  projection.
 - `index_store.SQLiteIndexStore` accepts a caller-provided cache path outside the repository and
   retains up to four scope/freshness-keyed immutable generations inside `BEGIN IMMEDIATE`. A loaded payload is
   accepted only when its scope, worktree, entries, and recomputed digest exactly match the requested
   source generation. A separately stored SHA-256 binds the complete canonical payload, including
-  owners, refs, diagnostics, typed edges, freshness, and schema.
+  owners, refs, diagnostics, typed edges, dependency evaluations, freshness, and schema.
 - `query.owner_for(...)` returns `unique`, `missing`, or `ambiguous` with all candidates; duplicate
   owners therefore cannot silently select the first source. `query.refs_to(...)` queries reverse refs.
 
@@ -46,5 +47,19 @@ immutable snapshot, so replacing, deleting, or redirecting a discovered path can
 token with newer source. `CallTrace` is serialized as JSON and rejects a lane
 already present in the chain, allowing Reader → Linker once while blocking Reader → Linker → Reader.
 Repository discovery applies default build/vendor exclusions, per-file/file-count/byte budgets, and
-warning diagnostics when a scan is truncated. `key.topic.*`, `key.role.*`, and `key.boundary.*` refs
-are taxonomy/navigation refs and do not require an owner; semantic owner refs remain exact.
+warning diagnostics when a scan is truncated. The readiness CLI exposes `complete` and a `coverage`
+object containing discovered/parsed/skipped counts, the discovered-path digest, and each skipped path
+with its reason; callers must not infer completeness from `status: pass` alone. `key.topic.*`,
+`key.role.*`, and `key.boundary.*` refs are taxonomy/navigation refs and do not require an owner.
+In docs scope, repository-owned `key.skill.*`, `key.code.*`, `key.config.*`, `key.schema.*`,
+`key.api.*`, and `key.test.*` refs are explicit `out_of_scope_ref` warnings until lazy repository
+resolution; other semantic owner refs remain exact.
+
+## Dependency readiness wire
+
+The readiness CLI response uses `schema_version: 2`. Its `dependency_evaluations` array preserves a
+stable gate ID, source and dependency IDs, Step/work-completion scope, observed target status and
+approval, canonical result, blocking/optional meaning, origin, reason, and deterministic cycle-event
+evidence. The scanner derives the Work/Step registry only from the immutable discovery generation.
+Legacy-only work dependencies become non-start-blocking work-completion candidates; invalid gates do
+not mutate progress, assign work, cancel work, or grant acceptance.

@@ -58,6 +58,10 @@ Apply these rules without depending on project-local Linker instructions:
 7. Distinguish declared metadata, observed repository evidence, and semantic inference.
 8. Grade candidates as `required`, `strong_candidate`, `weak_candidate`, `informational`, or
    `excluded`; candidate discovery never authorizes edits or acceptance.
+   Declared active evidence may retain the relation-policy grade. Owner-attested observed evidence is
+   capped at `strong_candidate`, unattested observed and inferred evidence at `weak_candidate`, and
+   deprecated evidence at `informational`. Archived, superseded, or removed relations/nodes are excluded
+   from active traversal.
 9. Separate mechanical stale evidence, semantic stale candidates, and metadata gaps.
 10. Treat generated indexes as derived evidence, never as the source of truth. Linker may refresh only
     its disposable cache outside the repository; it never writes a repository source surface.
@@ -73,7 +77,10 @@ Apply these rules without depending on project-local Linker instructions:
     as generated/inferred reverse evidence. Do not normalize `produced_from` as a typed relation;
     report a missing target as unresolved provenance or a metadata gap.
 16. Treat `revised_by` as revision-history evidence, not a typed relation or proof of authority,
-    impact, supersession, production, or governance. Report ambiguous evidence as informational or unknown.
+   impact, supersession, production, or governance. Report ambiguous evidence as informational or unknown.
+17. Diagnose an active semantic relation whose source or target is retired. Preserve only the canonical
+    active `new -> supersedes -> deprecated|removed old` exception with declared or owner-attested
+    observed evidence.
 
 ## When To Use
 
@@ -191,9 +198,11 @@ changed locators and semantic summary; finalization records that outcome as `not
    meaning. Keep `inferred` evidence as a candidate and exclude it from canonical mutations.
 3. Normalize capability-first. A bounded direct document-item-to-artifact relation is allowed only
    for a single schema constraint or policy implementation and records `direct_relation_reason`.
-4. Decide canonical node/relation/provenance/locator/lifecycle mutations and an exact patch for every
-   affected source surface. Each patch has one `author | main | coordinator` owner and its own raw-byte
-   SHA-256 baseline. Linker never applies a patch.
+4. Decide canonical node/relation/provenance/locator/lifecycle mutations and an executable patch for
+   every affected source surface. Schema v2 records `unified_diff | full_replacement`, exact patch
+   body, UTF-8 baseline content (or null for an absent source), baseline digest, and expected-after
+   digest so replay is independent of current source bytes. Each patch has one
+   `author | main | coordinator` owner. Linker never applies a patch.
 5. Move `proposed -> awaiting_attestation`. Each owner returns exactly one patch decision:
    `confirm | reject | needs_revision`, with evidence. Reject or revision makes the transaction
    `conflicted`; all required confirms make it `ready_to_apply`.
@@ -209,14 +218,18 @@ changed locators and semantic summary; finalization records that outcome as `not
 9. A `conflicted` or `failed` transaction resumes through a new attempt with a new transaction ID and
    preserved attempt history. For `stale_baseline`, at least one baseline must change. For `reject` or
    `needs_revision`, the same baseline is allowed when the mutation or exact patch changes. For
-   `reconstruction_mismatch`, change a baseline, mutation, or patch. A verified
-   `transient_application_failure` may retry the same patch.
+   `reconstruction_mismatch`, change a baseline, mutation, or patch. A failed transaction records one
+   of `transient_io | permission_denied | validation_failed | source_conflict | tool_failure | unknown`;
+   only `transient_io` may retry unchanged input.
 10. Treat transaction scope validation as the current-work gate. Report repository scope coverage debt
     separately; gaps outside the transaction do not widen or block the current work.
+11. For owner/ref readiness, preserve the CLI `complete` and `coverage` evidence. A pass with
+    `complete: false` is partial context, and repository-owned skill/code/config/schema/API/test refs
+    remain out-of-scope warnings until repository enrichment.
 
 ```yaml
 graph_synchronization:
-  schema_version: 1
+  schema_version: 2
   graph_relevance:
     relevant: true | false
     disposition: required | not_applicable | deferred
@@ -226,7 +239,7 @@ graph_synchronization:
     - <canonical graph_transaction from an earlier attempt>
 
 graph_transaction:
-  schema_version: 1
+  schema_version: 2
   transaction_id:
   scope_ref:
   input_deltas:
@@ -249,7 +262,11 @@ graph_transaction:
       surface: document_metadata | code_anchor | config_anchor | schema_anchor | api_anchor | test_anchor | companion_metadata
       target_path:
       baseline_digest: sha256:<64-lowercase-hex> | absent
+      baseline_content: <UTF-8 string> | null
       exact_patch:
+      patch_format: unified_diff | full_replacement
+      patch_body:
+      expected_after_digest: sha256:<64-lowercase-hex>
       required: true | false
   attestations:
     - patch_id:
@@ -262,6 +279,7 @@ graph_transaction:
       resulting_digest:
       evidence:
   state: proposed | awaiting_attestation | ready_to_apply | applying | partially_applied | verified | conflicted | failed
+  failure_reason: transient_io | permission_denied | validation_failed | source_conflict | tool_failure | unknown | null
   reconstruction:
   mechanical_validation:
   coverage_debt: []
@@ -274,6 +292,8 @@ is a canonical transaction field. The bundled runtime serializes the current `tr
 schema-versioned diagnostic envelope, not a bare diagnostic array. A CLI manifest passes only the current
 canonical transaction in its `transaction` field; it does not silently discard synchronization-envelope
 fields.
+Schema version 1 remains a read/validation compatibility wire for historical descriptive
+`exact_patch` transactions. New executable transactions use schema version 2.
 
 ## Document Item Metadata
 
@@ -283,6 +303,9 @@ Parse document items from these Markdown surfaces:
 2. A compact or multiline `key` comment immediately above a list item.
 3. A compact `key` comment in the first cell of a Markdown table row; keep the visible row ID as a
    locator rather than treating it as stable identity.
+
+Comments inside fenced code or matching single/multiple-backtick inline code spans are examples, not
+metadata. They never create owners, refs, or relations.
 
 Recognize `key.rule.*`, `key.claim.*`, and `key.acceptance.*` as item namespaces in addition to
 document, decision, work, capability, and output-artifact namespaces. Do not require metadata on

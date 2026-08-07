@@ -29,7 +29,7 @@ key:
 - Active: false
 - Finalization evidence: main acceptance, impact dispositions, source updates, semantic review,
   post-edit verification
-- Resume point: 없음. R008의 독립 active-round recovery를 계속한다.
+- Resume point: 없음. R008과 R009는 complete and accepted이며 active round는 없다.
 
 Active steps: []
 
@@ -47,13 +47,13 @@ Active steps: []
 ## 준비 증거
 
 - Repository graph validator는 변경 전 diagnostics 0으로 통과했다.
-- R008은 active이며 R009는 R008 source 또는 round status를 변경하지 않는다.
+- R009 실행 당시 R008은 active였고 R009는 그 source 또는 round status를 변경하지 않았다.
 - Pre-implementation baseline: Coordinator는 기존에도 Context Pack, artifact delta, Linker/Author
   routing을 요구했지만 external implementation 결과에 대한 executable closure gate는 없었다.
 
 ## 다음 작업
 
-1. R008의 독립 active-round source와 recovery path를 유지한다.
+1. R008과 R009의 distinct accepted-round evidence를 보존한다.
 2. R009 completion은 이 기록과 `key-finalization-manifest.json`의 acceptance evidence로 복구한다.
 
 ## 구현 결과
@@ -100,3 +100,23 @@ Active steps: []
 Main accepted R009/S01 after fresh verification on 2026-08-06. The schema-v3 manifest records the
 `in_progress -> complete` execution transition, `pending -> accepted` approval transition, required
 impact-candidate dispositions, local installation/parity evidence, and post-edit verification.
+
+On 2026-08-07, corrective finalization validation preserved that acceptance history while binding the
+manifest's repository-global `active_steps` evidence to `R008/S03` and its R008 Work/Round indexes.
+R009 itself remains complete and accepted with no active local Step. Graph sync remains
+`not_applicable` because this correction changes recovery evidence, not canonical artifact relations.
+
+After R008/S03 acceptance on 2026-08-07, the same corrective binding first advanced to
+repository-global `R008/S04`. After R008/S04 acceptance, it advanced again to `R008/S05`. These are
+current-state compatibility updates required by schema v3; they do not reopen or change R009/S01
+acceptance.
+
+After R008/S05 acceptance, the compatibility binding advanced to repository-global `R008/S06` and
+its active Work/Round sources. R009/S01 acceptance and finalization remain unchanged.
+
+After R008/S06 acceptance, the compatibility binding advanced to repository-global `R008/S07` and
+its active Work/Round sources. R009/S01 acceptance and finalization remain unchanged.
+
+After R008/S07 acceptance, the compatibility binding moved to repository-global `active_steps: []`
+with no active round. R008 and R009 are both accepted, R009 remains the latest accepted round, and
+R009/S01 acceptance and finalization remain unchanged.

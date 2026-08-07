@@ -83,8 +83,9 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
         self.progress.write_text(
             "---\nwork_status: complete\napproval:\n  state: accepted\n"
             "step_ref: R005/S03\nwork_ref: R005/graph-runtime\n"
-            "---\n# Progress\n\nfinalization:\n  state: complete\n"
-            "  acceptance_ref: R005/S03/main-acceptance\n", encoding="utf-8")
+            "finalization:\n  state: complete\n"
+            "  acceptance_ref: R005/S03/main-acceptance\n"
+            "---\n# Progress\n", encoding="utf-8")
         for name in ("work-index.md", "round-index.md", "context-map.md", "candidate.md"):
             (self.root / "docs" / name).write_text("# State\n\nActive steps: []\n", encoding="utf-8")
 

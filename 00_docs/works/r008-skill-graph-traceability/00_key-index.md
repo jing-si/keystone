@@ -2,8 +2,8 @@
 doc_type: work_round
 created_at: "2026-08-06"
 document_lifecycle: active
-approval: {state: pending}
-round_status: active
+approval: {state: accepted, accepted_at: "2026-08-07", accepted_by: main}
+round_status: accepted
 key:
   id: key.work.round.r008-skill-graph-traceability.index
   refs:
@@ -13,6 +13,10 @@ key:
     - key.topic.artifact-graph
     - key.topic.keystone-metadata
     - key.topic.verification
+global_state:
+  active_round: none
+  latest_accepted_round: R009
+  active_steps: []
 ---
 
 # R008 Skill Graph and Self-Host Runtime Closure 작업서 색인
@@ -25,20 +29,20 @@ wire compatibility를 순서대로 정합화한 뒤 skill runtime traceability�
 <!-- key: id=key.work.round.r008.execution-order refs=key.topic.work-sequence key.topic.work-recovery -->
 ## 실행 순서
 
-Active steps: [R008/S03]
+Active steps: []
 
 | 순서 | Work | 경로 | 상태 | 목적 |
 |---|---|---|---|---|
 | S01 | Metadata Parser and Readiness Repair | `metadata-parser-readiness-repair/00_key-index.md` | complete | accepted — compact metadata, owner/ref readiness와 cache completeness를 정합화했다 |
 | S02 | Markdown Hierarchy and Governance | `markdown-hierarchy-governance/00_key-index.md` | complete | accepted — 실제 heading hierarchy와 effective governance·relation 의미를 정합화했다 |
-| S03 | Dependency Execution Graph | `dependency-execution-graph/00_key-index.md` | in_progress | Step registry, legacy candidate와 expanded-event cycle 판정을 구현한다 |
-| S04 | Companion and Repository Validation | `companion-repository-validation/00_key-index.md` | planned | binary companion과 repository full-coverage validation을 fail-closed로 만든다 |
-| S05 | Transaction and Finalization Hardening | `transaction-finalization-hardening/00_key-index.md` | planned | executable patch, failure retry와 모든 accepted Step finalization closure를 검증한다 |
-| S06 | Graph Lifecycle and Wire Compatibility | `graph-lifecycle-wire-compatibility/00_key-index.md` | planned | relation evidence/lifecycle와 graph wire version 의미를 정합화한다 |
-| S07 | Skill Runtime Traceability and Self-Host E2E | `skill-runtime-traceability/00_key-index.md` | planned | 핵심 runtime·test traceability와 실제 전체 workflow를 검증한다 |
+| S03 | Dependency Execution Graph | `dependency-execution-graph/00_key-index.md` | complete | accepted — Work/Step registry, legacy candidate, expanded-event SCC와 readiness gate를 구현했다 |
+| S04 | Companion and Repository Validation | `companion-repository-validation/00_key-index.md` | complete | accepted — binary companion과 repository full/subset validation을 fail-closed로 만들었다 |
+| S05 | Transaction and Finalization Hardening | `transaction-finalization-hardening/00_key-index.md` | complete | accepted — executable patch replay, typed retry와 schema-v4 multi-Step/global closure를 구현했다 |
+| S06 | Graph Lifecycle and Wire Compatibility | `graph-lifecycle-wire-compatibility/00_key-index.md` | complete | accepted — lifecycle/evidence impact, retired relation validation과 graph wire v2 compatibility를 정합화했다 |
+| S07 | Skill Runtime Traceability and Self-Host E2E | `skill-runtime-traceability/00_key-index.md` | complete | accepted — 최소 runtime/test traceability와 actual-corpus self-host·adversarial closure를 검증했다 |
 
-현재 active Step은 `R008/S03`이다. S04-S06은 앞선 Step에서 확정된 source/runtime 의미를
-차례로 baseline으로 사용하고, S07은 S01-S06 결과를 하나의 self-host workflow에서 검증한다.
+R008의 active Step은 없다. S07은 S01-S06에서 확정된 source/runtime 의미를 하나의 self-host
+workflow에서 검증했고 round는 complete and accepted다.
 이 순서는 round의 기본 실행 순서이며 별도 자동 acceptance gate나 상태 전이를 만들지 않는다.
 
 <!-- key: id=key.work.round.r008.boundaries refs=key.boundary.scope-control key.topic.artifact-graph -->

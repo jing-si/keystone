@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from .adapters import Adapter
 from .companion import parse_companion
+from .dependency import DependencySource
 from .metadata_support import metadata_strings, sorted_snapshot
 from .model import (
     ArtifactKind,
@@ -64,6 +65,8 @@ def _metadata(text: str) -> Dict[str, Any]:
                 locator[key[len("locator."):]] = compact.pop(key)
         if locator:
             compact["locator"] = locator
+        if compact.get("depends_on"):
+            compact["_legacy_dependencies"] = metadata_strings(compact["depends_on"])
         return compact
     raw = parse_yaml_subset(stripped)
     key_value = raw.get("key")
@@ -74,6 +77,8 @@ def _metadata(text: str) -> Dict[str, Any]:
     else:
         data = {}
     structured_relations = data.pop("relations", None)
+    legacy_dependencies = metadata_strings(data.get("depends_on"))
+    structured_dependencies: Tuple[str, ...] = ()
     relation_conflicts = []
     if structured_relations is not None:
         if not isinstance(structured_relations, dict):
@@ -97,6 +102,8 @@ def _metadata(text: str) -> Dict[str, Any]:
             if legacy_targets and set(legacy_targets) != set(targets):
                 relation_conflicts.append(name)
             data[name] = targets
+            if name == "depends_on":
+                structured_dependencies = tuple(targets)
     for key, value in raw.items():
         if key.startswith("key."):
             data[key[4:]] = value
@@ -116,6 +123,13 @@ def _metadata(text: str) -> Dict[str, Any]:
         data["_source_authority"] = raw["authority"]
     if "work_gates" in raw:
         data["_work_gates"] = raw["work_gates"]
+    for field in ("doc_type", "work_status", "step_ref", "work_ref"):
+        if field in raw:
+            data["_" + field] = raw[field]
+    if legacy_dependencies:
+        data["_legacy_dependencies"] = legacy_dependencies
+    if structured_dependencies:
+        data["_structured_dependencies"] = structured_dependencies
     if relation_conflicts:
         data["_relation_conflicts"] = tuple(sorted(relation_conflicts))
     if not data and "id" in raw:
@@ -173,7 +187,9 @@ def _artifact_kind(value: Any, kind: NodeKind, surface: str) -> ArtifactKind:
 _KNOWN_METADATA = {
     "id", "kind", "artifact_kind", "refs", "lifecycle", "produced_from", "governed_by",
     "legacy_terms", "aliases", "locator", "_document_lifecycle", "_approval_state",
-    "_source_authority", "_work_gates", "_relation_conflicts",
+    "_source_authority", "_work_gates", "_relation_conflicts", "_doc_type",
+    "_work_status", "_step_ref", "_work_ref", "_legacy_dependencies",
+    "_structured_dependencies",
 } | set(RELATION_TYPES)
 
 
@@ -210,6 +226,7 @@ def _declared_locator(data: Mapping[str, Any], path: str, construct: Optional[st
                    schema_name=raw.get("schema_name")), tuple(diagnostics)
 
 
+# keystone: id=key.code.linker.metadata-parser kind=output_artifact artifact_kind=code refs=key.standard.skill.linker.metadata-parsing locator.symbol=parse_source
 def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
                  companion_text: Optional[str] = None,
                  companion_path: Optional[str] = None,
@@ -230,6 +247,7 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
     current_section_node: Optional[Node] = None
     section_nodes_by_offset: Dict[int, Node] = {}
     parsed_work_gates = ()
+    dependency_sources = []
     contextual_blocks = (
         adapter.metadata_blocks_with_context(text)
         if markdown and hasattr(adapter, "metadata_blocks_with_context")
@@ -303,6 +321,23 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
             diagnostics.extend(relation_result.diagnostics)
             if relation_result.work_gates is not None:
                 parsed_work_gates = relation_result.work_gates
+            if (construct == "document"
+                    or data.get("depends_on")
+                    or data.get("_legacy_dependencies")
+                    or relation_result.work_gates is not None):
+                dependency_sources.append(DependencySource(
+                    source_id=node.id,
+                    path=path,
+                    work_status=str(data.get("_work_status", "")),
+                    approval_state=str(data.get("_approval_state", "")),
+                    step_ref=str(data.get("_step_ref", "")),
+                    work_ref=str(data.get("_work_ref", "")),
+                    structured_dependencies=tuple(data.get("_structured_dependencies", ())),
+                    legacy_dependencies=tuple(data.get("_legacy_dependencies", ())),
+                    gates=relation_result.work_gates or (),
+                    is_work=(node.kind == NodeKind.WORK_ORDER
+                             or data.get("_doc_type") == "work_order"),
+                ))
             for relation in relation_result.relations:
                 key = (relation.source, relation.relation.value, relation.target)
                 if relation.evidence.value == "inferred" and key in relations:
@@ -312,4 +347,5 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
         except (MetadataError, ValueError, TypeError) as error:
             diagnostics.append(Diagnostic("malformed_metadata", str(error), path=path))
     return ParseResult(sorted_snapshot(nodes.values(), relations.values()), tuple(diagnostics),
-                       work_gates=parsed_work_gates)
+                       work_gates=parsed_work_gates,
+                       dependency_sources=tuple(dependency_sources))

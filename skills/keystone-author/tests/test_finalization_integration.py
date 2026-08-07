@@ -47,14 +47,14 @@ class R008FinalizationFixture(unittest.TestCase):
         return path
 
     def progress(self, step_ref, work_ref, status, finalization=False):
-        text = f"---\nwork_status: {status}\nstep_ref: {step_ref}\nwork_ref: {work_ref}\n---\n# Progress\n"
+        text = f"---\nwork_status: {status}\nstep_ref: {step_ref}\nwork_ref: {work_ref}\n"
         if finalization:
             text += (
-                "\nfinalization:\n"
+                "finalization:\n"
                 "  state: in_progress\n"
                 "  acceptance_ref: R008/S06-C/main-acceptance\n"
             )
-        return text
+        return text + "---\n# Progress\n"
 
     def manifest(self):
         manifest = {

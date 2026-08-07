@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Tuple
 
+from .dependency import DependencyEvaluation
+
 
 class ScanScope(str, Enum):
     DOCS = "docs"
@@ -84,6 +86,7 @@ class IndexResult:
     refs: Tuple[RefRecord, ...] = ()
     diagnostics: Tuple[IndexDiagnostic, ...] = ()
     typed_graph: Optional[TypedGraph] = None
+    dependency_evaluations: Tuple[DependencyEvaluation, ...] = ()
 
 
 @dataclass(frozen=True)

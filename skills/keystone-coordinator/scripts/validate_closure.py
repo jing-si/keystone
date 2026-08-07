@@ -21,6 +21,7 @@ REPORT_STATUSES = {
 }
 ACCEPT_CANDIDATE_REPORT_STATUS = "DONE"
 CONTEXT_STATUSES = {"ready", "not_applicable", "blocked"}
+DEPENDENCY_STATUSES = {"satisfied", "waiting", "unresolvable", "invalid", "unknown"}
 SYNC_DISPOSITIONS = {"required", "not_applicable", "deferred"}
 PRE_ACCEPTANCE_DECISIONS = {"accept_candidate", "repair", "review", "verify", "escalate", "block"}
 POST_ACCEPTANCE_DECISIONS = {"closure_complete", "repair", "escalate", "block"}
@@ -226,6 +227,72 @@ def _validate_context_pack(manifest: Payload, diagnostics: List[Diagnostic]) -> 
             valid = False
         if status == "blocked":
             valid = False
+    if not _validate_dependency_context(context, diagnostics):
+        valid = False
+    return valid
+
+
+def _validate_dependency_context(context: Payload, diagnostics: List[Diagnostic]) -> bool:
+    valid = True
+    if context.get("dependency_status") not in DEPENDENCY_STATUSES:
+        diagnostics.append(_diagnostic(
+            "dependency_status_invalid",
+            "dependency_status must use the canonical dependency vocabulary.",
+            "context_pack.dependency_status",
+        ))
+        valid = False
+    for name in ("active_step_gates", "work_completion_gates"):
+        gates = context.get(name)
+        if not _is_list(gates):
+            diagnostics.append(_diagnostic(
+                "dependency_gates_missing",
+                "%s must be an explicit array." % name,
+                "context_pack.%s" % name,
+            ))
+            valid = False
+            continue
+        for index, raw_gate in enumerate(gates):
+            gate = _mapping(raw_gate)
+            path = "context_pack.%s[%d]" % (name, index)
+            scope = _mapping(gate.get("scope"))
+            if (not gate
+                    or not all(_has_text(gate.get(field))
+                               for field in ("gate_id", "source", "dependency"))
+                    or gate.get("result") not in DEPENDENCY_STATUSES
+                    or not isinstance(gate.get("blocking"), bool)
+                    or not _is_list(scope.get("steps"))
+                    or not isinstance(scope.get("work_completion"), bool)):
+                diagnostics.append(_diagnostic(
+                    "dependency_gate_invalid",
+                    "Dependency gate evidence must preserve identity, source, target, scope, result, and blocking.",
+                    path,
+                ))
+                valid = False
+                continue
+            if (name == "active_step_gates"
+                    and gate["result"] in {"invalid", "unresolvable", "unknown"}):
+                diagnostics.append(_diagnostic(
+                    "active_step_dependency_unresolved",
+                    "An invalid, unresolvable, or unknown active-Step gate requires repair or evidence.",
+                    path,
+                ))
+                valid = False
+            elif (name == "active_step_gates"
+                    and gate["blocking"]
+                    and gate["result"] != "satisfied"):
+                diagnostics.append(_diagnostic(
+                    "active_step_dependency_blocking",
+                    "A required active-Step dependency gate blocks implementation readiness.",
+                    path,
+                ))
+                valid = False
+            elif gate["result"] == "satisfied" and gate["blocking"]:
+                diagnostics.append(_diagnostic(
+                    "dependency_gate_blocking_inconsistent",
+                    "A satisfied dependency gate cannot remain blocking.",
+                    path,
+                ))
+                valid = False
     return valid
 
 

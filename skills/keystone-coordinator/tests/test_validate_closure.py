@@ -60,6 +60,9 @@ def orchestration_manifest():
                 "status": "not_applicable",
                 "evidence": ["No source document edits are in scope"],
             },
+            "dependency_status": "satisfied",
+            "active_step_gates": [],
+            "work_completion_gates": [],
         },
         "injected_skills": [{"skill_id": "superpowers:test-driven-development", "mode": "tdd"}],
         "worker_report": {
@@ -180,6 +183,42 @@ class ClosureValidationTest(unittest.TestCase):
 
         result_codes = codes(validate_manifest(manifest))
         self.assertIn("reader_context_evidence_missing", result_codes)
+        self.assertIn("accept_candidate_not_ready", result_codes)
+
+    def test_blocking_active_step_dependency_prevents_accept_candidate(self):
+        manifest = orchestration_manifest()
+        manifest["context_pack"]["dependency_status"] = "waiting"
+        manifest["context_pack"]["active_step_gates"] = [{
+            "gate_id": "key.work.source#gate-001",
+            "source": "key.work.source",
+            "dependency": "key.work.target",
+            "scope": {"steps": ["S01"], "work_completion": False},
+            "result": "waiting",
+            "blocking": True,
+        }]
+
+        result_codes = codes(validate_manifest(manifest))
+
+        self.assertIn("active_step_dependency_blocking", result_codes)
+        self.assertIn("accept_candidate_not_ready", result_codes)
+
+    def test_optional_waiting_gate_is_allowed_but_invalid_optional_gate_is_not(self):
+        gate = {
+            "gate_id": "key.work.source#gate-001",
+            "source": "key.work.source",
+            "dependency": "key.work.target",
+            "scope": {"steps": ["S01"], "work_completion": False},
+            "result": "waiting",
+            "blocking": False,
+        }
+        manifest = orchestration_manifest()
+        manifest["context_pack"]["dependency_status"] = "waiting"
+        manifest["context_pack"]["active_step_gates"] = [gate]
+        self.assertEqual("pass", validate_manifest(manifest)["status"])
+
+        gate["result"] = "invalid"
+        result_codes = codes(validate_manifest(manifest))
+        self.assertIn("active_step_dependency_unresolved", result_codes)
         self.assertIn("accept_candidate_not_ready", result_codes)
 
     def test_every_changed_file_requires_an_artifact_delta(self):

@@ -83,6 +83,36 @@ class TransactionLifecycleTest(unittest.TestCase):
             [item.code for item in diagnostics],
         )
 
+    def test_verified_reconstruction_must_use_transaction_wire_version(self):
+        snapshot_v1 = {"schema_version": 1, "nodes": [], "relations": []}
+        diagnostics = validate_transaction_lifecycle(
+            {
+                "schema_version": 2,
+                "reconstruction": {
+                    "baseline": snapshot_v1,
+                    "result": snapshot_v1,
+                },
+                "mechanical_validation": {
+                    "schema_version": 1,
+                    "status": "pass",
+                    "diagnostics": [],
+                    "summary": {"errors": 0, "warnings": 0},
+                },
+            },
+            TransactionInput("verified", None, ({"entity": "node"},)),
+            replace(
+                self.empty_evidence,
+                required_patch_ids=frozenset({"p"}),
+                confirmed_patch_ids=frozenset({"p"}),
+                applied_patch_ids=frozenset({"p"}),
+            ),
+        )
+
+        self.assertIn(
+            "verified_reconstruction_wire_invalid",
+            {item.code for item in diagnostics},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -123,9 +123,19 @@ def _metadata_wire_valid(value: Any, *, effective: bool) -> bool:
     )
 
 
-def is_node_wire(value: Any) -> bool:
+_DOCUMENT_NODE_KINDS = {
+    "source_document", "document_section", "document_item", "claim", "decision",
+    "work_order", "work_step", "capability",
+}
+
+
+def is_node_wire(value: Any, schema_version: int = 1) -> bool:
     required = {"id", "kind", "artifact_kind", "locator", "lifecycle", "provenance"}
     optional = {"declared_metadata", "effective_metadata", "parent_id"}
+    if schema_version == 2:
+        required.add("lifecycle_domain")
+    elif schema_version != 1:
+        return False
     if (
         not isinstance(value, dict)
         or not required <= set(value)
@@ -139,23 +149,39 @@ def is_node_wire(value: Any) -> bool:
     metadata_valid = declared is None or _metadata_wire_valid(declared, effective=False)
     if effective is not None:
         metadata_valid = metadata_valid and _metadata_wire_valid(effective, effective=True)
+    kind = value.get("kind")
+    lifecycle = value.get("lifecycle")
+    lifecycle_valid = lifecycle in {
+        "draft", "active", "superseded", "archived", "deprecated", "removed",
+    }
+    if schema_version == 2:
+        domain = value.get("lifecycle_domain")
+        expected_domain = "document" if kind in _DOCUMENT_NODE_KINDS else "artifact"
+        lifecycle_valid = domain == expected_domain and (
+            lifecycle in {"draft", "active", "superseded", "archived"}
+            if domain == "document"
+            else lifecycle in {"active", "deprecated", "removed"}
+        )
     return (
         metadata_valid
         and isinstance(value.get("id"), str)
         and bool(value["id"])
-        and value.get("kind") in NODE_KINDS
+        and kind in NODE_KINDS
         and value.get("artifact_kind") in ARTIFACT_KINDS
-        and value.get("lifecycle") in {
-            "draft", "active", "superseded", "archived", "deprecated", "removed",
-        }
+        and lifecycle_valid
         and (value.get("parent_id") is None or isinstance(value.get("parent_id"), str))
         and is_locator_wire(value.get("locator"))
         and is_provenance_wire(value.get("provenance"))
     )
 
 
-def is_relation_wire(value: Any) -> bool:
+def is_relation_wire(value: Any, schema_version: int = 1,
+                     allow_inferred: bool = False) -> bool:
     required = {"source", "relation", "target", "evidence", "provenance", "lifecycle"}
+    if schema_version == 2:
+        required.add("lifecycle_domain")
+    elif schema_version != 1:
+        return False
     return (
         isinstance(value, dict)
         and set(value) == required
@@ -164,11 +190,32 @@ def is_relation_wire(value: Any) -> bool:
         and isinstance(value.get("target"), str)
         and bool(value["target"])
         and value.get("relation") in RELATION_NAMES
-        and value.get("evidence") in {"declared", "observed"}
-        and value.get("lifecycle") in {
-            "draft", "active", "superseded", "archived", "deprecated", "removed",
-        }
+        and value.get("evidence") in (
+            {"declared", "observed", "inferred"}
+            if allow_inferred else {"declared", "observed"}
+        )
+        and value.get("lifecycle") in (
+            {"active", "deprecated", "archived", "removed"}
+            if schema_version == 2 else
+            {"draft", "active", "superseded", "archived", "deprecated", "removed"}
+        )
+        and (schema_version == 1 or value.get("lifecycle_domain") == "relation")
         and is_provenance_wire(value.get("provenance"))
+    )
+
+
+def is_snapshot_wire(value: Any, schema_version: int,
+                     allow_inferred: bool = True) -> bool:
+    return (
+        isinstance(value, dict)
+        and set(value) == {"schema_version", "nodes", "relations"}
+        and value.get("schema_version") == schema_version
+        and isinstance(value.get("nodes"), list)
+        and all(is_node_wire(node, schema_version) for node in value["nodes"])
+        and isinstance(value.get("relations"), list)
+        and all(is_relation_wire(
+            relation, schema_version, allow_inferred=allow_inferred
+        ) for relation in value["relations"])
     )
 
 
@@ -212,7 +259,8 @@ def mechanical_envelope_passes(value: Any) -> bool:
 
 
 def apply_mutation_delta(baseline: Any, mutations: Sequence[Any]):
-    if not isinstance(baseline, dict) or baseline.get("schema_version") != 1:
+    if (not isinstance(baseline, dict)
+            or baseline.get("schema_version") not in {1, 2}):
         return None
     if (
         not isinstance(baseline.get("nodes"), list)
@@ -260,3 +308,20 @@ def apply_mutation_delta(baseline: Any, mutations: Sequence[Any]):
         else:
             return None
     return current
+
+
+def migrate_snapshot_wire_v1_to_v2(value: Any):
+    """Deterministically migrate an accepted v1 snapshot wire to canonical v2."""
+    if not is_snapshot_wire(value, 1, allow_inferred=True):
+        raise ValueError("snapshot does not match the permissive v1 wire")
+    migrated = json.loads(json.dumps(value))
+    migrated["schema_version"] = 2
+    for node in migrated["nodes"]:
+        node["lifecycle_domain"] = (
+            "document" if node["kind"] in _DOCUMENT_NODE_KINDS else "artifact"
+        )
+    for relation in migrated["relations"]:
+        relation["lifecycle_domain"] = "relation"
+    if not is_snapshot_wire(migrated, 2, allow_inferred=True):
+        raise ValueError("v1 lifecycle vocabulary cannot migrate to canonical v2")
+    return normalized_wire(migrated)

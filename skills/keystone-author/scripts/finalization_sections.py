@@ -137,7 +137,7 @@ def validate_finalization_closure(root: Path, manifest: Dict[str, Any],
             "schema_version 2 cannot approve complete finalization; use schema_version 3.",
         ))
 
-    if schema_version in {2, 3}:
+    if schema_version in {2, 3, 4}:
         graph_sync = manifest.get("graph_sync")
         if not isinstance(graph_sync, dict):
             findings.append(diagnostic(
@@ -265,10 +265,12 @@ def validate_impact_candidates(root: Path, raw_candidates: Any,
                 "candidate_category_missing",
                 f"impact_candidates[{index}] requires a category.",
             ))
-        allowed_dispositions = DISPOSITIONS if schema_version == 3 else LEGACY_DISPOSITIONS
+        allowed_dispositions = (
+            DISPOSITIONS if schema_version in {3, 4} else LEGACY_DISPOSITIONS
+        )
         path_required_dispositions = (
             PATH_REQUIRED_DISPOSITIONS
-            if schema_version == 3
+            if schema_version in {3, 4}
             else LEGACY_PATH_REQUIRED_DISPOSITIONS
         )
         if disposition not in allowed_dispositions:

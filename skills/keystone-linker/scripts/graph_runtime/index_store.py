@@ -18,6 +18,7 @@ from .index_model import (
     FreshnessEntry, FreshnessToken, IndexDiagnostic, IndexResult, OwnerRecord,
     RefRecord, ScanScope, TypedEdge, TypedGraph,
 )
+from .dependency import DependencyEvaluation, DependencyStatus
 
 
 class StoreUnavailable(RuntimeError):
@@ -32,7 +33,7 @@ class CacheBusy(StoreUnavailable):
     pass
 
 
-CACHE_SCHEMA_VERSION = 4
+CACHE_SCHEMA_VERSION = 5
 MAX_GENERATIONS = 4
 
 
@@ -114,6 +115,21 @@ def _encode(result: IndexResult) -> str:
                         for item in result.diagnostics],
         "typed_edges": (None if result.typed_graph is None else [
             [item.source_id, item.relation, item.target_id] for item in result.typed_graph.edges]),
+        "dependency_evaluations": [[
+            item.dependency,
+            item.status.value,
+            item.blocking,
+            item.reason,
+            item.gate_id,
+            item.source_id,
+            list(item.steps),
+            item.work_completion,
+            item.optional,
+            item.origin,
+            item.target_work_status,
+            item.target_approval_state,
+            list(item.cycle_events),
+        ] for item in result.dependency_evaluations],
     }
     return json.dumps(value, separators=(",", ":"), sort_keys=True)
 
@@ -189,7 +205,10 @@ def _cleanup_repair_files(path: Path) -> None:
 
 def _decode(payload: str, expected: FreshnessToken) -> IndexResult:
     value = json.loads(payload)
-    required = {"schema_version", "scope", "freshness", "owners", "refs", "diagnostics", "typed_edges"}
+    required = {
+        "schema_version", "scope", "freshness", "owners", "refs", "diagnostics",
+        "typed_edges", "dependency_evaluations",
+    }
     if not isinstance(value, dict) or set(value) != required or value["schema_version"] != CACHE_SCHEMA_VERSION:
         raise ValueError("cache payload schema is invalid")
     freshness = value["freshness"]
@@ -212,6 +231,13 @@ def _decode(payload: str, expected: FreshnessToken) -> IndexResult:
     if recomputed != decoded_token.digest or decoded_token != expected or value["scope"] != expected.scope:
         raise ValueError("cache freshness does not match requested source generation")
     graph = value["typed_edges"]
+    evaluations = tuple(
+        DependencyEvaluation(
+            item[0], DependencyStatus(item[1]), item[2], item[3], item[4], item[5],
+            tuple(item[6]), item[7], item[8], item[9], item[10], item[11], tuple(item[12]),
+        )
+        for item in value["dependency_evaluations"]
+    )
     return IndexResult(
         ScanScope(value["scope"]),
         decoded_token,
@@ -219,4 +245,5 @@ def _decode(payload: str, expected: FreshnessToken) -> IndexResult:
         tuple(RefRecord(*item) for item in value["refs"]),
         tuple(IndexDiagnostic(*item) for item in value["diagnostics"]),
         None if graph is None else TypedGraph(tuple(TypedEdge(*item) for item in graph)),
+        evaluations,
     )

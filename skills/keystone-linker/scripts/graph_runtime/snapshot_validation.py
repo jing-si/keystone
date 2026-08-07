@@ -3,21 +3,19 @@
 import json
 import re
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, Sequence, Tuple
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from .adapters import adapter_for_path
 from .metadata import parse_source
+from .lifecycle_policy import RETIRED_LIFECYCLES, replacement_evidence_admitted
 from .model import (
     Diagnostic,
     Evidence,
     GraphSnapshot,
     Lifecycle,
     Node,
-    PatchOwner,
-    PatchSurface,
     Relation,
     RelationType,
-    patch_owner_matches_surface,
 )
 from .relation_policy import relation_direction_allowed
 from .validation_support import diagnostic, safe_path
@@ -51,7 +49,11 @@ def _companion_relation_vocabulary(text: str, path: str) -> Tuple[Diagnostic, ..
     return tuple(findings)
 
 
-def reconstruct(root: Path, sources: Sequence[str]) -> Tuple[GraphSnapshot, Tuple[Diagnostic, ...]]:
+def reconstruct(
+    root: Path,
+    sources: Sequence[str],
+    source_bytes: Optional[Mapping[str, bytes]] = None,
+) -> Tuple[GraphSnapshot, Tuple[Diagnostic, ...]]:
     """Reconstruct deterministically from source surfaces, never from a cache."""
     nodes: List[Node] = []
     relations: Dict[Tuple[str, RelationType, str], Relation] = {}
@@ -60,25 +62,40 @@ def reconstruct(root: Path, sources: Sequence[str]) -> Tuple[GraphSnapshot, Tupl
         source_path = safe_path(root, relative)
         adapter = adapter_for_path(relative)
         if adapter is not None:
-            if not source_path.is_file():
+            if source_bytes is not None:
+                raw_source = source_bytes.get(relative)
+            else:
+                raw_source = source_path.read_bytes() if source_path.is_file() else None
+            if raw_source is None:
                 raise FileNotFoundError(relative)
-            result = parse_source(source_path.read_text(encoding="utf-8"), relative, adapter)
+            result = parse_source(raw_source.decode("utf-8"), relative, adapter)
         else:
             companion_relative = relative + ".keystone.json"
             companion_path = safe_path(root, companion_relative)
-            if not companion_path.is_file():
+            if source_bytes is not None:
+                raw_companion = source_bytes.get(companion_relative)
+            else:
+                raw_companion = (
+                    companion_path.read_bytes() if companion_path.is_file() else None
+                )
+            if raw_companion is None:
                 raise FileNotFoundError(relative)
-            companion_text = companion_path.read_text(encoding="utf-8")
+            companion_text = raw_companion.decode("utf-8")
             findings.extend(_companion_relation_vocabulary(companion_text, companion_relative))
-            exists = source_path.is_file()
+            if source_bytes is not None:
+                raw_source = source_bytes.get(relative)
+                exists = relative in source_bytes
+            else:
+                exists = source_path.is_file()
+                raw_source = source_path.read_bytes() if exists else None
             result = parse_source(
-                source_path.read_text(encoding="utf-8") if exists else "",
+                "",
                 relative,
                 None,
                 companion_text=companion_text,
                 companion_path=companion_relative,
                 companion_source_exists=exists,
-                companion_source_bytes=source_path.read_bytes() if exists else None,
+                companion_source_bytes=raw_source,
             )
         nodes.extend(result.snapshot.nodes)
         for relation in result.snapshot.relations:
@@ -108,6 +125,7 @@ def reconstruct(root: Path, sources: Sequence[str]) -> Tuple[GraphSnapshot, Tupl
             item.source, item.relation.value, item.target, item.evidence.value,
             item.lifecycle.value,
         ))),
+        schema_version=2,
     )
     return snapshot, tuple(findings)
 
@@ -152,24 +170,11 @@ def _canonical_replacement_targets_retired(relation: Relation,
     """Admit only the canonical active new -> supersedes -> retired-old exception."""
     source = nodes.get(relation.source)
     target = nodes.get(relation.target)
-    evidence_admitted = relation.evidence == Evidence.DECLARED
-    if relation.evidence == Evidence.OBSERVED:
-        provenance = relation.provenance
-        try:
-            owner = PatchOwner(provenance.attested_by)
-            surface = PatchSurface(provenance.surface)
-        except (TypeError, ValueError):
-            evidence_admitted = False
-        else:
-            evidence_admitted = bool(
-                provenance.locator is not None
-                and patch_owner_matches_surface(owner, surface, provenance.locator.path)
-            )
     return bool(
         source is not None and target is not None
         and relation.relation == RelationType.SUPERSEDES
         and relation.lifecycle == Lifecycle.ACTIVE
-        and evidence_admitted
+        and replacement_evidence_admitted(relation)
         and source.lifecycle == Lifecycle.ACTIVE
         and target.lifecycle in {Lifecycle.DEPRECATED, Lifecycle.REMOVED}
     )
@@ -259,6 +264,16 @@ def validate_snapshot(root: Path, snapshot: GraphSnapshot,
                     "active relation source is missing: %s" % relation.source,
                     relation.provenance.locator.path if relation.provenance.locator else None,
                 ))
+        source_node = by_id.get(relation.source)
+        target_node = by_id.get(relation.target)
+        if (relation.lifecycle == Lifecycle.ACTIVE
+                and source_node is not None
+                and source_node.lifecycle in RETIRED_LIFECYCLES):
+            findings.append(diagnostic(
+                "active_relation_from_retired",
+                "active semantic relation starts from a retired node: %s" % relation.source,
+                relation.provenance.locator.path if relation.provenance.locator else None,
+            ))
         if relation.target not in by_id:
             findings.append(diagnostic(
                 "missing_target",
@@ -266,7 +281,7 @@ def validate_snapshot(root: Path, snapshot: GraphSnapshot,
                 relation.provenance.locator.path if relation.provenance.locator else None,
             ))
         elif (relation.lifecycle == Lifecycle.ACTIVE
-              and by_id[relation.target].lifecycle in {Lifecycle.DEPRECATED, Lifecycle.REMOVED}
+              and target_node.lifecycle in RETIRED_LIFECYCLES
               and not _canonical_replacement_targets_retired(relation, by_id)):
             findings.append(diagnostic(
                 "active_relation_to_retired",

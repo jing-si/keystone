@@ -37,7 +37,7 @@ Stdout is one JSON object containing `schema_version`, `status`, `diagnostics`, 
 
 ```json
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "acceptance_ref": "R004/S02/main-acceptance",
   "steps": [
     {
@@ -45,6 +45,8 @@ Stdout is one JSON object containing `schema_version`, `status`, `diagnostics`, 
       "work_ref": "R004/finalization-runtime-validator",
       "status": "complete",
       "approval_state": "accepted",
+      "finalization_state": "in_progress",
+      "finalization_acceptance_ref": "R004/S02/main-acceptance",
       "progress_path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/key-progress.md"
     }
   ],
@@ -61,6 +63,17 @@ Stdout is one JSON object containing `schema_version`, `status`, `diagnostics`, 
     {"category": "round_index", "path": "00_docs/works/r004-acceptance-finalization/00_key-index.md"},
     {"category": "context_map", "path": "00_docs/key-context-map.md"}
   ],
+  "global_state": {
+    "active_round": "R004",
+    "latest_accepted_round": "R003",
+    "active_steps": [],
+    "sources": [
+      {"category": "work_index", "path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/00_key-index.md", "key_id": "key.work.finalization-runtime-validator.index"},
+      {"category": "round_index", "path": "00_docs/works/r004-acceptance-finalization/00_key-index.md", "key_id": "key.work.round.r004.index"},
+      {"category": "root_index", "path": "00_docs/works/00_key-index.md", "key_id": "key.work.index"},
+      {"category": "context_map", "path": "00_docs/key-context-map.md", "key_id": "key.context-map"}
+    ]
+  },
   "early_work": [],
   "finalization": {
     "required": true,
@@ -165,9 +178,10 @@ Schema versions 1 and 2 are diagnostic compatibility paths for existing unfinish
 The live validator never returns success for a version-1 or version-2 `finalization.state: complete`,
 and version 1 cannot contain `graph_sync`. Previously completed
 R004 records are historical acceptance evidence: rerunning this validator does not newly approve
-their completion, cancel their acceptance, or require a retroactive state edit. Any new completion or
-graph-relevant finalization must use version 3. Author emits schema version 3 for every new
-finalization. Version 3 requires one graph assessment:
+their completion, cancel their acceptance, or require a retroactive state edit. Version 3 preserves
+previously completed records and their graph evidence as a compatibility wire. Any new completion or
+graph-relevant finalization uses version 4. Version 4 retains the version-3 graph assessment and adds
+per-accepted-Step and repository-global source binding:
 
 ```json
 {
@@ -206,7 +220,14 @@ same `active_steps` set as the manifest. Every `active_steps` ref must resolve
 to a declared Step with an active status. Execution and approval transitions must name refs in
 `accepted_steps`.
 Every accepted Step has exactly one `in_progress` to `complete` execution transition and
-exactly one `pending` to `accepted` approval transition with evidence.
+exactly one `pending` to `accepted` approval transition with evidence. In schema version 4, every
+accepted Step also declares `finalization_state` and `finalization_acceptance_ref`; both must match its
+Progress frontmatter, and a complete event requires all accepted Steps complete under the manifest
+acceptance ref. Version 4 `global_state` binds `active_round`, `latest_accepted_round`, and
+`active_steps` to four distinct paths—work index, round index, root index, and Context Map—and checks
+each source's expected frontmatter `key.id`. Body examples cannot provide or override these values.
+`active_round: none` is the canonical no-active-round value and is valid only when `active_steps` is
+empty.
 Future-Step partial work
 belongs in `early_work` with a declared target, cause, completed and remaining scope, and
 `status_effect: none`. Duplicate namespace/value claims by different owners are validation failures.

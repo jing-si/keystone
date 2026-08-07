@@ -26,6 +26,7 @@ class ReaderLinkerReadinessTests(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
+    # keystone: id=key.test.reader.linker-readiness-contract kind=output_artifact artifact_kind=test verifies=key.code.linker.context-readiness locator.test_name=test_first_reader_invocation_records_one_way_linker_handoff
     def test_first_reader_invocation_records_one_way_linker_handoff(self):
         readiness = context_readiness(self.root, self.cache, initiator="reader")
 

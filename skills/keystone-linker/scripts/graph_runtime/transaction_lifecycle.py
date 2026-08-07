@@ -8,6 +8,7 @@ from .transaction_input import TransactionInput
 from .transaction_wire_validation import (
     apply_mutation_delta,
     is_mechanical_envelope,
+    is_snapshot_wire,
     mechanical_envelope_passes,
     normalized_wire,
 )
@@ -139,6 +140,7 @@ def _validate_verified_closure(
             ))
 
     reconstruction_evidence = value.get("reconstruction")
+    schema_version = value.get("schema_version", 1)
     if not (
         isinstance(reconstruction_evidence, dict)
         and set(reconstruction_evidence) == {"baseline", "result"}
@@ -149,9 +151,19 @@ def _validate_verified_closure(
             "verified_reconstruction_missing",
             "verified transaction requires reconstruction",
         ))
+    elif not (
+        is_snapshot_wire(reconstruction_evidence["baseline"], schema_version)
+        and is_snapshot_wire(reconstruction_evidence["result"], schema_version)
+    ):
+        findings.append(diagnostic(
+            "verified_reconstruction_wire_invalid",
+            "verified reconstruction must match the transaction graph wire version",
+        ))
     elif source_snapshot is not None and normalized_wire(
         reconstruction_evidence["result"]
-    ) != normalized_wire(graph_snapshot_wire(source_snapshot)):
+    ) != normalized_wire(graph_snapshot_wire(
+        source_snapshot, schema_version=schema_version
+    )):
         findings.append(diagnostic(
             "verified_reconstruction_mismatch",
             "verified reconstruction differs from source-only reconstruction",

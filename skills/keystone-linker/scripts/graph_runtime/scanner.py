@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Iterable, Sequence, Tuple
 
 from .adapters import adapter_for_path
+from .dependency import evaluate_dependency_sources
 from .index_model import (
     FreshnessEntry, FreshnessToken, IndexDiagnostic, IndexResult, OwnerRecord, ScanScope,
     RefRecord, TypedEdge, TypedGraph,
@@ -60,7 +61,14 @@ _TAXONOMY_REF_IDS = frozenset({
     "key.output.worker-assignment-seed",
 })
 _COMPATIBILITY_NAVIGATION_REF_IDS = frozenset({"key.standard.artifact"})
-_DOCS_EXTERNAL_OWNER_PREFIXES = ("key.skill.",)
+_DOCS_EXTERNAL_OWNER_PREFIXES = (
+    "key.skill.",
+    "key.code.",
+    "key.config.",
+    "key.schema.",
+    "key.api.",
+    "key.test.",
+)
 
 
 class ReferenceScanner:
@@ -113,7 +121,14 @@ class ReferenceScanner:
                 diagnostics.append(IndexDiagnostic(
                     "scan_truncated", "scan byte budget was exceeded", relative, "warning"))
                 break
-            sources.append(SourceSnapshot(relative, path.read_bytes()))
+            try:
+                raw_bytes = path.read_bytes()
+            except OSError as error:
+                diagnostics.append(IndexDiagnostic(
+                    "source_unreadable", str(error), relative, "warning"
+                ))
+                continue
+            sources.append(SourceSnapshot(relative, raw_bytes))
             total_bytes += size
         sources = tuple(sources)
         entries = tuple(FreshnessEntry(source.relative, _digest(source.raw_bytes)) for source in sources)
@@ -145,6 +160,7 @@ class ReferenceScanner:
         refs = []
         edges = []
         diagnostics = list(discovery.diagnostics)
+        dependency_sources = []
         raw_by_path = {source.relative: source.raw_bytes for source in discovery.sources}
         for source in discovery.sources:
             relative = source.relative
@@ -162,6 +178,7 @@ class ReferenceScanner:
                 )
                 diagnostics.extend(IndexDiagnostic(item.code, item.message, item.path)
                                    for item in parsed.diagnostics)
+                dependency_sources.extend(parsed.dependency_sources)
                 for node in parsed.snapshot.nodes:
                     locator = _owner_locator(node)
                     owner = OwnerRecord(node.id, node.locator.path, locator)
@@ -190,6 +207,7 @@ class ReferenceScanner:
                 continue
             parsed = parse_source(text, relative, adapter)
             diagnostics.extend(IndexDiagnostic(item.code, item.message, item.path) for item in parsed.diagnostics)
+            dependency_sources.extend(parsed.dependency_sources)
             nodes_by_id = {node.id: node for node in parsed.snapshot.nodes}
             for node in parsed.snapshot.nodes:
                 locator = _owner_locator(node)
@@ -241,8 +259,13 @@ class ReferenceScanner:
         ordered_diagnostics = tuple(sorted(diagnostics, key=lambda item: (item.code, item.path or "", item.message)))
         graph = (TypedGraph(tuple(sorted(set(edges), key=lambda item: (
             item.source_id, item.relation, item.target_id)))) if include_typed_graph else None)
+        dependency_result = evaluate_dependency_sources(dependency_sources)
+        diagnostics.extend(IndexDiagnostic(item.code, item.message)
+                           for item in dependency_result.diagnostics)
+        ordered_diagnostics = tuple(sorted(diagnostics, key=lambda item: (
+            item.code, item.path or "", item.message)))
         return IndexResult(discovery.scope, discovery.freshness, ordered_owners, ordered_refs,
-                           ordered_diagnostics, graph)
+                           ordered_diagnostics, graph, dependency_result.evaluations)
 
     def _paths(self, base: Path, scope: ScanScope) -> Iterable[Path]:
         if not base.is_dir():

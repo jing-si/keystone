@@ -17,14 +17,32 @@ source-adjacent `<source>.keystone.json` companion containing `schema_version`, 
 `relations`. Its `source` object records repository-relative `path`, `surface`, and the raw-byte
 `sha256:<64-lowercase-hex>` digest, or `absent` for a new source.
 
-The canonical node fields are `id`, `kind`, `artifact_kind`, `locator`, `lifecycle`, and `provenance`.
-Markdown nodes with declared or inherited document metadata also carry `parent_id`, `declared_metadata`,
-and `effective_metadata` for lifecycle, approval, governance, and source authority.
+For a companion-backed artifact, the logical source identity is `<source>` while the owner-applied
+physical patch target is `<source>.keystone.json`. Transaction omission and observed-mutation matching
+normalize the companion target to the logical identity; attestation, baseline, application, and
+resulting-digest checks remain bound to the physical companion bytes. Binary source bytes are never
+decoded as text. Only the companion JSON must be UTF-8.
+
+GraphSnapshot v1 writes the strict node core `id`, `kind`, `artifact_kind`, `locator`, `lifecycle`, and
+`provenance`; its permissive reader also accepts historical `parent_id`, `declared_metadata`, and
+`effective_metadata`. Canonical v2 adds those metadata fields when applicable and always adds
+`lifecycle_domain: document | artifact`.
 The canonical relation fields are `source`, `relation`, `target`, `evidence`, `provenance`, and
-`lifecycle`. Transaction fields and all eight states follow the accepted Artifact Graph standard.
+`lifecycle`; v2 also requires `lifecycle_domain: relation`. Document lifecycle is
+`draft | active | superseded | archived`, artifact lifecycle is `active | deprecated | removed`, and
+relation lifecycle is `active | deprecated | archived | removed`. V1→v2 migration derives the domain
+from node kind and fails on incompatible lifecycle combinations instead of guessing.
 `inferred` evidence is excluded from canonical mutations. A verified transaction uses
 `reconstruction: {baseline: <GraphSnapshot>, result: <GraphSnapshot>}`. Applying every canonical
 mutation to `baseline` must produce exactly `result`, which must also equal source-only reconstruction.
+
+New executable transactions use transaction schema version 2. Every surface patch carries
+`patch_format: unified_diff | full_replacement`, identical `exact_patch`/`patch_body`, UTF-8
+`baseline_content` (or null when `baseline_digest: absent`), and `expected_after_digest`. Validation
+recomputes the baseline digest, replays the patch without relying on current file bytes, and checks the
+expected digest. A failed v2 transaction carries `failure_reason`; only `transient_io` admits an
+unchanged-input retry. Transaction schema version 1 remains the compatibility wire for historical
+descriptive patches.
 
 The Python model is converted with `transaction_wire(transaction, baseline_snapshot=...)`. It emits only
 the accepted canonical transaction fields and always represents `mechanical_validation` as
@@ -55,6 +73,12 @@ Output is one JSON object:
 {"schema_version":1,"status":"pass|fail|error","diagnostics":[],"summary":{"errors":0,"warnings":0}}
 ```
 
+Repository validation adds a `coverage` object with `mode`, `complete`, `path_digest`, source lists,
+and counts for discovered, parsed, omitted, declared-only, and skipped sources. `coverage: full`
+promotes scan truncation, oversized files, unreadable sources, omitted discovered sources, and
+declared-only manifest paths to errors. `coverage: subset` keeps those gaps explicit as warnings and
+never represents skipped or omitted sources as complete. The core runner preserves this object.
+
 Diagnostics have stable `code`, `severity`, `message`, and an optional repository `path`/`locator`.
 Exit 0 means pass, 1 means mechanical findings, and 2 means invocation, execution, timeout, missing
 validator/source, or malformed input/output. The runner executes core first. A project `--extension`
@@ -64,7 +88,9 @@ is additive: its diagnostics are appended and it cannot remove or suppress core 
 
 Source and companion metadata are authoritative. A derived cache/reverse index is optional and
 non-authoritative; validation never requires it and reconstructs from source if it is absent, malformed,
-or differs. Transaction state, attestation, application results, baseline digests, reconstruction,
+or differs. One validation captures source and companion raw bytes before reconstruction and compares
+the same physical paths after validation; a change produces `source_generation_changed` instead of a
+mixed-generation success. Transaction state, attestation, application results, baseline digests, reconstruction,
 mechanical validation, and acceptance evidence cannot be supplied by a cache. The validator checks only
 mechanical facts such as shape/vocabulary/direction, duplicate or unresolved IDs, mechanically observable
 locator paths, supersession cycles, lifecycle references, and verified-transaction closure.

@@ -187,6 +187,8 @@ Linker는 초기 구현에서 다음 metadata surface를 우선 읽는다.
 
 4. Code, config, schema, API, test artifact 안의 `keystone:` line comment
 5. Repository path, heading, visible item ID, symbol, test name, config key 같은 locator evidence
+6. Markdown fenced code와 matching single/multiple-backtick inline code span 안의 metadata example은
+   passive text로 취급하고 owner/ref로 parse하지 않는다.
 
 Parsing과 normalization은 다음 기준을 따른다.
 
@@ -228,7 +230,12 @@ Parsing과 normalization은 다음 기준을 따른다.
 14. Confidence는 evidence type을 기준으로 `declared`, `observed`, `inferred`로 우선 구분하고,
    candidate 등급은 Artifact Graph 기준서의 `required`, `strong_candidate`, `weak_candidate`,
    `informational`, `excluded`를 따른다.
-15. Parser가 이해하지 못한 metadata는 조용히 버리지 않고 `metadata_gaps` 또는 `risks_and_gaps`에
+15. Active declared relation은 relation table의 기본 grade를 유지할 수 있다. Owner-attested
+   observed는 `strong_candidate`, unattested observed와 inferred는 `weak_candidate`, deprecated
+   relation 또는 node는 `informational`을 넘지 않는다.
+16. Archived, superseded, removed relation 또는 node는 active impact traversal에서 제외한다.
+   Candidate grade는 review priority이며 edit, assignment, acceptance 권한이 아니다.
+17. Parser가 이해하지 못한 metadata는 조용히 버리지 않고 `metadata_gaps` 또는 `risks_and_gaps`에
    기록한다.
 
 <!-- key: id=key.standard.skill.linker.api-interpretation refs=key.role.linker key.topic.api key.topic.artifact-graph key.work.decisions.dec-works-010 -->
@@ -321,7 +328,15 @@ Transaction trigger는 current scope, Coordinator permission, worker assignment 
 7. Apply 후 source를 cache 없이 재구성하고 mutation과 일치하는지 비교한다. Derived cache는
    선택적·비권위이며 source mismatch 시 폐기한다.
 8. Orphan relation, removed target을 향한 active relation, unresolved locator와 duplicate ID를
-   mechanical failure로 보고한다. Retired ID의 history/provenance reference는 허용한다.
+   mechanical failure로 보고한다. Active semantic relation이 retired source에서 시작하거나
+   retired target을 향하는 경우도 failure다. 단, active source가 declared 또는 owner-attested
+   observed evidence로 deprecated/removed target을 향해 canonical `supersedes`를 선언한 경우만
+   허용한다. Retired ID의 history/provenance reference는 허용한다.
+9. 신규 graph snapshot과 transaction은 wire schema v2를 사용한다. Node는
+   `lifecycle_domain: document | artifact`, relation은 `lifecycle_domain: relation`을 명시한다.
+   v1 strict core serializer와 historical conditional-metadata parser는 0.x 전체와 최초 stable
+   1.0 release 동안 read compatibility로 유지한다. v1 제거에는 별도 accepted migration decision과
+   external-consumer evidence가 필요하다.
 
 Output focus:
 
@@ -450,7 +465,7 @@ linker_report:
     skill:
     reason:
   graph_synchronization:
-    schema_version: 1
+    schema_version: 2
     transaction_id:
     graph_relevance:
       relevant: true | false
@@ -473,7 +488,11 @@ linker_report:
         surface: document_metadata | code_anchor | config_anchor | schema_anchor | api_anchor | test_anchor | companion_metadata
         target_path:
         baseline_digest: sha256:<64-lowercase-hex> | absent
+        baseline_content: <UTF-8 string> | null
         exact_patch:
+        patch_format: unified_diff | full_replacement
+        patch_body:
+        expected_after_digest: sha256:<64-lowercase-hex>
         required: true | false
     attestations:
       - patch_id:
@@ -484,10 +503,18 @@ linker_report:
         result: applied | failed | stale_baseline
         resulting_digest:
     transaction_state: proposed | awaiting_attestation | ready_to_apply | applying | partially_applied | verified | conflicted | failed
+    failure_reason: transient_io | permission_denied | validation_failed | source_conflict | tool_failure | unknown | null
     reconstruction:
     mechanical_validation:
     coverage_debt: []
 ```
+
+Schema v2 mutation의 node/relation `before`와 `after`, reconstruction snapshot은 Artifact Graph
+기준서의 domain-specific lifecycle wire를 사용한다. Document-domain node는
+`draft | active | superseded | archived`, artifact-domain node는
+`active | deprecated | removed`, relation-domain은 `active | deprecated | archived | removed`만
+허용한다. v1 snapshot은 deterministic migration 후 같은 normalized v2 wire와 일치해야 하며,
+domain에 맞지 않는 lifecycle은 추정 변환하지 않고 실패한다.
 
 `candidate_budget`은 후보가 많아 output을 줄였을 때만 사용한다. Linker는 `required` 후보를
 자의적으로 숨기지 않으며, 생략이 필요하면 `omitted_summary`에 evidence type, keyword, path
@@ -602,6 +629,9 @@ Owner/ref Index Readiness는 Linker의 permissionless internal mode다. User-fac
    digest로 결정한다. Git HEAD, mtime과 timestamp만으로 fresh를 선언하지 않는다.
 4. Docs scope는 configured document root만, repository scope는 explicit include/exclude와 supported
    source/companion discovery를 사용한다. Repository scan은 artifact context가 필요할 때 lazy하다.
+   Docs가 repository-owned `key.skill.* | key.code.* | key.config.* | key.schema.* | key.api.* |
+   key.test.*`를 참조하면 dangling으로 단정하지 않고 `out_of_scope_ref` warning 후 repository
+   resolution으로 넘긴다.
 5. Cache lock/write/corruption 실패는 fail-soft diagnostic으로 남기고 raw source 탐색 결과를
    반환한다. Cache failure만으로 current work나 Reader orientation을 block하지 않는다.
 6. Typed graph projection은 multi-hop/semantic-role/dependency/verification/reuse query가 필요할
@@ -609,6 +639,9 @@ Owner/ref Index Readiness는 Linker의 permissionless internal mode다. User-fac
    만들지 않는다.
 7. Reader -> Linker와 Linker -> Reader 호출은 serialized recursion guard를 전달하며 initiating
    lane에 재진입하지 않는다.
+8. Readiness CLI는 error 유무의 `status`와 별도로 `complete`, discovered/parsed/skipped count,
+   discovered-path digest와 skipped path/reason을 반환한다. Host는 `status: pass`만으로 partial
+   discovery를 complete context로 사용하지 않는다.
 
 <!-- key: id=key.standard.skill.linker.transaction-classification refs=key.role.linker key.topic.artifact-graph key.topic.change-set -->
 ## Direct refresh와 transaction 분류

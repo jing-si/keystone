@@ -2,8 +2,8 @@
 doc_type: work_order
 created_at: "2026-08-06"
 document_lifecycle: active
-approval: {state: pending}
-work_status: planned
+approval: {state: accepted, accepted_at: "2026-08-07", accepted_by: main}
+work_status: complete
 key:
   id: key.work.skill-runtime-traceability.order
   refs:
@@ -108,22 +108,22 @@ Exclude:
 <!-- key: id=key.work.skill-runtime-traceability.order.completion refs=key.topic.acceptance key.topic.integration-verification -->
 ## Completion Criteria
 
-- [ ] Fresh Linker report가 required/strong/weak/excluded code·test 후보를 구분한다.
-- [ ] 여섯 skill owner의 production provenance와 project/child/bootstrap governance가 유지된다.
-- [ ] 선택한 runtime/test anchor가 metadata admission policy를 만족하고 owner가 유일하다.
-- [ ] 대표 contract/E2E test의 `verifies` target이 존재하며 실제 검증 behavior와 일치한다.
-- [ ] Private helper, trivial wrapper와 전체 unit test가 불필요하게 graph node로 승격되지 않는다.
-- [ ] Anchor locator와 typed relation direction이 validator와 semantic review를 통과한다.
-- [ ] Linker, Author, Reader와 skill contract 전체 suite가 통과한다.
-- [ ] Docs/repository readiness와 repository graph validator가 새 mechanical stale 없이 통과한다.
-- [ ] Graph synchronization이 required이면 verified transaction과 owner apply evidence가 존재한다.
-- [ ] Actual corpus readiness→dependency→graph synchronization→multi-Step finalization E2E가 통과한다.
-- [ ] Init/resume/cache/dependency/partial-apply/prompt-injection scenario가 expected status와
+- [x] Fresh Linker report가 required/strong/weak/excluded code·test 후보를 구분한다.
+- [x] 여섯 skill owner의 production provenance와 project/child/bootstrap governance가 유지된다.
+- [x] 선택한 runtime/test anchor가 metadata admission policy를 만족하고 owner가 유일하다.
+- [x] 대표 contract/E2E test의 `verifies` target이 존재하며 실제 검증 behavior와 일치한다.
+- [x] Private helper, trivial wrapper와 전체 unit test가 불필요하게 graph node로 승격되지 않는다.
+- [x] Anchor locator와 typed relation direction이 validator와 semantic review를 통과한다.
+- [x] Linker, Author, Reader와 skill contract 전체 suite가 통과한다.
+- [x] Docs/repository readiness와 repository graph validator가 새 mechanical stale 없이 통과한다.
+- [x] Graph synchronization이 required이면 verified transaction과 owner apply evidence가 존재한다.
+- [x] Actual corpus readiness→dependency→graph synchronization→multi-Step finalization E2E가 통과한다.
+- [x] Init/resume/cache/dependency/partial-apply/prompt-injection scenario가 expected status와
   authority boundary를 재현한다.
-- [ ] External pilot, global install과 publication 미검증 범위가 후속 round candidate로 기록된다.
-- [ ] README, Context Map, root/round/work index의 current navigation이 같은 active/latest state를
+- [x] External pilot, global install과 publication 미검증 범위가 후속 round candidate로 기록된다.
+- [x] README, Context Map, root/round/work index의 current navigation이 같은 active/latest state를
   가리킨다.
-- [ ] Main이 relation 의미, test evidence와 residual coverage debt를 검토한다.
+- [x] Main이 relation 의미, test evidence와 residual coverage debt를 검토한다.
 
 <!-- key: id=key.work.skill-runtime-traceability.order.review-points refs=key.section.review-points key.topic.impact-review -->
 ## Review Points

@@ -39,7 +39,17 @@ def _provenance_wire(provenance: Provenance) -> Dict[str, Any]:
     return result
 
 
-def _node_wire(node: Node) -> Dict[str, Any]:
+_DOCUMENT_NODE_KINDS = {
+    "source_document", "document_section", "document_item", "claim", "decision",
+    "work_order", "work_step", "capability",
+}
+
+
+def _node_lifecycle_domain(node: Node) -> str:
+    return "document" if node.kind.value in _DOCUMENT_NODE_KINDS else "artifact"
+
+
+def _node_wire(node: Node, schema_version: int = 1) -> Dict[str, Any]:
     result = {
         "id": node.id,
         "kind": node.kind.value,
@@ -48,7 +58,9 @@ def _node_wire(node: Node) -> Dict[str, Any]:
         "lifecycle": node.lifecycle.value,
         "provenance": _provenance_wire(node.provenance),
     }
-    if any((
+    if schema_version >= 2:
+        result["lifecycle_domain"] = _node_lifecycle_domain(node)
+    if schema_version >= 2 and any((
         node.declared_lifecycle is not None,
         node.declared_approval_state is not None,
         node.declared_governed_by,
@@ -83,8 +95,8 @@ def _node_wire(node: Node) -> Dict[str, Any]:
     return result
 
 
-def _relation_wire(relation: Relation) -> Dict[str, Any]:
-    return {
+def _relation_wire(relation: Relation, schema_version: int = 1) -> Dict[str, Any]:
+    result = {
         "source": relation.source,
         "relation": relation.relation.value,
         "target": relation.target,
@@ -92,24 +104,31 @@ def _relation_wire(relation: Relation) -> Dict[str, Any]:
         "provenance": _provenance_wire(relation.provenance),
         "lifecycle": relation.lifecycle.value,
     }
+    if schema_version >= 2:
+        result["lifecycle_domain"] = "relation"
+    return result
 
 
-def graph_snapshot_wire(snapshot: GraphSnapshot) -> Dict[str, Any]:
+def graph_snapshot_wire(snapshot: GraphSnapshot,
+                        schema_version: Optional[int] = None) -> Dict[str, Any]:
     """Serialize a source-derived graph snapshot to its canonical wire."""
+    version = snapshot.schema_version if schema_version is None else schema_version
+    if version not in {1, 2}:
+        raise ValueError("graph snapshot schema_version must be 1 or 2")
     return {
-        "schema_version": snapshot.schema_version,
-        "nodes": [_node_wire(node) for node in snapshot.nodes],
-        "relations": [_relation_wire(relation) for relation in snapshot.relations],
+        "schema_version": version,
+        "nodes": [_node_wire(node, version) for node in snapshot.nodes],
+        "relations": [_relation_wire(relation, version) for relation in snapshot.relations],
     }
 
 
-def _entity_wire(value: Any) -> Optional[Dict[str, Any]]:
+def _entity_wire(value: Any, schema_version: int = 1) -> Optional[Dict[str, Any]]:
     if value is None:
         return None
     if isinstance(value, Node):
-        return _node_wire(value)
+        return _node_wire(value, schema_version)
     if isinstance(value, Relation):
-        return _relation_wire(value)
+        return _relation_wire(value, schema_version)
     raise TypeError("canonical mutation entity must be Node or Relation")
 
 
@@ -149,11 +168,34 @@ def transaction_wire(
         None
         if transaction.reconstruction is None
         else {
-            "baseline": graph_snapshot_wire(baseline_snapshot),
-            "result": graph_snapshot_wire(transaction.reconstruction),
+            "baseline": graph_snapshot_wire(
+                baseline_snapshot, schema_version=transaction.schema_version
+            ),
+            "result": graph_snapshot_wire(
+                transaction.reconstruction, schema_version=transaction.schema_version
+            ),
         }
     )
-    return {
+    surface_patches = []
+    for patch in transaction.surface_patches:
+        item = {
+            "patch_id": patch.patch_id,
+            "owner": patch.owner.value,
+            "surface": patch.surface.value,
+            "target_path": patch.target_path,
+            "baseline_digest": patch.baseline_digest,
+            "exact_patch": patch.exact_patch,
+            "required": patch.required,
+        }
+        if transaction.schema_version >= 2:
+            item.update({
+                "patch_format": patch.patch_format,
+                "patch_body": patch.patch_body,
+                "expected_after_digest": patch.expected_after_digest,
+                "baseline_content": patch.baseline_content,
+            })
+        surface_patches.append(item)
+    result = {
         "schema_version": transaction.schema_version,
         "transaction_id": transaction.transaction_id,
         "scope_ref": transaction.scope_ref,
@@ -170,20 +212,12 @@ def transaction_wire(
         "canonical_mutations": [{
             "operation": mutation.operation.value,
             "entity": mutation.entity.value,
-            "before": _entity_wire(mutation.before),
-            "after": _entity_wire(mutation.after),
+            "before": _entity_wire(mutation.before, transaction.schema_version),
+            "after": _entity_wire(mutation.after, transaction.schema_version),
             "evidence": mutation.evidence.value,
             "direct_relation_reason": mutation.direct_relation_reason,
         } for mutation in transaction.canonical_mutations],
-        "surface_patches": [{
-            "patch_id": patch.patch_id,
-            "owner": patch.owner.value,
-            "surface": patch.surface.value,
-            "target_path": patch.target_path,
-            "baseline_digest": patch.baseline_digest,
-            "exact_patch": patch.exact_patch,
-            "required": patch.required,
-        } for patch in transaction.surface_patches],
+        "surface_patches": surface_patches,
         "attestations": [{
             "patch_id": item.patch_id,
             "owner": item.owner.value,
@@ -208,6 +242,12 @@ def transaction_wire(
         ),
         "coverage_debt": list(transaction.coverage_debt),
     }
+    if transaction.schema_version >= 2:
+        result["failure_reason"] = (
+            transaction.failure_reason.value
+            if transaction.failure_reason is not None else None
+        )
+    return result
 
 
 def attempt_history_wire(

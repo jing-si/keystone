@@ -60,6 +60,27 @@ class GraphValidationIntegrationTest(unittest.TestCase):
         self.assertEqual(1, process.returncode)
         self.assertIn("missing_target", [item["code"] for item in payload["diagnostics"]])
 
+    def test_runner_preserves_repository_coverage_evidence(self):
+        manifest = self.root / "manifest.json"
+        manifest.write_text(json.dumps({
+            "schema_version": 1,
+            "scope": "repository",
+            "coverage": "subset",
+            "sources": [],
+        }), encoding="utf-8")
+
+        process = subprocess.run(
+            [sys.executable, str(RUNNER), "--root", str(self.root),
+             "--manifest", str(manifest)],
+            capture_output=True, text=True, check=False,
+        )
+        payload = json.loads(process.stdout)
+
+        self.assertIn(process.returncode, {0, 1}, payload)
+        self.assertEqual("subset", payload["coverage"]["mode"])
+        self.assertFalse(payload["coverage"]["complete"])
+        self.assertEqual(["source.md"], payload["coverage"]["omitted_sources"])
+
     def test_installer_copies_graph_runtime_and_runs_help_smoke(self):
         codex_home = self.root / "codex-home"
         environment = dict(os.environ, CODEX_HOME=str(codex_home))

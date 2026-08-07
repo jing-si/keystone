@@ -97,6 +97,8 @@ def main():
     warnings = sum(item["severity"] == "warning" for item in diagnostics)
     payload = {"schema_version": 1, "status": "fail" if errors else "pass",
                "diagnostics": diagnostics, "summary": {"errors": errors, "warnings": warnings}}
+    if "coverage" in core:
+        payload["coverage"] = core["coverage"]
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
     return 1 if errors else 0
 

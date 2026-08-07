@@ -35,13 +35,16 @@ def diagnostic_dict(item: Diagnostic) -> Dict[str, Any]:
 
 
 def envelope(diagnostics: Iterable[Diagnostic], *,
-             execution_error: bool = False) -> Dict[str, Any]:
+             execution_error: bool = False, coverage=None) -> Dict[str, Any]:
     serialized = [diagnostic_dict(item) for item in diagnostics]
     errors = sum(item["severity"] == "error" for item in serialized)
     warnings = sum(item["severity"] == "warning" for item in serialized)
-    return {
+    result = {
         "schema_version": 1,
         "status": "error" if execution_error else ("fail" if errors else "pass"),
         "diagnostics": serialized,
         "summary": {"errors": errors, "warnings": warnings},
     }
+    if coverage is not None:
+        result["coverage"] = coverage
+    return result

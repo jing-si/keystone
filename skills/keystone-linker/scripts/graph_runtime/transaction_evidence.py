@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, FrozenSet, Optional, Sequence, Tuple
 
 from .model import Diagnostic, PatchOwner, PatchSurface, patch_owner_matches_surface
+from .patch_replay import PATCH_FORMATS, digest_bytes, replay_patch
 from .transaction_wire_validation import is_digest_wire
 from .validation_support import diagnostic, safe_path
 
@@ -49,10 +50,25 @@ def validate_transaction_evidence(
         )
 
     patch_by_id = {}
+    schema_version = value.get("schema_version")
     for patch in patches:
         if not isinstance(patch, dict):
             findings.append(diagnostic("surface_patch_invalid", "surface patch must be an object"))
             continue
+        patch_fields = {
+            "patch_id", "owner", "surface", "target_path", "baseline_digest",
+            "exact_patch", "required",
+        }
+        if schema_version == 2:
+            patch_fields |= {
+                "patch_format", "patch_body", "expected_after_digest",
+                "baseline_content",
+            }
+        for field in sorted(set(patch) - patch_fields):
+            findings.append(diagnostic(
+                "surface_patch_unknown_field",
+                "unknown surface patch field: %s" % field,
+            ))
         patch_id = patch.get("patch_id")
         if not isinstance(patch_id, str) or not patch_id:
             findings.append(diagnostic("patch_id_missing", "surface patch requires patch_id"))
@@ -99,6 +115,78 @@ def validate_transaction_evidence(
                 "patch_exact_patch_invalid",
                 "surface patch exact_patch must be non-empty",
             ))
+        if schema_version == 2:
+            patch_format = patch.get("patch_format")
+            patch_body = patch.get("patch_body")
+            expected_digest = patch.get("expected_after_digest")
+            baseline_content = patch.get("baseline_content")
+            if "baseline_content" not in patch:
+                findings.append(diagnostic(
+                    "patch_baseline_content_invalid",
+                    "schema-v2 surface patch requires baseline_content",
+                ))
+            if patch_format not in PATCH_FORMATS:
+                findings.append(diagnostic(
+                    "patch_format_invalid",
+                    "schema-v2 surface patch requires a supported patch_format",
+                ))
+            if not isinstance(patch_body, str):
+                findings.append(diagnostic(
+                    "patch_body_invalid",
+                    "schema-v2 surface patch requires patch_body",
+                ))
+            elif patch.get("exact_patch") != patch_body:
+                findings.append(diagnostic(
+                    "patch_body_alias_mismatch",
+                    "exact_patch must equal patch_body in schema-v2 compatibility wire",
+                ))
+            if not is_digest_wire(expected_digest or "") or expected_digest == "absent":
+                findings.append(diagnostic(
+                    "patch_expected_digest_invalid",
+                    "schema-v2 surface patch requires an expected sha256 digest",
+                ))
+            baseline_digest = patch.get("baseline_digest")
+            if baseline_digest == "absent":
+                if baseline_content is not None:
+                    findings.append(diagnostic(
+                        "patch_baseline_content_invalid",
+                        "absent baseline requires null baseline_content",
+                    ))
+                baseline = b""
+            elif not isinstance(baseline_content, str):
+                findings.append(diagnostic(
+                    "patch_baseline_content_invalid",
+                    "schema-v2 surface patch requires baseline_content",
+                ))
+                baseline = None
+            else:
+                baseline = baseline_content.encode("utf-8")
+                if digest_bytes(baseline) != baseline_digest:
+                    findings.append(diagnostic(
+                        "patch_baseline_content_mismatch",
+                        "baseline_content does not produce baseline_digest",
+                        patch.get("target_path"),
+                    ))
+            if (
+                baseline is not None
+                and patch_format in PATCH_FORMATS
+                and isinstance(patch_body, str)
+                and is_digest_wire(expected_digest or "")
+                and expected_digest != "absent"
+            ):
+                try:
+                    replayed = replay_patch(baseline, patch_format, patch_body)
+                except ValueError as error:
+                    findings.append(diagnostic(
+                        "patch_replay_invalid", str(error), patch.get("target_path")
+                    ))
+                else:
+                    if digest_bytes(replayed) != expected_digest:
+                        findings.append(diagnostic(
+                            "patch_replay_mismatch",
+                            "patch replay does not produce expected_after_digest",
+                            patch.get("target_path"),
+                        ))
         if not isinstance(patch.get("required"), bool):
             findings.append(diagnostic(
                 "patch_required_invalid",

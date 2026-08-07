@@ -163,7 +163,7 @@ relation은 multi-hop 탐색, semantic role, dependency, verification evidence �
 필요할 때만 추가한다. Capability를 모든 artifact의 중심 node로 강제하지 않으며 direct owner/ref
 연결을 예외로 취급하지 않는다. Broad topic·path overlap은 owner/ref나 typed relation의 근거가 아니다.
 
-Canonical wire model은 JSON object로 직렬화 가능한 다음 field를 사용한다.
+Canonical graph wire v2는 JSON object로 직렬화 가능한 다음 field를 사용한다.
 
 ```yaml
 graph_node:
@@ -171,7 +171,8 @@ graph_node:
   kind: source_document | document_section | document_item | claim | decision | work_order | work_step | capability | output_artifact | verification_result
   artifact_kind: skill_source | code | config | schema | api | test | generated_file | doc_artifact | none
   locator: {path:, heading:, symbol:, test_name:, config_key:, schema_name:}
-  lifecycle: active | deprecated | removed
+  lifecycle_domain: document | artifact
+  lifecycle: draft | active | superseded | archived | deprecated | removed
   provenance: {produced_from: [], governed_by: []}
 graph_relation:
   source:
@@ -179,8 +180,17 @@ graph_relation:
   target:
   evidence: declared | observed | inferred
   provenance: {surface:, locator:, attested_by:}
-  lifecycle: active | deprecated | removed
+  lifecycle_domain: relation
+  lifecycle: active | deprecated | archived | removed
 ```
+
+V2 document node는 `draft | active | superseded | archived`, artifact node는
+`active | deprecated | removed`만 허용한다. Capability는 source-document 의미 단위이므로 document
+domain이다. Output artifact와 verification result는 artifact domain이다. V1 serializer는 위
+node/relation에서 `lifecycle_domain`과 conditional metadata를 제외한 core field만 출력한다. V1
+parser는 기존 `declared_metadata`, `effective_metadata`, `parent_id` 확장을 계속 읽지만 새 write는
+v2로 수렴한다. V1 read compatibility는 0.x와 첫 stable 1.0까지 유지하며 제거에는 별도 accepted
+migration decision과 consumer evidence가 필요하다.
 
 Locator는 path와 함께 heading, symbol, test name, config key 또는 schema name처럼 parser가
 기계적으로 확인 가능한 field만 canonical mutation에 사용한다. 자유 자연어만 있는 locator는
@@ -221,7 +231,7 @@ apply result 또는 acceptance evidence를 대신하지 않는다.
 
 ```yaml
 graph_transaction:
-  schema_version: 1
+  schema_version: 2
   transaction_id:
   scope_ref:
   input_deltas: []
@@ -238,7 +248,11 @@ graph_transaction:
       surface: document_metadata | code_anchor | config_anchor | schema_anchor | api_anchor | test_anchor | companion_metadata
       target_path:
       baseline_digest:
+      baseline_content:
       exact_patch:
+      patch_format: unified_diff | full_replacement
+      patch_body:
+      expected_after_digest:
       required: true | false
   attestations:
     - patch_id:
@@ -251,12 +265,16 @@ graph_transaction:
       resulting_digest:
       evidence:
   state: proposed | awaiting_attestation | ready_to_apply | applying | partially_applied | verified | conflicted | failed
+  failure_reason: transient_io | permission_denied | validation_failed | source_conflict | tool_failure | unknown | null
   reconstruction:
   mechanical_validation:
   coverage_debt: []
 ```
 
-Linker proposal은 exact per-surface patch와 baseline을 포함한다. Owner는 자기 surface의 의미와
+Linker schema v2 proposal은 executable per-surface patch, UTF-8 baseline content 또는 absent의
+`null`, baseline digest와 expected-after digest를 포함한다. Validator는 현재 source 상태와
+무관하게 baseline→patch→expected digest를 replay한다. Schema v1은 기존 설명형 `exact_patch`
+transaction의 읽기·검증 호환 wire로만 유지한다. Owner는 자기 surface의 의미와
 patch만 attestation한다. `reject`는 proposal과 source evidence가 양립하지 않음을 뜻하며
 `conflicted`, `needs_revision`은 Linker 재계획을 요구한다. Apply 직전 baseline이 다르면 patch를
 쓰지 않고 `stale_baseline`으로 기록한다. Apply 결과는 `applied | failed | stale_baseline`만 쓴다.
@@ -272,9 +290,10 @@ patch만 attestation한다. `reject`는 proposal과 source evidence가 양립하
    변경 증거가 있을 때 허용한다. `stale_baseline`은 하나 이상의 새 baseline이 필요하다.
    `reject | needs_revision`은 같은 baseline을 허용하되 mutation 또는 exact patch가 달라야 한다.
    Reconstruction mismatch는 baseline, mutation 또는 patch 중 하나가 달라야 한다.
-7. `failed -> proposed`는 원인을 보존하고 새 transaction ID와 attempt history를 만들 때만
-   허용한다. Verification으로 transient application failure임이 확인되면 동일 baseline/mutation/
-   patch retry를 허용하고 그 외 failure는 원인에 영향을 받는 입력을 변경해야 한다.
+7. `failed -> proposed`는 typed failure reason과 새 transaction ID, attempt history를 보존할 때만
+   허용한다. `transient_io`만 동일 baseline/mutation/patch retry를 허용하고
+   `permission_denied | validation_failed | source_conflict | tool_failure | unknown`은 입력 변경을
+   요구한다.
 
 `verified`는 모든 required patch의 `confirm`, apply 직전 baseline 일치, 모든 required result의
 `applied`, Linker의 source 재구성 결과가 canonical mutation과 일치함, mechanical validator
@@ -544,16 +563,25 @@ Typed relation은 source에서 target으로 읽는다. Reverse relation은 sourc
 
 제한은 다음과 같다.
 
-1. 모든 import, call, filename overlap을 typed relation으로 승격하지 않는다.
-2. Repository tool이 더 잘 처리하는 structural dependency는 observed evidence로 보고할 수 있다.
-3. Typed relation은 semantic relation일 때만 source surface에 선언한다.
-4. `uses`는 단순 import, local helper call, private implementation detail에는 기본적으로 쓰지
+1. Declared active relation은 표의 기본 grade를 유지할 수 있다. Owner-attested observed는
+   `strong_candidate`, unattested observed와 inferred는 `weak_candidate`를 넘지 않는다.
+2. Deprecated relation 또는 target node는 `informational`을 넘지 않는다. Archived, superseded,
+   removed relation/node는 active traversal에서 제외한다.
+3. Active semantic relation의 source 또는 target이 retired이면 diagnostic이다. 단, active
+   source가 declared 또는 owner-attested observed evidence로 deprecated/removed target을 향해
+   `supersedes`하는 canonical replacement만 허용한다.
+4. 이 grade는 review priority이며 자동 edit, assignment 또는 acceptance 권한이 아니다.
+
+5. 모든 import, call, filename overlap을 typed relation으로 승격하지 않는다.
+6. Repository tool이 더 잘 처리하는 structural dependency는 observed evidence로 보고할 수 있다.
+7. Typed relation은 semantic relation일 때만 source surface에 선언한다.
+8. `uses`는 단순 import, local helper call, private implementation detail에는 기본적으로 쓰지
    않는다.
-5. `derived_from`은 generated artifact, schema-derived type, API client generated from API
+9. `derived_from`은 generated artifact, schema-derived type, API client generated from API
    contract처럼 파생 관계가 명확한 경우에 우선 사용한다.
-6. Work order가 output artifact를 만든 provenance는 `produced_from` field와 역방향
+10. Work order가 output artifact를 만든 provenance는 `produced_from` field와 역방향
    `produces` edge로 다루고 artifact-to-artifact 파생 `derived_from`으로 바꾸지 않는다.
-7. `revised_by`는 revision-history evidence로만 사용하고 semantic relation이 필요하면
+11. `revised_by`는 revision-history evidence로만 사용하고 semantic relation이 필요하면
    해당 의미의 공식 typed relation 또는 Change Set으로 명시한다.
 
 <!-- key: id=key.standard.artifact.graph.dependency-work-gate refs=key.topic.artifact-graph key.topic.work-sequence key.topic.work-recovery key.topic.verification -->

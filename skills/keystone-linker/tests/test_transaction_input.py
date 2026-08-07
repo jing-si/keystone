@@ -18,7 +18,6 @@ class TransactionInputTest(unittest.TestCase):
                 "transaction_unknown_field",
                 "transaction_unknown_field",
                 "transaction_state_invalid",
-                "transaction_schema_invalid",
                 "conflict_reason_invalid",
                 "conflict_reason_unexpected",
                 "transaction_field_missing",
@@ -26,6 +25,24 @@ class TransactionInputTest(unittest.TestCase):
             ],
             [item.code for item in result.diagnostics],
         )
+
+    def test_schema_v2_failed_transaction_requires_typed_failure_reason(self):
+        missing = validate_transaction_input({
+            "schema_version": 2,
+            "transaction_id": "tx",
+            "scope_ref": "scope",
+            "state": "failed",
+        })
+        valid = validate_transaction_input({
+            "schema_version": 2,
+            "transaction_id": "tx",
+            "scope_ref": "scope",
+            "state": "failed",
+            "failure_reason": "transient_io",
+        })
+
+        self.assertIn("failure_reason_missing", [item.code for item in missing.diagnostics])
+        self.assertNotIn("failure_reason_missing", [item.code for item in valid.diagnostics])
 
     def test_invalid_collections_are_reported_and_mutations_normalize_empty(self):
         result = validate_transaction_input({
