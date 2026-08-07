@@ -36,9 +36,8 @@ work_gates:
 ## Goal
 
 Assignment baseline의 전체 path set을 독립 재현 가능한 snapshot policy에 결속하고, worker 이후
-Author·repository owner·finalization 변경을 phase별 source generation과 actor authority로 분리한다.
-`graph_sync: not_applicable`도 같은 delta와 source generation을 읽은 package-owned Linker 판정으로
-닫아 Coordinator actual-state closure를 manifest linter가 아닌 authority-chain verifier로 만든다.
+Author·repository owner·finalization 변경을 phase별 source generation과 actor authority로 분리해
+Coordinator actual-state closure를 manifest linter가 아닌 authority-chain verifier로 만든다.
 
 <!-- key: id=key.work.authority-chain-snapshot-closure.order.improvements refs=key.topic.work-sequence key.topic.verification -->
 ## 개선 항목
@@ -47,7 +46,6 @@ Author·repository owner·finalization 변경을 phase별 source generation과 a
 |---|---|---|---|
 | PC85-02 | Assignment baseline snapshot completeness | 1 | complete path/type/raw-byte digest와 policy binding |
 | PC85-01 | Phase-separated actual-state closure | 2 | phase parent digest와 actor별 delta/scope |
-| PC85-04 | Package-owned Linker classification | 3 | 동일 delta/source에서 canonical runner 재실행 |
 
 <!-- key: id=key.work.authority-chain-snapshot-closure.order.scope refs=key.section.scope key.boundary.scope-control -->
 ## Scope
@@ -58,14 +56,15 @@ Include:
 - `regular_file | directory | symlink | absent`, count/path-set digest와 `complete` evidence
 - Assignment, worker, pre-acceptance closure와 post-acceptance phase snapshot chain
 - Worker/Author/repository owner delta, scope와 source-write authority 검증
-- Package-owned Linker classification runner와 Coordinator evidence binding
 - Existing closure compatibility, strict schema와 stable diagnostic tests
 
 Exclude:
 
-- Graph transaction optional patch와 canonical mutation policy: R010/S03
-- Derived global work state와 agent execution evidence: R010/S04
-- Main acceptance 부여, source write와 terminal finalization: R010/S05
+- Package-owned Linker classification, graph transaction과 canonical mutation policy: R010/S03
+- Derived global work state와 shared runtime: R010/S04
+- Actual agent execution evidence: R010/S05
+- Whole-flow integration: R010/S06
+- Main acceptance 부여와 terminal finalization: R010/S07
 - 암묵적인 generated/cache/IDE ignore list와 repository-wide cleanup
 
 <!-- key: id=key.work.authority-chain-snapshot-closure.order.source-context refs=key.section.source-context key.topic.artifact-graph -->
@@ -127,39 +126,16 @@ Verification:
 Done when: 하나의 final diff가 아니라 actual source bytes로 모든 delta를 정확히 한 phase와 actor에
 귀속할 수 있다.
 
-<!-- key: id=key.work.authority-chain-snapshot-closure.order.pc85-04 refs=key.role.linker key.role.coordinator -->
-## PC85-04 Package-owned Linker classification
-
-Implementation:
-
-1. Linker package runner가 `required | not_applicable | deferred`, delta-set digest, source-generation
-   digest, inspected sources, reason codes와 diagnostics를 strict envelope로 반환한다.
-2. Canonical input에는 모든 artifact/document delta, changed locator와 baseline digest를 포함한다.
-3. Coordinator는 package-owned runner identity를 고정하고 output digest와 current delta/source
-   generation을 직접 비교한다.
-4. Graph-relevant locator의 exclusion reason과 inspected source evidence가 대응하지 않으면
-   `not_applicable`을 거절한다.
-5. Classification과 후속 transaction/validation 사이 source generation drift를 차단한다.
-
-Verification:
-
-- Hand-made classification, stale generation, omitted delta와 substituted runner는 실패한다.
-- 동일 delta/source에서 canonical runner가 만든 `not_applicable`은 통과한다.
-- `required` 결과는 같은 delta set을 사용하는 graph transaction evidence로 이어진다.
-
-Done when: `not_applicable`도 required graph sync와 같은 package authority·delta completeness·source
-generation 경계를 가진다.
-
 <!-- key: id=key.work.authority-chain-snapshot-closure.order.change-set refs=key.topic.change-set key.topic.impact-review -->
 ## Change Set
 
-- Intent: closure success를 complete snapshot, actor/phase provenance와 package-owned graph 판정에
-  결속한다.
-- Required candidates: Coordinator model/parser/validator/contract, Linker classification runner,
-  snapshot filesystem adapter, strict wire와 adversarial fixtures
+- Intent: closure success를 complete snapshot과 actor/phase provenance에 결속한다.
+- Required candidates: Coordinator model/parser/validator/contract, snapshot filesystem adapter,
+  strict wire와 adversarial fixtures
 - Conditional candidates: Author finalization runner binding과 release gate는 phase envelope가 바뀌는
   범위만 검토한다.
-- Excluded: S03/S04/S05 owned runtime, unrelated refactor와 public release
+- Excluded: S03 package-owned classification/transaction과 S04-S07 owned runtime, unrelated refactor와
+  public release
 - Acceptance owner: Main
 - Graph handling: document/artifact delta를 Linker가 분류하고 multi-surface mutation이 필요할 때만
   owner-attested transaction을 사용한다.
@@ -167,22 +143,33 @@ generation 경계를 가진다.
 <!-- key: id=key.work.authority-chain-snapshot-closure.order.completion refs=key.topic.acceptance key.topic.integration-verification -->
 ## Completion Criteria
 
-- [ ] Snapshot policy, 전체 discovered path set, path type와 raw-byte digest가 assignment에 결속된다.
-- [ ] Omission, hidden path, deletion, type replacement와 truncated scan이 fail-closed다.
-- [ ] 각 phase baseline digest가 이전 phase result digest와 일치한다.
-- [ ] Worker, Author, repository owner와 finalization delta가 actor authority 안에 있다.
-- [ ] Inter-phase unattributed mutation과 acceptance 이전 finalization이 실패한다.
-- [ ] `not_applicable`도 package-owned Linker가 동일 delta/source에서 재판정한다.
-- [ ] Existing closure compatibility와 strict unknown-field policy가 regression으로 보존된다.
-- [ ] S01 Work가 `complete + accepted`이고 S02 focused/package/cross-skill verification이 통과한다.
+Work Order는 criterion statement만 소유하고 현재 state/evidence는 S02 Progress가 관리한다.
+
+<!-- key: id=key.acceptance.authority-chain.complete-snapshot -->
+- `R010-S02-CC-01` Snapshot policy, 전체 discovered path set, path type와 raw-byte digest가
+  assignment에 결속된다.
+<!-- key: id=key.acceptance.authority-chain.hidden-change-detection -->
+- `R010-S02-CC-02` Omission, hidden path, deletion, type replacement와 truncated scan이
+  fail-closed다.
+<!-- key: id=key.acceptance.authority-chain.phase-parent-chain -->
+- `R010-S02-CC-03` 각 phase baseline digest가 이전 phase result digest와 일치한다.
+<!-- key: id=key.acceptance.authority-chain.actor-delta-scope -->
+- `R010-S02-CC-04` Worker, Author, repository owner와 finalization delta가 actor authority 안에 있다.
+<!-- key: id=key.acceptance.authority-chain.unattributed-ordering -->
+- `R010-S02-CC-05` Inter-phase unattributed mutation과 acceptance 이전 finalization이 실패한다.
+<!-- key: id=key.acceptance.authority-chain.closure-compatibility -->
+- `R010-S02-CC-06` Existing closure compatibility와 strict unknown-field policy가 regression으로
+  보존된다.
+<!-- key: id=key.acceptance.authority-chain.prerequisite-verification -->
+- `R010-S02-CC-07` S01 Work가 `complete + accepted`이고 S02 focused/package/cross-skill
+  verification이 통과한다.
 
 <!-- key: id=key.work.authority-chain-snapshot-closure.order.verification refs=key.topic.verification -->
 ## Verification
 
 - Snapshot omission/type/symlink/policy/truncation adversarial matrix
 - Phase success·scope violation·unattributed change·digest/timing mismatch matrix
-- Classification forged/stale/omitted/substituted runner tests
-- Coordinator and Linker full package suites
+- Coordinator full package suite와 affected cross-skill tests
 - Cross-skill actual-source fixture, repository full graph validation와 `git diff --check`
 
 <!-- key: id=key.work.authority-chain-snapshot-closure.order.expected-output refs=key.topic.verification key.topic.work-recovery -->
@@ -190,7 +177,6 @@ generation 경계를 가진다.
 
 - Complete snapshot policy/value object, capture adapter와 validation envelope
 - Phase-separated closure chain, parser/validator와 stable diagnostics
-- Package-owned Linker classification runner와 Coordinator binding
 - Contract/reference updates, adversarial unit/integration fixtures와 Progress evidence
 
 <!-- key: id=key.work.authority-chain-snapshot-closure.order.stop refs=key.boundary.stop-condition -->

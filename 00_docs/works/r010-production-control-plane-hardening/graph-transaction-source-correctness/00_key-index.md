@@ -32,7 +32,7 @@ risk_level: high
 - Work status: planned
 - Approval state: pending
 - Active: false
-- Dependency: S01 acceptance는 시작 gate가 아니며 S03 Work completion gate다.
-- Next action: optional patch와 parser false-positive의 adversarial fixture부터 확정한다.
+- Dependency: S02 acceptance는 시작 gate가 아니며 S03 Work completion gate다.
+- Next action: package-owned classification과 optional patch의 adversarial fixture부터 확정한다.
 
 현재 active Step의 권위 있는 목록은 R010 round index, root works index와 Context Map을 따른다.

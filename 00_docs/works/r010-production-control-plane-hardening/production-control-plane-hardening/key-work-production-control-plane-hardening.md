@@ -47,8 +47,12 @@ Exclude:
 - Python 외부 dependency 추가
 - Repository-wide metadata migration과 unrelated refactor/formatting
 - Correctness와 무관한 adjacency/cache 성능 최적화
-- 실제 skill invocation·transcript·review evidence 생성과 반복 agent eval 실행: R010/S04
-- Whole-flow self-host, independent CI/RC 실행, version transition과 terminal finalization: R010/S05
+- Phase-separated snapshot/authority: R010/S02
+- Package-owned classification과 optional patch·source/lifecycle·mutation 후속 correctness: R010/S03
+- Repository-derived global work state와 shared runtime: R010/S04
+- 실제 skill invocation·transcript·review evidence 생성과 반복 agent eval 실행: R010/S05
+- Whole-flow self-host: R010/S06
+- Independent CI/RC 실행, version transition과 terminal finalization: R010/S07
 
 <!-- key: id=key.work.production-control-plane-hardening.order.source-context refs=key.section.source-context key.topic.artifact-graph -->
 ## Source Context
@@ -85,29 +89,54 @@ Exclude:
 <!-- key: id=key.work.production-control-plane-hardening.order.completion refs=key.topic.acceptance key.topic.integration-verification -->
 ## Completion Criteria
 
-- [x] Document claim supersession과 draft relation이 canonical v2 wire에서 유효하고 retired relation
-      policy와 충돌하지 않는다.
-- [x] Schema-v2 `applied.resulting_digest`가 `expected_after_digest`와 다르면 in-memory와 wire
-      validator 모두 실패한다.
-- [x] Transaction 하나의 physical target당 patch 하나만 허용하고 신규 planner는 기본 v2이며
-      legacy v1은 명시적 opt-in만 허용한다.
-- [x] Supported text source와 adjacent companion을 readiness와 reconstruction이 같은 SourceUnit
-      policy로 해석하고 duplicate identity를 fail-closed로 진단한다.
-- [x] Artifact flat dependency가 Work-completion gate로 승격되지 않는다.
-- [x] Coordinator closure v2가 실제 root/scope/digest, assignment context, Linker/Author runner
-      evidence와 closure target gate를 검증한다.
-- [x] Finalization v5가 global source equality뿐 아니라 event round/active Step/source category
-      semantics를
-      검증한다.
-- [x] Retired seed와 parser false-positive의 bounded regression test가 통과한다.
-- [x] Affected package suites, cross-skill/self-host, external-cache compileall, historical R008/R009
-      finalization, repository readiness와 full graph validation이 통과한다.
-- [x] Release gate가 inherited execution environment, 축소된 plan, malformed success envelope,
-      stale/ambiguous evidence와 untrusted reviewer key를 fail-closed로 거절한다.
-- [x] Phase-separated closure, shared work state, actual agent evidence와 terminal RC/finalization을
-      R010/S02-S05의 reviewable goal로 분리하고 S01의 implemented correctness 범위와 구분했다.
-- [ ] Main이 S01의 implemented correctness hardening과 verification evidence를 검토해 acceptance를
-      결정한다. S01 acceptance는 S02/S03의 completion gate이며 R010 terminal acceptance가 아니다.
+Work Order는 아래 criterion의 불변 statement만 소유한다. 현재 state와 evidence는 S01 Progress의
+`Criterion Status`에서 관리한다.
+
+<!-- key: id=key.acceptance.r010.foundation.lifecycle-wire -->
+- `R010-S01-CC-01` Document claim supersession과 draft relation이 canonical v2 wire에서 유효하고
+  retired relation policy와 충돌하지 않는다.
+<!-- key: id=key.acceptance.r010.foundation.applied-digest-binding -->
+- `R010-S01-CC-02` Schema-v2 `applied.resulting_digest`가 `expected_after_digest`와 다르면 in-memory와
+  wire validator 모두 실패한다.
+<!-- key: id=key.acceptance.r010.foundation.physical-target-v2 -->
+- `R010-S01-CC-03` Transaction 하나의 physical target당 patch 하나만 허용하고 신규 planner는
+  기본 v2이며 legacy v1은 명시적 opt-in만 허용한다.
+<!-- key: id=key.acceptance.r010.foundation.source-unit-companion-parity -->
+- `R010-S01-CC-04` Supported text source와 adjacent companion을 readiness와 reconstruction이 같은
+  SourceUnit policy로 해석하고 duplicate identity를 fail-closed로 진단한다.
+<!-- key: id=key.acceptance.r010.foundation.artifact-dependency-separation -->
+- `R010-S01-CC-05` Artifact flat dependency가 Work-completion gate로 승격되지 않는다.
+<!-- key: id=key.acceptance.r010.foundation.coordinator-closure-v2 -->
+- `R010-S01-CC-06` Coordinator closure v2가 실제 root/scope/digest, assignment context,
+  Linker/Author runner evidence와 closure target gate를 검증한다.
+<!-- key: id=key.acceptance.r010.foundation.finalization-v5 -->
+- `R010-S01-CC-07` Finalization v5가 global source equality뿐 아니라 event round, active Step과
+  source category semantics를 검증한다.
+<!-- key: id=key.acceptance.r010.foundation.parser-impact-regression -->
+- `R010-S01-CC-08` Retired seed와 parser false-positive의 bounded regression test가 통과한다.
+<!-- key: id=key.acceptance.r010.foundation.verification-suite -->
+- `R010-S01-CC-09` Affected package suites, cross-skill/self-host, external-cache compileall,
+  historical R008/R009 finalization, repository readiness와 full graph validation이 통과한다.
+<!-- key: id=key.acceptance.r010.foundation.release-security -->
+- `R010-S01-CC-10` Release gate가 inherited execution environment, 축소된 plan, malformed success
+  envelope, stale/ambiguous evidence와 untrusted reviewer key를 fail-closed로 거절한다.
+<!-- key: id=key.acceptance.r010.foundation.work-decomposition -->
+- `R010-S01-CC-11` Phase-separated closure, shared work state, actual agent evidence, whole-flow와
+  terminal RC/finalization이 R010/S02-S07의 독립 reviewable goal로 분리된다.
+<!-- key: id=key.acceptance.r010.foundation.evidence-replay -->
+- `R010-S01-CC-12` S01 technical criterion을 current candidate subject에서 replay하고 evidence ref,
+  subject commit과 generation/result digest를 S01 Progress에 기록한다.
+
+<!-- key: id=key.work.production-control-plane-hardening.order.post-completion-acceptance refs=key.topic.acceptance -->
+## Post-Completion Acceptance Gate
+
+아래 항목은 S01 completion의 선행 조건이 아니다. Completion evidence가 모두 준비된 뒤 Main이
+별도로 평가한다.
+
+<!-- key: id=key.acceptance.r010.foundation.main-acceptance-review -->
+- `R010-S01-PA-01` Main이 S01의 implemented correctness hardening과 verification evidence를 검토해
+  acceptance를 결정한다. S01 acceptance는 S02/S03의 completion gate이며 R010 terminal
+  acceptance가 아니다.
 
 <!-- key: id=key.work.production-control-plane-hardening.order.stop refs=key.boundary.stop-condition -->
 ## Stop Conditions

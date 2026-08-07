@@ -16,9 +16,9 @@ key:
     - key.topic.verification
   relations:
     depends_on:
-      - target: key.work.production-control-plane-hardening.order
+      - target: key.work.authority-chain-snapshot-closure.order
 work_gates:
-  - dependency: key.work.production-control-plane-hardening.order
+  - dependency: key.work.authority-chain-snapshot-closure.order
     applies_to:
       steps: []
       work_completion: true
@@ -34,7 +34,8 @@ work_gates:
 <!-- key: id=key.work.graph-transaction-source-correctness.order.goal refs=key.section.goal key.topic.artifact-graph -->
 ## Goal
 
-Optional patch가 실제 적용될 때 required patch와 동일한 owner·baseline·byte 검증을 받게 하고,
+`graph_sync: not_applicable`도 package-owned Linker 판정에 결속하고, optional patch가 실제 적용될
+때 required patch와 동일한 owner·baseline·byte 검증을 받게 한다. 또한
 SourceUnit, lifecycle inheritance와 canonical mutation policy를 모든 parser/planner/validator
 entrypoint에서 동일하게 적용한다. Planner를 우회한 structured input, non-UTF-8 source와 문자열
 안의 가짜 anchor도 성공 경로를 만들지 못하게 한다.
@@ -44,16 +45,18 @@ entrypoint에서 동일하게 적용한다. Planner를 우회한 structured inpu
 
 | ID | 개선 항목 | 구현 순서 | 핵심 근거 |
 |---|---|---|---|
-| PC85-03 | Optional patch fail-closed control | 1 | applied subset의 confirm·baseline·result equality |
-| PC85-05 | SourceUnit·source parser 해석 단일화 | 2 | raw bytes 우선, companion fallback와 lexical masking |
-| PC85-06 | Domain-aware lifecycle inheritance | 3 | document item과 output artifact 상속 분리 |
-| PC85-07 | Canonical mutation strict schema | 4 | exact fields와 validator policy recheck |
+| PC85-04 | Package-owned Linker classification | 1 | 동일 delta/source에서 canonical runner 재실행 |
+| PC85-03 | Optional patch fail-closed control | 2 | applied subset의 confirm·baseline·result equality |
+| PC85-05 | SourceUnit·source parser 해석 단일화 | 3 | raw bytes 우선, companion fallback와 lexical masking |
+| PC85-06 | Domain-aware lifecycle inheritance | 4 | document item과 output artifact 상속 분리 |
+| PC85-07 | Canonical mutation strict schema | 5 | exact fields와 validator policy recheck |
 
 <!-- key: id=key.work.graph-transaction-source-correctness.order.scope refs=key.section.scope key.boundary.scope-control -->
 ## Scope
 
 Include:
 
+- Package-owned Linker classification runner와 Coordinator evidence binding
 - Applied required/optional patch의 confirm, baseline, expected/result/current digest invariant
 - Partial resume와 finalization에서 실제 applied patch 전체 재검증
 - Non-UTF-8 supported source, inline/companion selection과 raw-byte binding
@@ -63,8 +66,9 @@ Include:
 
 Exclude:
 
-- Coordinator phase/snapshot과 Linker classification: R010/S02
-- Derived global state, agent eval과 release orchestration: R010/S04-S05
+- Coordinator phase/snapshot: R010/S02
+- Derived global state와 shared runtime: R010/S04
+- Actual agent eval, whole-flow와 release orchestration: R010/S05-S07
 - Full AST parser, repository-wide metadata migration와 새 relation type
 - Historical accepted transaction/finalization 의미 재작성
 
@@ -72,10 +76,34 @@ Exclude:
 ## Source Context
 
 - R010/S01 transaction/SourceUnit/lifecycle strictness implementation과 regression evidence
+- R010/S02 complete snapshot, phase delta와 source-generation contract
 - `00_docs/standards/artifacts/key-standard-artifact-graph.md`
 - `00_docs/standards/skills/linker/key-standard-linker.md`
 - `00_docs/standards/skills/author/key-standard-author.md`
 - `00_docs/convention.md`
+
+<!-- key: id=key.work.graph-transaction-source-correctness.order.pc85-04 refs=key.role.linker key.role.coordinator -->
+## PC85-04 Package-owned Linker classification
+
+Implementation:
+
+1. Linker package runner가 `required | not_applicable | deferred`, delta-set digest, source-generation
+   digest, inspected sources, reason codes와 diagnostics를 strict envelope로 반환한다.
+2. Canonical input에는 모든 artifact/document delta, changed locator와 baseline digest를 포함한다.
+3. Coordinator는 package-owned runner identity를 고정하고 output digest와 current delta/source
+   generation을 직접 비교한다.
+4. Graph-relevant locator의 exclusion reason과 inspected source evidence가 대응하지 않으면
+   `not_applicable`을 거절한다.
+5. Classification과 후속 transaction/validation 사이 source generation drift를 차단한다.
+
+Verification:
+
+- Hand-made classification, stale generation, omitted delta와 substituted runner는 실패한다.
+- 동일 delta/source에서 canonical runner가 만든 `not_applicable`은 통과한다.
+- `required` 결과는 같은 delta set을 사용하는 graph transaction evidence로 이어진다.
+
+Done when: `not_applicable`도 required graph sync와 같은 package authority, delta completeness와
+source-generation 경계를 가진다.
 
 <!-- key: id=key.work.graph-transaction-source-correctness.order.pc85-03 refs=key.topic.artifact-graph key.topic.verification -->
 ## PC85-03 Optional patch fail-closed control
@@ -174,11 +202,11 @@ Done when: malicious direct transaction wire가 planner를 거치지 않아도 �
 ## Change Set
 
 - Intent: 적용된 모든 patch와 canonical graph 의미를 exact source bytes와 shared policy에 결속한다.
-- Required candidates: Linker transaction model/wire/reconciler, SourceUnit/scanner/adapters,
-  lifecycle/mutation policy와 adversarial tests
+- Required candidates: Linker classification/transaction model/wire/reconciler,
+  SourceUnit/scanner/adapters, lifecycle/mutation policy와 adversarial tests
 - Conditional candidates: Reader readiness, Author graph finalization과 installed contract는 public
   output이 바뀌는 범위만 검토한다.
-- Excluded: S02/S04/S05 owned runtime, full AST framework와 unrelated cleanup
+- Excluded: S02 phase/snapshot과 S04-S07 owned runtime, full AST framework와 unrelated cleanup
 - Acceptance owner: Main
 - Graph handling: Linker가 canonical mutation을 결정하고 각 source owner만 자기 patch를
   attest/apply한다.
@@ -186,20 +214,38 @@ Done when: malicious direct transaction wire가 planner를 거치지 않아도 �
 <!-- key: id=key.work.graph-transaction-source-correctness.order.completion refs=key.topic.acceptance key.topic.integration-verification -->
 ## Completion Criteria
 
-- [ ] Applied optional patch도 owner confirm, fresh baseline과 expected/result/current digest equality를
-      만족한다.
-- [ ] Optional 미적용은 transaction completion을 막지 않으며 applied optional은 finalization에서
-      재검사된다.
-- [ ] Non-UTF-8 supported source+companion이 raw-byte binding으로 처리된다.
-- [ ] String/template/raw-string의 가짜 metadata anchor가 declared node를 만들지 않는다.
-- [ ] Scanner, readiness, reconstruction과 validator가 같은 SourceUnit 결과를 반환한다.
-- [ ] Document lifecycle·approval·authority가 output artifact에 cross-domain 상속되지 않는다.
-- [ ] Canonical mutation unknown field와 planner-bypass policy 위반이 실패한다.
-- [ ] S01 Work가 `complete + accepted`이고 S03 focused/package/cross-skill verification이 통과한다.
+Work Order는 criterion statement만 소유하고 현재 state/evidence는 S03 Progress가 관리한다.
+
+<!-- key: id=key.acceptance.graph-source.package-classification -->
+- `R010-S03-CC-01` `not_applicable`도 package-owned Linker가 동일 delta/source에서 재판정하고
+  forged/stale/omitted/substituted classification을 거절한다.
+<!-- key: id=key.acceptance.graph-source.optional-applied-control -->
+- `R010-S03-CC-02` Applied optional patch도 owner confirm, fresh baseline과
+  expected/result/current digest equality를 만족한다.
+<!-- key: id=key.acceptance.graph-source.optional-omission -->
+- `R010-S03-CC-03` Optional 미적용은 transaction completion을 막지 않으며 applied optional은
+  finalization에서 재검사된다.
+<!-- key: id=key.acceptance.graph-source.nonutf8-companion -->
+- `R010-S03-CC-04` Non-UTF-8 supported source와 companion이 raw-byte binding으로 처리된다.
+<!-- key: id=key.acceptance.graph-source.lexical-anchor -->
+- `R010-S03-CC-05` String, template literal과 raw string의 가짜 metadata anchor가 declared node를
+  만들지 않는다.
+<!-- key: id=key.acceptance.graph-source.source-unit-parity -->
+- `R010-S03-CC-06` Scanner, readiness, reconstruction과 validator가 같은 SourceUnit 결과를
+  반환한다.
+<!-- key: id=key.acceptance.graph-source.cross-domain-inheritance -->
+- `R010-S03-CC-07` Document lifecycle, approval과 authority가 output artifact에 cross-domain
+  상속되지 않는다.
+<!-- key: id=key.acceptance.graph-source.canonical-mutation-strict -->
+- `R010-S03-CC-08` Canonical mutation unknown field와 planner-bypass policy 위반이 실패한다.
+<!-- key: id=key.acceptance.graph-source.prerequisite-verification -->
+- `R010-S03-CC-09` S02 Work가 `complete + accepted`이고 S03 focused/package/cross-skill
+  verification이 통과한다.
 
 <!-- key: id=key.work.graph-transaction-source-correctness.order.verification refs=key.topic.verification -->
 ## Verification
 
+- Classification forged/stale/omitted/substituted runner tests
 - Optional patch state-machine and executable-chain matrix
 - Non-UTF-8 companion and scanner/reconstruction parity fixtures
 - Generic language comment/string/template/raw-string lexical fixtures
@@ -210,6 +256,7 @@ Done when: malicious direct transaction wire가 planner를 거치지 않아도 �
 <!-- key: id=key.work.graph-transaction-source-correctness.order.expected-output refs=key.topic.verification key.topic.work-recovery -->
 ## Expected Output
 
+- Package-owned Linker classification runner와 Coordinator binding
 - Optional patch invariant and reconciler/wire regression suite
 - Unified SourceUnit selection and bounded lexical masking policy
 - Domain-aware inheritance matrix and strict canonical mutation validator
