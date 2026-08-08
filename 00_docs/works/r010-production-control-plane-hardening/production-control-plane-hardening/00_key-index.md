@@ -36,8 +36,8 @@ global_state:
 - Work status: in_progress
 - Approval state: pending
 - Active: true
-- Next action: Current S01 candidate에서 technical evidence를 replay하고 result digest를 Progress에
-  기록한 뒤 Main review를 요청한다. Phase/work-state/agent/whole-flow/release closure는
-  R010/S02-S07에서 이어간다.
+- Next action: Candidate `c535ea7038c5c695b7c469724a505ecf902a96df`의 technical evidence와
+  result digest를 Progress에 기록했다. Main이 S01 acceptance를 결정한 뒤 Author finalization과
+  R010/S02-S07 phase/work-state/agent/whole-flow/release closure를 이어간다.
 
 Active steps: [R010/S01]

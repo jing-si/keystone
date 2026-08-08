@@ -39,9 +39,10 @@ key:
 - Approval state: pending
 - Active: true
 - Finalization state: pending
-- Resume point: S01 technical evidence를 current candidate에서 replay하고 result digest를 기록한 뒤
-  Main review를 요청한다. 후속 phase/work-state/agent/whole-flow/release closure는 R010/S02-S07에서
-  복구한다.
+- Resume point: candidate `c535ea7038c5c695b7c469724a505ecf902a96df`의 S01 technical
+  evidence와 result digest 기록이 준비됐다. Main이 S01 correctness와 evidence를 검토해
+  acceptance를 결정한다. 후속 phase/work-state/agent/whole-flow/release closure는
+  R010/S02-S07에서 복구한다.
 
 Active steps: [R010/S01]
 
@@ -103,23 +104,112 @@ Active steps: [R010/S01]
 18. 2026-08-07: 기존 test count는 이력으로 보존하되 exact result digest가 Progress에 없으므로
     technical criterion을 `needs_replay`로 명시하고 current candidate replay를 completion criterion으로
     추가했다. Main acceptance는 post-completion gate로 분리했다.
+19. 2026-08-08: 8.5 execution plan과 S02-S07 start/completion gate, evidence subject lineage,
+    scoring rubric을 commit `9d8b194b6fc2cbd4855416189da256ef29b851fa`에 고정했다.
+20. 2026-08-08: S01 replay 중 Coordinator v2가 string locator를 Linker canonical locator object로
+    투영할 수 없는 CC06 blocker를 발견했다. Schema-v2 artifact delta를 object-only wire로 수렴하고
+    mock 없는 Coordinator CLI→package-owned Linker runner integration을 추가했으며, v1 string은
+    diagnostic compatibility로 보존했다. Draft relation, document supersession과 canonical v2 wire의
+    결합 회귀도 추가해 candidate `c535ea7038c5c695b7c469724a505ecf902a96df`에 고정했다.
+21. 2026-08-08: clean candidate에서 Author 100, Coordinator 61, Linker 258, Reader 2,
+    cross-skill 55개, 총 476개 test가 통과했다. Docs readiness 174/174, repository readiness와
+    full graph 278/278, historical R008/R009, external-cache compileall, installer staging/parity/
+    forced rollback과 postflight가 통과했다. RC gate는 16개 중 S01 소유 phase 15개가 통과했고,
+    S05가 아직 소유한 외부 `agent_behavior_evidence` 부재만 error로 fail-closed했다.
 
 ## Criterion Status
 
 | Criterion ID | State | Evidence ref | Subject | Generation/result digest |
 |---|---|---|---|---|
-| `key.acceptance.r010.foundation.lifecycle-wire` | needs_replay | 진행 로그 3, 8과 Linker lifecycle/wire regression | `a85bd2324323f88e6257345557e5d10ea20b1f8c` | Progress에 미보존 — replay 필요 |
-| `key.acceptance.r010.foundation.applied-digest-binding` | needs_replay | 진행 로그 4와 executable patch digest regression | `a85bd2324323f88e6257345557e5d10ea20b1f8c` | Progress에 미보존 — replay 필요 |
-| `key.acceptance.r010.foundation.physical-target-v2` | needs_replay | 진행 로그 4, 8과 Linker planner/wire suite | `a85bd2324323f88e6257345557e5d10ea20b1f8c` | Progress에 미보존 — replay 필요 |
-| `key.acceptance.r010.foundation.source-unit-companion-parity` | needs_replay | 진행 로그 5와 SourceUnit scanner/reconstruction suite | `a85bd2324323f88e6257345557e5d10ea20b1f8c` | Progress에 미보존 — replay 필요 |
-| `key.acceptance.r010.foundation.artifact-dependency-separation` | needs_replay | 진행 로그 5와 dependency regression | `a85bd2324323f88e6257345557e5d10ea20b1f8c` | Progress에 미보존 — replay 필요 |
-| `key.acceptance.r010.foundation.coordinator-closure-v2` | needs_replay | 진행 로그 6, 13, 14와 Coordinator suite | `a85bd2324323f88e6257345557e5d10ea20b1f8c` | Progress에 미보존 — replay 필요 |
-| `key.acceptance.r010.foundation.finalization-v5` | needs_replay | 진행 로그 7, 14와 Author finalization suite | `a85bd2324323f88e6257345557e5d10ea20b1f8c` | Progress에 미보존 — replay 필요 |
-| `key.acceptance.r010.foundation.parser-impact-regression` | needs_replay | 진행 로그 3, 8과 bounded parser/impact regression | `a85bd2324323f88e6257345557e5d10ea20b1f8c` | Progress에 미보존 — replay 필요 |
-| `key.acceptance.r010.foundation.verification-suite` | needs_replay | 진행 로그 9, 10, 14의 package/cross-skill/historical evidence | `a85bd2324323f88e6257345557e5d10ea20b1f8c` | Progress에 미보존 — replay 필요 |
-| `key.acceptance.r010.foundation.release-security` | needs_replay | 진행 로그 11-14와 release/eval security regression | `a85bd2324323f88e6257345557e5d10ea20b1f8c` | Progress에 미보존 — replay 필요 |
-| `key.acceptance.r010.foundation.work-decomposition` | documented | R010 round index와 S02-S07 Work/Progress source | current worktree | commit/generation digest pending |
-| `key.acceptance.r010.foundation.evidence-replay` | pending | Current candidate replay 대기 | — | — |
+| `key.acceptance.r010.foundation.lifecycle-wire` | verified | Linker `test_document_supersession_and_draft_relation_close_in_v2_wire`, full suite 258 | `c535ea7038c5c695b7c469724a505ecf902a96df` | `sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5` |
+| `key.acceptance.r010.foundation.applied-digest-binding` | verified | Linker executable patch/reconciler/wire regression, full suite 258 | `c535ea7038c5c695b7c469724a505ecf902a96df` | `sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5` |
+| `key.acceptance.r010.foundation.physical-target-v2` | verified | Linker planner/evidence/wire regression, full suite 258 | `c535ea7038c5c695b7c469724a505ecf902a96df` | `sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5` |
+| `key.acceptance.r010.foundation.source-unit-companion-parity` | verified | Linker SourceUnit/scanner/reconstruction regression, full suite 258 | `c535ea7038c5c695b7c469724a505ecf902a96df` | `sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5` |
+| `key.acceptance.r010.foundation.artifact-dependency-separation` | verified | Linker dependency regression, full suite 258 | `c535ea7038c5c695b7c469724a505ecf902a96df` | `sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5` |
+| `key.acceptance.r010.foundation.coordinator-closure-v2` | verified | Coordinator 61와 actual `test_coordinator_linker_runner_integration.py` | `c535ea7038c5c695b7c469724a505ecf902a96df` | `sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5` |
+| `key.acceptance.r010.foundation.finalization-v5` | verified | Author 100, historical R008/R009 current-package replay | `c535ea7038c5c695b7c469724a505ecf902a96df` | `sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5` |
+| `key.acceptance.r010.foundation.parser-impact-regression` | verified | Linker parser/impact regression, full suite 258 | `c535ea7038c5c695b7c469724a505ecf902a96df` | `sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5` |
+| `key.acceptance.r010.foundation.verification-suite` | verified | Package/cross-skill 476, readiness/graph/historical/compileall replay | `c535ea7038c5c695b7c469724a505ecf902a96df` | `sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5` |
+| `key.acceptance.r010.foundation.release-security` | verified | RC gate 15/16 pass와 외부 evidence 부재 fail-closed, release/eval security suite | `c535ea7038c5c695b7c469724a505ecf902a96df` | `sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5` |
+| `key.acceptance.r010.foundation.work-decomposition` | verified | R010 S02-S07 source와 plan commit `9d8b194b6fc2cbd4855416189da256ef29b851fa` | `c535ea7038c5c695b7c469724a505ecf902a96df` | `sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5` |
+| `key.acceptance.r010.foundation.evidence-replay` | verified | 아래 S01 Technical Replay Evidence v1 | `c535ea7038c5c695b7c469724a505ecf902a96df` | `sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5` |
+
+## S01 Technical Replay Evidence v1
+
+아래 JSON object를 UTF-8로 `json.dumps(sort_keys=True, separators=(",", ":"),
+ensure_ascii=False)` 직렬화한 raw bytes의 SHA-256은
+`sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5`다.
+
+```json
+{
+  "schema_version": 1,
+  "subject": {
+    "commit": "c535ea7038c5c695b7c469724a505ecf902a96df",
+    "tree": "00f51d1c72e78c85c877403e6e69535b6e7f1f67",
+    "release_package_digest": "sha256:e1188b5d99844c48f0c8a5f0684c5ddf53b48e0daeb0bbea2bfe7b6e84e83435"
+  },
+  "package_suites": {
+    "author": 100,
+    "coordinator": 61,
+    "linker": 258,
+    "reader": 2,
+    "cross_skill": 55,
+    "total": 476
+  },
+  "docs_readiness": {
+    "status": "pass",
+    "complete": true,
+    "discovered": 174,
+    "parsed": 174,
+    "skipped": 0,
+    "path_digest": "sha256:3af9f885f9118cb4e9da9b6f7bb1104ee2024249519a029f3e280d34ae9119e5"
+  },
+  "repository_readiness": {
+    "status": "pass",
+    "complete": true,
+    "discovered": 278,
+    "parsed": 278,
+    "skipped": 0,
+    "path_digest": "sha256:3926e5475ca25aef3d32547ee9442eb3c7b41923dc10dbdb9affd50f2f8ee6df"
+  },
+  "repository_graph": {
+    "status": "pass",
+    "complete": true,
+    "discovered": 278,
+    "parsed": 278,
+    "omitted": 0,
+    "declared_only": 0,
+    "skipped": 0,
+    "errors": 0,
+    "warnings": 0,
+    "path_digest": "sha256:3926e5475ca25aef3d32547ee9442eb3c7b41923dc10dbdb9affd50f2f8ee6df"
+  },
+  "historical_finalization": {
+    "R008": "pass",
+    "R009": "pass",
+    "baseline_commit": "d36feb79666f53cacd44f01a79dda8f14d672bb6"
+  },
+  "compileall": "pass",
+  "installer": {
+    "staging": "pass",
+    "manifest": "pass",
+    "parity": "pass",
+    "forced_rollback": "pass"
+  },
+  "rc_gate": {
+    "profile": "rc",
+    "passed": 15,
+    "failed": 0,
+    "errors": 1,
+    "total": 16,
+    "expected_external_error": "agent_behavior_evidence"
+  },
+  "worktree": {
+    "preflight": "clean",
+    "postflight": "clean"
+  }
+}
+```
 
 ## Post-Completion Acceptance Status
 
@@ -129,13 +219,13 @@ Active steps: [R010/S01]
 
 ## 현재 검증 경계
 
-- Core correctness suite, release/eval security 34개 회귀와 actual-corpus graph/historical validation은
-  통과했다.
-- S01 구현 hardening은 commit `a85bd2324323f88e6257345557e5d10ea20b1f8c`에 결속돼 있다.
-  현재 checkout의 planned Work 문서 변경은 별도 acceptance 대상이므로 clean release evidence로
-  사용하지 않는다.
-- 진행 로그의 과거 test count는 실행 이력이지만 authority-bearing result digest가 아니다. S01
-  completion/Main review 전에 current candidate에서 replay하고 digest-bearing evidence를 기록한다.
+- S01 technical criteria와 clean-subject evidence replay는 candidate
+  `c535ea7038c5c695b7c469724a505ecf902a96df` 및 위 result digest에 결속돼 있다.
+- Author 100, Coordinator 61, Linker 258, Reader 2, cross-skill 55개와 actual-corpus graph/
+  historical/installer 검증이 통과했다. 이 기록은 Main acceptance가 아니며 finalization을 완료하지
+  않는다.
+- RC gate의 외부 `agent_behavior_evidence` 오류는 fail-open 성공이 아니라 S05 evidence 부재를
+  의도대로 차단한 결과다. S01 technical replay와 분리해 보존한다.
 - Context Map은 `active_round: R010`이므로 production profile의 current-finalization 단계는 아직
   통과하면 안 된다.
 - 실제 model transcript/evidence 생성 runtime과 독립 reviewer workflow는 R010/S05가 소유하고,
@@ -145,8 +235,8 @@ Active steps: [R010/S01]
 
 ## 다음 작업
 
-1. S01 technical suite를 current candidate에서 replay하고 evidence ref/result digest를 기록한다.
-2. Main이 completion evidence를 검토해 S01 acceptance를 결정한다.
+1. Main이 S01 completion evidence와 residual boundary를 검토해 acceptance를 결정한다.
+2. Acceptance 이후 Author가 S01 finalization evidence를 기록한다.
 3. S02/S03은 authority-chain과 graph/source correctness 후속 항목을 실행한다.
 4. S04는 shared work state, S05는 actual agent eval, S06은 whole-flow E2E를 수행한다.
 5. S07은 independent RC evidence, Main acceptance와 terminal finalization을 결속한다.
