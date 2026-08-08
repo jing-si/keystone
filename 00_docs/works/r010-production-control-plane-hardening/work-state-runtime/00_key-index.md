@@ -36,8 +36,11 @@ risk_level: high
 - Work status: planned
 - Approval state: pending
 - Active: false
-- Dependency: S02 acceptance는 시작 gate가 아니며 S04 Work completion gate다.
-- Next action: acceptance ordering authority와 installed self-containment를 보존할 runtime 배치를
-  결정한다.
+- Start gate: waiting — S02가 `complete + accepted`이기 전 R010/S04를 시작하지 않는다.
+- Work completion gate: waiting — S02 `complete + accepted`와 S04 verification을 요구한다.
+- Pre-gate boundary: read-only 조사와 문서 fixture 설계만 허용한다. Runtime/test/code/config/schema
+  write, `in_progress` 전이와 canonical schema commitment는 금지한다.
+- Next action: acceptance event-chain migration과 generated-runtime architecture 후보를 문서 fixture로
+  검토한다.
 
 현재 active Step의 권위 있는 목록은 R010 round index, root works index와 Context Map을 따른다.

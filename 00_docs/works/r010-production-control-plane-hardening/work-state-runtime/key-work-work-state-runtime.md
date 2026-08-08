@@ -23,12 +23,19 @@ key:
 work_gates:
   - dependency: key.work.authority-chain-snapshot-closure.order
     applies_to:
+      steps: [S04]
+      work_completion: false
+    condition:
+      work_status: complete
+      approval_state: accepted
+    optional: false
+  - dependency: key.work.authority-chain-snapshot-closure.order
+    applies_to:
       steps: []
       work_completion: true
     condition:
       work_status: complete
-      approval:
-        state: accepted
+      approval_state: accepted
     optional: false
 ---
 
@@ -60,6 +67,7 @@ Include:
 - Complete snapshot/source generation/path-set digest와 conflict diagnostics
 - Reader, Coordinator, Author finalization과 release gate consumer parity
 - Installed package self-containment와 policy parity 검증
+- S06/S07이 소비할 repository-derived prerequisite finalization closure
 
 Exclude:
 
@@ -90,21 +98,27 @@ Implementation:
 2. Active round는 0개 또는 1개이고 active work/step은 active round 아래에만 있도록 검증한다.
 3. Terminal 상태에는 `planned | in_progress | blocked` Work가 없어야 하며 stale active pointer를
    source claim과 derived result 차이로 진단한다.
-4. Latest accepted round ordering은 단순 날짜/round 번호가 아니라 accepted event ordering
+4. Latest accepted round ordering은 단순 날짜/round 번호가 아니라 accepted event chain
    authority에 결속한다.
 5. 장기 기준서의 특정 active-work path claim은 Context Map/root works index 탐색 규칙으로
    대체한다.
 
 Decision gate:
 
-- `acceptance.sequence`를 권장하지만 historical compatibility/migration 규칙과 함께 Main 또는
-  Clarify가 수락하기 전 wire를 고정하지 않는다.
+- 권장 event record는 `id`, `sequence`, `previous_event_ref`, `round_ref`, `accepted_steps`,
+  `acceptance_ref`, `subject_digest`, `accepted_at`, `accepted_by`를 가진다.
+- Genesis를 제외한 event는 predecessor보다 `sequence`가 정확히 1 크고, event ID·sequence와
+  predecessor는 각각 유일해야 한다. Fork, cycle, missing predecessor와 같은 Step의 상충
+  acceptance를 거절하며 canonical chain head가 `latest_accepted_round`의 event여야 한다.
+- 이 모델은 권장안이다. Historical source의 migration/admission 규칙과 authority를 Main 또는
+  Clarify가 Decision으로 수락하기 전 canonical wire나 schema commitment로 사용하지 않는다.
 
 Verification:
 
 - Multiple active rounds, out-of-round active work/step, nonexistent latest accepted와 terminal
   residual Work가 실패한다.
 - 같은 날짜 복수 acceptance와 round-number 역전 fixture에서 accepted ordering이 deterministic하다.
+- Duplicate sequence/predecessor, fork, cycle, missing event와 non-head latest fixture가 실패한다.
 - 네 global source가 서로 같아도 derived state와 다르면 finalization이 실패한다.
 
 Done when: latest/active 상태를 manifest 선언만으로 위조할 수 없고 repository source에서 같은
@@ -118,15 +132,24 @@ Implementation:
 1. Repository root/document root를 입력으로 initialization state, active round/works/steps, early
    work, latest accepted, conflicts, dependency evaluations와 finalization gates를 반환한다.
 2. Parse/policy는 deterministic functional core, filesystem discovery는 adapter로 분리한다.
-3. Installed skill independence를 깨는 cross-package import를 만들지 않는다.
-4. Output에 complete snapshot/source generation/path-set digest를 포함한다.
-5. Reader orientation, Coordinator Context Pack, Author finalization과 release gate가 runtime output을
+3. 하나의 canonical pure source를 build input으로 두고, build/install이 각 독립 skill package에
+   generated vendored copy를 만든다. Runtime cross-skill import와 수작업 copy는 허용하지 않는다.
+4. Canonical policy digest와 generated copy의 byte/API digest를 manifest에 기록하고 build, install,
+   package test에서 exact parity를 검증한다.
+5. Output에 complete snapshot/source generation/path-set digest를 포함한다.
+6. Reader orientation, Coordinator Context Pack, Author finalization과 release gate가 runtime output을
    직접 소비하고 자체 재해석을 제거한다.
+7. 각 prerequisite Work의 finalization을 repository source와 package-owned Author runner에서 파생해
+   `result: complete | waived`, `waiver_reason`, `follow_up`, `acceptance_ref`, `manifest_digest`,
+   `envelope_digest`, `author_runner_status: pass`를 가진 closure로 반환한다. `waived`는 non-empty
+   reason과 follow-up이 필수이고, 누락·digest mismatch·runner non-pass는 fail-closed다.
 
 Architecture gate:
 
-- Shared generated copy, package-owned runtime 또는 verified parity artifact를 dependency/import
-  audit로 비교한다. 단일 policy와 installed self-containment를 동시에 만족하는 방식만 수락한다.
+- 기본 권고는 one canonical pure source → build/install generated vendored copies이다. Accepted
+  architecture evidence가 더 나은 방식을 입증할 수 있지만, 단일 policy authority, installed
+  self-containment, policy digest와 byte/API parity를 모두 만족해야 한다.
+- Runtime cross-skill import, repository-local sibling import와 수작업 copy는 수락하지 않는다.
 
 Verification:
 
@@ -134,6 +157,9 @@ Verification:
 - Conflict, incomplete scan, interrupted work, waiting dependency와 terminal state를 공통 fixture로
   검증한다.
 - Installed package가 repository-local 다른 skill import 없이 실행된다.
+- Generated copies의 policy digest, bytes와 public API가 canonical source와 일치한다.
+- Complete/waived prerequisite closure와 missing reason/follow-up, stale manifest/envelope,
+  Author runner fail fixture를 S06/S07 consumer까지 검증한다.
 
 Done when: active-state drift를 consumer별 parser 차이로 재현할 수 없고 incomplete coverage는 네
 consumer 모두에서 fail-closed다.
@@ -142,7 +168,8 @@ consumer 모두에서 fail-closed다.
 ## Decision and Architecture Gates
 
 1. Acceptance ordering authority는 Main/User가 수락하기 전 schema로 고정하지 않는다.
-2. Work State Runtime 배치는 installed self-containment와 consumer parity evidence로 결정한다.
+2. Runtime 배치의 기본 권고는 generated vendored copies지만, installed self-containment와
+   consumer parity evidence를 검토한 accepted architecture만 canonical layout을 결정한다.
 3. Decision 결과와 migration 규칙은 별도 Decision/Progress evidence로 기록한다.
 
 <!-- key: id=key.work.work-state-runtime.order.change-set refs=key.topic.change-set key.topic.impact-review -->
@@ -150,7 +177,8 @@ consumer 모두에서 fail-closed다.
 
 - Intent: work recovery와 finalization/release state를 repository-derived canonical result에 결속한다.
 - Required candidates: Reader/Coordinator/Author runtime·contracts, release gate consumer,
-  work-state parser/policy와 cross-skill parity tests
+  work-state parser/policy, generated-copy pipeline, prerequisite finalization closure와 cross-skill
+  parity tests
 - Conditional candidates: Acceptance/finalization schema는 accepted ordering field가 추가되는 범위만
   versioned update한다.
 - Excluded: S03/S05-S07 owned implementation, external provider integration와 stored credentials
@@ -184,20 +212,37 @@ Work Order는 criterion statement만 소유하고 현재 state/evidence는 S04 P
 <!-- key: id=key.acceptance.work-state.prerequisite-verification -->
 - `R010-S04-CC-07` S02 Work가 `complete + accepted`이고 S04 focused/package/cross-skill verification이
   통과한다.
+<!-- key: id=key.acceptance.work-state.start-gate -->
+- `R010-S04-CC-08` S02가 `complete + accepted`이기 전 S04 start gate는 `waiting`이며 read-only 조사와
+  문서 fixture 설계만 허용하고 runtime/test/code/config/schema write, `in_progress` 전이와 canonical
+  schema commitment를 차단한다.
+<!-- key: id=key.acceptance.work-state.acceptance-event-chain -->
+- `R010-S04-CC-09` Accepted Decision과 migration policy 아래 event identity, +1 sequence, unique
+  predecessor/sequence, no fork/cycle와 chain-head latest invariant가 검증된다.
+<!-- key: id=key.acceptance.work-state.generated-runtime-parity -->
+- `R010-S04-CC-10` Accepted runtime architecture가 one-policy authority와 installed self-containment를
+  보존하고 canonical source와 generated vendored copies의 policy digest·byte/API parity를 증명한다.
+<!-- key: id=key.acceptance.work-state.prerequisite-finalization-closure -->
+- `R010-S04-CC-11` S06/S07 consumer가 complete 또는 근거 있는 waived prerequisite finalization,
+  acceptance ref, manifest/envelope digest와 package-owned Author runner pass를 repository-derived
+  output으로 검증한다.
 
 <!-- key: id=key.work.work-state-runtime.order.verification refs=key.topic.verification -->
 ## Verification
 
 - Whole-tree derived-state 정상/충돌/terminal/ordering fixture
 - Reader·Coordinator·Author·release cross-consumer parity suite
-- Installed self-contained runtime and incomplete coverage tests
+- Generated vendored runtime parity, installed self-containment와 incomplete coverage tests
+- Prerequisite finalization closure normal/waiver/stale/runner-failure consumer tests
 - Repository full readiness/graph validation, external-cache compileall과 `git diff --check`
 
 <!-- key: id=key.work.work-state-runtime.order.expected-output refs=key.topic.verification key.topic.work-recovery -->
 ## Expected Output
 
 - Derived global-state model and accepted ordering contract
-- Deterministic Work State Runtime, canonical CLI/envelope와 four-consumer adapters
+- Deterministic Work State Runtime, canonical CLI/envelope, generated vendored copies와 four-consumer
+  adapters
+- S06/S07 prerequisite finalization closure projection
 - Cross-skill parity/adversarial suites, contract/reference updates와 Progress evidence
 
 <!-- key: id=key.work.work-state-runtime.order.stop refs=key.boundary.stop-condition -->
@@ -207,3 +252,5 @@ Work Order는 criterion statement만 소유하고 현재 state/evidence는 S04 P
 2. Installed self-containment를 깨지 않고 consumer parity를 만들 architecture가 없다.
 3. Incomplete discovery를 authority-bearing success로 취급해야 completion이 가능하다.
 4. 새 skill 또는 external dependency가 completion 필수가 된다.
+5. S02 start gate가 열리기 전에 runtime/test/code/config/schema write, `in_progress` 전이나 canonical
+   schema commitment가 필요하다.

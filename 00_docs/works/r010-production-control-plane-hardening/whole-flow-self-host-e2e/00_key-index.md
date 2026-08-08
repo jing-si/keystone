@@ -35,8 +35,17 @@ risk_level: high
 - Approval state: pending
 - Active: false
 - Finalization state: pending
-- Dependency: S01-S05의 `complete + accepted`가 S06 Work completion gate다.
-- Next action: prerequisite evidence가 준비되면 temporary clean checkout의 success/failure harness를
-  구현한다.
+- Step-start dependency: waiting — S01-S05 각각의 `complete + accepted`가 `steps: [S06]`에
+  적용된다.
+- Work-completion dependency: waiting — 같은 S01-S05 조건이 Work completion에도 적용된다.
+- Finalization pre-gate: waiting — S01-S05 각각의 finalization `complete` 또는 Main-accepted
+  waiver, acceptance ref, finalization manifest/envelope digest와 package-owned Author runner pass가
+  필요하다.
+- Pre-gate boundary: waiting 중에는 read-only orientation, evidence inspection과 source-write-free
+  RED scenario 설계만 허용한다. Repository source write, `in_progress` 전이, schema/authority
+  commitment와 acceptance는 금지하며, 실행된 `early_work`는 주장하지 않는다.
+- Next action: Step-start gate와 finalization pre-gate가 모두 충족되면 temporary clean checkout의
+  isolated fixture document root/fixture Round에서 10개 adversarial 및 7개 crash/resume scenario
+  harness를 구현한다. Live R010 terminal closure는 S07만 소유한다.
 
 현재 active Step의 권위 있는 목록은 R010 round index, root works index와 Context Map을 따른다.

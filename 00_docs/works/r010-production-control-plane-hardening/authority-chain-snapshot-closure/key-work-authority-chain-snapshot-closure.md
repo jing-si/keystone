@@ -21,12 +21,19 @@ key:
 work_gates:
   - dependency: key.work.production-control-plane-hardening.order
     applies_to:
+      steps: [S02]
+      work_completion: false
+    condition:
+      work_status: complete
+      approval_state: accepted
+    optional: false
+  - dependency: key.work.production-control-plane-hardening.order
+    applies_to:
       steps: []
       work_completion: true
     condition:
       work_status: complete
-      approval:
-        state: accepted
+      approval_state: accepted
     optional: false
 ---
 
@@ -52,8 +59,9 @@ Coordinator actual-state closure를 manifest linter가 아닌 authority-chain ve
 
 Include:
 
-- Normalized include/exclude policy, discovered path set, path type와 raw-byte digest
-- `regular_file | directory | symlink | absent`, count/path-set digest와 `complete` evidence
+- Normalized include/exclude policy, discovered existing path set, path type와 raw-byte digest
+- Existing `regular_file | directory | symlink` entries와 별도 assignment-owned
+  `expected_absences`, count/path-set digest와 `complete` evidence
 - Assignment, worker, pre-acceptance closure와 post-acceptance phase snapshot chain
 - Worker/Author/repository owner delta, scope와 source-write authority 검증
 - Existing closure compatibility, strict schema와 stable diagnostic tests
@@ -80,22 +88,42 @@ Exclude:
 <!-- key: id=key.work.authority-chain-snapshot-closure.order.pc85-02 refs=key.role.coordinator key.topic.verification -->
 ## PC85-02 Assignment baseline snapshot completeness
 
+Gate boundary:
+
+- S01 start gate 충족 전에는 read-only analysis와 이 문서 안의 RED case matrix/fixture design만
+  허용한다.
+- Runtime/test/code/config/schema source write, Work/Step의 `in_progress` 전이와 canonical schema
+  commitment는 금지한다.
+- 이 계획은 gate 전 implementation 또는 `early_work`가 발생했다는 근거가 아니다.
+
 Implementation:
 
 1. Assignment digest에 normalized include/exclude policy, 전체 discovered path set, path type와
    raw-byte digest를 결속한다.
-2. `discovered_path_count`, `path_set_digest`, `complete`와 truncation/budget 상태를 strict wire로
-   고정한다.
-3. Symlink target, path normalization과 file↔symlink↔directory replacement를 별도 delta로 다룬다.
-4. Baseline과 모든 phase result가 같은 policy를 사용하게 하고 policy 변경은 새 assignment
+2. Snapshot의 existing entries는 `regular_file | directory | symlink`만 허용하고, 존재하지
+   않아야 할 assignment-owned 경로는 별도 `expected_absences` 집합으로 기록한다.
+3. `discovered_path_count`, `expected_absence_count`, 각 집합의 canonical path digest,
+   `complete`와 truncation/budget 상태를 policy에 결속한다.
+4. Capture 전후에 같은 policy로 path set을 독립 discovery하고, 각 경로를 no-follow `lstat`로
+   식별한다. Regular file은 no-follow `open` 뒤 capture 전후 `fstat`의
+   `(size, mtime, ctime, inode)`가 `lstat` identity와 일치해야 하며 drift 시 bounded retry 후
+   fail-closed한다.
+5. Directory와 symlink도 capture 전후 no-follow identity를 비교하고, symlink target과 regular
+   file executable-bit를 digest-bearing entry에 기록한다.
+6. Unicode-normalized case-fold key 충돌을 host filesystem의 case sensitivity와 무관하게
+   거절하고, path normalization과 file↔symlink↔directory replacement를 별도 delta로 다룬다.
+7. Baseline과 모든 phase result가 같은 policy를 사용하게 하고 policy 변경은 새 assignment
    digest를 요구한다.
-5. Runtime-generated path는 default ignore가 아니라 assignment-owned exclusion reason으로만
+8. Runtime-generated path는 default ignore가 아니라 assignment-owned exclusion reason으로만
    제외한다.
 
 Verification:
 
 - Existing path omission, hidden new path와 deleted file이 actual delta에서 사라지지 않는다.
 - Symlink/regular replacement, policy mutation, truncated scan과 path-set count mismatch는 실패한다.
+- Expected absence의 생성/누락, capture 전후 path-set drift와 identity drift는 bounded retry가
+  소진되면 실패한다.
+- Symlink target, executable-bit와 Unicode-normalized case-fold collision 변화는 숨겨지지 않는다.
 - 동일 generation을 반복 capture하면 path order와 digest가 동일하다.
 
 Done when: host-provided baseline 목록을 독립 discovery로 재현하지 못하면 authority-bearing
@@ -147,27 +175,38 @@ Work Order는 criterion statement만 소유하고 현재 state/evidence는 S02 P
 
 <!-- key: id=key.acceptance.authority-chain.complete-snapshot -->
 - `R010-S02-CC-01` Snapshot policy, 전체 discovered path set, path type와 raw-byte digest가
-  assignment에 결속된다.
+  assignment에 결속되고 count/path-set digest/`complete` evidence가 일치한다.
 <!-- key: id=key.acceptance.authority-chain.hidden-change-detection -->
 - `R010-S02-CC-02` Omission, hidden path, deletion, type replacement와 truncated scan이
   fail-closed다.
+<!-- key: id=key.acceptance.authority-chain.expected-absences -->
+- `R010-S02-CC-03` Existing entries는 `regular_file | directory | symlink`로 한정되고
+  assignment-owned `expected_absences`는 별도 policy/count/path digest/`complete` evidence와
+  pre/post 부재 검증을 가진다.
+<!-- key: id=key.acceptance.authority-chain.stable-capture -->
+- `R010-S02-CC-04` Capture 전후 path set 및 no-follow `lstat/open/fstat` identity
+  `(size, mtime, ctime, inode)`가 일치하거나 bounded retry 뒤 fail-closed한다.
+<!-- key: id=key.acceptance.authority-chain.portable-path-identity -->
+- `R010-S02-CC-05` Symlink target, executable-bit와 Unicode-normalized case-fold collision이
+  digest-bearing evidence로 검증된다.
 <!-- key: id=key.acceptance.authority-chain.phase-parent-chain -->
-- `R010-S02-CC-03` 각 phase baseline digest가 이전 phase result digest와 일치한다.
+- `R010-S02-CC-06` 각 phase baseline digest가 이전 phase result digest와 일치한다.
 <!-- key: id=key.acceptance.authority-chain.actor-delta-scope -->
-- `R010-S02-CC-04` Worker, Author, repository owner와 finalization delta가 actor authority 안에 있다.
+- `R010-S02-CC-07` Worker, Author, repository owner와 finalization delta가 actor authority 안에 있다.
 <!-- key: id=key.acceptance.authority-chain.unattributed-ordering -->
-- `R010-S02-CC-05` Inter-phase unattributed mutation과 acceptance 이전 finalization이 실패한다.
+- `R010-S02-CC-08` Inter-phase unattributed mutation과 acceptance 이전 finalization이 실패한다.
 <!-- key: id=key.acceptance.authority-chain.closure-compatibility -->
-- `R010-S02-CC-06` Existing closure compatibility와 strict unknown-field policy가 regression으로
+- `R010-S02-CC-09` Existing closure compatibility와 strict unknown-field policy가 regression으로
   보존된다.
 <!-- key: id=key.acceptance.authority-chain.prerequisite-verification -->
-- `R010-S02-CC-07` S01 Work가 `complete + accepted`이고 S02 focused/package/cross-skill
+- `R010-S02-CC-10` S01 Work가 `complete + accepted`이고 S02 focused/package/cross-skill
   verification이 통과한다.
 
 <!-- key: id=key.work.authority-chain-snapshot-closure.order.verification refs=key.topic.verification -->
 ## Verification
 
-- Snapshot omission/type/symlink/policy/truncation adversarial matrix
+- Snapshot omission/type/symlink/policy/truncation, expected-absence, TOCTOU와 Unicode
+  case-fold collision adversarial matrix
 - Phase success·scope violation·unattributed change·digest/timing mismatch matrix
 - Coordinator full package suite와 affected cross-skill tests
 - Cross-skill actual-source fixture, repository full graph validation와 `git diff --check`

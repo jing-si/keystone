@@ -20,12 +20,19 @@ key:
 work_gates:
   - dependency: key.work.authority-chain-snapshot-closure.order
     applies_to:
+      steps: [S03]
+      work_completion: false
+    condition:
+      work_status: complete
+      approval_state: accepted
+    optional: false
+  - dependency: key.work.authority-chain-snapshot-closure.order
+    applies_to:
       steps: []
       work_completion: true
     condition:
       work_status: complete
-      approval:
-        state: accepted
+      approval_state: accepted
     optional: false
 ---
 
@@ -58,6 +65,7 @@ Include:
 
 - Package-owned Linker classification runner와 Coordinator evidence binding
 - Applied required/optional patch의 confirm, baseline, expected/result/current digest invariant
+- Schema-v2 canonical mutation의 required-patch realization과 mutation-bearing optional 금지
 - Partial resume와 finalization에서 실제 applied patch 전체 재검증
 - Non-UTF-8 supported source, inline/companion selection과 raw-byte binding
 - Supported generic language의 comment/string/template/raw-string boundary
@@ -81,6 +89,15 @@ Exclude:
 - `00_docs/standards/skills/linker/key-standard-linker.md`
 - `00_docs/standards/skills/author/key-standard-author.md`
 - `00_docs/convention.md`
+
+<!-- key: id=key.work.graph-transaction-source-correctness.order.gate-boundary refs=key.topic.work-sequence key.boundary.scope-control -->
+## Dependency Gate Boundary
+
+- S02 start gate 충족 전에는 read-only analysis와 이 문서 안의 RED case matrix/fixture design만
+  허용한다.
+- Runtime/test/code/config/schema source write, Work/Step의 `in_progress` 전이와 canonical schema
+  commitment는 금지한다.
+- 이 계획은 gate 전 implementation 또는 `early_work`가 발생했다는 근거가 아니다.
 
 <!-- key: id=key.work.graph-transaction-source-correctness.order.pc85-04 refs=key.role.linker key.role.coordinator -->
 ## PC85-04 Package-owned Linker classification
@@ -110,18 +127,25 @@ source-generation 경계를 가진다.
 
 Implementation:
 
-1. `applied patches ⊆ confirmed patches`와 `applied patches ⊆ baseline-checked patches`를
-   reconciler와 wire validator에 모두 적용한다.
-2. Optional patch는 자기 owner의 confirm과 fresh baseline evidence가 있을 때만 apply한다.
-3. 모든 applied patch는 `resulting_digest == expected_after_digest == current source digest`를
-   만족해야 한다.
-4. Finalization과 partial resume는 required patch뿐 아니라 실제 applied된 optional patch를
+1. 신규 schema-v2의 모든 canonical mutation은 적어도 하나의 required patch로 실현되고,
+   required patch 없이 선택적으로만 적용되는 canonical after-state를 금지한다.
+2. Mutation-bearing optional patch를 금지한다. Optional은 canonical graph after-state에 영향을
+   주지 않는 ancillary surface 또는 immutable historical compatibility evidence에만 한정하며,
+   선택적 canonical mutation은 별도 transaction으로 계획한다.
+3. Required/optional 구분과 무관하게 `applied patches ⊆ confirmed patches`와
+   `applied patches ⊆ baseline-checked patches`를 reconciler와 wire validator에 모두 적용한다.
+4. 모든 applied patch는 자기 owner의 confirm과 fresh baseline evidence를 가지며
+   `resulting_digest == expected_after_digest == current source digest`를 만족해야 한다.
+5. Finalization과 partial resume는 실제 applied된 모든 patch의 confirm, baseline과 digest를
    다시 검증한다.
-5. Already-applied patch는 current digest가 recorded result와 같을 때만 skip한다.
+6. Already-applied patch는 current digest가 recorded result와 같을 때만 skip한다.
 
 Verification:
 
-- Optional 미적용 완료와 confirm 후 적용은 통과한다.
+- Canonical mutation마다 required patch가 있는 schema-v2 transaction과 non-mutating ancillary
+  optional의 미적용/confirm 후 적용은 통과한다.
+- Mutation-bearing optional, required patch 없는 선택적 mutation과 optional omission으로 달라지는
+  canonical graph after-state는 실패한다.
 - Unattested apply, stale baseline, source redrift와 forged result는 실패한다.
 - Required/optional mixed transaction의 모든 허용·금지 상태 전이를 탐색한다.
 
@@ -188,6 +212,9 @@ Implementation:
 4. Observed evidence를 owning surface patch/attestation과 결속하고 mutation source가 current scope
    안인지 확인한다.
 5. `before` value를 transaction baseline snapshot과 비교한다.
+6. Dependency gate schema는 standards, executable runtime과 신규 R010 gates 모두
+   `condition.approval_state: accepted`를 사용하게 하고 legacy `approval` key나 상충 조건의
+   drift를 fail-closed한다.
 
 Verification:
 
@@ -195,6 +222,7 @@ Verification:
 - Wrong direction/lifecycle, unowned observed evidence, stale before와 out-of-scope mutation은
   실패한다.
 - Planner 정상 출력은 serialize→parse→validate→reconstruct chain을 통과한다.
+- Standards/runtime/R010 신규 gate의 condition key 또는 acceptance 의미가 어긋나면 실패한다.
 
 Done when: malicious direct transaction wire가 planner를 거치지 않아도 동일 policy에서 거절된다.
 
@@ -225,28 +253,37 @@ Work Order는 criterion statement만 소유하고 현재 state/evidence는 S03 P
 <!-- key: id=key.acceptance.graph-source.optional-omission -->
 - `R010-S03-CC-03` Optional 미적용은 transaction completion을 막지 않으며 applied optional은
   finalization에서 재검사된다.
+<!-- key: id=key.acceptance.graph-source.mutation-required-patch -->
+- `R010-S03-CC-04` Schema-v2의 모든 canonical mutation은 required patch로 실현되고,
+  mutation-bearing optional은 거절되며 선택적 mutation은 별도 transaction을 요구한다.
+<!-- key: id=key.acceptance.graph-source.applied-patch-integrity -->
+- `R010-S03-CC-05` 실제 applied된 모든 required/optional patch는 owner confirm, fresh baseline과
+  expected/result/current digest equality를 만족하고 resume/finalization에서 재검사된다.
 <!-- key: id=key.acceptance.graph-source.nonutf8-companion -->
-- `R010-S03-CC-04` Non-UTF-8 supported source와 companion이 raw-byte binding으로 처리된다.
+- `R010-S03-CC-06` Non-UTF-8 supported source와 companion이 raw-byte binding으로 처리된다.
 <!-- key: id=key.acceptance.graph-source.lexical-anchor -->
-- `R010-S03-CC-05` String, template literal과 raw string의 가짜 metadata anchor가 declared node를
+- `R010-S03-CC-07` String, template literal과 raw string의 가짜 metadata anchor가 declared node를
   만들지 않는다.
 <!-- key: id=key.acceptance.graph-source.source-unit-parity -->
-- `R010-S03-CC-06` Scanner, readiness, reconstruction과 validator가 같은 SourceUnit 결과를
+- `R010-S03-CC-08` Scanner, readiness, reconstruction과 validator가 같은 SourceUnit 결과를
   반환한다.
 <!-- key: id=key.acceptance.graph-source.cross-domain-inheritance -->
-- `R010-S03-CC-07` Document lifecycle, approval과 authority가 output artifact에 cross-domain
+- `R010-S03-CC-09` Document lifecycle, approval과 authority가 output artifact에 cross-domain
   상속되지 않는다.
 <!-- key: id=key.acceptance.graph-source.canonical-mutation-strict -->
-- `R010-S03-CC-08` Canonical mutation unknown field와 planner-bypass policy 위반이 실패한다.
+- `R010-S03-CC-10` Canonical mutation unknown field와 planner-bypass policy 위반이 실패한다.
+<!-- key: id=key.acceptance.graph-source.gate-schema-convergence -->
+- `R010-S03-CC-11` Standards, executable runtime과 R010 신규 gates가
+  `condition.approval_state: accepted`로 수렴하고 legacy/conflicting gate schema를 거절한다.
 <!-- key: id=key.acceptance.graph-source.prerequisite-verification -->
-- `R010-S03-CC-09` S02 Work가 `complete + accepted`이고 S03 focused/package/cross-skill
+- `R010-S03-CC-12` S02 Work가 `complete + accepted`이고 S03 focused/package/cross-skill
   verification이 통과한다.
 
 <!-- key: id=key.work.graph-transaction-source-correctness.order.verification refs=key.topic.verification -->
 ## Verification
 
 - Classification forged/stale/omitted/substituted runner tests
-- Optional patch state-machine and executable-chain matrix
+- Required mutation realization, non-mutating optional과 applied-patch executable-chain matrix
 - Non-UTF-8 companion and scanner/reconstruction parity fixtures
 - Generic language comment/string/template/raw-string lexical fixtures
 - Lifecycle inheritance and malicious direct-wire matrix

@@ -17,6 +17,9 @@ key:
     - key.topic.verification
     - key.acceptance.authority-chain.complete-snapshot
     - key.acceptance.authority-chain.hidden-change-detection
+    - key.acceptance.authority-chain.expected-absences
+    - key.acceptance.authority-chain.stable-capture
+    - key.acceptance.authority-chain.portable-path-identity
     - key.acceptance.authority-chain.phase-parent-chain
     - key.acceptance.authority-chain.actor-delta-scope
     - key.acceptance.authority-chain.unattributed-ordering
@@ -33,14 +36,19 @@ key:
 - Approval state: pending
 - Active: false
 - Finalization state: pending
-- Dependency evaluation: waiting — S01 `complete + accepted`는 Work completion에만 적용된다.
-- Resume point: Main이 작업서를 수락하면 PC85-02 snapshot completeness의 RED fixture부터 시작한다.
+- Dependency evaluation: waiting — S01 `complete + accepted` start gate와 completion gate가 모두
+  충족되지 않았다.
+- Pre-gate boundary: read-only analysis와 이 문서 안의 RED case matrix/fixture design만 허용한다.
+  Runtime/test/code/config/schema source write, `in_progress` 전이와 canonical schema commitment는
+  금지한다.
+- Resume point: start gate 충족 뒤 PC85-02 snapshot completeness의 RED fixture 구현부터 시작한다.
 
 ## 계획 기준선
 
 - PC85-01: Coordinator phase-separated actual-state closure
 - PC85-02: Assignment baseline snapshot completeness
 - 상태 경계: 계획 수립만 완료했으며 implementation/verification completion을 주장하지 않는다.
+- Early-work 경계: gate 전 source write나 canonical schema commitment는 발생하지 않았다.
 
 ## Criterion Status
 
@@ -48,6 +56,9 @@ key:
 |---|---|---|---|---|
 | `key.acceptance.authority-chain.complete-snapshot` | pending | — | — | — |
 | `key.acceptance.authority-chain.hidden-change-detection` | pending | — | — | — |
+| `key.acceptance.authority-chain.expected-absences` | pending | — | — | — |
+| `key.acceptance.authority-chain.stable-capture` | pending | — | — | — |
+| `key.acceptance.authority-chain.portable-path-identity` | pending | — | — | — |
 | `key.acceptance.authority-chain.phase-parent-chain` | pending | — | — | — |
 | `key.acceptance.authority-chain.actor-delta-scope` | pending | — | — | — |
 | `key.acceptance.authority-chain.unattributed-ordering` | pending | — | — | — |
@@ -58,14 +69,25 @@ key:
 
 1. 2026-08-07: 사용자 요구를 complete snapshot → phase chain → Linker classification의
    authority-chain Work로 분리했다.
-2. 2026-08-07: S01 acceptance는 시작을 막지 않고 S02 completion만 막는 dependency로 기록했다.
+2. 2026-08-07: 당시 계획 기준선에서는 S01 acceptance를 S02 completion dependency로
+   기록했다.
 3. 2026-08-07: 후속 검토에서 PC85-04 package-owned classification을 transaction/source
    authority와 함께 S03으로 이동하고 S02는 complete snapshot과 phase attribution에 한정했다.
 4. 2026-08-07: completion criterion에 stable ID를 부여하고 상태·evidence 소유를 Progress로
    분리했다.
+5. 2026-08-08: dependency를 S01 `complete + accepted` start/completion gate로 보강하고,
+   gate 전 허용 범위를 read-only analysis와 문서 내 RED case matrix/fixture design으로 제한했다.
+   이는 계획 보강이며 source write, `in_progress`, canonical schema commitment 또는 `early_work`가
+   발생했다는 기록이 아니다.
+6. 2026-08-08: Existing entries와 assignment-owned `expected_absences` 분리, pre/post path-set,
+   no-follow identity, bounded retry, symlink target, executable-bit와 Unicode-normalized case-fold
+   collision을 pending criterion으로 추가했다.
 
 ## 다음 작업
 
-1. Existing path omission, hidden path, deletion과 path-type replacement 실패 fixture를 만든다.
-2. Snapshot policy/value object와 phase digest parent chain을 설계한다.
-3. S03 package-owned classification이 소비할 complete delta/source generation envelope를 고정한다.
+1. Gate 전에는 existing/absence/path drift/identity drift RED case matrix와 fixture design을 이
+   문서 안에서만 정리한다.
+2. Start gate 충족 뒤 failure fixture를 구현하고 snapshot policy/value object와 phase digest
+   parent chain을 설계한다.
+3. S03 package-owned classification이 소비할 complete delta/source generation envelope의
+   canonical schema는 start gate 충족 뒤 확정한다.
