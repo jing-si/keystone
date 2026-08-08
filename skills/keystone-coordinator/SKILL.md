@@ -276,7 +276,9 @@ artifact_deltas:
   - kind: artifact_delta
     source_surface:
     change_kind: added | modified | deleted
-    changed_locators: []
+    changed_locators:
+      - path: src/example.py
+        symbol: Example.run
     semantic_summary:
     baseline_digest: sha256:<64-lowercase-hex> | absent
     resulting_digest: sha256:<64-lowercase-hex> | absent
@@ -292,6 +294,11 @@ graph_apply_results:
     resulting_digest:
     evidence:
 ```
+
+`changed_locators` is a non-empty array of canonical locator objects. Every locator requires
+`path`; omit unused optional `heading`, `symbol`, `test_name`, `config_key`, and `schema_name`
+fields. Plain locator strings are historical schema-v1 input only and cannot authorize schema-v2
+closure.
 
 Linker alone decides canonical mutations and exact patches. Coordinator or Main attests only the
 repository patch it owns; document metadata patches go to Author. A confirmed patch may be assigned or

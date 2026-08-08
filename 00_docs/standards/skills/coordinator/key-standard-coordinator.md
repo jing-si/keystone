@@ -717,7 +717,9 @@ artifact_delta:
   kind: artifact_delta
   source_surface:
   change_kind: added | modified | deleted
-  changed_locators: []
+  changed_locators:
+    - path: src/example.py
+      symbol: Example.run
   semantic_summary:
   baseline_digest: sha256:<64-lowercase-hex> | absent
   resulting_digest: sha256:<64-lowercase-hex> | absent
@@ -731,6 +733,11 @@ graph_apply_results:
     result: applied | failed | stale_baseline
     resulting_digest:
 ```
+
+`changed_locators`는 비어 있지 않은 canonical locator object 배열이다. 각 object는 `path`를
+필수로 하고 필요한 `heading`, `symbol`, `test_name`, `config_key`, `schema_name`만 포함한다.
+Plain string은 schema-v1 diagnostic compatibility에만 남으며 schema-v2 closure authority가
+될 수 없다.
 
 <!-- key: id=key.standard.skill.coordinator.review-verification-flow refs=key.role.coordinator key.topic.verification key.topic.review key.topic.keystone-metadata key.topic.artifact-graph -->
 ## Review and verification flow

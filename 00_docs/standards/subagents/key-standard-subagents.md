@@ -326,7 +326,9 @@ worker_report:
     - kind: artifact_delta
       source_surface:
       change_kind: added | modified | deleted
-      changed_locators: []
+      changed_locators:
+        - path: src/example.py
+          symbol: Example.run
       semantic_summary:
       baseline_digest: sha256:<64-lowercase-hex> | absent
       resulting_digest: sha256:<64-lowercase-hex> | absent
@@ -347,6 +349,10 @@ worker_report:
     reason:
     evidence: []
 ```
+
+각 `changed_locators` 항목은 required `path`와 필요한 `heading`, `symbol`, `test_name`,
+`config_key`, `schema_name`만 포함하는 canonical locator object다. 사용하지 않는 optional
+field는 생략하고 plain string은 발행하지 않는다.
 
 각 changed surface는 artifact delta를 가져야 한다. `not_applicable`도 구체적인 reason과 evidence가
 필요하다. Required 또는 deferred closure가 미완료이면 Coordinator는 worker success를

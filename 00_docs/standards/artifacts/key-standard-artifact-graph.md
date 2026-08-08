@@ -152,11 +152,17 @@ source surface를 함께 정합화해야 할 때만 synchronization transaction�
 change_delta:
   kind: document_delta | artifact_delta
   source_surface:
-  changed_locators: []
+  changed_locators:
+    - path: src/example.py
+      symbol: Example.run
   semantic_summary:
   baseline_digest: sha256:<64-lowercase-hex> | absent
   graph_relevant: true | false
 ```
+
+`changed_locators`의 각 항목은 `path`를 필수로 하고 필요한 `heading`, `symbol`, `test_name`,
+`config_key`, `schema_name`만 포함하는 canonical locator object다. Canonical emission은 사용하지
+않는 optional field를 생략하며 plain string locator를 허용하지 않는다.
 
 Stable ID owner와 `refs`가 문서와 구현 사이의 기본 직접 탐색 계약이다. Capability node와 typed
 relation은 multi-hop 탐색, semantic role, dependency, verification evidence 또는 reuse 분석이

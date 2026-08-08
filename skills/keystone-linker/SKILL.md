@@ -254,7 +254,9 @@ graph_transaction:
   input_deltas:
     - kind: document_delta | artifact_delta
       source_surface:
-      changed_locators: []
+      changed_locators:
+        - path: src/example.py
+          symbol: Example.run
       semantic_summary:
       baseline_digest: sha256:<64-lowercase-hex> | absent
       graph_relevant: true | false
@@ -294,6 +296,10 @@ graph_transaction:
   coverage_debt: []
 ```
 
+Each `changed_locators` item uses the canonical locator object wire: required `path` plus only the
+applicable `heading`, `symbol`, `test_name`, `config_key`, or `schema_name`. Canonical emission omits
+unused optional fields and never emits a plain locator string.
+
 `graph_relevance` is finalization/report evidence and `prior_attempts` is retry-history evidence; neither
 is a canonical transaction field. The bundled runtime serializes the current `transaction` and every
 `prior_attempts` entry with the same exact `graph_transaction` wire. `reconstruction` is either `null` or
@@ -306,6 +312,8 @@ Schema version 1 remains a read/validation compatibility wire for historical des
 schema version 2 and require every patch to be executable. Do not mix descriptive and executable
 patches, emit more than one patch for a physical `target_path`, or accept an applied
 `resulting_digest` that differs from the patch's `expected_after_digest`.
+Historical schema-v1 Coordinator reports may retain string locator evidence for diagnostic reading;
+schema-v2 authority-bearing deltas require canonical locator objects and do not auto-convert strings.
 
 ## Document Item Metadata
 

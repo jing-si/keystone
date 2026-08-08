@@ -60,12 +60,19 @@ artifact delta with:
 kind: artifact_delta
 source_surface:
 change_kind: added | modified | deleted
-changed_locators: []
+changed_locators:
+  - path: src/example.py
+    symbol: Example.run
 semantic_summary:
 baseline_digest: sha256:<64-lowercase-hex> | absent
 resulting_digest: sha256:<64-lowercase-hex> | absent
 graph_relevant: true | false
 ```
+
+`changed_locators` must be a non-empty array of canonical locator objects. Each object requires a
+repository-relative `path`; unused optional `heading`, `symbol`, `test_name`, `config_key`, and
+`schema_name` fields are omitted. Plain strings remain schema-v1 diagnostic compatibility only and
+cannot authorize schema-v2 closure.
 
 Baseline and resulting digests are recomputed from assignment and current bytes. Changed paths are
 checked against allowed and excluded scope. Read-only, review-only, and verification authority cannot

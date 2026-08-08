@@ -47,6 +47,9 @@ LINKER_COVERAGE_LIST_FIELDS = (
 LINKER_COVERAGE_FIELDS = {
     "mode", "complete", "path_digest", "counts",
 } | set(LINKER_COVERAGE_LIST_FIELDS)
+LOCATOR_FIELDS = {
+    "path", "heading", "symbol", "test_name", "config_key", "schema_name",
+}
 
 
 class DuplicateJsonKey(ValueError):
@@ -99,6 +102,22 @@ def _text(value: Any) -> bool:
 
 def _evidence(value: Any) -> bool:
     return isinstance(value, list) and bool(value) and all(_text(item) for item in value)
+
+
+def _locator(value: Any) -> bool:
+    return (
+        isinstance(value, dict)
+        and set(value) <= LOCATOR_FIELDS
+        and isinstance(value.get("path"), str)
+        and bool(value["path"])
+        and all(item is None or isinstance(item, str) for item in value.values())
+    )
+
+
+def _locators(value: Any) -> bool:
+    return isinstance(value, list) and bool(value) and all(
+        _locator(item) for item in value
+    )
 
 
 def _digest(value: Any) -> bool:
@@ -616,9 +635,13 @@ def _validate_report(
             diagnostics.append(diagnostic("artifact_delta_kind_invalid", "kind must be artifact_delta.", path))
         if delta.get("change_kind") not in {"added", "modified", "deleted"}:
             diagnostics.append(diagnostic("artifact_delta_change_kind_invalid", "Invalid change_kind.", path))
-        if not _evidence(delta.get("changed_locators")) or not _text(delta.get("semantic_summary")):
+        if (
+            not _locators(delta.get("changed_locators"))
+            or not _text(delta.get("semantic_summary"))
+        ):
             diagnostics.append(diagnostic("artifact_delta_evidence_missing",
-                                          "Delta locators and summary are required.", path))
+                                          "Delta requires canonical locator objects and a summary.",
+                                          path))
         if not isinstance(delta.get("graph_relevant"), bool):
             diagnostics.append(diagnostic("artifact_delta_graph_relevance_invalid",
                                           "graph_relevant must be boolean.", path))

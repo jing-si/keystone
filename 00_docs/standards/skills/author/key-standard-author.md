@@ -447,7 +447,9 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
 ```yaml
 document_delta:
   source_surface:
-  changed_locators: []
+  changed_locators:
+    - path: 00_docs/example.md
+      heading: Acceptance
   semantic_summary:
   baseline_digest: sha256:<64-lowercase-hex> | absent
 graph_attestations:
@@ -459,6 +461,9 @@ graph_apply_results:
     result: applied | failed | stale_baseline
     resulting_digest:
 ```
+
+`changed_locators`의 각 항목은 required `path`와 필요한 locator field만 가진 canonical object다.
+Canonical emission은 사용하지 않는 optional field를 생략하고 plain string을 허용하지 않는다.
 
 <!-- key: id=key.standard.skill.author.change-set-writing-rule refs=key.role.author key.topic.artifact-graph key.topic.impact-review -->
 ## Change Set 작성 규칙

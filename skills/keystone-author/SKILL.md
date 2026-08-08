@@ -144,7 +144,9 @@ assessment for `graph_relevant: false` requires a concrete reason and maps to fi
 document_delta:
   kind: document_delta
   source_surface:
-  changed_locators: []
+  changed_locators:
+    - path: 00_docs/example.md
+      heading: Acceptance
   semantic_summary:
   baseline_digest: sha256:<64-lowercase-hex> | absent
   graph_relevant: true | false
@@ -159,6 +161,10 @@ graph_apply_results:
     resulting_digest:
     evidence:
 ```
+
+Each `changed_locators` item is a canonical locator object with required `path` and only the
+applicable `heading`, `symbol`, `test_name`, `config_key`, or `schema_name`; omit unused optional
+fields. Do not emit plain locator strings.
 
 Linker alone decides canonical mutations and exact per-surface patches. Author compares only an
 `owner: author` document-metadata patch with the intended document meaning. Author never independently

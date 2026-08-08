@@ -8,12 +8,20 @@ from graph_runtime.metadata import parse_source
 from graph_runtime.model import (
     ApplicationResult,
     ApplicationStatus,
+    ArtifactKind,
     AttestationDecision,
     Delta,
     DeltaKind,
+    Evidence,
+    GraphSnapshot,
+    Lifecycle,
     Locator,
+    Node,
+    NodeKind,
     PatchOwner,
     PatchSurface,
+    Provenance,
+    Relation,
     RelationType,
     SurfaceAttestation,
 )
@@ -31,6 +39,7 @@ from graph_runtime.reconciler import (
     record_attestation,
 )
 from graph_runtime.model import transaction_wire
+from graph_runtime.source_relations import build_source_relations
 from graph_runtime.validator import validate_snapshot, validate_transaction
 
 
@@ -139,6 +148,155 @@ key: {id: key.doc.contract, kind: source_document}
             )
             wire = transaction_wire(transaction, baseline_snapshot=baseline)
             self.assertEqual((), validate_transaction(wire, root, reconstruction))
+
+    def test_document_supersession_and_draft_relation_close_in_v2_wire(self):
+        document_path = "docs/lifecycle.md"
+        draft_locator = Locator(document_path)
+        draft_claim = Node(
+            "key.claim.draft",
+            NodeKind.CLAIM,
+            locator=draft_locator,
+            lifecycle=Lifecycle.DRAFT,
+            provenance=Provenance(
+                surface="document_metadata",
+                locator=draft_locator,
+            ),
+        )
+        code_locator = Locator("src/example.py", symbol="run")
+        code = Node(
+            "key.code.example",
+            NodeKind.OUTPUT_ARTIFACT,
+            ArtifactKind.CODE,
+            code_locator,
+        )
+        old_claim = Node(
+            "key.claim.old",
+            NodeKind.CLAIM,
+            locator=Locator(document_path),
+        )
+        retired_claim = Node(
+            old_claim.id,
+            old_claim.kind,
+            old_claim.artifact_kind,
+            old_claim.locator,
+            Lifecycle.SUPERSEDED,
+        )
+        new_claim = Node(
+            "key.claim.new",
+            NodeKind.CLAIM,
+            locator=Locator(document_path),
+        )
+        draft_relations = build_source_relations(
+            {"requires_verification_of": [code.id]},
+            draft_claim,
+            "document",
+            "document_metadata",
+            document_path,
+            draft_locator,
+        )
+        self.assertFalse(draft_relations.diagnostics)
+        draft_relation = draft_relations.relations[0]
+        supersedes = Relation(
+            new_claim.id,
+            RelationType.SUPERSEDES,
+            retired_claim.id,
+            Evidence.DECLARED,
+            Provenance(
+                surface="document_metadata",
+                locator=new_claim.locator,
+            ),
+            Lifecycle.ACTIVE,
+        )
+        baseline = GraphSnapshot((draft_claim, code, old_claim))
+        reconstruction = GraphSnapshot(
+            (draft_claim, code, retired_claim, new_claim),
+            (draft_relation, supersedes),
+        )
+        before = "baseline lifecycle metadata\n"
+        after = "canonical lifecycle replacement\n"
+        before_digest = "sha256:" + hashlib.sha256(before.encode("utf-8")).hexdigest()
+        after_digest = "sha256:" + hashlib.sha256(after.encode("utf-8")).hexdigest()
+        delta = Delta(
+            DeltaKind.DOCUMENT,
+            document_path,
+            (draft_locator,),
+            "declare draft verification and claim replacement",
+            before_digest,
+        )
+        patch = PatchSpec(
+            PatchOwner.AUTHOR,
+            PatchSurface.DOCUMENT_METADATA,
+            document_path,
+            before_digest,
+            after,
+            patch_format="full_replacement",
+            patch_body=after,
+            expected_after_digest=after_digest,
+            baseline_content=before,
+        )
+        transaction = plan_graph_sync(
+            baseline,
+            (delta,),
+            "R010/S01",
+            requested_nodes_after=(retired_claim, new_claim),
+            requested_relations_after=(draft_relation, supersedes),
+            patch_specs=(patch,),
+        )
+        transaction = begin_attestation(transaction)
+        transaction = record_attestation(
+            transaction,
+            SurfaceAttestation(
+                transaction.surface_patches[0].patch_id,
+                PatchOwner.AUTHOR,
+                AttestationDecision.CONFIRM,
+                "Author confirmed the document lifecycle mutation.",
+            ),
+        )
+        transaction = begin_application(
+            transaction,
+            {transaction.surface_patches[0].patch_id: before_digest},
+        )
+        transaction = record_application(
+            transaction,
+            ApplicationResult(
+                transaction.surface_patches[0].patch_id,
+                ApplicationStatus.APPLIED,
+                after_digest,
+                "Document bytes match the executable patch.",
+            ),
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "docs").mkdir()
+            (root / "src").mkdir()
+            (root / document_path).write_text(after, encoding="utf-8")
+            (root / code_locator.path).write_text("def run(): pass\n", encoding="utf-8")
+            mechanical = validate_snapshot(root, reconstruction)
+            transaction = finalize_transaction(
+                transaction,
+                reconstruction,
+                mechanical,
+                {transaction.surface_patches[0].patch_id: after_digest},
+                baseline_snapshot=baseline,
+            )
+            wire = transaction_wire(transaction, baseline_snapshot=baseline)
+            diagnostics = validate_transaction(wire, root, reconstruction)
+
+        self.assertEqual(Lifecycle.ACTIVE, draft_relation.lifecycle)
+        self.assertNotIn(
+            "active_relation_to_retired",
+            {item.code for item in mechanical},
+        )
+        self.assertEqual("superseded", next(
+            node for node in wire["reconstruction"]["result"]["nodes"]
+            if node["id"] == old_claim.id
+        )["lifecycle"])
+        self.assertTrue(all(
+            relation["lifecycle_domain"] == "relation"
+            for relation in wire["reconstruction"]["result"]["relations"]
+        ))
+        self.assertEqual((), diagnostics)
 
 
 if __name__ == "__main__":

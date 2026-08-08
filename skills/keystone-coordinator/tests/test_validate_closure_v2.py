@@ -208,7 +208,10 @@ class ClosureV2ValidationTest(unittest.TestCase):
             "kind": "artifact_delta",
             "source_surface": "src/example.py",
             "change_kind": "modified",
-            "changed_locators": ["Example.run"],
+            "changed_locators": [{
+                "path": "src/example.py",
+                "symbol": "Example.run",
+            }],
             "semantic_summary": "Change bounded behavior.",
             "baseline_digest": baseline,
             "resulting_digest": file_digest(source),
@@ -229,6 +232,48 @@ class ClosureV2ValidationTest(unittest.TestCase):
             "sha256:" + "0" * 64
         )
         self.assertIn("artifact_resulting_digest_mismatch", self.codes(self.validate()))
+
+    def test_artifact_delta_requires_canonical_locator_objects(self):
+        invalid_locators = (
+            None,
+            [],
+            "Example.run",
+            {"path": "src/example.py", "symbol": "Example.run"},
+            ["Example.run"],
+            [{}],
+            [{"path": ""}],
+            [{"path": "src/example.py", "unknown": "value"}],
+            [{"path": "src/example.py", "symbol": 7}],
+        )
+        for changed_locators in invalid_locators:
+            with self.subTest(changed_locators=changed_locators):
+                self.record_modified_source()
+                self.manifest["worker_report"]["artifact_deltas"][0][
+                    "changed_locators"
+                ] = changed_locators
+                result = self.validate()
+                self.assertEqual("fail", result["status"])
+                findings = [
+                    item for item in result["diagnostics"]
+                    if item["code"] == "artifact_delta_evidence_missing"
+                ]
+                self.assertEqual(1, len(findings), result)
+                self.assertEqual("error", findings[0]["severity"])
+                self.assertEqual("worker_report.artifact_deltas[0]", findings[0]["path"])
+
+        self.record_modified_source()
+        self.manifest["worker_report"]["artifact_deltas"][0][
+            "changed_locators"
+        ] = [{
+            "path": "src/example.py",
+            "heading": None,
+            "symbol": "Example.run",
+            "test_name": None,
+            "config_key": None,
+            "schema_name": None,
+        }]
+        self.write_classification()
+        self.assertEqual("pass", self.validate()["status"])
 
     def test_scope_is_computed_instead_of_trusting_worker_claim(self):
         secret = self.root / "secret" / "value.txt"
@@ -532,7 +577,7 @@ class ClosureV2ValidationTest(unittest.TestCase):
                 "kind": "artifact_delta",
                 "source_surface": "src/added.py",
                 "change_kind": "added",
-                "changed_locators": ["added"],
+                "changed_locators": [{"path": "src/added.py", "symbol": "added"}],
                 "semantic_summary": "Add a bounded source.",
                 "baseline_digest": "absent",
                 "resulting_digest": file_digest(added),
@@ -542,7 +587,10 @@ class ClosureV2ValidationTest(unittest.TestCase):
                 "kind": "artifact_delta",
                 "source_surface": "src/example.py",
                 "change_kind": "deleted",
-                "changed_locators": ["Example"],
+                "changed_locators": [{
+                    "path": "src/example.py",
+                    "symbol": "Example",
+                }],
                 "semantic_summary": "Remove a bounded source.",
                 "baseline_digest": self.assignment["baseline_snapshot"][0]["digest"],
                 "resulting_digest": "absent",
