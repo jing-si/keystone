@@ -40,7 +40,10 @@ global_state:
 - Dependency: S01 `complete + accepted` start gate와 completion gate가 모두 satisfied다.
 - Activation parent: S01 finalization commit
   `ea42783e6e51e733fbcd641663a14272bec07d2a`.
-- Next action: snapshot completeness의 adversarial fixture와 canonical policy를 확정한다.
+- Implementation state: schema-v3 runtime/contract/test candidate가 commit
+  `d548d75398f34ae0e3eb273010a88b622c0a5cc5`에 고정됐고 10개 criterion technical verification이
+  통과했다. Work completion, Main acceptance와 finalization은 pending이다.
+- Next action: Main이 candidate subject, aggregate evidence와 residual trust boundary를 검토한다.
 
 Active steps: [R010/S02]
 
