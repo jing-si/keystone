@@ -1,0 +1,206 @@
+{
+  "schema_version": 5,
+  "acceptance_ref": "R010/S01/main-acceptance",
+  "steps": [
+    {
+      "ref": "R010/S01",
+      "work_ref": "R010/production-control-plane-hardening",
+      "status": "complete",
+      "approval_state": "accepted",
+      "finalization_state": "complete",
+      "finalization_acceptance_ref": "R010/S01/main-acceptance",
+      "progress_path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/key-progress.md"
+    }
+  ],
+  "accepted_steps": [
+    "R010/S01"
+  ],
+  "execution_transitions": [
+    {
+      "ref": "R010/S01",
+      "from": "in_progress",
+      "to": "complete"
+    }
+  ],
+  "approval_transitions": [
+    {
+      "ref": "R010/S01",
+      "from": "pending",
+      "to": "accepted",
+      "evidence": "Main accepted the S01 correctness candidate and replay evidence on 2026-08-08."
+    }
+  ],
+  "active_steps": [],
+  "active_step_sources": [
+    {
+      "category": "work_index",
+      "path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/00_key-index.md"
+    },
+    {
+      "category": "round_index",
+      "path": "00_docs/works/r010-production-control-plane-hardening/00_key-index.md"
+    },
+    {
+      "category": "context_map",
+      "path": "00_docs/key-context-map.md"
+    }
+  ],
+  "global_state": {
+    "active_round": "R010",
+    "latest_accepted_round": "R009",
+    "active_steps": [],
+    "sources": [
+      {
+        "category": "work_index",
+        "path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/00_key-index.md",
+        "key_id": "key.work.production-control-plane-hardening.index"
+      },
+      {
+        "category": "round_index",
+        "path": "00_docs/works/r010-production-control-plane-hardening/00_key-index.md",
+        "key_id": "key.work.round.r010-production-control-plane-hardening.index"
+      },
+      {
+        "category": "root_index",
+        "path": "00_docs/works/00_key-index.md",
+        "key_id": "key.work.index"
+      },
+      {
+        "category": "context_map",
+        "path": "00_docs/key-context-map.md",
+        "key_id": "key.context-map"
+      }
+    ]
+  },
+  "early_work": [],
+  "finalization": {
+    "required": true,
+    "state": "complete",
+    "progress_path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/key-progress.md",
+    "evidence": [
+      "main_acceptance",
+      "impact_dispositions",
+      "source_updates",
+      "semantic_review",
+      "post_edit_verification"
+    ]
+  },
+  "graph_sync": {
+    "required": false,
+    "disposition": "not_applicable",
+    "reason": "S01 acceptance and finalization change execution, approval, recovery and global-state projections without changing stable graph identities, typed relations, lifecycle domains or locators."
+  },
+  "impact_candidates": [
+    {
+      "category": "progress",
+      "artifact": "R010/S01 progress",
+      "path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/key-progress.md",
+      "disposition": "updated",
+      "reason": "Records Main acceptance, complete execution, finalization evidence and the accepted residual boundary."
+    },
+    {
+      "category": "work_order_change_set",
+      "artifact": "R010/S01 Work Order and Change Set",
+      "path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/key-work-production-control-plane-hardening.md",
+      "disposition": "updated",
+      "reason": "Records the accepted and complete authority state for the verified S01 scope."
+    },
+    {
+      "category": "work_index",
+      "artifact": "R010/S01 work index",
+      "path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/00_key-index.md",
+      "disposition": "updated",
+      "reason": "Closes S01 and records the finalization generation with no active Step."
+    },
+    {
+      "category": "round_index",
+      "artifact": "R010 round index",
+      "path": "00_docs/works/r010-production-control-plane-hardening/00_key-index.md",
+      "disposition": "updated",
+      "reason": "Records S01 complete and accepted while R010 remains active and S02 stays planned."
+    },
+    {
+      "category": "root_index",
+      "artifact": "root works index",
+      "path": "00_docs/works/00_key-index.md",
+      "disposition": "updated",
+      "reason": "Preserves R010 as the active Round and records the temporary empty active-Step set."
+    },
+    {
+      "category": "context_map",
+      "artifact": "Context Map",
+      "path": "00_docs/key-context-map.md",
+      "disposition": "updated",
+      "reason": "Makes S01 acceptance and the pre-S02 no-active-Step recovery state explicit."
+    },
+    {
+      "category": "standard_decision_plan",
+      "artifact": "Project acceptance and finalization standards",
+      "path": "00_docs/standards/01_key-project-standard.md",
+      "disposition": "no_change",
+      "reason": "The accepted transition follows the existing execution, approval and finalization namespaces without changing policy."
+    },
+    {
+      "category": "recovery",
+      "artifact": "R010 recovery instructions",
+      "path": "00_docs/works/r010-production-control-plane-hardening/00_key-index.md",
+      "disposition": "updated",
+      "reason": "Recovery now finds accepted S01, planned S02 and an empty active-Step set before separate activation."
+    },
+    {
+      "category": "implementation_gate",
+      "artifact": "R010/S02 start and completion gates",
+      "path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/key-work-authority-chain-snapshot-closure.md",
+      "disposition": "no_change",
+      "reason": "S01 complete and accepted satisfies both declared gates; S02 activation remains a separate transition.",
+      "gate_state": "resolved",
+      "gate_scope": "R010/S02 implementation and Work completion"
+    },
+    {
+      "category": "residual_risk",
+      "artifact": "R010/S01 residual boundaries",
+      "path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/key-progress.md",
+      "disposition": "updated",
+      "reason": "S05 external agent evidence, S06 whole-flow and S07 RC/terminal closure remain explicitly assigned follow-up scope rather than hidden S01 debt.",
+      "risk_state": "recorded",
+      "risk_items": [
+        "Actual model transcript and independent reviewer evidence remain R010/S05 scope.",
+        "Whole-flow and production terminal closure remain R010/S06-S07 scope."
+      ]
+    },
+    {
+      "category": "namespace",
+      "artifact": "R010 Step and acceptance namespaces",
+      "path": "00_docs/works/r010-production-control-plane-hardening/00_key-index.md",
+      "disposition": "no_change",
+      "reason": "R010/S01 and R010/S02 remain distinct Step identities and the acceptance ref is unique to S01.",
+      "namespace_state": "checked"
+    },
+    {
+      "category": "progress",
+      "artifact": "R010/S02 progress recovery",
+      "path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/key-progress.md",
+      "disposition": "updated",
+      "reason": "Records satisfied dependency evidence without changing the future Step status."
+    },
+    {
+      "category": "work_index",
+      "artifact": "R010/S02 work recovery index",
+      "path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/00_key-index.md",
+      "disposition": "updated",
+      "reason": "Records satisfied gates while preserving planned and inactive status until a separate transition."
+    }
+  ],
+  "namespace_entries": [
+    {
+      "namespace": "work_step",
+      "value": "R010/S01",
+      "owner": "R010 Production Control Plane Hardening"
+    },
+    {
+      "namespace": "acceptance_ref",
+      "value": "R010/S01/main-acceptance",
+      "owner": "R010/S01 Main acceptance"
+    }
+  ]
+}

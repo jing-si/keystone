@@ -33,11 +33,9 @@ risk_level: high
 - Work status: planned
 - Approval state: pending
 - Active: false
-- Dependency: S01 `complete + accepted` start gate와 completion gate가 모두 waiting이다.
-- Pre-gate boundary: read-only analysis와 이 문서 안의 RED case matrix/fixture design만 허용한다.
-  Runtime/test/code/config/schema source write, `in_progress` 전이와 canonical schema commitment는
-  gate 충족 전 금지한다.
-- Next action: gate 충족 후 snapshot completeness의 adversarial fixture와 canonical policy를
+- Dependency: S01 `complete + accepted` start gate와 completion gate가 모두 satisfied다.
+- Active: false. S01 finalization과 분리된 S02 활성화 전이를 기다린다.
+- Next action: 별도 활성화 뒤 snapshot completeness의 adversarial fixture와 canonical policy를
   확정한다.
 
 현재 active Step의 권위 있는 목록은 R010 round index, root works index와 Context Map을 따른다.

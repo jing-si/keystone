@@ -2,11 +2,11 @@
 doc_type: progress
 created_at: "2026-08-07"
 document_lifecycle: active
-approval: {state: pending}
-work_status: in_progress
+approval: {state: accepted, accepted_at: "2026-08-08", accepted_by: main}
+work_status: complete
 step_ref: R010/S01
 work_ref: R010/production-control-plane-hardening
-finalization: {state: pending}
+finalization: {state: complete, acceptance_ref: R010/S01/main-acceptance}
 key:
   id: key.work.production-control-plane-hardening.progress
   refs:
@@ -35,16 +35,15 @@ key:
 ## 현재 상태
 
 - Step: R010/S01
-- Work status: in_progress
-- Approval state: pending
-- Active: true
-- Finalization state: pending
-- Resume point: candidate `c535ea7038c5c695b7c469724a505ecf902a96df`의 S01 technical
-  evidence와 result digest 기록이 준비됐다. Main이 S01 correctness와 evidence를 검토해
-  acceptance를 결정한다. 후속 phase/work-state/agent/whole-flow/release closure는
-  R010/S02-S07에서 복구한다.
+- Work status: complete
+- Approval state: accepted (2026-08-08, main)
+- Active: false
+- Finalization state: complete
+- Acceptance ref: `R010/S01/main-acceptance`
+- Resume point: S01 correctness hardening은 accepted/finalized 상태다. Schema-v5 manifest와
+  package-owned Author runner evidence를 보존한 뒤 별도 전이로 R010/S02를 활성화한다.
 
-Active steps: [R010/S01]
+Active steps: []
 
 ## 준비 증거
 
@@ -116,6 +115,12 @@ Active steps: [R010/S01]
     full graph 278/278, historical R008/R009, external-cache compileall, installer staging/parity/
     forced rollback과 postflight가 통과했다. RC gate는 16개 중 S01 소유 phase 15개가 통과했고,
     S05가 아직 소유한 외부 `agent_behavior_evidence` 부재만 error로 fail-closed했다.
+22. 2026-08-08: Main이 candidate `c535ea7038c5c695b7c469724a505ecf902a96df`의 S01
+    correctness hardening, technical replay evidence와 명시된 S05-S07 residual boundary를 검토해
+    `R010/S01/main-acceptance`로 수락했다.
+23. 2026-08-08: Author가 S01 Progress, Work Order, work/round/root index, Context Map과 S02 gate
+    recovery를 정합화했다. S02 상태를 바꾸지 않은 `active_steps: []` generation에서 schema-v5
+    finalization을 완료하고 package-owned runner post-edit verification을 실행해 통과했다.
 
 ## Criterion Status
 
@@ -215,7 +220,24 @@ ensure_ascii=False)` 직렬화한 raw bytes의 SHA-256은
 
 | Criterion ID | State | Evidence ref | Subject | Generation/result digest |
 |---|---|---|---|---|
-| `key.acceptance.r010.foundation.main-acceptance-review` | pending | Main acceptance evidence 없음 | — | — |
+| `key.acceptance.r010.foundation.main-acceptance-review` | accepted | `R010/S01/main-acceptance`; schema-v5 Author finalization pass | `c535ea7038c5c695b7c469724a505ecf902a96df` | manifest `sha256:0ef0991c85931e515550b4a1e2f3a7be4d7f4fdbe55ef43315284752766ade34`; runner envelope `sha256:bfc73e865440500635d4f6ed66c1455db12aef5e9ff79a2d5bcc9b893a2bd65c` |
+
+## Acceptance Finalization Evidence
+
+- Acceptance ref: `R010/S01/main-acceptance`
+- Accepted implementation subject: `c535ea7038c5c695b7c469724a505ecf902a96df`
+- Technical replay result digest:
+  `sha256:b79027120197183d9cd0b3dbeee0de2a7b9d11a8995e917503bd96f88e8fdab5`
+- Schema-v5 manifest: `../key-finalization-manifest.json`
+- Manifest raw-byte digest:
+  `sha256:0ef0991c85931e515550b4a1e2f3a7be4d7f4fdbe55ef43315284752766ade34`
+- Package-owned Author runner: exit `0`, status `pass`, errors `0`, warnings `0`
+- Runner envelope raw-byte digest:
+  `sha256:bfc73e865440500635d4f6ed66c1455db12aef5e9ff79a2d5bcc9b893a2bd65c`
+- Graph disposition: `not_applicable` — execution, approval, finalization과 recovery projection만
+  바뀌며 stable identity, typed relation, lifecycle domain과 locator는 바뀌지 않았다.
+- Subject lineage: 이 pre-S02 finalization source generation은 별도 commit으로 고정하고, S02
+  activation evidence가 해당 commit을 parent로 기록한다.
 
 ## 현재 검증 경계
 
@@ -228,6 +250,8 @@ ensure_ascii=False)` 직렬화한 raw bytes의 SHA-256은
   의도대로 차단한 결과다. S01 technical replay와 분리해 보존한다.
 - Context Map은 `active_round: R010`이므로 production profile의 current-finalization 단계는 아직
   통과하면 안 된다.
+- Main은 위 candidate와 residual boundary를 `R010/S01/main-acceptance`로 수락했고, schema-v5
+  manifest와 package-owned Author runner가 pre-S02 source generation의 finalization을 통과했다.
 - 실제 model transcript/evidence 생성 runtime과 독립 reviewer workflow는 R010/S05가 소유하고,
   whole-flow 소비는 R010/S06, RC/production closure는 R010/S07이 소유한다.
 - HMAC은 key holder의 attestation을 증명하지만 실제 model 실행과 reviewer 독립성을 스스로
@@ -235,8 +259,8 @@ ensure_ascii=False)` 직렬화한 raw bytes의 SHA-256은
 
 ## 다음 작업
 
-1. Main이 S01 completion evidence와 residual boundary를 검토해 acceptance를 결정한다.
-2. Acceptance 이후 Author가 S01 finalization evidence를 기록한다.
+1. 이 finalization source generation을 별도 commit으로 고정한다.
+2. 해당 commit을 parent evidence로 삼아 R010/S02를 별도 상태 전이로 활성화한다.
 3. S02/S03은 authority-chain과 graph/source correctness 후속 항목을 실행한다.
 4. S04는 shared work state, S05는 actual agent eval, S06은 whole-flow E2E를 수행한다.
 5. S07은 independent RC evidence, Main acceptance와 terminal finalization을 결속한다.

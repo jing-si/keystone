@@ -2,8 +2,8 @@
 doc_type: work_order
 created_at: "2026-08-07"
 document_lifecycle: active
-approval: {state: pending}
-work_status: in_progress
+approval: {state: accepted, accepted_at: "2026-08-08", accepted_by: main}
+work_status: complete
 key:
   id: key.work.production-control-plane-hardening.order
   refs:
