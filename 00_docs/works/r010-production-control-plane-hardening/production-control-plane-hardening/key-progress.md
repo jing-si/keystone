@@ -236,8 +236,9 @@ ensure_ascii=False)` 직렬화한 raw bytes의 SHA-256은
   `sha256:bfc73e865440500635d4f6ed66c1455db12aef5e9ff79a2d5bcc9b893a2bd65c`
 - Graph disposition: `not_applicable` — execution, approval, finalization과 recovery projection만
   바뀌며 stable identity, typed relation, lifecycle domain과 locator는 바뀌지 않았다.
-- Subject lineage: 이 pre-S02 finalization source generation은 별도 commit으로 고정하고, S02
-  activation evidence가 해당 commit을 parent로 기록한다.
+- Subject lineage: 이 pre-S02 finalization source generation은 commit
+  `ea42783e6e51e733fbcd641663a14272bec07d2a`에 고정됐고, S02 activation evidence가 이를 parent로
+  기록한다. Manifest의 current-source replay는 이 commit에서 수행한다.
 
 ## 현재 검증 경계
 
@@ -259,8 +260,7 @@ ensure_ascii=False)` 직렬화한 raw bytes의 SHA-256은
 
 ## 다음 작업
 
-1. 이 finalization source generation을 별도 commit으로 고정한다.
-2. 해당 commit을 parent evidence로 삼아 R010/S02를 별도 상태 전이로 활성화한다.
-3. S02/S03은 authority-chain과 graph/source correctness 후속 항목을 실행한다.
-4. S04는 shared work state, S05는 actual agent eval, S06은 whole-flow E2E를 수행한다.
-5. S07은 independent RC evidence, Main acceptance와 terminal finalization을 결속한다.
+1. Active R010/S02에서 complete snapshot과 phase-separated authority chain을 구현한다.
+2. S03은 graph/source correctness 후속 항목을 실행한다.
+3. S04는 shared work state, S05는 actual agent eval, S06은 whole-flow E2E를 수행한다.
+4. S07은 independent RC evidence, Main acceptance와 terminal finalization을 결속한다.

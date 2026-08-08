@@ -16,7 +16,7 @@ key:
 global_state:
   active_round: R010
   latest_accepted_round: R009
-  active_steps: []
+  active_steps: [R010/S02]
 ---
 
 # 프로젝트 컨텍스트 맵
@@ -184,9 +184,10 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 <!-- key: id=key.context-map.section refs=key.topic.work-sequence key.topic.document-system key.topic.work-round -->
 ## 현재 작업 단계
 
-현재 active round는 R010 Production Control Plane Hardening이다. R010/S01은 complete and
-accepted이며 Author finalization이 완료됐다. R010/S02-S07은 평균 8.5 production candidate 종료를
-위한 planned Step이고, S02의 별도 활성화 전까지 active Step은 없다.
+현재 active round는 R010 Production Control Plane Hardening이며 active Step은 R010/S02다.
+R010/S01은 complete and accepted이며 schema-v5 Author finalization을 별도 parent commit에
+고정했다. R010/S02는 complete snapshot과 phase-separated actor attribution을 구현하고,
+R010/S03-S07은 이후 dependency gate를 기다린다.
 최신 accepted round는 R009 Coordinator Keystone Closure다. R009/S01은
 사용자 independent-first direction으로 R008과 독립적으로 먼저 수락됐고, 이후 R008/S01-S07도
 complete and accepted로 닫혔다. R001 S00-S07은 accepted 이력으로 보존되고, 미수락
@@ -208,7 +209,7 @@ companion/repository validation, transaction/finalization, graph lifecycle과 wi
 순서대로 정합화하고, 마지막에 핵심 skill runtime traceability와 self-host E2E로 전체 경로를
 검증한다.
 
-Active steps: []
+Active steps: [R010/S02]
 
 | Step | 제목 | 목적 |
 |---|---|---|
@@ -220,7 +221,7 @@ Active steps: []
 | R008/S06 | Graph Lifecycle and Wire Compatibility | complete — lifecycle/evidence impact, retired relation validation과 graph wire v2 compatibility를 정합화했다 |
 | R008/S07 | Skill Runtime Traceability and Self-Host E2E | complete — 최소 runtime·test relation과 actual-corpus self-host workflow를 검증했다 |
 | R010/S01 | Production Control Plane Hardening | complete, accepted — zero-base review의 P0/P1 actual-state correctness와 production gate 기반을 구현·검증하고 finalization했다 |
-| R010/S02 | Authority Chain and Snapshot Closure | planned — complete snapshot과 phase-separated actor attribution을 구현한다 |
+| R010/S02 | Authority Chain and Snapshot Closure | in_progress — complete snapshot과 phase-separated actor attribution을 구현한다 |
 | R010/S03 | Graph, Transaction and Source Correctness | planned — package-owned classification, optional patch, SourceUnit, lifecycle와 canonical mutation을 정합화한다 |
 | R010/S04 | Deterministic Work State Runtime | planned — derived global work state와 Reader·Coordinator·Author·release consumer parity를 구현한다 |
 | R010/S05 | Actual Agent Behavior Evaluation | planned — actual skill/model invocation으로 12개 scenario evidence를 생성·검증한다 |

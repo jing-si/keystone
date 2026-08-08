@@ -17,7 +17,7 @@ key:
 global_state:
   active_round: R010
   latest_accepted_round: R009
-  active_steps: []
+  active_steps: [R010/S02]
 ---
 
 # R010 Production Control Plane Hardening 작업서 색인
@@ -31,12 +31,12 @@ correctness, shared work state, 실제 agent behavior, whole-flow와 independent
 <!-- key: id=key.work.round.r010.execution-order refs=key.topic.work-sequence key.topic.work-recovery -->
 ## 실행 순서
 
-Active steps: []
+Active steps: [R010/S02]
 
 | 순서 | Work | 경로 | 상태 | 목적 |
 |---|---|---|---|---|
 | S01 | Production Control Plane Hardening | `production-control-plane-hardening/00_key-index.md` | complete, accepted | lifecycle·transaction·source/finalization·Coordinator actual-state closure와 release evidence를 fail-closed로 정합화했다 |
-| S02 | Authority Chain and Snapshot Closure | `authority-chain-snapshot-closure/00_key-index.md` | planned | complete snapshot 위에 phase-separated actor attribution을 구현한다 |
+| S02 | Authority Chain and Snapshot Closure | `authority-chain-snapshot-closure/00_key-index.md` | in_progress | complete snapshot 위에 phase-separated actor attribution을 구현한다 |
 | S03 | Graph, Transaction and Source Correctness | `graph-transaction-source-correctness/00_key-index.md` | planned | package-owned classification, mutation-bearing optional 금지, SourceUnit/parser, lifecycle와 canonical mutation을 정합화한다 |
 | S04 | Deterministic Work State Runtime | `work-state-runtime/00_key-index.md` | planned | repository-derived global state와 네 consumer의 canonical runtime parity를 구현한다 |
 | S05 | Actual Agent Behavior Evaluation | `agent-behavior-evaluation/00_key-index.md` | planned | 실제 skill/model invocation으로 setting×repeat×12 scenario evidence와 negative control을 생성·검증한다 |

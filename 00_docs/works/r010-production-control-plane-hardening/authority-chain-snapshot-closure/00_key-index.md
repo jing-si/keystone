@@ -3,7 +3,7 @@ doc_type: work
 created_at: "2026-08-07"
 document_lifecycle: active
 approval: {state: pending}
-work_status: planned
+work_status: in_progress
 key:
   id: key.work.authority-chain-snapshot-closure.index
   refs:
@@ -18,6 +18,10 @@ title: Authority Chain and Snapshot Closure
 owner_lane: main
 work_type: [implementation, test, verification]
 risk_level: high
+global_state:
+  active_round: R010
+  latest_accepted_round: R009
+  active_steps: [R010/S02]
 ---
 
 # Authority Chain and Snapshot Closure
@@ -30,12 +34,14 @@ risk_level: high
 ## 현재 상태
 
 - Step: R010/S02
-- Work status: planned
+- Work status: in_progress
 - Approval state: pending
-- Active: false
+- Active: true
 - Dependency: S01 `complete + accepted` start gate와 completion gate가 모두 satisfied다.
-- Active: false. S01 finalization과 분리된 S02 활성화 전이를 기다린다.
-- Next action: 별도 활성화 뒤 snapshot completeness의 adversarial fixture와 canonical policy를
-  확정한다.
+- Activation parent: S01 finalization commit
+  `ea42783e6e51e733fbcd641663a14272bec07d2a`.
+- Next action: snapshot completeness의 adversarial fixture와 canonical policy를 확정한다.
+
+Active steps: [R010/S02]
 
 현재 active Step의 권위 있는 목록은 R010 round index, root works index와 Context Map을 따른다.

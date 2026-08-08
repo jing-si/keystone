@@ -11,7 +11,7 @@ key:
 global_state:
   active_round: R010
   latest_accepted_round: R009
-  active_steps: []
+  active_steps: [R010/S02]
 ---
 
 # 작업서(4) round 색인

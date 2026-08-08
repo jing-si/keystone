@@ -39,6 +39,7 @@ global_state:
 - Active: false
 - Finalization state: complete
 - Acceptance ref: `R010/S01/main-acceptance`
-- Next action: S01 finalization evidence를 보존하고 별도 상태 전이로 R010/S02를 활성화한다.
+- Next action: S01 finalization commit과 manifest/envelope digest를 보존하면서 active R010/S02를
+  진행한다.
 
 Active steps: []
