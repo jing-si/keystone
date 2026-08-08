@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple
 from .adapters import Adapter
 from .companion import parse_companion
 from .dependency import DependencySource
+from .lifecycle_policy import node_lifecycle_domain
 from .metadata_support import metadata_strings, sorted_snapshot
 from .model import (
     ArtifactKind,
@@ -260,7 +261,14 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
 
     nodes: Dict[str, Node] = {}
     relations: Dict[Tuple[str, str, str], Relation] = {}
-    diagnostics: List[Diagnostic] = []
+    diagnostics: List[Diagnostic] = [
+        Diagnostic(code, message, path=path)
+        for code, message in (
+            adapter.metadata_diagnostics(text)
+            if hasattr(adapter, "metadata_diagnostics")
+            else ()
+        )
+    ]
     markdown = adapter.surface == "document_metadata"
     document_node: Optional[Node] = None
     current_section_node: Optional[Node] = None
@@ -326,9 +334,12 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
             if markdown and construct == "document":
                 document_node = node
             elif markdown and construct == "heading":
-                current_section_node = node
-                if target_offset is not None:
-                    section_nodes_by_offset[target_offset] = node
+                if node_lifecycle_domain(node.kind) == "document":
+                    current_section_node = node
+                    if target_offset is not None:
+                        section_nodes_by_offset[target_offset] = node
+                elif target_offset is not None:
+                    section_nodes_by_offset[target_offset] = parent or document_node
             relation_result = build_source_relations(
                 data,
                 node,

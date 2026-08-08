@@ -3,9 +3,15 @@
 
 import argparse
 import json
+import os
+import stat
 import subprocess
 import sys
 from pathlib import Path
+
+SCRIPT_ROOT = Path(__file__).resolve().parent
+if str(SCRIPT_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_ROOT))
 
 from graph_runtime.companion import load_authoritative_json
 
@@ -20,6 +26,16 @@ def parse_args():
     parser.add_argument("--manifest")
     parser.add_argument("--transaction")
     parser.add_argument("--scope", choices=("transaction", "repository"))
+    parser.add_argument("--evidence-root")
+    parser.add_argument(
+        "--owner-key", action="append", default=[], metavar="OWNER=PATH"
+    )
+    parser.add_argument(
+        "--owner-key-sha256",
+        action="append",
+        default=[],
+        metavar="OWNER=sha256:...",
+    )
     parser.add_argument("--validator", default=str(Path(__file__).with_name("validate_graph.py")))
     parser.add_argument("--extension", help="Optional additive validator")
     parser.add_argument("--timeout-seconds", type=float, default=30.0)
@@ -58,9 +74,16 @@ def valid_envelope(payload, returncode, *, allow_coverage=False):
             and payload.get("status") == expected)
 
 
-def execute(command, timeout, *, allow_coverage=False):
+def execute(command, timeout, *, allow_coverage=False, environment=None):
     try:
-        process = subprocess.run(command, capture_output=True, text=True, check=False, timeout=timeout)
+        process = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout,
+            env=environment,
+        )
     except subprocess.TimeoutExpired:
         return None, None, ("validator_timeout", "validator timed out")
     except (OSError, subprocess.SubprocessError) as error:
@@ -76,9 +99,58 @@ def execute(command, timeout, *, allow_coverage=False):
     return process, payload, None
 
 
+def manifest_requests_application_authority(path):
+    if not path:
+        return False
+    try:
+        payload = load_authoritative_json(Path(path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError, RecursionError):
+        return False
+    return bool(
+        isinstance(payload, dict)
+        and type(payload.get("schema_version")) is int
+        and payload.get("schema_version") == 2
+    )
+
+
+def isolated_environment():
+    environment = {"PATH": os.defpath}
+    for name in ("SYSTEMROOT", "WINDIR"):
+        if name in os.environ:
+            environment[name] = os.environ[name]
+    return environment
+
+
 def main():
     args = parse_args()
     validator = Path(args.validator)
+    authority_requested = bool(
+        args.evidence_root
+        or args.owner_key
+        or args.owner_key_sha256
+        or manifest_requests_application_authority(args.manifest)
+    )
+    if authority_requested:
+        canonical_validator = Path(__file__).resolve().with_name("validate_graph.py")
+        try:
+            validator_identity = validator.lstat()
+            resolved_validator = validator.resolve(strict=True)
+        except OSError:
+            validator_identity = None
+            resolved_validator = None
+        if (
+            args.extension
+            or validator_identity is None
+            or resolved_validator != canonical_validator
+            or not stat.S_ISREG(validator_identity.st_mode)
+            or validator_identity.st_nlink != 1
+        ):
+            print(json.dumps(failure(
+                "authority_validator_override_forbidden",
+                "Application authority requires the canonical core validator and no extension.",
+            ), sort_keys=True))
+            return 2
+        validator = canonical_validator
     if not validator.is_file():
         print(json.dumps(failure("validator_unavailable", "core validator is unavailable"), sort_keys=True))
         return 2
@@ -90,14 +162,29 @@ def main():
     for flag, value in (("--manifest", args.manifest), ("--transaction", args.transaction)):
         if value:
             forwarded.extend((flag, value))
+    core_forwarded = list(forwarded)
+    if args.evidence_root:
+        core_forwarded.extend(("--evidence-root", args.evidence_root))
+    for value in args.owner_key:
+        core_forwarded.extend(("--owner-key", value))
+    for value in args.owner_key_sha256:
+        core_forwarded.extend(("--owner-key-sha256", value))
+    core_command = [sys.executable]
+    if authority_requested:
+        core_command.append("-I")
+    core_command.extend((str(validator), *core_forwarded))
     process, core, problem = execute(
-        [sys.executable, str(validator), *forwarded],
+        core_command,
         args.timeout_seconds,
         allow_coverage=True,
+        environment=isolated_environment() if authority_requested else None,
     )
-    if problem or process.returncode == 2:
-        payload = failure(*(problem or ("validator_execution_failed", "core validator returned exit 2")))
+    if problem:
+        payload = failure(*problem)
         print(json.dumps(payload, sort_keys=True))
+        return 2
+    if process.returncode == 2:
+        print(json.dumps(core, ensure_ascii=False, sort_keys=True))
         return 2
     diagnostics = list(core["diagnostics"])
     if args.extension:

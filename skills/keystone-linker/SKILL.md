@@ -156,7 +156,15 @@ request it without Coordinator permission because it has no repository source-wr
    rules and supported source/companion discovery, and runs lazily only when artifact context is needed.
    Resolve inline and adjacent companion metadata as one logical SourceUnit: companion-only uses the
    companion, inline-only uses inline metadata, and dual declarations fail with
-   `metadata_surface_conflict` instead of merging or applying implicit precedence.
+   `metadata_surface_conflict` instead of merging or applying implicit precedence. If a supported
+   source is not UTF-8, use a valid companion while binding both raw source and companion bytes; without
+   a companion, return `unsupported_encoding`. Generic adapters recognize only first-token line comments
+   outside strings, template literals, raw strings, heredocs, and block comments. Unterminated lexical
+   regions containing metadata-like text return `ambiguous_metadata_anchor`; they never create a declared
+   node or silently select the companion. When JavaScript or TypeScript source bytes contain both `${`
+   and a metadata-like first-token comment, do not infer its position: mark the entire source ambiguous
+   and require a companion because the bounded adapter does not claim a complete ECMAScript lexical-goal
+   parser.
 5. Cache failure returns fail-soft diagnostics and raw source results; it does not block orientation.
 6. Build an optional typed graph projection only for multi-hop, semantic-role, dependency,
    verification, or reuse queries. Broad similarity never creates a canonical edge.
@@ -181,8 +189,10 @@ request it without Coordinator permission because it has no repository source-wr
    typed relation.
    Interpret `depends_on` as source-to-target semantic evidence and keep `work_gates` as separate
    execution evidence. Prefer structured metadata over legacy HTML dependency evidence and report
-   conflicts. Create a legacy completion candidate only for a Work source; never reinterpret an
-   output artifact's flat `depends_on` as a Work gate.
+   conflicts. Canonical gate conditions use flat `condition.approval_state`; reject nested
+   `condition.approval`, flat/nested conflicts, and unknown gate/scope/condition fields. Create a legacy
+   completion candidate only for a Work source; never reinterpret an output artifact's flat `depends_on`
+   as a Work gate.
 6. Separate reuse candidates, test candidates, mechanical stale, semantic stale, and metadata gaps.
 7. Apply fail-soft handling when graph evidence is absent or sparse: return a partial report with
    inspected evidence, uninspectable areas, and gaps. Do not fail initialization, claim a missing
@@ -202,6 +212,19 @@ The trigger does not create or expand user-approved scope, Coordinator permissio
 or acceptance. A safe `not_required` conclusion needs a concrete graph-relevance reason tied to the
 changed locators and semantic summary; finalization records that outcome as `not_applicable`.
 
+Use the package-owned `scripts/run_graph_classification.py --root ROOT --manifest INPUT` entrypoint for
+authority-bearing classification. Its strict schema-v1 input binds the exact ordered delta set and its
+digest to the resolved repository root and a complete sorted delta-source coverage object. Its strict
+output records `required | not_applicable | deferred`, the same delta-set digest, the repository
+graph/source generation digest, inspected physical source/companion entries, per-locator exclusion
+evidence, reason codes, diagnostics, and summary. Every positive added-source exclusion maps its exact
+delta/locator indexes to the inspected source indexes and `added_plain_unowned_source`; an empty set uses
+`empty_delta_set` and no exclusion entries. A caller's `graph_relevant` flag is evidence, not authority. Document deltas, deletion,
+inline/companion metadata, current graph locator ownership, incomplete discovery, and indeterminate
+baseline state stay `required`. Without baseline source/graph evidence, `modified | type_replaced` is
+conservatively `required`; only an empty set or a provably added, baseline-absent, plain and unowned
+source can be `not_applicable`.
+
 1. Reconstruct the graph from canonical source metadata, never from a derived cache alone.
 2. Admit `declared` evidence. Admit `observed` evidence only after the owning surface confirms its
    meaning. Keep `inferred` evidence as a candidate and exclude it from canonical mutations.
@@ -212,6 +235,9 @@ changed locators and semantic summary; finalization records that outcome as `not
    body, UTF-8 baseline content (or null for an absent source), baseline digest, and expected-after
    digest so replay is independent of current source bytes. Each patch has one
    `author | main | coordinator` owner. Linker never applies a patch.
+   Every schema-v2 mutation has at least one required owning patch. A mutation-bearing patch cannot be
+   optional; optional patches are ancillary only, and a selected optional canonical meaning is planned
+   as a separate transaction.
 5. Move `proposed -> awaiting_attestation`. Each owner returns exactly one patch decision:
    `confirm | reject | needs_revision`, with evidence. Reject or revision makes the transaction
    `conflicted`; all required confirms make it `ready_to_apply`.
@@ -221,7 +247,10 @@ changed locators and semantic summary; finalization records that outcome as `not
 7. Resume partial application by comparing already-applied patches with their recorded resulting
    digests and remaining patches with their baselines. Never blindly reapply a successful patch.
 8. After apply, reconstruct from sources without cache and compare the result with the canonical
-   mutation. Run the bundled validator described in
+   mutation. Every actually applied patch, required or optional, has owner confirmation, a fresh
+   apply-time baseline check, and
+   `resulting_digest == expected_after_digest == current source digest`. An omitted ancillary optional
+   patch does not block completion. Run the bundled validator described in
    [references/graph-runtime.md](references/graph-runtime.md). Only complete required confirmations,
    apply results, matching reconstruction, and passing mechanical validation produce `verified`.
 9. A `conflicted` or `failed` transaction resumes through a new attempt with a new transaction ID and
@@ -312,8 +341,58 @@ Schema version 1 remains a read/validation compatibility wire for historical des
 schema version 2 and require every patch to be executable. Do not mix descriptive and executable
 patches, emit more than one patch for a physical `target_path`, or accept an applied
 `resulting_digest` that differs from the patch's `expected_after_digest`.
+Schema-v2 canonical mutations use the exact fields `operation`, `entity`, `before`, `after`, `evidence`,
+and `direct_relation_reason`; unknown or missing fields fail closed. Planner and direct-wire validation
+both recheck relation direction, lifecycle domain, bounded direct item-to-artifact reasons, mutation
+surface ownership, and required-patch realization. Final verification rechecks every applied patch,
+while an unapplied, unconfirmed ancillary optional remains outside terminal apply closure.
 Historical schema-v1 Coordinator reports may retain string locator evidence for diagnostic reading;
 schema-v2 authority-bearing deltas require canonical locator objects and do not auto-convert strings.
+
+### Owner-apply evidence validation
+
+Keep canonical graph transaction schema v2 unchanged. Standalone transaction validation, including a
+transaction inside graph-validation manifest schema v1, is structural/current-after evidence only. For
+a new authority-bearing application success, require canonical graph-validation manifest schema v2
+with exact required fields `schema_version`, `sources`, `transaction`, `application_evidence` and only
+optional `scope`, `coverage`. `application_evidence` is exactly `{path,digest}` under a disjoint external
+evidence root. Schema-v1 manifests remain readable historical/structural evidence and cannot authorize
+new Coordinator-v3 required graph sync.
+
+For manifest schema v2 authority validation, restore each applied physical surface's pre-application
+bytes from the authenticated receipt's full patch `baseline_content` and `baseline_digest`. Reconstruct
+the baseline GraphSnapshot with the same SourceUnit policy, require it to equal transaction
+`reconstruction.baseline`, and bind every node or relation mutation `before` sequentially to that
+snapshot. Without this receipt-bound baseline, standalone transaction-v2 validation remains
+structural/current-after evidence only.
+
+Compute `transaction_digest` only from the exact immutable plan projection `schema_version`,
+`transaction_id`, `scope_ref`, `input_deltas`, `canonical_mutations`, and `surface_patches`.
+`reconstruction` changes after apply and is excluded. Aggregate application-evidence schema v1 contains
+exactly `schema_version`, `transaction_id`, `transaction_digest`, `repository_root_digest`,
+`assignment_id`, `assignment_digest`, and ordered `{path,digest}` `receipts`. Require one confirmed owner
+receipt for every applied required or optional patch, in applied-result order, with no extras. An omitted
+ancillary optional has zero receipt.
+
+Use `scripts/run_graph_validation.py --root ROOT --manifest MANIFEST --evidence-root EVIDENCE_ROOT`
+with repeatable `--owner-key OWNER=PATH` and `--owner-key-sha256 OWNER=sha256:...`. It also accepts
+`--source`, `--transaction`, `--scope`, `--validator`, `--extension`, and `--timeout-seconds`; an inline
+schema-v2 transaction and `--transaction` must be equal. Authority validation pins the package core,
+forbids validator override/extension, and executes isolated Python. The core
+`scripts/validate_graph.py` accepts the same graph/evidence/key flags except runner-only `--validator`,
+`--extension`, and `--timeout-seconds`.
+
+Verify, but never create or edit, the aggregate, receipts, keys, transaction, or source. The receipt's
+exact subject signs transaction/assignment/phase/root/owner/scope fields; its body signs the request
+digest, receipt chain, nonce, evidence root, external pinned owner key, current Author or Coordinator
+package runner/runtime bytes, full transaction-v2 patch, `result: applied`, and resulting digest.
+Linker checks authoritative transaction/root/assignment/owner values and the shape/authentication of
+phase/scope/request fields; Coordinator reconstructs those fields from its assignment and phase chain
+before treating them as authority. Re-read the current target and require planned expected, transaction
+result, signed resulting, and current digests to agree. Applied owners need distinct external
+owner-private keys outside repository/evidence roots; see
+[references/graph-runtime.md](references/graph-runtime.md) for the exact request/receipt wire and
+trusted-host limits.
 
 ## Document Item Metadata
 
@@ -333,10 +412,13 @@ every sentence, bullet, or row. An existing independently meaningful item withou
 metadata-gap candidate when the available evidence shows it must be referenced, replaced, or
 verified separately.
 
-Resolve effective item metadata in this order: document, enclosing section, item. Inherit source
-authority, `governed_by`, and lifecycle. Compute effective `governed_by` as an ordered union of the
-parent effective set and child declarations; emit typed relations only for targets declared on that
-node. Child declarations must not silently expand source authority or approval. Never inherit `id`,
+Resolve effective item metadata in this order: document, enclosing section, item. Document-domain
+children inherit source authority, approval, `governed_by`, and lifecycle. Compute effective
+`governed_by` as an ordered union of the parent effective set and child declarations; emit typed
+relations only for targets declared on that node. An `output_artifact` child inherits none of those
+document fields and defaults to artifact lifecycle `active` unless it declares another artifact-domain
+state. An artifact-backed heading is not an inheritance parent for later document items. Child
+declarations must not silently expand source authority or approval. Never inherit `id`,
 `supersedes`, or `legacy_terms`. Preserve locators such as path, heading, list position, and visible
 row ID separately from stable identity.
 
@@ -653,8 +735,9 @@ Verify Linker behavior by checking:
 10. Ordinary pre-init repository orientation does not require Reader or Linker.
 11. Heading, list-item, and first-cell table-row metadata are parsed without conflating visible IDs
     with stable `key.id` values.
-12. Parent authority, `governed_by`, and lifecycle inheritance is applied while `id`, `supersedes`,
-    and `legacy_terms` remain item-local.
+12. Parent authority, approval, `governed_by`, and lifecycle inheritance is limited to document-domain
+    children; output artifacts keep artifact-domain metadata while `id`, `supersedes`, and
+    `legacy_terms` remain item-local.
 13. Partial decision replacement follows claim-level supersession and missing claim metadata is
     reported as a gap.
 14. Active legacy-term matches, historical matches, ambiguous matches, and removal contradictions

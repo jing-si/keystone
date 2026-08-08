@@ -112,7 +112,11 @@ def patch_owner_matches_surface(owner: PatchOwner, surface: PatchSurface,
     except ValueError:
         return False
     if surface == PatchSurface.DOCUMENT_METADATA:
-        return owner == PatchOwner.AUTHOR
+        return bool(
+            owner == PatchOwner.AUTHOR
+            and isinstance(target_path, str)
+            and target_path.lower().endswith((".md", ".markdown"))
+        )
     if surface in _REPOSITORY_PATCH_SURFACES:
         return owner in {PatchOwner.MAIN, PatchOwner.COORDINATOR}
     if surface != PatchSurface.COMPANION_METADATA or not isinstance(target_path, str):
@@ -328,6 +332,7 @@ class GraphTransaction:
     mechanical_validation: Tuple[Diagnostic, ...] = ()
     coverage_debt: Tuple[str, ...] = ()
     schema_version: int = SCHEMA_VERSION
+    _baseline_checks: Tuple[Any, ...] = ()
 
 
 @dataclass(frozen=True)

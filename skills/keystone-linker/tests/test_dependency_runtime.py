@@ -31,6 +31,94 @@ def gate(source, target, step="S01", *, optional=False):
 
 
 class DependencyRuntimeTest(unittest.TestCase):
+    def test_explicit_mapping_is_not_an_empty_gate_array(self):
+        gates, diagnostics = parse_work_gates(
+            {},
+            (),
+            "key.work.source",
+        )
+
+        self.assertFalse(gates)
+        self.assertEqual("work_gates_invalid", diagnostics[0][0])
+
+    def test_unknown_gate_and_scope_fields_are_rejected(self):
+        gates, diagnostics = parse_work_gates(
+            [{
+                "dependency": "key.work.target",
+                "applies_to": {
+                    "steps": ["S01"],
+                    "work_completion": False,
+                    "all_steps": True,
+                },
+                "condition": {
+                    "work_status": "complete",
+                    "approval_state": "accepted",
+                },
+                "optional": False,
+                "trusted": True,
+            }],
+            ["key.work.target"],
+            "key.work.source",
+        )
+
+        self.assertEqual(1, len(gates))
+        self.assertEqual(
+            {"work_gate_field_unknown", "work_gate_scope_field_unknown"},
+            {code for code, _message in diagnostics},
+        )
+        self.assertIn("work_gate_schema_invalid", gates[0].invalid_codes)
+
+    def test_legacy_nested_approval_condition_is_rejected(self):
+        gates, diagnostics = parse_work_gates(
+            [{
+                "dependency": "key.work.target",
+                "applies_to": {"steps": ["S01"], "work_completion": False},
+                "condition": {
+                    "work_status": "complete",
+                    "approval": {"state": "accepted"},
+                },
+                "optional": False,
+            }],
+            ["key.work.target"],
+            "key.work.source",
+        )
+
+        self.assertEqual(1, len(gates))
+        self.assertIn(
+            "work_gate_approval_schema_legacy",
+            {code for code, _message in diagnostics},
+        )
+        self.assertIn(
+            "work_gate_condition_invalid",
+            set(gates[0].invalid_codes),
+        )
+
+    def test_conflicting_flat_and_legacy_approval_conditions_are_rejected(self):
+        gates, diagnostics = parse_work_gates(
+            [{
+                "dependency": "key.work.target",
+                "applies_to": {"steps": ["S01"], "work_completion": False},
+                "condition": {
+                    "work_status": "complete",
+                    "approval_state": "accepted",
+                    "approval": {"state": "pending"},
+                },
+                "optional": False,
+            }],
+            ["key.work.target"],
+            "key.work.source",
+        )
+
+        self.assertEqual(1, len(gates))
+        self.assertIn(
+            "work_gate_condition_conflict",
+            {code for code, _message in diagnostics},
+        )
+        self.assertIn(
+            "work_gate_condition_invalid",
+            set(gates[0].invalid_codes),
+        )
+
     def test_legacy_html_dependency_is_retained_for_completion_candidate(self):
         parsed = parse_source(
             """<!-- keystone: id=key.work.source kind=work_order depends_on=key.work.target -->

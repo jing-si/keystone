@@ -75,6 +75,46 @@ class SourceHierarchyTest(unittest.TestCase):
         )
         self.assertEqual(self.parent.source_authority, result.node.source_authority)
 
+    def test_output_artifact_does_not_inherit_document_domain_metadata(self):
+        result = build_source_node(
+            {},
+            "key.code.feature",
+            NodeKind.OUTPUT_ARTIFACT,
+            ArtifactKind.CODE,
+            Locator("src/feature.py", symbol="run"),
+            "code_anchor",
+            self.parent,
+            "00_docs/standard.md",
+        )
+
+        self.assertEqual((), result.diagnostics)
+        self.assertEqual("active", result.node.lifecycle.value)
+        self.assertIsNone(result.node.approval_state)
+        self.assertEqual((), result.node.provenance.governed_by)
+        self.assertEqual((), result.node.source_authority)
+        self.assertEqual(self.parent.id, result.node.parent_id)
+
+    def test_output_artifact_uses_only_direct_artifact_metadata(self):
+        result = build_source_node(
+            {
+                "lifecycle": "deprecated",
+                "governed_by": ["key.standard.artifact"],
+                "_source_authority": {"owner": "repository"},
+            },
+            "key.code.feature",
+            NodeKind.OUTPUT_ARTIFACT,
+            ArtifactKind.CODE,
+            Locator("src/feature.py", symbol="run"),
+            "code_anchor",
+            self.parent,
+            "00_docs/standard.md",
+        )
+
+        self.assertEqual((), result.diagnostics)
+        self.assertEqual("deprecated", result.node.lifecycle.value)
+        self.assertEqual(("key.standard.artifact",), result.node.provenance.governed_by)
+        self.assertEqual((("owner", "repository"),), result.node.source_authority)
+
 
 if __name__ == "__main__":
     unittest.main()

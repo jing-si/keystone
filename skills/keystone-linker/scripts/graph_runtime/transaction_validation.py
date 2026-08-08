@@ -16,8 +16,12 @@ def snapshot_wire(snapshot: GraphSnapshot) -> Dict[str, Any]:
 
 
 # keystone: id=key.code.linker.graph-transaction-validator kind=output_artifact artifact_kind=code refs=key.standard.artifact.graph.transaction-wire locator.symbol=validate_transaction
-def validate_transaction(value: Any, root: Path = None,
-                         source_snapshot: GraphSnapshot = None) -> Tuple[Diagnostic, ...]:
+def validate_transaction(
+    value: Any,
+    root: Path = None,
+    source_snapshot: GraphSnapshot = None,
+    baseline_source_snapshot: GraphSnapshot = None,
+) -> Tuple[Diagnostic, ...]:
     if not isinstance(value, dict):
         return (diagnostic("transaction_shape_invalid", "transaction must be a JSON object"),)
     findings: List[Diagnostic] = []
@@ -36,5 +40,6 @@ def validate_transaction(value: Any, root: Path = None,
         transaction_input,
         evidence_result.evidence,
         source_snapshot,
+        baseline_source_snapshot,
     ))
     return tuple(findings)

@@ -24,6 +24,7 @@ from graph_runtime.reconciler import (  # noqa: E402
     AttemptHistory, begin_application, begin_attestation, new_attempt, record_application,
     record_attestation, resume_application, finalize_transaction,
 )
+from graph_runtime.application_evidence import application_plan_digest  # noqa: E402
 from graph_runtime.planner import PatchSpec, changed_seed_candidates, plan_graph_sync  # noqa: E402
 from graph_runtime.validator import reconstruct, validate_snapshot  # noqa: E402
 
@@ -56,8 +57,20 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
             raise AssertionError(process.stderr)
         cls.author_runner = (cls.codex_home / "skills" / "keystone-author" / "scripts"
                              / "run_finalization_validation.py")
+        cls.author_apply_runner = (
+            cls.codex_home / "skills" / "keystone-author" / "scripts"
+            / "run_owned_surface_apply.py"
+        )
+        cls.author_apply_runtime = (
+            cls.codex_home / "skills" / "keystone-author" / "scripts"
+            / "owned_surface_apply_runtime.py"
+        )
         cls.linker_runner = (cls.codex_home / "skills" / "keystone-linker" / "scripts"
                              / "run_graph_validation.py")
+        cls.linker_classification_runner = (
+            cls.codex_home / "skills" / "keystone-linker" / "scripts"
+            / "run_graph_classification.py"
+        )
         cls.reference_runtime = (cls.codex_home / "skills" / "keystone-linker" / "scripts"
                                  / "graph_runtime" / "readiness.py")
         cls.reference_contract = (cls.codex_home / "skills" / "keystone-linker" / "references"
@@ -182,6 +195,13 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
     def digest(path):
         return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else "absent"
 
+    @staticmethod
+    def json_digest(value):
+        raw = json.dumps(
+            value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        return "sha256:" + hashlib.sha256(raw).hexdigest()
+
     def execute_production_pipeline(self, initial, final, scope="R005/S04"):
         paths = sorted(set(initial) | set(final))
         for relative, content in initial.items():
@@ -275,9 +295,346 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
         self.assertEqual(0, process.returncode, process.stdout + process.stderr)
         self.assertEqual("pass", json.loads(process.stdout)["status"])
 
+    def test_installed_author_receipt_passes_installed_linker_authority_validation(self):
+        installed_runner = self.author_apply_runner.resolve(strict=True)
+        installed_runtime = self.author_apply_runtime.resolve(strict=True)
+        installed_linker = self.linker_runner.resolve(strict=True)
+        external_root = self.root.resolve(strict=True) / "installed-owner-apply"
+        repository = external_root / "repository"
+        evidence_root = external_root / "evidence"
+        request_root = evidence_root / "requests"
+        receipt_root = evidence_root / "receipts"
+        target = repository / "docs" / "owned.md"
+        target.parent.mkdir(parents=True)
+        request_root.mkdir(parents=True)
+        receipt_root.mkdir(parents=True)
+        before = b"# Before\n"
+        after = (
+            "---\n"
+            "key: {id: key.doc.installed-owner-apply, kind: source_document}\n"
+            "---\n"
+            "# After\n"
+        )
+        target.write_bytes(before)
+        authority_key = external_root / "author-apply.key"
+        authority_key.write_bytes(b"installed-author-owner-apply-key-material-32-bytes")
+        authority_key.chmod(0o600)
+
+        baseline_digest = "sha256:" + hashlib.sha256(before).hexdigest()
+        resulting_digest = (
+            "sha256:" + hashlib.sha256(after.encode("utf-8")).hexdigest()
+        )
+        delta = Delta(
+            DeltaKind.DOCUMENT,
+            "docs/owned.md",
+            (Locator("docs/owned.md"),),
+            "Apply installed Author-owned document metadata.",
+            baseline_digest,
+            True,
+        )
+        node = Node(
+            "key.doc.installed-owner-apply",
+            NodeKind.SOURCE_DOCUMENT,
+            ArtifactKind.NONE,
+            Locator("docs/owned.md"),
+            Lifecycle.ACTIVE,
+            Provenance(
+                surface="document_metadata",
+                locator=Locator("docs/owned.md"),
+            ),
+        )
+        baseline_snapshot = GraphSnapshot(schema_version=2)
+        resulting_snapshot = GraphSnapshot(nodes=(node,), schema_version=2)
+        planned = plan_graph_sync(
+            baseline_snapshot,
+            (delta,),
+            "R010/S03",
+            requested_nodes_after=(node,),
+            patch_specs=(PatchSpec(
+                PatchOwner.AUTHOR,
+                PatchSurface.DOCUMENT_METADATA,
+                "docs/owned.md",
+                baseline_digest,
+                after,
+                True,
+                "full_replacement",
+                after,
+                resulting_digest,
+                before.decode("utf-8"),
+            ),),
+        )
+        plan_digest = application_plan_digest(transaction_wire(planned))
+        verified = replace(
+            planned,
+            attestations=(SurfaceAttestation(
+                planned.surface_patches[0].patch_id,
+                PatchOwner.AUTHOR,
+                AttestationDecision.CONFIRM,
+                "Author confirmed the installed package patch.",
+            ),),
+            apply_results=(ApplicationResult(
+                planned.surface_patches[0].patch_id,
+                ApplicationStatus.APPLIED,
+                resulting_digest,
+                "Authenticated installed Author apply receipt.",
+            ),),
+            state=TransactionState.VERIFIED,
+            reconstruction=resulting_snapshot,
+        )
+        transaction = transaction_wire(
+            verified, baseline_snapshot=baseline_snapshot
+        )
+        self.assertEqual(plan_digest, application_plan_digest(transaction))
+        scope = {"allowed": ["docs"], "excluded": []}
+        request = {
+            "schema_version": 1,
+            "transaction_id": transaction["transaction_id"],
+            "transaction_digest": plan_digest,
+            "assignment_id": "assignment-installed-author-apply",
+            "assignment_digest": self.json_digest(
+                {"assignment": "installed-author-apply"}
+            ),
+            "phase_id": "worker",
+            "phase_baseline_snapshot_digest": self.json_digest(
+                {"snapshot": "installed-author-apply-baseline"}
+            ),
+            "phase_parent_evidence_digest": self.json_digest(
+                {"evidence": "installed-author-apply-parent"}
+            ),
+            "repository_root_digest": self.json_digest(
+                {"repository_root": str(repository.resolve(strict=True))}
+            ),
+            "owner": "author",
+            "scope": scope,
+            "scope_digest": self.json_digest(scope),
+            "prior_receipt_digest": "absent",
+            "patch": transaction["surface_patches"][0],
+        }
+        self.assertEqual(
+            application_plan_digest(transaction), request["transaction_digest"]
+        )
+        request_path = request_root / "author-apply-request.json"
+        request_path.write_bytes(
+            json.dumps(
+                request,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        )
+        receipt_path = receipt_root / "author-apply-receipt.json"
+
+        process = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                str(installed_runner),
+                "--root",
+                str(repository),
+                "--request",
+                str(request_path),
+                "--evidence-root",
+                str(evidence_root),
+                "--output",
+                str(receipt_path),
+                "--authority-key",
+                str(authority_key),
+                "--pinned-key-sha256",
+                self.digest(authority_key),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertEqual(0, process.returncode, process.stdout + process.stderr)
+        self.assertEqual("pass", json.loads(process.stdout)["status"])
+        self.assertEqual(after.encode("utf-8"), target.read_bytes())
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        self.assertEqual("applied", receipt["status"])
+        self.assertEqual(
+            {
+                field: request[field]
+                for field in (
+                    "transaction_id",
+                    "transaction_digest",
+                    "assignment_id",
+                    "assignment_digest",
+                    "phase_id",
+                    "phase_baseline_snapshot_digest",
+                    "phase_parent_evidence_digest",
+                    "repository_root_digest",
+                    "owner",
+                    "scope_digest",
+                )
+            },
+            receipt["subject"],
+        )
+        self.assertEqual(
+            self.digest(installed_runner),
+            receipt["receipt"]["runner_executable_digest"],
+        )
+        self.assertEqual(
+            self.digest(installed_runtime),
+            receipt["receipt"]["runtime_digest"],
+        )
+
+        aggregate = {
+            "schema_version": 1,
+            "transaction_id": transaction["transaction_id"],
+            "transaction_digest": plan_digest,
+            "repository_root_digest": request["repository_root_digest"],
+            "assignment_id": request["assignment_id"],
+            "assignment_digest": request["assignment_digest"],
+            "receipts": [{
+                "path": receipt_path.relative_to(evidence_root).as_posix(),
+                "digest": self.digest(receipt_path),
+            }],
+        }
+        aggregate_path = evidence_root / "application-evidence.json"
+        aggregate_path.write_bytes(
+            json.dumps(
+                aggregate,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        )
+        graph_manifest = {
+            "schema_version": 2,
+            "sources": ["docs/owned.md"],
+            "transaction": transaction,
+            "application_evidence": {
+                "path": aggregate_path.relative_to(evidence_root).as_posix(),
+                "digest": self.digest(aggregate_path),
+            },
+        }
+        graph_manifest_path = evidence_root / "graph-validation.json"
+        graph_manifest_path.write_bytes(
+            json.dumps(
+                graph_manifest,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        )
+
+        linker_process = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                str(installed_linker),
+                "--root",
+                str(repository),
+                "--manifest",
+                str(graph_manifest_path),
+                "--evidence-root",
+                str(evidence_root),
+                "--owner-key",
+                "author=%s" % authority_key,
+                "--owner-key-sha256",
+                "author=%s" % self.digest(authority_key),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertEqual(
+            0,
+            linker_process.returncode,
+            linker_process.stdout + linker_process.stderr,
+        )
+        linker_payload = json.loads(linker_process.stdout)
+        self.assertEqual("pass", linker_payload["status"], linker_payload)
+        self.assertEqual(0, linker_payload["summary"]["errors"])
+
     def test_temporary_install_contains_internal_reference_index_package(self):
         self.assertTrue(self.reference_runtime.is_file())
         self.assertTrue(self.reference_contract.is_file())
+        self.assertTrue(self.linker_classification_runner.is_file())
+        classification = subprocess.run(
+            [sys.executable, str(self.linker_classification_runner), "--help"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(
+            0,
+            classification.returncode,
+            classification.stdout + classification.stderr,
+        )
+        classification_root = self.root / "classification-repository"
+        source = classification_root / "src" / "installed-classification.py"
+        source.parent.mkdir(parents=True)
+        source.write_text("value = 1\n", encoding="utf-8")
+        delta = {
+            "kind": "artifact_delta",
+            "source_surface": "src/installed-classification.py",
+            "change_kind": "added",
+            "changed_locators": [{"path": "src/installed-classification.py"}],
+            "semantic_summary": "Verify the installed classifier with actual input.",
+            "baseline_digest": "absent",
+            "resulting_digest": self.digest(source),
+            "graph_relevant": False,
+        }
+        sources = [delta["source_surface"]]
+        manifest_value = {
+            "schema_version": 1,
+            "delta_set_digest": self.json_digest([delta]),
+            "deltas": [delta],
+            "source_context": {
+                "repository_root_digest": self.json_digest(
+                    str(classification_root.resolve())
+                ),
+                "coverage": {
+                    "mode": "delta_set",
+                    "complete": True,
+                    "source_count": 1,
+                    "source_path_digest": self.json_digest(sources),
+                },
+                "sources": sources,
+            },
+        }
+        classification_manifest = self.root / "installed-classification.json"
+        classification_manifest.write_text(
+            json.dumps(
+                manifest_value,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ),
+            encoding="utf-8",
+        )
+        classification = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                str(self.linker_classification_runner),
+                "--root",
+                str(classification_root),
+                "--manifest",
+                str(classification_manifest),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(
+            0,
+            classification.returncode,
+            classification.stdout + classification.stderr,
+        )
+        classification_output = json.loads(classification.stdout)
+        self.assertEqual(
+            "not_applicable",
+            classification_output["disposition"],
+            classification_output,
+        )
+        self.assertEqual(
+            "added_plain_unowned_source",
+            classification_output["exclusion_evidence"][0]["reason_code"],
+        )
         self.assertFalse((self.codex_home / "bin" / "keystone-index").exists())
         process = subprocess.run(
             [sys.executable, "-c", (

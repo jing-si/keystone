@@ -237,6 +237,15 @@ inline declaration만 있으면 inline surface를 사용한다. 두 surface가 �
 가지면 merge하거나 임의 precedence를 적용하지 않고 `metadata_surface_conflict`로 실패한다.
 Companion을 선택한 경우에도 logical identity는 원본 source이고 physical patch·generation digest는
 companion을 포함한 실제 byte surface에 결속한다.
+Supported 확장자의 source가 UTF-8 decode에 실패해도 valid companion이 있으면 원본 raw bytes와
+companion bytes를 함께 캡처한 뒤 companion을 canonical surface로 사용한다. Companion이 없을 때만
+`unsupported_encoding`으로 실패한다. Generic language anchor는 string, template literal, raw
+string, heredoc과 block comment를 제외한 실제 line comment의 첫 유효 token만 declared metadata로
+읽는다. Metadata-like text가 unterminated lexical construct 안에 있어 경계를 확정할 수 없으면
+`ambiguous_metadata_anchor`로 남기고 declared node를 만들거나 companion precedence를 적용하지
+않는다. 완전한 ECMAScript lexical-goal 판정이 필요한 JavaScript/TypeScript source에서 `${`
+bytes와 metadata-like first-token comment bytes가 함께 발견되면 위치를 추론하지 않고 source
+전체를 ambiguous로 처리하며, inline declaration으로 승격하지 않고 companion surface를 요구한다.
 
 Companion file은 `schema_version: 1`, `source`, `nodes`, `relations`를 가진 UTF-8 JSON object다.
 `source`는 `{path: <repository-relative-path>, surface: <surface-kind>, baseline_digest:
@@ -250,6 +259,27 @@ serializer는 key를 lexicographic order로 쓰고 불필요한 whitespace를 �
 Generated reverse index와 cache는 선택적·파생·비권위 artifact다. Cache miss는 source를 다시
 parse하며, cache와 source가 다르면 cache를 폐기한다. Cache는 transaction state, attestation,
 apply result 또는 acceptance evidence를 대신하지 않는다.
+
+<!-- key: id=key.standard.artifact.graph.classification-wire refs=key.role.linker key.role.coordinator key.topic.verification -->
+## Graph synchronization classification wire
+
+Authority-bearing `not_applicable`은 package-owned Linker
+`scripts/run_graph_classification.py`의 fresh 실행에 결속한다. Schema-v1 input은 exact ordered
+artifact/document delta array, 그 `delta_set_digest`, resolved repository root digest와 complete
+sorted delta-source coverage의 source count/path digest를 가진다. Output은 exact field set
+`schema_version`, `status`, `disposition`, `delta_set_digest`, `source_generation_digest`,
+`inspected_sources`, `exclusion_evidence`, `reason_codes`, `diagnostics`, `summary`를 사용한다.
+Positive added-source exclusion은 모든 exact delta/locator index를 해당 source/companion의
+`inspected_sources` index와 `added_plain_unowned_source` reason에 결속한다. Empty delta set만
+`empty_delta_set`과 빈 exclusion array를 사용한다.
+
+Caller의 `graph_relevant` 값은 evidence일 뿐 authority가 아니다. Linker는 inline/companion
+metadata, document delta, deletion, current repository graph의 locator ownership과 discovery
+completeness를 직접 검사한다. Baseline bytes/graph evidence가 없는 `modified | type_replaced`는
+마지막 anchor 제거를 배제할 수 없으므로 `required`다. Empty delta set 또는 baseline이 `absent`인
+새 plain/unowned source만 `not_applicable` positive lane을 사용할 수 있다. Recorded input/output은
+canonical raw-byte digest에 결속하고 Coordinator는 동일 delta/current generation으로 package runner를
+다시 실행해 exact output을 비교한다.
 
 <!-- key: id=key.standard.artifact.graph.transaction-wire refs=key.topic.artifact-graph key.topic.verification key.topic.work-recovery -->
 ## Synchronization transaction wire and state machine
@@ -307,6 +337,14 @@ patch만 attestation한다. `reject`는 proposal과 source evidence가 양립하
 `conflicted`, `needs_revision`은 Linker 재계획을 요구한다. Apply 직전 baseline이 다르면 patch를
 쓰지 않고 `stale_baseline`으로 기록한다. Apply 결과는 `applied | failed | stale_baseline`만 쓴다.
 Schema v2의 `applied.resulting_digest`는 해당 patch의 `expected_after_digest`와 정확히 같아야 한다.
+Schema-v2 canonical mutation object는 `operation`, `entity`, `before`, `after`, `evidence`,
+`direct_relation_reason` exact field set만 사용한다. 모든 canonical mutation은 적어도 하나의
+required owning patch로 실현해야 하고 mutation-bearing optional patch는 금지한다. Optional은
+canonical after-state를 바꾸지 않는 ancillary patch로만 남기며 선택적 canonical mutation은 별도
+transaction으로 계획한다. 미적용 ancillary optional은 completion을 막지 않는다. 실제 적용한
+required/optional patch는 모두 owner `confirm`, apply 직전 baseline 확인과
+`resulting_digest == expected_after_digest == current source digest`를 만족하고 final verification에서
+다시 검사한다.
 
 허용 전이는 다음과 같다.
 
@@ -325,7 +363,7 @@ Schema v2의 `applied.resulting_digest`는 해당 patch의 `expected_after_diges
    요구한다.
 
 `verified`는 모든 required patch의 `confirm`, apply 직전 baseline 일치, 모든 required result의
-`applied`, 각 resulting digest와 planned expected-after digest의 일치, Linker의 source 재구성
+`applied`, 실제 applied된 모든 patch의 confirm과 resulting/expected/current digest 일치, Linker의 source 재구성
 결과가 canonical mutation과 일치함, mechanical validator
 통과가 모두 있을 때만 terminal success다. 일부 patch 적용 뒤 중단되면 `partially_applied`로
 남기고 이미 적용한 result/digest를 보존한다. Resume은 current digest와 recorded resulting
@@ -333,6 +371,172 @@ digest가 같은 patch는 재적용하지 않고, 남은 patch baseline을 다�
 missing target 또는 removed node를 가리키는 active relation은 validator error다. Retired ID를
 history/provenance가 참조하는 것은 허용하지만 active semantic relation은 replacement를 명시하거나
 제거해야 한다.
+
+<!-- key: id=key.standard.artifact.graph.application-evidence-wire refs=key.role.linker key.role.author key.role.coordinator key.topic.verification -->
+## External application authority and receipt wire
+
+Canonical graph transaction schema v2는 위 wire 그대로 유지한다. Standalone `transaction` 또는
+schema-v1 graph-validation manifest 검증은 transaction shape, replay, recorded result와 current
+after-state를 확인하는 structural/current-state evidence일 뿐 새 apply authority success가 아니다.
+새 authority-bearing graph sync는 canonical raw-byte graph-validation manifest schema v2와 아래
+external package-owned application evidence가 모두 통과해야 한다. Manifest v2의 exact required
+field는 `schema_version`, `sources`, `transaction`, `application_evidence`이고 `scope`, `coverage`만
+optional이다. `application_evidence`는 external evidence root 아래 aggregate의 exact
+`{path, digest}` reference다. Manifest schema v1은 historical/structural validation에 계속 읽히지만
+Coordinator schema v3의 새 `required` graph-sync success를 authorize할 수 없다.
+
+`transaction_digest`는 apply 뒤 변하는 transaction field를 포함하지 않는다. 다음 exact immutable
+plan projection의 canonical JSON SHA-256이다.
+
+```yaml
+application_plan:
+  schema_version:
+  transaction_id:
+  scope_ref:
+  input_deltas:
+  canonical_mutations:
+  surface_patches:
+```
+
+Aggregate application evidence schema v1의 exact field set은 다음과 같다. `receipts`는 transaction의
+`apply_results`에서 `result: applied`인 항목 순서와 같고 각 항목은 exact `{path, digest}`다.
+
+```yaml
+application_evidence:
+  schema_version: 1
+  transaction_id:
+  transaction_digest:
+  repository_root_digest:
+  assignment_id:
+  assignment_digest:
+  receipts:
+    - path:
+      digest:
+```
+
+Applied required patch와 applied optional patch는 각각 정확히 한 owner `confirm`, 한 apply result와
+한 authenticated receipt를 가져야 한다. Applied patch나 receipt를 더 넣거나 순서를 바꾸거나 같은
+patch/receipt/nonce를 재사용할 수 없다. Omitted ancillary optional patch는 applied result와 receipt를
+각각 0개 가지며 success를 막지 않는다. Receipt chain의 첫 `prior_receipt_digest`는 `absent`, 이후
+값은 직전 receipt canonical raw bytes의 digest다.
+
+각 owner runner는 external evidence root 안의 다음 exact canonical request schema v1을 한 번에
+검사하고 target을 쓰고 receipt를 만든다. Request는 normalized descendant의 canonical JSON
+single-link regular file이고 no-follow path로 읽는다. Output도 evidence root 안의 normalized
+descendant이며 기존 path를 덮지 않고 owner-private O_EXCL single-link file로 reserve한다.
+`scope`는 sorted unique normalized selector의 exact `{allowed, excluded}`이며 `allowed`는 비어
+있지 않다. `patch`는 transaction v2
+`surface_patches` 항목의 full exact projection이다.
+
+```yaml
+owner_apply_request:
+  schema_version: 1
+  transaction_id:
+  transaction_digest:
+  assignment_id:
+  assignment_digest:
+  phase_id:
+  phase_baseline_snapshot_digest:
+  phase_parent_evidence_digest:
+  repository_root_digest:
+  owner: author | main | coordinator
+  scope:
+    allowed: []
+    excluded: []
+  scope_digest:
+  prior_receipt_digest:
+  patch:
+    patch_id:
+    owner:
+    surface:
+    target_path:
+    baseline_digest:
+    baseline_content:
+    exact_patch:
+    patch_format:
+    patch_body:
+    expected_after_digest:
+    required:
+```
+
+Owner receipt envelope schema v1의 exact wire는 다음과 같다.
+
+```yaml
+schema_version: 1
+producer: keystone-owned-surface-apply
+status: applied
+subject:
+  transaction_id:
+  transaction_digest:
+  assignment_id:
+  assignment_digest:
+  phase_id:
+  phase_baseline_snapshot_digest:
+  phase_parent_evidence_digest:
+  repository_root_digest:
+  owner:
+  scope_digest:
+receipt:
+  schema_version: 1
+  trust_model: trusted-host-hmac-sha256
+  command_id: keystone-owned-surface-apply-v1
+  runner_executable_digest:
+  runtime_digest:
+  evidence_root_digest:
+  request_digest:
+  prior_receipt_digest:
+  nonce:
+  authority_key_fingerprint:
+  patch_receipt:
+    patch: <full exact transaction-v2 patch projection>
+    result: applied
+    resulting_digest:
+  mac:
+```
+
+Author package entrypoint는 `owner: author`만 받으며 `.md | .markdown`의 `document_metadata`와 그
+document의 `companion_metadata`만 쓴다. Coordinator package entrypoint는
+`owner: main | coordinator`만 받으며 `code_anchor | config_anchor | schema_anchor | api_anchor |
+test_anchor`와 non-document source의 `companion_metadata`만 쓴다. Receipt의
+`runner_executable_digest`와 `runtime_digest`는 해당 owner lane의 현재 package bytes와 같아야 한다.
+
+Runner는 target의 observed presence/raw-byte digest가 planned baseline과 같은지 write 직전에
+확인하고, exact patch를 replay해 expected bytes를 계산한다. Target의 모든 path component는
+no-follow로 열고 present leaf는 single-link regular file이어야 한다. Held parent identity와 live
+root-relative parent를 publish 전후에 비교한다. Existing target은 same-directory atomic exchange로
+publication 시점의 displaced entry를 보존하고 그 exact bytes/type/identity가 planned baseline인지
+검증하며, 해당 OS/filesystem primitive가 없으면 `atomic_exchange_unavailable`로 fail-closed한다.
+Absent target은 no-clobber publication을 사용한다. Target을 다시 읽어
+`receipt resulting_digest == patch expected_after_digest`를 확인한 뒤에만 O_EXCL receipt를
+완성한다. Publish 뒤 target 또는 경로 generation이 달라지거나 receipt write가 실패하면 안전한
+rollback을 시도하고 receipt를 남기지 않는다. Rollback과 receipt cleanup은 public name을 바로
+unlink하지 않고 same-directory high-entropy quarantine으로 atomic no-replace 이동한다. 이동된 entry가
+기록된 runner-owned identity/bytes/mode와 일치할 때만 private name을 삭제하며, 불일치는 public name으로
+복구하거나 recovery artifact로 보존하고 `rollback_failed`로 fail-closed한다. Linker는
+receipt/HMAC/package identity와 current
+target equality를 read-only로 재검증하며 어떤 source나 receipt도 쓰지 않는다.
+
+Graph-validation manifest schema v2에서 Linker는 검증된 receipt의 full patch
+`baseline_content`와 `baseline_digest`로 applied physical surface의 pre-application bytes를 복원한다.
+같은 SourceUnit 선택 정책으로 baseline GraphSnapshot을 재구성하고 transaction
+`reconstruction.baseline`과 일치하는지 확인한 뒤, node와 relation mutation의 `before`를 순서대로
+그 baseline에 적용한다. Receipt-bound baseline이 없는 standalone transaction-v2 검증은
+structural/current-after evidence일 뿐 pre-application graph authority를 증명하지 않는다.
+
+Linker layer는 signed phase/scope/request field의 shape와 HMAC을 확인하지만 그 값의 authoritative
+source를 추정하지 않는다. Coordinator schema v3는 immutable assignment, allowed/excluded actor
+scope, pre/post phase baseline과 parent evidence, same-phase graph-relevant actor delta에서 full request를
+재구성해 `request_digest`, subject와 aggregate assignment를 비교한다. Linker pass만으로 이
+Coordinator binding을 대신할 수 없다.
+
+Applied owner마다 외부에서 pinned한 서로 다른 HMAC key가 필요하다. Key는 repository와 evidence
+root 밖의 absolute path에 있고 path component에 symlink가 없으며 OS current user 소유의
+single-link regular file, owner-only mode, raw 32 bytes 이상이어야 한다. Receipt MAC은 exact unsigned
+envelope/body와 full patch, request/phase/scope/assignment/root/transaction bindings, nonce, prior
+receipt, evidence-root digest, owner key fingerprint와 package runner/runtime byte digests를
+authenticate한다. 이 trusted-host model은 protected-key possession과 exact signed bytes를 증명하지만
+독립 binary 실행, 외부 clock, OS-user 또는 조직 identity, receipt 이후의 별도 authorized write까지
+증명하지 않는다.
 
 <!-- key: id=key.standard.artifact.graph.change-lifecycle refs=key.topic.artifact-graph key.topic.keystone-metadata key.topic.verification -->
 ## Rename, removal, compatibility and coverage
@@ -487,6 +691,11 @@ term과 일반 typed relation은 상속하지 않는다. Item lifecycle이 부�
 계산한다. 새 governing target은 제약 추가이며 authority expansion이 아니다. Typed
 `governed_by` relation은 각 node가 직접 선언한 target만 emit하고 inherited target을 child
 relation으로 복제하지 않는다.
+이 상속은 document lifecycle domain의 child에만 적용한다. Document 안에 선언된
+`output_artifact`는 parent의 lifecycle, approval, source authority 또는 `governed_by`를 상속하지
+않고, 직접 선언이 없으면 artifact lifecycle `active`를 사용한다. Output artifact가 Markdown
+heading locator를 사용해도 이후 document item의 inheritance parent가 되지 않으며, 이후 item은
+가장 가까운 document-domain section 또는 document root를 따른다.
 
 결정 전체가 하나의 대체 단위이면 `key.decision.*`를 사용한다. 결정의 일부 의미만 후속 결정이
 대체하고 나머지는 유지하면 그 부분을 `key.claim.*`으로 분리하고 새 claim에서 이전 claim으로
@@ -634,8 +843,7 @@ work_gates:
       work_completion: true
     condition:
       work_status: complete
-      approval:
-        state: accepted
+      approval_state: accepted
     optional: false
 ```
 
@@ -645,8 +853,12 @@ work_gates:
 3. `applies_to.steps`는 gate가 적용되는 source step ID 목록, `work_completion`은 source work
    종료 적용 여부다. 둘 중 하나 이상을 명시한다.
 4. 기본 required gate는 `condition.work_status: complete`와
-   `condition.approval.state: accepted`를 모두 요구한다. 실행 완료와 Main acceptance 중 하나만
+   `condition.approval_state: accepted`를 모두 요구한다. `condition.approval.state` legacy
+   shape나 flat/legacy 상충 조건은 신규 canonical source에서 fail-closed로 거절한다. 실행 완료와
+   Main acceptance 중 하나만
    충족하면 `waiting`이며 project가 명시적으로 확장하지 않으면 이 조합을 사용한다.
+   Gate, `applies_to`와 `condition`은 각각 canonical field set 밖의 unknown field를 거절하고,
+   명시적인 empty gate collection은 `{}`가 아니라 `[]`로 쓴다.
 5. `optional: true`는 target 미충족을 blocking으로 사용하지 않는다는 뜻이지 relation이나
    검증을 삭제한다는 뜻이 아니다.
 6. Legacy `<!-- keystone: depends_on=... -->`은 structured metadata가 없을 때만 relation

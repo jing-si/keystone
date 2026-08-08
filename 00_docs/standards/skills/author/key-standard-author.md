@@ -421,8 +421,25 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
     반드시 해당 `R\d+` active round와 일치해야 한다. Acceptance event Round는 terminal
     `active_round: none`과 독립적으로 accepted Step ref에서 복구한다.
 
+Package runner의 exact finalization flag surface는 `--root`, `--manifest`, `--validator`,
+`--extension`, `--graph-runner`, `--graph-evidence-root`, repeatable
+`--graph-owner-key OWNER=PATH`, repeatable `--graph-owner-key-sha256 OWNER=sha256:...`,
+`--timeout-seconds`다. Required finalization이 graph-validation manifest schema v2를 가리키면
+`--graph-evidence-root`가 필수이고 graph owner key bindings를 isolated package Linker runner로
+전달한다. Graph-validation schema v1과 standalone canonical transaction v2는
+historical/structural/current-after evidence로 읽을 수 있지만 신규 Coordinator-v3 required graph-sync authority를
+만들 수 없다. Post-acceptance Coordinator는 동일 evidence root와 owner binding을 Author runner의
+graph-prefixed flags로 전달하며 Author는 이를 추정하거나 약화하지 않는다.
+
 <!-- key: id=key.standard.skill.author.graph-synchronization refs=key.role.author key.role.linker key.topic.artifact-graph key.topic.keystone-metadata key.topic.change-set -->
 ## Document delta와 graph synchronization
+
+승인 범위의 일반적인 단일 문서 semantic/progress/finalization 수정은 coordinated multi-surface
+sync가 필요하지 않으면 Author normal direct-write lane에 남는다. Document delta 기록 또는 index
+refresh만으로 owner-apply receipt를 요구하지 않는다. Linker가 graph synchronization을 `required`로
+분류하고 exact Author-owned transaction-v2 patch를 제공했을 때만 external application-evidence lane에
+들어간다. Author는 transaction을 만들거나 scope를 확대하거나 direct-edit evidence를 apply
+authority로 바꾸지 않는다.
 
 1. Author가 승인 범위에서 문서 의미나 독립 metadata item을 변경하면 path, locator, semantic
    summary와 raw-byte SHA-256 baseline을 가진 `document_delta`를 만든다.
@@ -433,8 +450,9 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
    새 typed relation을 독자적으로 확정하거나 Linker mutation을 재해석하지 않는다.
 4. Author는 Linker가 제안한 자기 surface의 exact patch를 문서 의미와 대조하고 patch별로
    `confirm | reject | needs_revision`과 evidence를 반환한다. 다른 surface를 attest하지 않는다.
-5. `confirm`된 required patch만 apply한다. Apply 직전 source의 UTF-8 raw bytes SHA-256이
-   `baseline_digest`와 다르면 쓰지 않고 `stale_baseline`을 반환한다.
+5. Required patch는 모두 `confirm` 뒤 apply하고, ancillary optional은 선택해 apply할 때 반드시
+   `confirm`한다. Apply 직전 source의 UTF-8 raw bytes SHA-256이 `baseline_digest`와 다르면 쓰지
+   않고 `stale_baseline`을 반환한다.
 6. Apply 결과는 `applied | failed | stale_baseline`과 resulting digest를 기록한다. 일부 성공은
    숨기지 않고 transaction을 `partially_applied`로 복구 가능하게 남긴다.
 7. Rename/move에서 의미가 같으면 stable ID를 유지하고 locator만 바꾼다. 의미 변경·removal은
@@ -443,6 +461,34 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
    수렴한다. 기존 corpus를 bulk migration하지 않는다.
 9. Author write 뒤 Linker가 source를 재구성하고 validator가 기계 검사를 할 때까지 Author는
    transaction을 `verified`나 finalization `complete`로 선언하지 않는다.
+
+Required transaction의 confirmed Author patch는 package-owned `scripts/run_owned_surface_apply.py`와
+exact flags `--root ROOT`, `--request REQUEST`, `--evidence-root EVIDENCE_ROOT`, `--output RECEIPT`,
+`--authority-key KEY`, `--pinned-key-sha256 sha256:...`로만 apply한다. Canonical
+owner-apply request schema v1 exact fields는 `schema_version`, `transaction_id`,
+`transaction_digest`, `assignment_id`, `assignment_digest`, `phase_id`,
+`phase_baseline_snapshot_digest`, `phase_parent_evidence_digest`, `repository_root_digest`, `owner`,
+`scope`, `scope_digest`, `prior_receipt_digest`, `patch`다. `scope`는 exact `{allowed, excluded}`이고
+`patch`는 full exact transaction-v2 patch object다. Author package runner는 `owner: author`와
+`.md | .markdown`의 `document_metadata` 또는 해당 document의 `companion_metadata`만 받고 baseline
+check→atomic publish→reread→O_EXCL receipt를 한 operation으로 수행한다. Failure/stale/rollback은
+receipt를 남기지 않으며 diagnostic pass/fail/error와 exit `0/1/2`가 일치한다. Existing target은
+same-directory atomic exchange로 displaced live entry를 baseline과 비교하고, 지원 primitive가 없으면
+`atomic_exchange_unavailable` error로 source와 receipt를 만들지 않는다. Rollback/receipt cleanup은
+public name을 직접 unlink하지 않고 same-directory high-entropy quarantine으로 atomic no-replace 이동한
+뒤 기록된 runner-owned identity/bytes/mode와 일치하는 private entry만 삭제한다. 불일치는 원래 public
+name으로 복구하거나 recovery artifact로 보존하고 `rollback_failed`로 닫는다.
+
+Applied required/optional patch마다 exactly one owner confirm/result/receipt가 필요하고 omitted
+ancillary optional은 모두 0개다. Signed receipt는 immutable transaction plan, assignment,
+pre-acceptance 또는 post-acceptance phase/parent, repository root, exact owner scope, full patch,
+request, raw receipt chain, nonce, evidence root, external pinned Author key와 current package
+runner/runtime bytes를 결속한다. Owner key는 repository/evidence root 밖 absolute symlink-free path의
+current-user-owned, owner-only, single-link regular file이며 raw 32 bytes 이상이다. Trusted-host HMAC은
+exact signed bytes와 protected-key possession을 증명하지만 independent execution, external clock,
+OS-user/organization identity 또는 이후 authorized write를 증명하지 않는다. Linker는 source-write-free
+verifier이고 Coordinator는 신규 v3 authority 전에 signed assignment/phase/scope/delta를 authoritative
+closure evidence와 비교한다.
 
 ```yaml
 document_delta:

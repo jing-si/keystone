@@ -160,6 +160,23 @@ class TransactionWireValidationTest(unittest.TestCase):
                 self.assertFalse(is_mechanical_envelope(
                     dict(passing, schema_version=invalid_version)
                 ))
+        for field in ("errors", "warnings"):
+            with self.subTest(boolean_summary=field):
+                invalid = dict(passing, summary=dict(passing["summary"]))
+                invalid["summary"][field] = False
+                self.assertFalse(is_mechanical_envelope(invalid))
+        unknown_diagnostic = dict(
+            passing,
+            status="fail",
+            diagnostics=[{
+                "code": "bad",
+                "message": "bad",
+                "severity": "error",
+                "trusted": True,
+            }],
+            summary={"errors": 1, "warnings": 0},
+        )
+        self.assertFalse(is_mechanical_envelope(unknown_diagnostic))
 
     def test_mutation_delta_applies_canonical_add_without_mutating_baseline(self):
         baseline = graph_snapshot_wire(GraphSnapshot())

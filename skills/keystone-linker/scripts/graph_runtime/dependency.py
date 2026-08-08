@@ -87,7 +87,7 @@ class DependencySource:
 
 def parse_work_gates(raw, declared_dependencies: Sequence[str], source_id: str):
     """Parse canonical work_gates and return gates plus stable diagnostic tuples."""
-    if raw in (None, {}):
+    if raw is None:
         return (), ()
     if not isinstance(raw, list):
         return (), (("work_gates_invalid", "work_gates must be an array"),)
@@ -108,6 +108,14 @@ def parse_work_gates(raw, declared_dependencies: Sequence[str], source_id: str):
         generated_id = "%s#gate-%03d" % (source_id, index + 1)
         gate_id = item.get("id", generated_id)
         invalid_codes = []
+        for field in sorted(
+            set(item) - {"id", "dependency", "applies_to", "condition", "optional"}
+        ):
+            diagnostics.append((
+                "work_gate_field_unknown",
+                "work_gates[%d] field is unknown: %s" % (index, field),
+            ))
+            invalid_codes.append("work_gate_schema_invalid")
         if not isinstance(gate_id, str) or not gate_id.strip():
             diagnostics.append(("work_gate_id_invalid",
                                 "work_gates[%d] id must be a non-empty string" % index))
@@ -115,6 +123,20 @@ def parse_work_gates(raw, declared_dependencies: Sequence[str], source_id: str):
             invalid_codes.append("work_gate_id_invalid")
         applies = item.get("applies_to", {})
         condition = item.get("condition", {})
+        if isinstance(applies, dict):
+            for field in sorted(set(applies) - {"steps", "work_completion"}):
+                diagnostics.append((
+                    "work_gate_scope_field_unknown",
+                    "work_gates[%d] applies_to field is unknown: %s"
+                    % (index, field),
+                ))
+                invalid_codes.append("work_gate_schema_invalid")
+        else:
+            diagnostics.append((
+                "work_gate_scope_invalid",
+                "work_gates[%d] applies_to must be a mapping" % index,
+            ))
+            invalid_codes.append("work_gate_scope_invalid")
         steps = applies.get("steps", ()) if isinstance(applies, dict) else ()
         work_completion = applies.get("work_completion", False) if isinstance(applies, dict) else False
         optional = item.get("optional", False)
@@ -133,12 +155,27 @@ def parse_work_gates(raw, declared_dependencies: Sequence[str], source_id: str):
 
         work_status = condition.get("work_status") if isinstance(condition, dict) else None
         approval_state = condition.get("approval_state") if isinstance(condition, dict) else None
-        legacy_approval = condition.get("approval", {}) if isinstance(condition, dict) else {}
+        legacy_present = isinstance(condition, dict) and "approval" in condition
+        legacy_approval = condition.get("approval", {}) if legacy_present else {}
         legacy_approval_state = (legacy_approval.get("state")
                                  if isinstance(legacy_approval, dict) else None)
-        if approval_state is None:
-            approval_state = legacy_approval_state
-        elif legacy_approval_state is not None and legacy_approval_state != approval_state:
+        if not isinstance(condition, dict):
+            diagnostics.append(("work_gate_condition_invalid",
+                                "work_gates[%d] condition must be a mapping" % index))
+            invalid_codes.append("work_gate_condition_invalid")
+        else:
+            unknown_condition_fields = set(condition) - {"work_status", "approval_state", "approval"}
+            for field in sorted(unknown_condition_fields):
+                diagnostics.append(("work_gate_condition_field_unknown",
+                                    "work_gates[%d] condition field is unknown: %s"
+                                    % (index, field)))
+                invalid_codes.append("work_gate_condition_invalid")
+        if legacy_present:
+            diagnostics.append(("work_gate_approval_schema_legacy",
+                                "work_gates[%d] must use condition.approval_state" % index))
+            invalid_codes.append("work_gate_condition_invalid")
+        if (approval_state is not None and legacy_approval_state is not None
+                and legacy_approval_state != approval_state):
             diagnostics.append(("work_gate_condition_conflict",
                                 "work_gates[%d] approval conditions conflict" % index))
             invalid_codes.append("work_gate_condition_conflict")

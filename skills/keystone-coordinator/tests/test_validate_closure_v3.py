@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -394,7 +395,7 @@ class ClosureV3ValidationTest(unittest.TestCase):
             self.pre_snapshot, "2026-08-08T10:01:00Z",
         )
 
-    def validate(self):
+    def validate(self, *, owner_keys=None, owner_key_digests=None):
         canonical_linker, canonical_author = closure_v3.package_runner_paths()
         snapshots = {
             snapshot.snapshot_digest: snapshot
@@ -408,6 +409,18 @@ class ClosureV3ValidationTest(unittest.TestCase):
 
         def parse_snapshot(wire):
             return snapshots[wire["snapshot_digest"]]
+
+        self.finalization_runner_arguments = None
+
+        def validate_finalization(*_args, **kwargs):
+            self.finalization_runner_arguments = tuple(
+                kwargs.get("runner_arguments", ())
+            )
+            return (
+                "pass"
+                if self.manifest["closure_stage"] == "post_acceptance"
+                else None
+            )
 
         with mock.patch.object(
             closure_v3, "_normalize_policy", return_value=FakePolicy(self.policy)
@@ -426,9 +439,7 @@ class ClosureV3ValidationTest(unittest.TestCase):
         ), mock.patch.object(
             closure_v3,
             "validate_finalization_evidence",
-            return_value=(
-                "pass" if self.manifest["closure_stage"] == "post_acceptance" else None
-            ),
+            side_effect=validate_finalization,
         ), mock.patch.object(
             closure_v3, "_command_executable_digest", return_value=self.command_digest,
         ):
@@ -453,6 +464,8 @@ class ClosureV3ValidationTest(unittest.TestCase):
                     if self.manifest["closure_stage"] == "post_acceptance"
                     else None
                 ),
+                owner_keys=owner_keys or {},
+                owner_key_digests=owner_key_digests or {},
             )
 
     @staticmethod
@@ -623,6 +636,29 @@ class ClosureV3ValidationTest(unittest.TestCase):
         self.record_post_finalization()
         self.assertEqual([], self.validate())
 
+    def test_v3_forwards_graph_application_context_to_author_runner(self):
+        self.record_post_finalization()
+        owner_key = self.base / "author-apply.key"
+        owner_key.write_bytes(b"author-apply-authority-key-value")
+        owner_key.chmod(0o600)
+        owner_key_digest = file_digest(owner_key)
+
+        self.assertEqual([], self.validate(
+            owner_keys={"author": owner_key},
+            owner_key_digests={"author": owner_key_digest},
+        ))
+        self.assertEqual(
+            (
+                "--graph-evidence-root",
+                str(self.evidence),
+                "--graph-owner-key",
+                "author=%s" % owner_key,
+                "--graph-owner-key-sha256",
+                "author=%s" % owner_key_digest,
+            ),
+            self.finalization_runner_arguments,
+        )
+
     def test_post_acceptance_requires_main_signed_acceptance_event(self):
         self.record_post_finalization()
         self.manifest["post_acceptance_phase"].pop("acceptance_event")
@@ -748,6 +784,17 @@ class ClosureV3ValidationTest(unittest.TestCase):
         self.acceptance_key = self.capture_key
         self.acceptance_key_digest = self.capture_key_digest
         self.assertIn("authority_key_separation_required", self.codes(self.validate()))
+
+    def test_owner_apply_key_must_be_distinct_from_capture_lane(self):
+        diagnostics = self.validate(
+            owner_keys={"coordinator": self.capture_key},
+            owner_key_digests={"coordinator": self.capture_key_digest},
+        )
+
+        self.assertIn(
+            "application_authority_key_separation_required",
+            self.codes(diagnostics),
+        )
 
     def test_zero_suffix_key_cannot_make_capture_key_a_main_hmac_alias(self):
         self.record_post_finalization()
@@ -1410,7 +1457,6 @@ class ClosureV3ValidationTest(unittest.TestCase):
     def test_real_snapshot_capture_parse_diff_and_v3_validation_chain(self):
         source = self.root / "src" / "example.py"
         source.parent.mkdir()
-        source.write_text("before\n", encoding="utf-8")
         assignment_snapshot = actual_state.capture_repository_snapshot_v3(
             self.root, self.policy, expected_absences=["src/future.py"]
         )
@@ -1423,7 +1469,8 @@ class ClosureV3ValidationTest(unittest.TestCase):
         )
         worker_artifacts = [artifact_delta(
             "src/example.py",
-            before=assignment_snapshot.entry_map["src/example.py"].raw_byte_digest,
+            change_kind="added",
+            before="absent",
             after=worker_snapshot.entry_map["src/example.py"].raw_byte_digest,
         )]
 
@@ -1481,21 +1528,61 @@ class ClosureV3ValidationTest(unittest.TestCase):
             },
         }
         reason = "No canonical graph mutation is required."
-        classification = {
+        sources = ["src/example.py"]
+        classification_input = {
             "schema_version": 1,
-            "disposition": "not_applicable",
             "delta_set_digest": digest_json(worker_artifacts),
-            "reason": reason,
+            "deltas": worker_artifacts,
+            "source_context": {
+                "repository_root_digest": digest_json(str(self.root.resolve())),
+                "coverage": {
+                    "mode": "delta_set",
+                    "complete": True,
+                    "source_count": len(sources),
+                    "source_path_digest": digest_json(sources),
+                },
+                "sources": sources,
+            },
         }
+        classification_input_path = self.evidence / "classification-input.json"
+        classification_input_path.write_bytes(json_bytes(classification_input))
+        classification_runner = (
+            Path(closure_v3.__file__).resolve().parents[2]
+            / "keystone-linker"
+            / "scripts"
+            / "run_graph_classification.py"
+        )
+        process = subprocess.run(
+            [
+                sys.executable,
+                str(classification_runner),
+                "--root",
+                str(self.root),
+                "--manifest",
+                str(classification_input_path),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        self.assertEqual(0, process.returncode, process.stderr or process.stdout)
+        classification = json.loads(process.stdout)
         classification_path = self.evidence / "classification.json"
         classification_path.write_bytes(json_bytes(classification))
         self.manifest["keystone_closure"]["graph_sync"] = {
             "disposition": "not_applicable",
             "state": "not_applicable",
             "reason": reason,
+            "classification_input_path": "classification-input.json",
+            "classification_input_digest": file_digest(classification_input_path),
             "classification_path": "classification.json",
             "classification_digest": file_digest(classification_path),
             "delta_set_digest": digest_json(worker_artifacts),
+            "source_generation_digest": classification[
+                "source_generation_digest"
+            ],
+            "envelope_digest": digest_json(classification),
         }
         canonical_linker, canonical_author = closure_v3.package_runner_paths()
         with mock.patch.object(
@@ -1514,6 +1601,212 @@ class ClosureV3ValidationTest(unittest.TestCase):
                 capture_authority_key_digest=self.capture_key_digest,
             )
         self.assertEqual([], diagnostics)
+
+
+class GraphClassificationV3EvidenceTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.base = Path(self.temporary.name).resolve()
+        self.root = self.base / "repository"
+        self.evidence = self.base / "evidence"
+        self.root.mkdir()
+        self.evidence.mkdir()
+        self.source = self.root / "src" / "example.py"
+        self.source.parent.mkdir()
+        self.source.write_text("def run():\n    return 1\n", encoding="utf-8")
+        self.delta = {
+            "kind": "artifact_delta",
+            "source_surface": "src/example.py",
+            "change_kind": "added",
+            "changed_locators": [{"path": "src/example.py", "symbol": "run"}],
+            "semantic_summary": "Change a plain implementation body.",
+            "baseline_digest": "absent",
+            "resulting_digest": file_digest(self.source),
+            "graph_relevant": False,
+        }
+        self.value = self.write_evidence([self.delta])
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def write_evidence(self, deltas):
+        classification_input = closure_v3._classification_input(self.root, deltas)
+        input_path = self.evidence / "classification-input.json"
+        input_path.write_bytes(json_bytes(classification_input))
+        process = subprocess.run(
+            [
+                sys.executable,
+                str(closure_v3.package_classification_runner_path()),
+                "--root",
+                str(self.root),
+                "--manifest",
+                str(input_path),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        self.assertIn(process.returncode, {0, 1}, process.stderr or process.stdout)
+        output = json.loads(process.stdout)
+        output_path = self.evidence / "classification-output.json"
+        output_path.write_bytes(json_bytes(output))
+        return {
+            "disposition": "not_applicable",
+            "state": "not_applicable",
+            "reason": "Fresh package classification found no graph-bearing delta.",
+            "classification_input_path": input_path.name,
+            "classification_input_digest": file_digest(input_path),
+            "classification_path": output_path.name,
+            "classification_digest": file_digest(output_path),
+            "delta_set_digest": digest_json(deltas),
+            "source_generation_digest": output["source_generation_digest"],
+            "envelope_digest": digest_json(output),
+        }
+
+    def validate(self, deltas=None):
+        diagnostics = []
+        linker_runner, _ = closure_v3.package_runner_paths()
+        closure_v3.validate_graph_sync_evidence_v3(
+            self.value,
+            list(self.delta if deltas is None else deltas),
+            self.root,
+            self.evidence,
+            linker_runner,
+            10.0,
+            diagnostics,
+        )
+        return {item["code"] for item in diagnostics}
+
+    def test_package_owned_not_applicable_evidence_passes(self):
+        self.assertEqual(set(), self.validate([self.delta]))
+
+    def test_classification_runner_ignores_hostile_python_import_environment(self):
+        hostile = self.base / "hostile-imports"
+        hostile.mkdir()
+        marker = self.base / "sitecustomize-loaded"
+        (hostile / "sitecustomize.py").write_text(
+            "from pathlib import Path\n"
+            "Path(%r).write_text('loaded', encoding='utf-8')\n"
+            "raise SystemExit('hostile sitecustomize loaded')\n" % str(marker),
+            encoding="utf-8",
+        )
+
+        with mock.patch.dict(
+            os.environ,
+            {"PYTHONPATH": str(hostile), "PYTHONHOME": str(hostile)},
+            clear=False,
+        ):
+            codes = self.validate([self.delta])
+
+        self.assertEqual(set(), codes)
+        self.assertFalse(marker.exists())
+
+    def test_hand_made_output_cannot_replace_fresh_runner_result(self):
+        output_path = self.evidence / self.value["classification_path"]
+        output = json.loads(output_path.read_text(encoding="utf-8"))
+        output["disposition"] = "required"
+        output["reason_codes"] = ["forged_reason"]
+        output_path.write_bytes(json_bytes(output))
+        self.value["classification_digest"] = file_digest(output_path)
+        self.value["envelope_digest"] = digest_json(output)
+
+        self.assertIn("graph_classification_output_mismatch", self.validate([self.delta]))
+
+    def test_exclusion_evidence_must_cover_the_exact_delta_locator(self):
+        output_path = self.evidence / self.value["classification_path"]
+        output = json.loads(output_path.read_text(encoding="utf-8"))
+        output["exclusion_evidence"][0]["locator"] = {
+            "path": "src/example.py",
+            "symbol": "forged",
+        }
+        output_path.write_bytes(json_bytes(output))
+        self.value["classification_digest"] = file_digest(output_path)
+        self.value["envelope_digest"] = digest_json(output)
+
+        codes = self.validate([self.delta])
+
+        self.assertIn("graph_classification_output_invalid", codes)
+        self.assertIn("graph_classification_output_mismatch", codes)
+
+    def test_exclusion_evidence_field_is_required(self):
+        output_path = self.evidence / self.value["classification_path"]
+        output = json.loads(output_path.read_text(encoding="utf-8"))
+        del output["exclusion_evidence"]
+        output_path.write_bytes(json_bytes(output))
+        self.value["classification_digest"] = file_digest(output_path)
+        self.value["envelope_digest"] = digest_json(output)
+
+        codes = self.validate([self.delta])
+
+        self.assertIn("graph_classification_output_invalid", codes)
+
+    def test_omitted_delta_input_is_rejected(self):
+        self.value = self.write_evidence([])
+
+        codes = self.validate([self.delta])
+
+        self.assertIn("graph_classification_delta_mismatch", codes)
+        self.assertIn("graph_delta_set_mismatch", codes)
+
+    def test_stale_source_generation_is_rejected(self):
+        self.source.write_text("def run():\n    return 2\n", encoding="utf-8")
+
+        codes = self.validate([self.delta])
+
+        self.assertIn("linker_classification_failed", codes)
+        self.assertIn("graph_classification_source_stale", codes)
+
+    def test_stale_repository_graph_generation_is_rejected(self):
+        document = self.root / "00_docs" / "unrelated.md"
+        document.parent.mkdir()
+        document.write_text("# Unrelated repository graph source\n", encoding="utf-8")
+
+        codes = self.validate([self.delta])
+
+        self.assertIn("graph_classification_source_stale", codes)
+        self.assertIn("graph_classification_output_mismatch", codes)
+
+    def test_false_flag_for_graph_metadata_cannot_authorize_not_applicable(self):
+        self.source.write_text(
+            "# keystone: id=key.code.example kind=output_artifact "
+            "artifact_kind=code locator.symbol=run\n"
+            "def run():\n    return 1\n",
+            encoding="utf-8",
+        )
+        self.delta["resulting_digest"] = file_digest(self.source)
+        self.value = self.write_evidence([self.delta])
+
+        codes = self.validate([self.delta])
+
+        self.assertIn("graph_classification_disposition_mismatch", codes)
+
+    def test_modified_plain_source_without_baseline_graph_proof_is_required(self):
+        self.delta["change_kind"] = "modified"
+        self.delta["baseline_digest"] = digest_json("prior source generation")
+        self.value = self.write_evidence([self.delta])
+
+        codes = self.validate([self.delta])
+
+        self.assertIn("graph_classification_disposition_mismatch", codes)
+
+    def test_substituted_runner_field_is_unknown_authority(self):
+        self.value["classification_runner"] = "/tmp/forged-runner.py"
+
+        self.assertIn("unknown_field", self.validate([self.delta]))
+
+    def test_package_runner_symlink_substitution_fails_closed(self):
+        substituted = self.base / "substituted-classification-runner.py"
+        substituted.symlink_to(closure_v3.package_classification_runner_path())
+
+        with mock.patch.object(
+            closure_v3,
+            "package_classification_runner_path",
+            return_value=substituted,
+        ):
+            codes = self.validate([self.delta])
+
+        self.assertIn("linker_runner_unavailable", codes)
 
 
 if __name__ == "__main__":

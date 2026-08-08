@@ -61,16 +61,71 @@ def resolve_source_unit(
 ) -> SourceUnit:
     """Select exactly one canonical metadata surface without merging declarations."""
     adapter = adapter_for_path(path)
+    if companion_bytes is not None:
+        try:
+            companion_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            return SourceUnit(
+                path,
+                adapter,
+                source_bytes,
+                companion_bytes,
+                None,
+                (Diagnostic(
+                    "unsupported_encoding",
+                    "companion metadata is not UTF-8",
+                    path=path + COMPANION_SUFFIX,
+                ),),
+            )
     if adapter is None:
         surface = SourceSurface.COMPANION if companion_bytes is not None else None
         return SourceUnit(path, None, source_bytes, companion_bytes, surface)
     if source_bytes is None:
         surface = SourceSurface.COMPANION if companion_bytes is not None else None
         return SourceUnit(path, adapter, None, companion_bytes, surface)
+    try:
+        text = source_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        if companion_bytes is not None:
+            return SourceUnit(
+                path,
+                adapter,
+                source_bytes,
+                companion_bytes,
+                SourceSurface.COMPANION,
+            )
+        return SourceUnit(
+            path,
+            adapter,
+            source_bytes,
+            None,
+            None,
+            (Diagnostic(
+                "unsupported_encoding",
+                "supported source is not UTF-8 and has no canonical companion",
+                path=path,
+            ),),
+        )
+    lexical_findings = (
+        adapter.metadata_diagnostics(text)
+        if hasattr(adapter, "metadata_diagnostics")
+        else ()
+    )
+    if lexical_findings:
+        return SourceUnit(
+            path,
+            adapter,
+            source_bytes,
+            companion_bytes,
+            None,
+            tuple(
+                Diagnostic(code, message, path=path)
+                for code, message in lexical_findings
+            ),
+        )
     if companion_bytes is None:
         return SourceUnit(path, adapter, source_bytes, None, SourceSurface.INLINE)
 
-    text = source_bytes.decode("utf-8")
     has_inline_declarations = any(adapter.metadata_blocks(text))
     if has_inline_declarations:
         return SourceUnit(

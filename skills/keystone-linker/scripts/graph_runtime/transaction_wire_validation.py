@@ -124,6 +124,33 @@ def _metadata_wire_valid(value: Any, *, effective: bool) -> bool:
     )
 
 
+def _artifact_metadata_wire_valid(value: Any) -> bool:
+    if value.get("lifecycle_domain") != "artifact":
+        return True
+    provenance = value.get("provenance")
+    governed_by = (
+        provenance.get("governed_by") if isinstance(provenance, dict) else None
+    )
+    declared = value.get("declared_metadata")
+    effective = value.get("effective_metadata")
+    if declared is None and effective is None:
+        return value.get("lifecycle") == "active" and governed_by == []
+    if not isinstance(declared, dict) or not isinstance(effective, dict):
+        return False
+    expected_lifecycle = declared.get("document_lifecycle") or "active"
+    expected_approval = declared.get("approval_state")
+    expected_governed_by = declared.get("governed_by")
+    expected_authority = declared.get("source_authority")
+    return (
+        value.get("lifecycle") == expected_lifecycle
+        and effective.get("document_lifecycle") == expected_lifecycle
+        and effective.get("approval_state") == expected_approval
+        and effective.get("governed_by") == expected_governed_by
+        and effective.get("source_authority") == expected_authority
+        and governed_by == expected_governed_by
+    )
+
+
 def is_node_wire(value: Any, schema_version: int = 1) -> bool:
     required = {"id", "kind", "artifact_kind", "locator", "lifecycle", "provenance"}
     optional = {"declared_metadata", "effective_metadata", "parent_id"}
@@ -160,6 +187,7 @@ def is_node_wire(value: Any, schema_version: int = 1) -> bool:
         )
     return (
         metadata_valid
+        and _artifact_metadata_wire_valid(value)
         and isinstance(value.get("id"), str)
         and bool(value["id"])
         and kind in NODE_KINDS
@@ -240,12 +268,32 @@ def is_mechanical_envelope(value: Any) -> bool:
         return False
     if not isinstance(diagnostics, list) or not isinstance(summary, dict):
         return False
+    diagnostic_required = {"code", "message", "severity"}
+    diagnostic_optional = {"path", "locator"}
     if not all(
         isinstance(item, dict)
+        and diagnostic_required <= set(item)
+        and set(item) <= diagnostic_required | diagnostic_optional
         and isinstance(item.get("code"), str)
         and isinstance(item.get("message"), str)
         and item.get("severity") in {"info", "warning", "error"}
+        and (
+            item.get("path") is None
+            or isinstance(item.get("path"), str)
+        )
+        and (
+            item.get("locator") is None
+            or is_locator_wire(item.get("locator"))
+        )
         for item in diagnostics
+    ):
+        return False
+    if (
+        set(summary) != {"errors", "warnings"}
+        or type(summary.get("errors")) is not int
+        or type(summary.get("warnings")) is not int
+        or summary["errors"] < 0
+        or summary["warnings"] < 0
     ):
         return False
     errors = sum(item["severity"] == "error" for item in diagnostics)

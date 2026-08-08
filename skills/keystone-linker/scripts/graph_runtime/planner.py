@@ -13,6 +13,10 @@ from .impact import (
     candidate_budget_projection,
     changed_seed_candidates,
 )
+from .lifecycle_policy import (
+    node_lifecycle_admitted,
+    relation_lifecycle_admitted,
+)
 from .model import (
     CanonicalMutation,
     Delta,
@@ -31,7 +35,7 @@ from .model import (
     patch_source_identity,
     patch_owner_matches_surface,
 )
-from .relation_policy import policy_for
+from .relation_policy import policy_for, relation_direction_allowed
 from .patch_replay import PATCH_FORMATS, digest_bytes, replay_patch
 from .validation_support import canonical_relative_path
 
@@ -124,18 +128,58 @@ def _direct_item_artifact(snapshot: GraphSnapshot, relation: Relation,
                 and target.kind == NodeKind.OUTPUT_ARTIFACT)
 
 
-def _mutation_surface(mutation: CanonicalMutation):
+def _mutation_surfaces(mutation: CanonicalMutation):
+    surfaces = []
+    for value in (mutation.before, mutation.after):
+        if value is None:
+            continue
+        if isinstance(value, Node):
+            candidate = value.locator.path, value.provenance.surface
+        else:
+            locator = value.provenance.locator
+            candidate = (
+                locator.path if locator else None,
+                value.provenance.surface,
+            )
+        if candidate not in surfaces:
+            surfaces.append(candidate)
+    return tuple(surfaces)
+
+
+def _patch_links_surface(surface, patch: SurfacePatch) -> bool:
+    path, expected_surface = surface
+    source_identity = patch_source_identity(patch.surface, patch.target_path)
+    return bool(
+        path
+        and source_identity == path
+        and (
+            expected_surface is None
+            or patch.surface.value == expected_surface
+        )
+    )
+
+
+def _patch_links_mutation(mutation: CanonicalMutation, patch: SurfacePatch) -> bool:
+    return any(
+        _patch_links_surface(surface, patch)
+        for surface in _mutation_surfaces(mutation)
+    )
+
+
+def _legacy_patch_links_mutation(
+    mutation: CanonicalMutation,
+    patch: SurfacePatch,
+) -> bool:
     value = mutation.after if mutation.after is not None else mutation.before
     if isinstance(value, Node):
-        return value.locator.path, value.provenance.surface
-    locator = value.provenance.locator
-    return (locator.path if locator else None), value.provenance.surface
-
-
-def _patch_links_observed(mutation: CanonicalMutation, patch: SurfacePatch) -> bool:
-    path, surface = _mutation_surface(mutation)
-    return bool(path and patch_source_identity(patch.surface, patch.target_path) == path
-                and (surface is None or patch.surface.value == surface))
+        surface = value.locator.path, value.provenance.surface
+    else:
+        locator = value.provenance.locator
+        surface = (
+            locator.path if locator else None,
+            value.provenance.surface,
+        )
+    return _patch_links_surface(surface, patch)
 
 
 def plan_graph_sync(
@@ -170,12 +214,22 @@ def plan_graph_sync(
     after_nodes = {node.id: node for node in requested_nodes_after}
     if len(after_nodes) != len(requested_nodes_after):
         raise ValueError("requested node after-state IDs must be unique")
+    if transaction_schema_version == 2 and any(
+        not node_lifecycle_admitted(node.kind, node.lifecycle)
+        for node in requested_nodes_after
+    ):
+        raise ValueError("requested node lifecycle is invalid for its domain")
     existing_relations = {_relation_key(relation): relation for relation in snapshot.relations}
     after_relations = {_relation_key(relation): relation for relation in requested_relations_after}
     if len(after_relations) != len(requested_relations_after):
         raise ValueError("requested relation after-states must be unique")
     if any(relation.evidence == Evidence.INFERRED for relation in requested_relations_after):
         raise ValueError("inferred relation evidence is not admissible for canonical mutation")
+    if transaction_schema_version == 2 and any(
+        not relation_lifecycle_admitted(relation.lifecycle)
+        for relation in requested_relations_after
+    ):
+        raise ValueError("requested relation lifecycle is invalid for its domain")
     node_removals = tuple(requested_node_removals)
     relation_removals = tuple(tuple(key) for key in requested_relation_removals)
     if set(after_nodes) & set(node_removals):
@@ -239,6 +293,28 @@ def plan_graph_sync(
         mutations.append(CanonicalMutation(MutationOperation.REMOVE, MutationEntity.RELATION,
                                             before, None, MutationEvidence(before.evidence.value)))
     mutations = tuple(sorted(mutations, key=_mutation_sort_key))
+    if transaction_schema_version == 2:
+        relation_nodes = {node.id: node for node in snapshot.nodes}
+        relation_nodes.update(after_nodes)
+        for mutation in mutations:
+            if (
+                mutation.entity != MutationEntity.RELATION
+                or mutation.operation == MutationOperation.REMOVE
+            ):
+                continue
+            relation = mutation.after or mutation.before
+            source = relation_nodes.get(relation.source)
+            target = relation_nodes.get(relation.target)
+            if source is None or target is None:
+                raise ValueError("relation mutation requires source and target nodes in scope")
+            if not relation_direction_allowed(
+                source.kind.value,
+                source.artifact_kind.value,
+                relation.relation.value,
+                target.kind.value,
+                target.artifact_kind.value,
+            ):
+                raise ValueError("relation mutation violates canonical direction policy")
 
     delta_by_path = {delta.source_surface: delta for delta in normalized_deltas}
     patches = []
@@ -303,9 +379,45 @@ def plan_graph_sync(
         raise ValueError("duplicate patch IDs are not allowed")
     if mutations and not any(patch.required for patch in patches):
         raise ValueError("graph-changing transaction requires at least one required patch")
+    if transaction_schema_version == 2:
+        if not isinstance(scope_ref, str) or not scope_ref.strip():
+            raise ValueError("schema-v2 transaction requires a non-empty scope_ref")
+        relevant_deltas = {
+            delta.source_surface: delta
+            for delta in normalized_deltas
+            if delta.graph_relevant
+        }
+        for patch in patches:
+            delta = relevant_deltas.get(patch.target_path)
+            if delta is None:
+                raise ValueError(
+                    "schema-v2 patch requires a graph-relevant input delta"
+                )
+            if delta.baseline_digest != patch.baseline_digest:
+                raise ValueError(
+                    "schema-v2 patch baseline must match its input delta"
+                )
+        for mutation in mutations:
+            for surface in _mutation_surfaces(mutation):
+                linked = tuple(
+                    patch for patch in patches
+                    if _patch_links_surface(surface, patch)
+                )
+                if any(not patch.required for patch in linked):
+                    raise ValueError(
+                        "schema-v2 forbids a mutation-bearing optional patch"
+                    )
+                if not any(patch.required for patch in linked):
+                    raise ValueError(
+                        "every schema-v2 mutation surface requires a required owning patch"
+                    )
     for mutation in mutations:
+        links = (
+            _legacy_patch_links_mutation
+            if transaction_schema_version == 1 else _patch_links_mutation
+        )
         if mutation.evidence == MutationEvidence.OBSERVED and not any(
-                _patch_links_observed(mutation, patch) for patch in patches):
+                links(mutation, patch) for patch in patches):
             raise ValueError("observed mutation requires an exact owning surface patch")
     transaction_material = {
         "schema_version": transaction_schema_version,

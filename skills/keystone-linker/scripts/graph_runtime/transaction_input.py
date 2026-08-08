@@ -46,6 +46,14 @@ TRANSACTION_FIELDS = {
     "mechanical_validation",
     "coverage_debt",
 }
+CANONICAL_MUTATION_FIELDS = {
+    "operation",
+    "entity",
+    "before",
+    "after",
+    "evidence",
+    "direct_relation_reason",
+}
 
 
 @dataclass(frozen=True)
@@ -116,7 +124,10 @@ def validate_transaction_input(
             "schema-v2 failed transaction requires failure_reason",
         ))
     for field in ("transaction_id", "scope_ref"):
-        if not isinstance(value.get(field), str) or not value[field]:
+        if (
+            not isinstance(value.get(field), str)
+            or not value[field].strip()
+        ):
             findings.append(diagnostic(
                 "transaction_field_missing", "%s is required" % field
             ))
@@ -199,7 +210,27 @@ def _validate_mutations(mutations: Sequence[Any],
                 "transaction_mutation_invalid",
                 "canonical_mutations[%d] must be an object" % index,
             ))
-        elif mutation.get("operation") not in {"add", "update", "remove"}:
+            continue
+        if schema_version == 2:
+            for field in sorted(set(mutation) - CANONICAL_MUTATION_FIELDS):
+                findings.append(diagnostic(
+                    "mutation_unknown_field",
+                    "unknown canonical mutation field: %s" % field,
+                ))
+            for field in sorted(CANONICAL_MUTATION_FIELDS - set(mutation)):
+                findings.append(diagnostic(
+                    "mutation_field_missing",
+                    "canonical mutation field is required: %s" % field,
+                ))
+            reason = mutation.get("direct_relation_reason")
+            if reason is not None and (
+                not isinstance(reason, str) or not reason.strip()
+            ):
+                findings.append(diagnostic(
+                    "direct_relation_reason_invalid",
+                    "direct_relation_reason must be null or non-empty text",
+                ))
+        if mutation.get("operation") not in {"add", "update", "remove"}:
             findings.append(diagnostic(
                 "mutation_operation_invalid", "mutation operation is invalid"
             ))

@@ -705,7 +705,16 @@ finalization 권한을 가지지 않는다.
     report와 review를 포함한 authority-bearing object의 unknown field는 fail-closed다.
 15. Required graph sync는 exact delta-set에 결속된 Linker validation manifest와 transaction ID를
     요구하고 canonical Linker graph transaction schema v2에 대해 package-owned Linker runner를
-    실행한다. Main은 Author write 전에 `scripts/record_acceptance_event.py`와 Coordinator capture
+    실행한다. `not_applicable`도 모든 phase artifact/document delta에서 재구성한 strict schema-v1
+    classification input, recorded input/output raw digest, source-generation과 envelope digest를
+    요구하며 canonical sibling `run_graph_classification.py`를 isolated Python으로 fresh 실행한다.
+    Recorded/fresh output이 다르거나 fresh disposition이 `not_applicable`이 아니면 실패한다.
+    모든 excluded locator는 recorded/fresh `exclusion_evidence`에서 해당 inspected
+    source/companion index와 `added_plain_unowned_source` reason에 결속돼야 하며, empty delta set만
+    `empty_delta_set`과 빈 mapping을 사용한다. Caller의 `graph_relevant` flag는 authority가
+    아니며 baseline graph evidence 없는
+    `modified | type_replaced`는 `required`로 보수 판정한다. Main은 Author write 전에
+    `scripts/record_acceptance_event.py`와 Coordinator capture
     key와 다른 pinned Main key로 exact assignment/context/policy, pre snapshot, closure target,
     acceptance ref와 unique accepted Steps를 기록한다. Runner는 external evidence root의 canonical
     pre-snapshot wire를 읽고 같은 policy/expected absences로 live repository를 다시 capture하며,
@@ -724,6 +733,34 @@ finalization 권한을 가지지 않는다.
     out-of-assignment 또는 evidence-free non-satisfied gate를 실패로 처리한다. Root/evidence read,
     runner availability, timeout, output parsing 또는 child runner execution failure는
     `status: error`와 exit 2를 유지한다.
+
+Schema-v3 required graph sync의 exact `keystone_closure.graph_sync` fields는 `disposition`, `state`,
+`reason`, `validation_manifest_path`, `validation_manifest_digest`, `transaction_id`,
+`delta_set_digest`, `envelope_digest`다. Referenced graph-validation manifest는 canonical raw-byte
+schema v2여야 하며 exact required fields `schema_version`, `sources`, `transaction`,
+`application_evidence`와 optional `scope`, `coverage`만 허용한다. Canonical transaction v2
+standalone은 structural/replay 및 current after-state evidence일 뿐 apply authority success가 아니다.
+Graph-validation manifest schema v1은 historical/structural reading에 남지만 신규 Coordinator-v3
+required success를 authorize할 수 없다.
+
+Manifest의 exact `{path, digest}` `application_evidence` reference는 external evidence root 아래
+canonical aggregate schema v1을 가리킨다. Aggregate exact fields는 `schema_version`,
+`transaction_id`, `transaction_digest`, `repository_root_digest`, `assignment_id`,
+`assignment_digest`, `receipts`다. `transaction_digest`는 `schema_version`, `transaction_id`,
+`scope_ref`, `input_deltas`, `canonical_mutations`, `surface_patches` exact immutable plan projection의
+canonical JSON SHA-256이다. Apply 뒤 변하는 `reconstruction`은 이 projection에서 제외한다. Applied
+required/optional patch는 각각 정확히 한 owner confirm, applied result와 HMAC receipt를 가지며
+omitted optional은 모두 0개다.
+
+Fresh Linker authority validation이 통과한 뒤에도 Coordinator는 aggregate/receipt를 authoritative
+assignment·phase·scope·delta와 직접 비교한다. Receipt phase는 `pre_acceptance_closure`와
+`post_acceptance`만 허용하고 그 순서를 유지한다. Pre phase는 phase baseline과
+`worker_phase.capture_evidence.digest`, post phase는 phase baseline과
+`post_acceptance_phase.acceptance_event.digest`에 결속한다. Owner `author`는 phase actor `author`,
+`main | coordinator`는 `repository_owner`다. 각 actor의 assignment authority에서 scope를 exact
+`{allowed: allowed_edit_scope, excluded: excluded_scope}`로 재구성하고 full request-v1 digest와
+exact same-phase logical-source artifact delta의 baseline/result/`graph_relevant: true`를 비교한다.
+Capture, acceptance, 각 distinct applied-owner key fingerprint는 서로 달라야 한다.
 
 <!-- key: id=key.standard.skill.coordinator.graph-synchronization refs=key.role.coordinator key.role.linker key.topic.artifact-graph key.topic.verification key.topic.change-set -->
 ## Artifact delta와 graph synchronization
@@ -745,17 +782,49 @@ finalization 권한을 가지지 않는다.
 6. Worker report는 patch별 `applied | failed | stale_baseline`, resulting digest와 partial apply
    evidence를 보존한다. 일부 적용된 transaction은 `partially_applied`로 resume하며 이미 적용된
    patch를 blindly 재적용하지 않는다.
+   Schema-v2의 모든 canonical mutation은 required owning patch로 실현하고 mutation-bearing optional
+   patch를 금지한다. Optional은 ancillary surface로만 허용하며 미적용은 completion을 막지 않는다.
+   실제 applied된 required/optional patch는 모두 owner confirm, apply 직전 baseline 확인과
+   expected/resulting/current digest equality를 만족하고 resume/final verification에서 재검사한다.
 7. Linker reconstruction과 mechanical validator가 모두 통과하기 전에는 Coordinator review를
    accept candidate로 만들 수 있어도 transaction `verified`나 finalization `complete`를 선언하지 않는다.
 8. Validator는 diagnostic-only이며 patch 생성·적용, scope, attestation, acceptance를 소유하지 않는다.
 9. Project coverage debt와 current transaction completeness를 분리해 report에 보존한다. Scope 밖
    legacy gap은 debt로 남기며 bulk metadata migration assignment를 자동 만들지 않는다.
 
+Main/Coordinator-owned patch apply는 package-owned
+`scripts/run_owned_surface_apply.py --root ROOT --request REQUEST --evidence-root EVIDENCE_ROOT
+--output RECEIPT --authority-key KEY --pinned-key-sha256 sha256:...`만 사용한다. Canonical request
+schema v1 exact fields는 `schema_version`, `transaction_id`, `transaction_digest`, `assignment_id`,
+`assignment_digest`, `phase_id`, `phase_baseline_snapshot_digest`,
+`phase_parent_evidence_digest`, `repository_root_digest`, `owner`, `scope`, `scope_digest`,
+`prior_receipt_digest`, `patch`다. `scope`는 exact `{allowed, excluded}`, `patch`는 full exact
+transaction-v2 patch object다. Runner는 current baseline check→atomic publish→reread→O_EXCL receipt를
+한 operation으로 수행하고 실패 시 safe rollback 후 receipt를 남기지 않는다. 이 entrypoint는
+`owner: main | coordinator`와 `code_anchor | config_anchor | schema_anchor | api_anchor | test_anchor`
+또는 non-document source의 `companion_metadata`만 받는다. Diagnostic pass/fail/error는 exit
+`0/1/2`와 일치한다. Existing target은 same-directory atomic exchange로 displaced live entry를
+baseline과 비교하고, 지원 primitive가 없으면 `atomic_exchange_unavailable` error로 source와
+receipt를 만들지 않는다. Rollback/receipt cleanup은 public name을 직접 unlink하지 않고
+same-directory high-entropy quarantine으로 atomic no-replace 이동한 뒤 기록된 runner-owned
+identity/bytes/mode와 일치하는 private entry만 삭제한다. 불일치는 원래 public name으로 복구하거나
+recovery artifact로 보존하고 `rollback_failed`로 닫는다.
+
+Closure verifier의 exact flags는 `--manifest`, `--root`, `--assignment`, `--evidence-root`,
+`--linker-runner`, `--author-runner`, `--timeout-seconds`, `--capture-authority-key`,
+`--trusted-capture-authority-key-sha256`, `--acceptance-authority-key`,
+`--trusted-acceptance-authority-key-sha256`, repeatable `--owner-key OWNER=PATH`, repeatable
+`--owner-key-sha256 OWNER=sha256:...`다. Owner key는 repository/evidence root 밖 absolute
+symlink-free path의 current-user-owned, owner-only, single-link regular file이며 raw 32 bytes 이상이다.
+Receipt의 trusted-host HMAC은 exact signed bytes와 protected-key possession을 증명하지만 independent
+binary execution, external clock, OS-user/organization identity 또는 이후 authorized write를
+증명하지 않는다.
+
 ```yaml
 artifact_delta:
   kind: artifact_delta
   source_surface:
-  change_kind: added | modified | deleted
+  change_kind: added | modified | deleted | type_replaced
   changed_locators:
     - path: src/example.py
       symbol: Example.run

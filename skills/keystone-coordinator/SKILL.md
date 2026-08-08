@@ -291,6 +291,32 @@ misfiled or duplicate gates fail closed. Required graph sync still accepts only 
 transaction schema v2 and invokes the package-owned Linker runner. Graph and Author manifest digest,
 parse, and child-runner input must all use one stable captured byte generation. Every post-acceptance decision still
 invokes the package-owned Author runner against canonical Author finalization schema v5.
+Canonical transaction v2 remains unchanged and, by itself, proves only structural/replay validity and
+current after-state. New required graph-sync authority needs canonical graph-validation manifest v2
+with exact required fields `schema_version`, `sources`, `transaction`, `application_evidence` and only
+optional `scope`, `coverage`. Manifest schema v1 remains historical/structural and cannot authorize a
+new schema-v3 closure. The external aggregate's `transaction_digest` is computed only over the exact
+immutable plan projection `schema_version`, `transaction_id`, `scope_ref`, `input_deltas`,
+`canonical_mutations`, and `surface_patches`; apply-time `reconstruction` is excluded.
+
+Require one HMAC-authenticated owner receipt for each applied required or optional patch and none for an
+omitted optional. After a fresh passing Linker run, bind aggregate and receipt assignment IDs/digests to
+the immutable assignment. Allow receipt phases only in `pre_acceptance_closure` then `post_acceptance`
+order. Bind the former to its phase baseline and `worker_phase.capture_evidence.digest`, and the latter
+to its phase baseline and `post_acceptance_phase.acceptance_event.digest`. Map owner `author` to actor
+`author` and owner `main | coordinator` to actor `repository_owner`; rebuild scope as exact
+`{allowed: allowed_edit_scope, excluded: excluded_scope}`. Reconstruct the entire owner request and
+require its signed `request_digest`, phase/scope/root/transaction bindings, raw receipt chain, and the
+one exact same-phase graph-relevant actor delta. See
+[references/closure-validator.md](references/closure-validator.md) for the frozen wire.
+Schema-v3 `not_applicable` is equally executable: record canonical classification input/output raw-byte
+digests, exact delta-set and source-generation digests, and the runner-envelope digest. Coordinator
+rebuilds the input from every worker/pre/post artifact or document delta and freshly invokes the canonical
+sibling Linker `run_graph_classification.py` under isolated Python. Recorded and fresh strict schema-v1
+outputs must be equal and both say `not_applicable`. Hand-written JSON, omitted/stale deltas, stale source
+generation, caller `graph_relevant: false`, runner substitution, and malformed success envelopes fail.
+The strict output also maps every excluded delta locator to the exact inspected source indexes and
+`added_plain_unowned_source`; an empty set is the only case with `empty_delta_set` and no mapping.
 
 Coordinator manifest schemas v1 and v2 remain readable for historical diagnostics, but neither can
 authorize a new `accept_candidate` or `closure_complete`. Do not rewrite accepted v2 evidence; restart
@@ -314,7 +340,7 @@ canonical delta and maps to finalization `not_applicable`.
 artifact_deltas:
   - kind: artifact_delta
     source_surface:
-    change_kind: added | modified | deleted
+    change_kind: added | modified | deleted | type_replaced
     changed_locators:
       - path: src/example.py
         symbol: Example.run
@@ -343,6 +369,46 @@ Linker alone decides canonical mutations and exact patches. Coordinator or Main 
 repository patch it owns; document metadata patches go to Author. A confirmed patch may be assigned or
 applied only inside the existing approved scope and after its raw-byte SHA-256 baseline is rechecked.
 Never write a stale baseline. Preserve each result and partial success as `partially_applied`.
+
+Apply a confirmed `owner: main | coordinator` patch only through the package-owned runner:
+
+```sh
+python3 scripts/run_owned_surface_apply.py \
+  --root ROOT --request REQUEST --evidence-root EVIDENCE_ROOT --output RECEIPT \
+  --authority-key EXTERNAL_OWNER_KEY --pinned-key-sha256 sha256:...
+```
+
+The exact canonical request-v1 fields are `schema_version`, `transaction_id`, `transaction_digest`,
+`assignment_id`, `assignment_digest`, `phase_id`, `phase_baseline_snapshot_digest`,
+`phase_parent_evidence_digest`, `repository_root_digest`, `owner`, `scope`, `scope_digest`,
+`prior_receipt_digest`, and `patch`; `scope` is exact `{allowed,excluded}`, and `patch` is the complete
+transaction-v2 patch object. The runner performs baseline check, write, reread and receipt creation as
+one operation; failure rolls back safely where possible and leaves no receipt. It accepts only
+`owner: main | coordinator` with `code_anchor | config_anchor | schema_anchor | api_anchor | test_anchor`
+or a non-document source's `companion_metadata`. Its diagnostic envelope maps pass/fail/error to exit
+`0/1/2`.
+For an existing target, same-directory atomic exchange preserves the displaced live entry and compares
+its exact bytes/type/identity with the planned baseline. If the OS/filesystem exchange primitive is not
+available, fail with `atomic_exchange_unavailable` and leave source and receipt unauthoritative.
+Rollback and receipt cleanup never unlink a public name directly: atomically move it with no-replace to
+a same-directory high-entropy quarantine, delete only a private entry matching the recorded
+runner-owned identity/bytes/mode, and restore or preserve every mismatch as recovery evidence while
+failing with `rollback_failed`.
+
+Closure validation uses `scripts/validate_closure.py` with `--manifest MANIFEST`, `--root ROOT`,
+`--assignment ASSIGNMENT`, `--evidence-root EVIDENCE_ROOT`, capture/acceptance key flags, and repeatable
+`--owner-key OWNER=PATH` plus `--owner-key-sha256 OWNER=sha256:...`; it also accepts
+`--linker-runner`, `--author-runner`, and `--timeout-seconds`. Capture, acceptance, and distinct applied
+owner lanes require distinct external pinned keys outside repository/evidence roots. The trusted-host
+HMAC proves exact bytes and protected-key possession, not independent execution, external time,
+OS-user/organization identity, or protection from a later authorized write.
+
+For schema-v2 transactions, every canonical mutation has a required owning patch and a mutation-bearing
+optional patch is invalid. Optional patches are ancillary only. Omission does not block completion, but
+an actually applied optional follows the same owner-confirm, apply-time baseline,
+expected/resulting/current digest, resume, and final verification rules as a required patch. Canonical
+mutation objects use only `operation`, `entity`, `before`, `after`, `evidence`, and
+`direct_relation_reason`; direct input cannot bypass Linker relation/lifecycle/surface policy.
 
 Resume verifies recorded resulting digests for successful patches and baselines for remaining patches,
 without blind reapplication. Rejected or revision-needed attestations and stale baselines are

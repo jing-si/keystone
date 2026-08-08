@@ -5,7 +5,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, FrozenSet, Optional, Sequence, Tuple
 
-from .model import Diagnostic, PatchOwner, PatchSurface, patch_owner_matches_surface
+from .model import (
+    Diagnostic,
+    PatchOwner,
+    PatchSurface,
+    patch_owner_matches_surface,
+    patch_source_identity,
+)
 from .patch_replay import PATCH_FORMATS, digest_bytes, replay_patch
 from .transaction_wire_validation import is_digest_wire
 from .validation_support import canonical_relative_path, diagnostic, safe_path
@@ -23,12 +29,67 @@ class TransactionEvidence:
     applied_patch_ids: FrozenSet[str]
     stale_baseline_patch_ids: FrozenSet[str]
     failed_patch_ids: FrozenSet[str]
+    actual_state_root_available: bool = False
 
 
 @dataclass(frozen=True)
 class EvidenceValidationResult:
     diagnostics: Tuple[Diagnostic, ...]
     evidence: Optional[TransactionEvidence]
+
+
+def _mutation_surfaces(
+    value: Any,
+) -> Tuple[Tuple[Optional[str], Optional[str]], ...]:
+    if not isinstance(value, dict):
+        return ()
+    surfaces = []
+    for entity in (value.get("before"), value.get("after")):
+        if not isinstance(entity, dict):
+            continue
+        provenance = entity.get("provenance")
+        surface = (
+            provenance.get("surface") if isinstance(provenance, dict) else None
+        )
+        if value.get("entity") == "node":
+            locator = entity.get("locator")
+        else:
+            locator = (
+                provenance.get("locator") if isinstance(provenance, dict) else None
+            )
+        path = locator.get("path") if isinstance(locator, dict) else None
+        candidate = path, surface
+        if candidate not in surfaces:
+            surfaces.append(candidate)
+    return tuple(surfaces)
+
+
+def _patch_links_surface(surface: Any, patch: Any) -> bool:
+    if not isinstance(patch, dict):
+        return False
+    try:
+        patch_surface = PatchSurface(patch.get("surface"))
+    except (TypeError, ValueError):
+        return False
+    path, expected_surface = surface
+    source_identity = patch_source_identity(
+        patch_surface, patch.get("target_path")
+    )
+    return bool(
+        path
+        and source_identity == path
+        and (
+            expected_surface is None
+            or patch.get("surface") == expected_surface
+        )
+    )
+
+
+def _patch_links_mutation(mutation: Any, patch: Any) -> bool:
+    return any(
+        _patch_links_surface(surface, patch)
+        for surface in _mutation_surfaces(mutation)
+    )
 
 
 def validate_transaction_evidence(
@@ -220,6 +281,43 @@ def validate_transaction_evidence(
             "graph_change_required_patch_missing",
             "graph-changing transaction requires at least one required patch",
         ))
+    if schema_version == 2:
+        relevant_deltas = {
+            delta.get("source_surface"): delta
+            for delta in value.get("input_deltas", [])
+            if isinstance(delta, dict) and delta.get("graph_relevant") is True
+        }
+        for patch in patch_by_id.values():
+            delta = relevant_deltas.get(patch.get("target_path"))
+            if delta is None:
+                findings.append(diagnostic(
+                    "patch_input_delta_missing",
+                    "schema-v2 patch requires a graph-relevant input delta",
+                    patch.get("target_path"),
+                ))
+            elif delta.get("baseline_digest") != patch.get("baseline_digest"):
+                findings.append(diagnostic(
+                    "patch_delta_baseline_mismatch",
+                    "schema-v2 patch baseline differs from its input delta",
+                    patch.get("target_path"),
+                ))
+        for index, mutation in enumerate(mutations):
+            for surface in _mutation_surfaces(mutation):
+                linked = tuple(
+                    patch for patch in patch_by_id.values()
+                    if _patch_links_surface(surface, patch)
+                )
+                if any(patch.get("required") is False for patch in linked):
+                    findings.append(diagnostic(
+                        "mutation_optional_patch_forbidden",
+                        "schema-v2 mutation %d surface has an optional patch" % index,
+                    ))
+                if not any(patch.get("required") is True for patch in linked):
+                    findings.append(diagnostic(
+                        "mutation_required_patch_missing",
+                        "schema-v2 mutation %d surface lacks a required owning patch"
+                        % index,
+                    ))
 
     confirmed = set()
     rejected = set()
@@ -365,6 +463,49 @@ def validate_transaction_evidence(
                 "failed": failed_results,
             }[item["result"]].add(item["patch_id"])
 
+    if schema_version == 2:
+        for patch_id in sorted(applied - confirmed):
+            findings.append(diagnostic(
+                "applied_patch_confirmation_missing",
+                "applied patch lacks owner confirmation: %s" % patch_id,
+            ))
+
+    if schema_version == 2:
+        if root is None:
+            for patch_id in sorted(applied):
+                findings.append(diagnostic(
+                    "actual_state_unverified",
+                    "applied patch requires repository actual-state validation: %s"
+                    % patch_id,
+                ))
+        else:
+            for patch_id, patch in sorted(patch_by_id.items()):
+                if patch_id in applied:
+                    continue
+                if (
+                    patch.get("required") is False
+                    and (
+                        value.get("state") == "verified"
+                        or patch_id not in confirmed
+                    )
+                ):
+                    continue
+                try:
+                    target = safe_path(root, patch.get("target_path"))
+                except ValueError:
+                    continue
+                actual = (
+                    "sha256:" + hashlib.sha256(target.read_bytes()).hexdigest()
+                    if target.is_file()
+                    else "absent"
+                )
+                if actual != patch.get("baseline_digest"):
+                    findings.append(diagnostic(
+                        "unapplied_patch_baseline_mismatch",
+                        "unapplied patch source no longer matches its baseline",
+                        patch.get("target_path"),
+                    ))
+
     return EvidenceValidationResult(
         diagnostics=tuple(findings),
         evidence=TransactionEvidence(
@@ -378,5 +519,6 @@ def validate_transaction_evidence(
             applied_patch_ids=frozenset(applied),
             stale_baseline_patch_ids=frozenset(stale_baselines),
             failed_patch_ids=frozenset(failed_results),
+            actual_state_root_available=root is not None,
         ),
     )

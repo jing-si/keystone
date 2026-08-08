@@ -5,6 +5,7 @@ from dataclasses import replace
 from graph_runtime.model import (
     ApplicationResult,
     ApplicationStatus,
+    ArtifactKind,
     AttestationDecision,
     CanonicalMutation,
     ConflictReason,
@@ -15,6 +16,7 @@ from graph_runtime.model import (
     FailureReason,
     GraphSnapshot,
     GraphTransaction,
+    Lifecycle,
     Locator,
     MutationEntity,
     MutationEvidence,
@@ -23,6 +25,7 @@ from graph_runtime.model import (
     NodeKind,
     PatchOwner,
     PatchSurface,
+    Provenance,
     Relation,
     RelationType,
     Severity,
@@ -67,6 +70,42 @@ class GraphReconcilerTests(unittest.TestCase):
         return record_attestation(
             transaction, SurfaceAttestation("patch-b", PatchOwner.MAIN,
                                             AttestationDecision.CONFIRM, "main confirms"))
+
+    def _v2_patch(self, patch, before, after, *, required=True):
+        return replace(
+            patch,
+            baseline_digest="sha256:" + hashlib.sha256(
+                before.encode("utf-8")
+            ).hexdigest(),
+            exact_patch=after,
+            required=required,
+            patch_format="full_replacement",
+            patch_body=after,
+            expected_after_digest="sha256:" + hashlib.sha256(
+                after.encode("utf-8")
+            ).hexdigest(),
+            baseline_content=before,
+        )
+
+    def _v2_transaction(self, transaction, patches):
+        deltas = tuple(
+            Delta(
+                DeltaKind.DOCUMENT
+                if patch.target_path.endswith((".md", ".markdown"))
+                else DeltaKind.ARTIFACT,
+                patch.target_path,
+                (Locator(patch.target_path),),
+                "bind executable patch",
+                patch.baseline_digest,
+            )
+            for patch in patches
+        )
+        return replace(
+            transaction,
+            input_deltas=deltas,
+            surface_patches=tuple(patches),
+            schema_version=2,
+        )
 
     def test_required_confirmations_reach_ready_to_apply(self):
         transaction = self._confirmed()
@@ -413,11 +452,7 @@ class GraphReconcilerTests(unittest.TestCase):
             expected_after_digest=expected,
             baseline_content=baseline_content,
         )
-        proposed = replace(
-            self.proposed,
-            surface_patches=(patch,),
-            schema_version=2,
-        )
+        proposed = self._v2_transaction(self.proposed, (patch,))
         ready = record_attestation(
             begin_attestation(proposed),
             SurfaceAttestation(
@@ -462,8 +497,7 @@ class GraphReconcilerTests(unittest.TestCase):
             "confirmed",
         )
         forged = replace(
-            self.proposed,
-            surface_patches=(patch,),
+            self._v2_transaction(self.proposed, (patch,)),
             attestations=(attestation,),
             apply_results=(ApplicationResult(
                 patch.patch_id,
@@ -472,7 +506,6 @@ class GraphReconcilerTests(unittest.TestCase):
                 "forged",
             ),),
             state=TransactionState.APPLYING,
-            schema_version=2,
         )
 
         with self.assertRaisesRegex(ValueError, "expected_after_digest"):
@@ -483,6 +516,420 @@ class GraphReconcilerTests(unittest.TestCase):
                 {patch.patch_id: "sha256:" + "b" * 64},
                 baseline_snapshot=GraphSnapshot(),
             )
+
+    def test_schema_v2_optional_omission_does_not_block_verification(self):
+        required = self._v2_patch(self.patch_a, "before\n", "after\n")
+        optional = self._v2_patch(
+            replace(
+                self.patch_a,
+                patch_id="patch-optional",
+                target_path="00_docs/ancillary.md",
+            ),
+            "old ancillary\n",
+            "new ancillary\n",
+            required=False,
+        )
+        proposed = self._v2_transaction(self.proposed, (required, optional))
+        awaiting = begin_attestation(proposed)
+        ready = record_attestation(
+            awaiting,
+            SurfaceAttestation(
+                required.patch_id,
+                required.owner,
+                AttestationDecision.CONFIRM,
+                "required confirmed",
+            ),
+        )
+        applying = begin_application(ready, {
+            required.patch_id: required.baseline_digest,
+        })
+        applied = record_application(
+            applying,
+            ApplicationResult(
+                required.patch_id,
+                ApplicationStatus.APPLIED,
+                required.expected_after_digest,
+                "required written",
+            ),
+        )
+
+        verified = finalize_transaction(
+            applied,
+            GraphSnapshot(nodes=(self.node,)),
+            (),
+            {required.patch_id: required.expected_after_digest},
+            baseline_snapshot=GraphSnapshot(),
+        )
+
+        self.assertEqual(TransactionState.VERIFIED, verified.state)
+
+    def test_schema_v2_optional_application_requires_confirmation_and_fresh_baseline(self):
+        required = self._v2_patch(self.patch_a, "before\n", "after\n")
+        optional = self._v2_patch(
+            replace(
+                self.patch_a,
+                patch_id="patch-optional",
+                target_path="00_docs/ancillary.md",
+            ),
+            "old ancillary\n",
+            "new ancillary\n",
+            required=False,
+        )
+        proposed = self._v2_transaction(self.proposed, (required, optional))
+        ready_without_optional = record_attestation(
+            begin_attestation(proposed),
+            SurfaceAttestation(
+                required.patch_id,
+                required.owner,
+                AttestationDecision.CONFIRM,
+                "required confirmed",
+            ),
+        )
+        applying = begin_application(ready_without_optional, {
+            required.patch_id: required.baseline_digest,
+        })
+        with self.assertRaisesRegex(ValueError, "confirmed"):
+            record_application(
+                applying,
+                ApplicationResult(
+                    optional.patch_id,
+                    ApplicationStatus.APPLIED,
+                    optional.expected_after_digest,
+                    "optional written",
+                ),
+            )
+
+        awaiting = record_attestation(
+            begin_attestation(proposed),
+            SurfaceAttestation(
+                optional.patch_id,
+                optional.owner,
+                AttestationDecision.CONFIRM,
+                "optional confirmed",
+            ),
+        )
+        ready = record_attestation(
+            awaiting,
+            SurfaceAttestation(
+                required.patch_id,
+                required.owner,
+                AttestationDecision.CONFIRM,
+                "required confirmed",
+            ),
+        )
+        stale = begin_application(ready, {
+            required.patch_id: required.baseline_digest,
+            optional.patch_id: "sha256:" + "f" * 64,
+        })
+
+        self.assertEqual(TransactionState.CONFLICTED, stale.state)
+        self.assertEqual(ConflictReason.STALE_BASELINE, stale.conflict_reason)
+
+    def test_schema_v2_finalization_verifies_every_applied_optional_patch(self):
+        required = self._v2_patch(self.patch_a, "before\n", "after\n")
+        optional = self._v2_patch(
+            replace(
+                self.patch_a,
+                patch_id="patch-optional",
+                target_path="00_docs/ancillary.md",
+            ),
+            "old ancillary\n",
+            "new ancillary\n",
+            required=False,
+        )
+        proposed = self._v2_transaction(self.proposed, (required, optional))
+        awaiting = record_attestation(
+            begin_attestation(proposed),
+            SurfaceAttestation(
+                optional.patch_id,
+                optional.owner,
+                AttestationDecision.CONFIRM,
+                "optional confirmed",
+            ),
+        )
+        ready = record_attestation(
+            awaiting,
+            SurfaceAttestation(
+                required.patch_id,
+                required.owner,
+                AttestationDecision.CONFIRM,
+                "required confirmed",
+            ),
+        )
+        applying = begin_application(ready, {
+            required.patch_id: required.baseline_digest,
+            optional.patch_id: optional.baseline_digest,
+        })
+        applying = record_application(
+            applying,
+            ApplicationResult(
+                required.patch_id,
+                ApplicationStatus.APPLIED,
+                required.expected_after_digest,
+                "required written",
+            ),
+        )
+        applying = record_application(
+            applying,
+            ApplicationResult(
+                optional.patch_id,
+                ApplicationStatus.APPLIED,
+                optional.expected_after_digest,
+                "optional written",
+            ),
+        )
+        conflicted = finalize_transaction(
+            applying,
+            GraphSnapshot(nodes=(self.node,)),
+            (),
+            {
+                required.patch_id: required.expected_after_digest,
+                optional.patch_id: "sha256:" + "f" * 64,
+            },
+            baseline_snapshot=GraphSnapshot(),
+        )
+
+        self.assertEqual(TransactionState.CONFLICTED, conflicted.state)
+
+    def test_runtime_rejects_schema_v2_mutation_bearing_optional_patch(self):
+        optional = self._v2_patch(
+            replace(self.patch_a, required=False),
+            "before\n",
+            "after\n",
+            required=False,
+        )
+        required = self._v2_patch(
+            replace(
+                self.patch_a,
+                patch_id="patch-required",
+                target_path="00_docs/ancillary.md",
+            ),
+            "old ancillary\n",
+            "new ancillary\n",
+        )
+        invalid = self._v2_transaction(self.proposed, (optional, required))
+
+        with self.assertRaisesRegex(ValueError, "mutation-bearing optional"):
+            begin_attestation(invalid)
+
+    def test_schema_v2_direct_applying_state_cannot_bypass_baseline_check(self):
+        patch = self._v2_patch(self.patch_a, "before\n", "after\n")
+        proposed = self._v2_transaction(self.proposed, (patch,))
+        ready = record_attestation(
+            begin_attestation(proposed),
+            SurfaceAttestation(
+                patch.patch_id,
+                patch.owner,
+                AttestationDecision.CONFIRM,
+                "confirmed",
+            ),
+        )
+        forged = replace(ready, state=TransactionState.APPLYING)
+        result = ApplicationResult(
+            patch.patch_id,
+            ApplicationStatus.APPLIED,
+            patch.expected_after_digest,
+            "forged without begin_application",
+        )
+
+        with self.assertRaisesRegex(ValueError, "runtime-issued baseline check"):
+            record_application(forged, result)
+        with self.assertRaisesRegex(ValueError, "runtime-issued baseline checks"):
+            finalize_transaction(
+                replace(forged, apply_results=(result,)),
+                GraphSnapshot(nodes=(self.node,)),
+                (),
+                {patch.patch_id: patch.expected_after_digest},
+                baseline_snapshot=GraphSnapshot(),
+            )
+
+    def test_schema_v2_finalize_rejects_stale_mutation_before_state(self):
+        actual = Node(
+            "key.capability.existing",
+            NodeKind.CAPABILITY,
+            locator=Locator("00_docs/existing.md"),
+        )
+        stale_before = replace(actual, lifecycle=Lifecycle.ARCHIVED)
+        after = replace(actual, lifecycle=Lifecycle.SUPERSEDED)
+        mutation = CanonicalMutation(
+            MutationOperation.UPDATE,
+            MutationEntity.NODE,
+            stale_before,
+            after,
+            MutationEvidence.DECLARED,
+        )
+        patch = self._v2_patch(
+            replace(
+                self.patch_a,
+                target_path="00_docs/existing.md",
+            ),
+            "before\n",
+            "after\n",
+        )
+        proposed = self._v2_transaction(
+            replace(self.proposed, canonical_mutations=(mutation,)),
+            (patch,),
+        )
+        ready = record_attestation(
+            begin_attestation(proposed),
+            SurfaceAttestation(
+                patch.patch_id,
+                patch.owner,
+                AttestationDecision.CONFIRM,
+                "confirmed",
+            ),
+        )
+        applying = begin_application(
+            ready, {patch.patch_id: patch.baseline_digest}
+        )
+        applied = record_application(
+            applying,
+            ApplicationResult(
+                patch.patch_id,
+                ApplicationStatus.APPLIED,
+                patch.expected_after_digest,
+                "written",
+            ),
+        )
+
+        result = finalize_transaction(
+            applied,
+            GraphSnapshot(nodes=(after,)),
+            (),
+            {patch.patch_id: patch.expected_after_digest},
+            baseline_snapshot=GraphSnapshot(nodes=(actual,)),
+        )
+
+        self.assertEqual(TransactionState.CONFLICTED, result.state)
+        self.assertEqual(ConflictReason.RECONSTRUCTION_MISMATCH, result.conflict_reason)
+
+    def test_schema_v2_finalize_rechecks_relation_direction(self):
+        capability = Node(
+            "key.capability.direction",
+            NodeKind.CAPABILITY,
+            locator=Locator("00_docs/direction.md"),
+        )
+        code = Node(
+            "key.code.direction",
+            NodeKind.OUTPUT_ARTIFACT,
+            ArtifactKind.CODE,
+            Locator("src/direction.py"),
+        )
+        relation = Relation(
+            capability.id,
+            RelationType.PROVIDES,
+            code.id,
+            provenance=Provenance(
+                surface="document_metadata",
+                locator=Locator("00_docs/direction.md"),
+            ),
+        )
+        mutation = CanonicalMutation(
+            MutationOperation.ADD,
+            MutationEntity.RELATION,
+            None,
+            relation,
+            MutationEvidence.DECLARED,
+        )
+        patch = self._v2_patch(
+            replace(self.patch_a, target_path="00_docs/direction.md"),
+            "before\n",
+            "after\n",
+        )
+        baseline = GraphSnapshot(nodes=(capability, code))
+        expected = GraphSnapshot(nodes=(capability, code), relations=(relation,))
+        proposed = self._v2_transaction(
+            replace(self.proposed, canonical_mutations=(mutation,)),
+            (patch,),
+        )
+        ready = record_attestation(
+            begin_attestation(proposed),
+            SurfaceAttestation(
+                patch.patch_id,
+                patch.owner,
+                AttestationDecision.CONFIRM,
+                "confirmed",
+            ),
+        )
+        applying = begin_application(
+            ready, {patch.patch_id: patch.baseline_digest}
+        )
+        applied = record_application(
+            applying,
+            ApplicationResult(
+                patch.patch_id,
+                ApplicationStatus.APPLIED,
+                patch.expected_after_digest,
+                "written",
+            ),
+        )
+
+        result = finalize_transaction(
+            applied,
+            expected,
+            (),
+            {patch.patch_id: patch.expected_after_digest},
+            baseline_snapshot=baseline,
+        )
+
+        self.assertEqual(TransactionState.FAILED, result.state)
+        self.assertIn(
+            "invalid_relation_direction",
+            {item.code for item in result.mechanical_validation},
+        )
+
+    def test_schema_v2_optional_first_application_is_resumable_partial_state(self):
+        required = self._v2_patch(self.patch_a, "before\n", "after\n")
+        optional = self._v2_patch(
+            replace(
+                self.patch_a,
+                patch_id="patch-optional-first",
+                target_path="00_docs/ancillary.md",
+            ),
+            "old\n",
+            "new\n",
+            required=False,
+        )
+        proposed = self._v2_transaction(self.proposed, (required, optional))
+        awaiting = record_attestation(
+            begin_attestation(proposed),
+            SurfaceAttestation(
+                optional.patch_id,
+                optional.owner,
+                AttestationDecision.CONFIRM,
+                "optional confirmed",
+            ),
+        )
+        ready = record_attestation(
+            awaiting,
+            SurfaceAttestation(
+                required.patch_id,
+                required.owner,
+                AttestationDecision.CONFIRM,
+                "required confirmed",
+            ),
+        )
+        applying = begin_application(ready, {
+            required.patch_id: required.baseline_digest,
+            optional.patch_id: optional.baseline_digest,
+        })
+
+        partial = record_application(
+            applying,
+            ApplicationResult(
+                optional.patch_id,
+                ApplicationStatus.APPLIED,
+                optional.expected_after_digest,
+                "optional written first",
+            ),
+        )
+
+        self.assertEqual(TransactionState.PARTIALLY_APPLIED, partial.state)
+        resumed = resume_application(partial, {
+            required.patch_id: required.baseline_digest,
+            optional.patch_id: optional.expected_after_digest,
+        })
+        self.assertEqual(TransactionState.APPLYING, resumed.state)
 
 
 if __name__ == "__main__":

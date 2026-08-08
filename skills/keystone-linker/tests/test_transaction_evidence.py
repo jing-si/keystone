@@ -8,6 +8,37 @@ from graph_runtime.transaction_evidence import validate_transaction_evidence
 
 
 class TransactionEvidenceTest(unittest.TestCase):
+    def _v2_patch(self, patch_id, target_path, before, after, *, required):
+        baseline = before.encode("utf-8")
+        result = after.encode("utf-8")
+        return {
+            "patch_id": patch_id,
+            "owner": "author",
+            "surface": "document_metadata",
+            "target_path": target_path,
+            "baseline_digest": "sha256:" + hashlib.sha256(baseline).hexdigest(),
+            "exact_patch": after,
+            "patch_format": "full_replacement",
+            "patch_body": after,
+            "expected_after_digest": "sha256:" + hashlib.sha256(result).hexdigest(),
+            "baseline_content": before,
+            "required": required,
+        }
+
+    def _v2_delta(self, patch):
+        return {
+            "kind": (
+                "document_delta"
+                if patch["target_path"].endswith((".md", ".markdown"))
+                else "artifact_delta"
+            ),
+            "source_surface": patch["target_path"],
+            "changed_locators": [{"path": patch["target_path"]}],
+            "semantic_summary": "bind executable patch",
+            "baseline_digest": patch["baseline_digest"],
+            "graph_relevant": True,
+        }
+
     def test_duplicate_physical_patch_target_is_rejected(self):
         patch = {
             "patch_id": "p1",
@@ -177,6 +208,7 @@ class TransactionEvidenceTest(unittest.TestCase):
 
             result = validate_transaction_evidence(
                 {"schema_version": 2, "surface_patches": [patch],
+                 "input_deltas": [self._v2_delta(patch)],
                  "attestations": [], "apply_results": []},
                 root=root,
                 mutations=(),
@@ -279,6 +311,157 @@ class TransactionEvidenceTest(unittest.TestCase):
             ["surface_patch_invalid", "attestation_invalid", "apply_result_invalid"],
             [item.code for item in result.diagnostics],
         )
+
+    def test_applied_optional_patch_requires_owner_confirmation(self):
+        patch = self._v2_patch(
+            "p-optional", "optional.md", "before\n", "after\n", required=False
+        )
+        result = validate_transaction_evidence(
+            {
+                "schema_version": 2,
+                "surface_patches": [patch],
+                "attestations": [],
+                "apply_results": [{
+                    "patch_id": patch["patch_id"],
+                    "result": "applied",
+                    "resulting_digest": patch["expected_after_digest"],
+                    "evidence": "written",
+                }],
+            },
+            root=None,
+            mutations=(),
+        )
+
+        self.assertIn(
+            "applied_patch_confirmation_missing",
+            {item.code for item in result.diagnostics},
+        )
+
+    def test_confirmed_optional_patch_closes_against_current_source_bytes(self):
+        patch = self._v2_patch(
+            "p-optional", "optional.md", "before\n", "after\n", required=False
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "optional.md").write_text("after\n", encoding="utf-8")
+            result = validate_transaction_evidence(
+                {
+                    "schema_version": 2,
+                    "surface_patches": [patch],
+                    "input_deltas": [self._v2_delta(patch)],
+                    "attestations": [{
+                        "patch_id": patch["patch_id"],
+                        "owner": patch["owner"],
+                        "decision": "confirm",
+                        "evidence": "owner confirmed",
+                    }],
+                    "apply_results": [{
+                        "patch_id": patch["patch_id"],
+                        "result": "applied",
+                        "resulting_digest": patch["expected_after_digest"],
+                        "evidence": "written",
+                    }],
+                },
+                root=root,
+                mutations=(),
+            )
+
+        self.assertEqual((), result.diagnostics)
+
+    def test_schema_v1_optional_application_keeps_historical_read_compatibility(self):
+        patch = {
+            "patch_id": "p-legacy-optional",
+            "owner": "main",
+            "surface": "code_anchor",
+            "target_path": "src/example.py",
+            "baseline_digest": "absent",
+            "exact_patch": "legacy patch description",
+            "required": False,
+        }
+        result = validate_transaction_evidence(
+            {
+                "schema_version": 1,
+                "surface_patches": [patch],
+                "attestations": [],
+                "apply_results": [{
+                    "patch_id": patch["patch_id"],
+                    "result": "applied",
+                    "resulting_digest": "sha256:" + "0" * 64,
+                    "evidence": "historical application receipt",
+                }],
+            },
+            root=None,
+            mutations=(),
+        )
+
+        self.assertNotIn(
+            "applied_patch_confirmation_missing",
+            {item.code for item in result.diagnostics},
+        )
+
+    def test_unconfirmed_unapplied_optional_patch_drift_is_nonblocking(self):
+        patch = self._v2_patch(
+            "p-optional", "optional.md", "before\n", "after\n", required=False
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "optional.md").write_text("changed elsewhere\n", encoding="utf-8")
+            result = validate_transaction_evidence(
+                {
+                    "schema_version": 2,
+                    "state": "verified",
+                    "surface_patches": [patch],
+                    "input_deltas": [self._v2_delta(patch)],
+                    "attestations": [],
+                    "apply_results": [],
+                },
+                root=root,
+                mutations=(),
+            )
+
+        self.assertNotIn(
+            "unapplied_patch_baseline_mismatch",
+            {item.code for item in result.diagnostics},
+        )
+
+    def test_schema_v2_mutation_requires_required_owner_patch_and_rejects_optional_owner(self):
+        mutation = {
+            "operation": "add",
+            "entity": "node",
+            "before": None,
+            "after": {
+                "id": "key.capability.example",
+                "kind": "capability",
+                "artifact_kind": "none",
+                "locator": {"path": "source.md"},
+                "lifecycle": "active",
+                "lifecycle_domain": "document",
+                "provenance": {"produced_from": [], "governed_by": []},
+            },
+            "evidence": "declared",
+            "direct_relation_reason": None,
+        }
+        optional = self._v2_patch(
+            "p-optional", "source.md", "before\n", "after\n", required=False
+        )
+        required = self._v2_patch(
+            "p-required", "other.md", "old\n", "new\n", required=True
+        )
+        result = validate_transaction_evidence(
+            {
+                "schema_version": 2,
+                "surface_patches": [optional, required],
+                "attestations": [],
+                "apply_results": [],
+            },
+            root=None,
+            mutations=(mutation,),
+        )
+
+        self.assertTrue({
+            "mutation_required_patch_missing",
+            "mutation_optional_patch_forbidden",
+        } <= {item.code for item in result.diagnostics})
 
 
 if __name__ == "__main__":

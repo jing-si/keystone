@@ -1,10 +1,12 @@
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import tempfile
 import unittest
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 
 
@@ -12,13 +14,31 @@ REPOSITORY_ROOT = Path(__file__).parents[2]
 COORDINATOR_SCRIPTS = (
     REPOSITORY_ROOT / "skills" / "keystone-coordinator" / "scripts"
 )
+LINKER_SCRIPTS = REPOSITORY_ROOT / "skills" / "keystone-linker" / "scripts"
 sys.path.insert(0, str(COORDINATOR_SCRIPTS))
+sys.path.insert(0, str(LINKER_SCRIPTS))
 
 from closure_actual_state import (  # noqa: E402
     changed_paths_v3,
     parse_repository_snapshot_v3,
 )
 from closure_v3 import assignment_subject_digest  # noqa: E402
+from graph_runtime.snapshot_validation import reconstruct  # noqa: E402
+from graph_runtime.model import (  # noqa: E402
+    ApplicationResult,
+    ApplicationStatus,
+    AttestationDecision,
+    Delta,
+    DeltaKind,
+    GraphSnapshot,
+    Locator,
+    PatchOwner,
+    PatchSurface,
+    SurfaceAttestation,
+    TransactionState,
+)
+from graph_runtime.planner import PatchSpec, plan_graph_sync  # noqa: E402
+from graph_runtime.wire import transaction_wire  # noqa: E402
 
 
 CAPTURE_RUNNER = COORDINATOR_SCRIPTS / "capture_assignment_snapshot.py"
@@ -27,6 +47,19 @@ COORDINATOR_RUNNER = COORDINATOR_SCRIPTS / "validate_closure.py"
 AUTHOR_RUNNER = (
     REPOSITORY_ROOT / "skills" / "keystone-author" / "scripts"
     / "run_finalization_validation.py"
+)
+AUTHOR_APPLY_RUNNER = (
+    REPOSITORY_ROOT / "skills" / "keystone-author" / "scripts"
+    / "run_owned_surface_apply.py"
+)
+LINKER_RUNNER = LINKER_SCRIPTS / "run_graph_validation.py"
+APPLICATION_PLAN_FIELDS = (
+    "schema_version",
+    "transaction_id",
+    "scope_ref",
+    "input_deltas",
+    "canonical_mutations",
+    "surface_patches",
 )
 IMPACT_CATEGORIES = (
     "progress",
@@ -61,6 +94,12 @@ def file_digest(path):
     return digest_bytes(path.read_bytes())
 
 
+def application_plan_digest(transaction):
+    return digest_json({
+        field: transaction.get(field) for field in APPLICATION_PLAN_FIELDS
+    })
+
+
 class CoordinatorAuthorRunnerIntegrationTest(unittest.TestCase):
     def test_actual_post_acceptance_chain_runs_package_author_and_coordinator(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -78,17 +117,24 @@ class CoordinatorAuthorRunnerIntegrationTest(unittest.TestCase):
 
             capture_key = base / "coordinator-capture.key"
             main_key = base / "main-acceptance.key"
+            author_apply_key = base / "author-apply.key"
             capture_key.write_bytes(b"C" * 32)
             main_key.write_bytes(b"M" * 32)
+            author_apply_key.write_bytes(b"A" * 32)
             capture_key.chmod(0o600)
             main_key.chmod(0o600)
+            author_apply_key.chmod(0o600)
             capture_key_digest = file_digest(capture_key)
             main_key_digest = file_digest(main_key)
+            author_apply_key_digest = file_digest(author_apply_key)
 
             policy = {
                 "schema_version": 3,
                 "include_paths": ["."],
-                "exclusions": [],
+                "exclusions": [{
+                    "path": "graph-validation.json",
+                    "reason": "Repository-local copy for the Author graph runner.",
+                }],
                 "entry_budget": 1000,
             }
             policy_path = evidence / "snapshot-policy.json"
@@ -156,17 +202,6 @@ class CoordinatorAuthorRunnerIntegrationTest(unittest.TestCase):
                 root, acceptance_ref
             )
             finalization_path = evidence / "author-finalization.json"
-            finalization_path.write_bytes(json_bytes(finalization_manifest))
-            author_payload = self.run_json([
-                sys.executable,
-                str(AUTHOR_RUNNER),
-                "--root",
-                str(root),
-                "--manifest",
-                str(finalization_path),
-            ])
-            self.assertEqual("pass", author_payload["status"], author_payload)
-            author_envelope_digest = digest_json(author_payload)
 
             post_capture = self.capture_phase(
                 root, evidence, policy_path, "post_acceptance",
@@ -180,7 +215,7 @@ class CoordinatorAuthorRunnerIntegrationTest(unittest.TestCase):
             post_deltas = [
                 self.delta(
                     "document_delta", item["path"], pre_snapshot, post_snapshot,
-                    graph_relevant=False,
+                    graph_relevant=True,
                 )
                 for item in post_changes
                 if item["path"] in post_snapshot.entry_map
@@ -189,15 +224,43 @@ class CoordinatorAuthorRunnerIntegrationTest(unittest.TestCase):
             ]
 
             all_deltas = [worker_delta, *post_deltas]
-            graph_reason = "All bounded changes are graph-neutral in this fixture."
-            classification = {
-                "schema_version": 1,
-                "disposition": "not_applicable",
-                "delta_set_digest": digest_json(all_deltas),
-                "reason": graph_reason,
+            graph_evidence = self.required_graph_evidence(
+                root,
+                evidence,
+                all_deltas,
+                assignment,
+                assignment_digest,
+                pre_snapshot,
+                acceptance["acceptance_event"],
+                author_apply_key,
+                author_apply_key_digest,
+            )
+            finalization_manifest["graph_sync"] = {
+                "required": True,
+                "disposition": "required",
+                "reason": "Author finalization document deltas require graph validation.",
+                "validation_manifest_path": graph_evidence[
+                    "validation_manifest_path"
+                ],
+                "transaction_id": graph_evidence["transaction_id"],
             }
-            classification_path = evidence / "graph-classification.json"
-            classification_path.write_bytes(json_bytes(classification))
+            finalization_path.write_bytes(json_bytes(finalization_manifest))
+            author_payload = self.run_json([
+                sys.executable,
+                str(AUTHOR_RUNNER),
+                "--root",
+                str(root),
+                "--manifest",
+                str(finalization_path),
+                "--graph-evidence-root",
+                str(evidence),
+                "--graph-owner-key",
+                "author=%s" % author_apply_key,
+                "--graph-owner-key-sha256",
+                "author=%s" % author_apply_key_digest,
+            ])
+            self.assertEqual("pass", author_payload["status"], author_payload)
+            author_envelope_digest = digest_json(author_payload)
 
             closure = self.closure_manifest(
                 assignment,
@@ -217,14 +280,25 @@ class CoordinatorAuthorRunnerIntegrationTest(unittest.TestCase):
                 acceptance_ref,
                 file_digest(finalization_path),
                 author_envelope_digest,
-                graph_reason,
-                file_digest(classification_path),
-                digest_json(all_deltas),
+                graph_evidence,
             )
             closure_path = evidence / "closure.json"
             closure_path.write_bytes(json_bytes(closure))
+            hostile = base / "hostile-imports"
+            hostile.mkdir()
+            hostile_marker = base / "sitecustomize-loaded"
+            (hostile / "sitecustomize.py").write_text(
+                "from pathlib import Path\n"
+                "Path(%r).write_text('loaded', encoding='utf-8')\n"
+                "raise SystemExit('hostile sitecustomize loaded')\n"
+                % str(hostile_marker),
+                encoding="utf-8",
+            )
+            hostile_environment = os.environ.copy()
+            hostile_environment["PYTHONPATH"] = str(hostile)
             result = self.run_json([
                 sys.executable,
+                "-S",
                 str(COORDINATOR_RUNNER),
                 "--root",
                 str(root),
@@ -242,19 +316,26 @@ class CoordinatorAuthorRunnerIntegrationTest(unittest.TestCase):
                 str(main_key),
                 "--trusted-acceptance-authority-key-sha256",
                 main_key_digest,
-            ])
+                "--owner-key",
+                "author=%s" % author_apply_key,
+                "--owner-key-sha256",
+                "author=%s" % author_apply_key_digest,
+            ], env=hostile_environment)
+            hostile_sitecustomize_loaded = hostile_marker.exists()
 
         self.assertEqual("pass", result["status"], result)
         self.assertEqual([], result["diagnostics"])
+        self.assertFalse(hostile_sitecustomize_loaded)
 
     @staticmethod
-    def run_json(command):
+    def run_json(command, *, env=None):
         process = subprocess.run(
             command,
             check=False,
             capture_output=True,
             text=True,
             timeout=30,
+            env=env,
         )
         payload = json.loads(process.stdout) if process.stdout.strip() else {
             "stderr": process.stderr
@@ -462,13 +543,211 @@ class CoordinatorAuthorRunnerIntegrationTest(unittest.TestCase):
         }
 
     @classmethod
+    def required_graph_evidence(
+        cls, root, evidence, deltas, assignment, assignment_digest,
+        pre_snapshot, acceptance_event, owner_key, owner_key_digest,
+    ):
+        sources = sorted({item["source_surface"] for item in deltas})
+        snapshot, diagnostics = reconstruct(root, sources)
+        if diagnostics:
+            raise AssertionError(diagnostics)
+        delta_values = tuple(
+            Delta(
+                kind=DeltaKind(item["kind"]),
+                source_surface=item["source_surface"],
+                changed_locators=tuple(
+                    Locator(**locator) for locator in item["changed_locators"]
+                ),
+                semantic_summary=item["semantic_summary"],
+                baseline_digest=item["baseline_digest"],
+                graph_relevant=item["graph_relevant"],
+            )
+            for item in deltas
+        )
+        post_deltas = [
+            item for item in deltas
+            if item["kind"] == "document_delta"
+        ]
+        patch_specs = tuple(
+            PatchSpec(
+                owner=PatchOwner.AUTHOR,
+                surface=PatchSurface.DOCUMENT_METADATA,
+                target_path=item["source_surface"],
+                baseline_digest=item["baseline_digest"],
+                baseline_content=None,
+                exact_patch=(root / item["source_surface"]).read_text(
+                    encoding="utf-8"
+                ),
+                patch_format="full_replacement",
+                patch_body=(root / item["source_surface"]).read_text(
+                    encoding="utf-8"
+                ),
+                expected_after_digest=item["resulting_digest"],
+                required=True,
+            )
+            for item in post_deltas
+        )
+        planned = plan_graph_sync(
+            GraphSnapshot(),
+            delta_values,
+            "R010/S02",
+            requested_nodes_after=snapshot.nodes,
+            requested_relations_after=snapshot.relations,
+            patch_specs=patch_specs,
+        )
+        plan_digest = application_plan_digest(transaction_wire(planned))
+        attestations = tuple(
+            SurfaceAttestation(
+                patch.patch_id,
+                patch.owner,
+                AttestationDecision.CONFIRM,
+                "Author confirmed the exact finalization bytes.",
+            )
+            for patch in planned.surface_patches
+        )
+        results = tuple(
+            ApplicationResult(
+                patch.patch_id,
+                ApplicationStatus.APPLIED,
+                patch.expected_after_digest,
+                "Current source equals the planned finalization bytes.",
+            )
+            for patch in planned.surface_patches
+        )
+        verified = replace(
+            planned,
+            attestations=attestations,
+            apply_results=results,
+            state=TransactionState.VERIFIED,
+            reconstruction=snapshot,
+        )
+        transaction = transaction_wire(
+            verified, baseline_snapshot=GraphSnapshot()
+        )
+        if plan_digest != application_plan_digest(transaction):
+            raise AssertionError(
+                "application plan digest changed after verification evidence"
+            )
+        repository_digest = digest_json({
+            "repository_root": str(root.resolve(strict=True)),
+        })
+        authority = assignment["phase_authorities"]["author"]
+        scope = {
+            "allowed": deepcopy(authority["allowed_edit_scope"]),
+            "excluded": deepcopy(authority["excluded_scope"]),
+        }
+        contents = {
+            patch["target_path"]: (root / patch["target_path"]).read_bytes()
+            for patch in transaction["surface_patches"]
+        }
+        for patch in transaction["surface_patches"]:
+            if patch["baseline_digest"] != "absent":
+                raise AssertionError("fixture expects absent Author baselines")
+            (root / patch["target_path"]).unlink()
+        requests = evidence / "author-apply-requests"
+        receipts_directory = evidence / "author-apply-receipts"
+        requests.mkdir()
+        receipts_directory.mkdir()
+        receipt_references = []
+        prior_receipt_digest = "absent"
+        for index, patch in enumerate(transaction["surface_patches"]):
+            request = {
+                "schema_version": 1,
+                "transaction_id": transaction["transaction_id"],
+                "transaction_digest": plan_digest,
+                "assignment_id": assignment["assignment_id"],
+                "assignment_digest": assignment_digest,
+                "phase_id": "post_acceptance",
+                "phase_baseline_snapshot_digest": pre_snapshot.snapshot_digest,
+                "phase_parent_evidence_digest": acceptance_event["digest"],
+                "repository_root_digest": repository_digest,
+                "owner": "author",
+                "scope": scope,
+                "scope_digest": digest_json(scope),
+                "prior_receipt_digest": prior_receipt_digest,
+                "patch": patch,
+            }
+            request_path = requests / ("apply-%02d.json" % index)
+            receipt_path = receipts_directory / ("apply-%02d.json" % index)
+            request_path.write_bytes(json_bytes(request))
+            cls.run_json([
+                sys.executable,
+                str(AUTHOR_APPLY_RUNNER),
+                "--root", str(root),
+                "--request", str(request_path),
+                "--evidence-root", str(evidence),
+                "--output", str(receipt_path),
+                "--authority-key", str(owner_key),
+                "--pinned-key-sha256", owner_key_digest,
+            ])
+            if (root / patch["target_path"]).read_bytes() != contents[
+                patch["target_path"]
+            ]:
+                raise AssertionError("Author apply did not reproduce planned bytes")
+            prior_receipt_digest = file_digest(receipt_path)
+            receipt_references.append({
+                "path": receipt_path.relative_to(evidence).as_posix(),
+                "digest": prior_receipt_digest,
+            })
+        aggregate = {
+            "schema_version": 1,
+            "transaction_id": transaction["transaction_id"],
+            "transaction_digest": plan_digest,
+            "repository_root_digest": repository_digest,
+            "assignment_id": assignment["assignment_id"],
+            "assignment_digest": assignment_digest,
+            "receipts": receipt_references,
+        }
+        aggregate_path = evidence / "author-application-evidence.json"
+        aggregate_path.write_bytes(json_bytes(aggregate))
+        graph_manifest = {
+            "schema_version": 2,
+            "sources": sources,
+            "transaction": transaction,
+            "application_evidence": {
+                "path": aggregate_path.name,
+                "digest": file_digest(aggregate_path),
+            },
+        }
+        manifest_path = evidence / "graph-validation.json"
+        manifest_bytes = json_bytes(graph_manifest)
+        manifest_path.write_bytes(manifest_bytes)
+        (root / manifest_path.name).write_bytes(manifest_bytes)
+        envelope = cls.run_json([
+            sys.executable,
+            str(LINKER_RUNNER),
+            "--root",
+            str(root),
+            "--manifest",
+            str(manifest_path),
+            "--evidence-root",
+            str(evidence),
+            "--owner-key",
+            "author=%s" % owner_key,
+            "--owner-key-sha256",
+            "author=%s" % owner_key_digest,
+        ])
+        if envelope.get("status") != "pass":
+            raise AssertionError(envelope)
+        return {
+            "reason": (
+                "Package Linker verified that the bounded document deltas "
+                "require validation but no canonical graph mutation."
+            ),
+            "validation_manifest_path": manifest_path.name,
+            "validation_manifest_digest": file_digest(manifest_path),
+            "transaction_id": transaction["transaction_id"],
+            "delta_set_digest": digest_json(deltas),
+            "envelope_digest": digest_json(envelope),
+        }
+
+    @classmethod
     def closure_manifest(
         cls, assignment, assignment_digest, assignment_snapshot, worker_snapshot,
         worker_capture, worker_changes, worker_delta, pre_snapshot, pre_capture,
         post_snapshot, post_capture, post_changes, post_deltas,
         acceptance_event, acceptance_ref, finalization_digest,
-        author_envelope_digest, graph_reason, classification_digest,
-        delta_set_digest,
+        author_envelope_digest, graph_evidence,
     ):
         linker_delta = cls.actor_delta(assignment, "linker", [], [])
         return {
@@ -548,12 +827,9 @@ class CoordinatorAuthorRunnerIntegrationTest(unittest.TestCase):
                     "evidence": ["Schema-v5 Author runner passed."],
                 },
                 "graph_sync": {
-                    "disposition": "not_applicable",
-                    "state": "not_applicable",
-                    "reason": graph_reason,
-                    "classification_path": "graph-classification.json",
-                    "classification_digest": classification_digest,
-                    "delta_set_digest": delta_set_digest,
+                    "disposition": "required",
+                    "state": "verified",
+                    **deepcopy(graph_evidence),
                 },
                 "acceptance_ref": acceptance_ref,
                 "acceptance_event": deepcopy(acceptance_event),

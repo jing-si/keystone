@@ -5,10 +5,17 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 from graph_runtime.model import Evidence, RelationType
+from graph_runtime.scanner import ReferenceScanner, ScanScope
 from graph_runtime.validator import reconstruct
-from validate_graph import capture_sources, coverage_severity, generation_findings
+from validate_graph import (
+    application_baseline_sources,
+    capture_sources,
+    coverage_severity,
+    generation_findings,
+)
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "validate_graph.py"
@@ -16,6 +23,39 @@ RUNNER = Path(__file__).parents[1] / "scripts" / "run_graph_validation.py"
 
 
 class GraphValidatorCliTest(unittest.TestCase):
+    def test_authenticated_receipts_restore_physical_preapplication_sources(self):
+        captured = {
+            "graph.bin": b"opaque-source",
+            "graph.bin.keystone.json": b"after-companion",
+            "added.md": b"after-added-source",
+        }
+        evidence = SimpleNamespace(receipts=(
+            SimpleNamespace(envelope={
+                "receipt": {"patch_receipt": {"patch": {
+                    "target_path": "graph.bin.keystone.json",
+                    "baseline_digest": "sha256:" + hashlib.sha256(
+                        b"before-companion"
+                    ).hexdigest(),
+                    "baseline_content": "before-companion",
+                }}},
+            }),
+            SimpleNamespace(envelope={
+                "receipt": {"patch_receipt": {"patch": {
+                    "target_path": "added.md",
+                    "baseline_digest": "absent",
+                    "baseline_content": None,
+                }}},
+            }),
+        ))
+
+        baseline = application_baseline_sources(captured, evidence)
+
+        self.assertEqual(b"opaque-source", baseline["graph.bin"])
+        self.assertEqual(
+            b"before-companion", baseline["graph.bin.keystone.json"]
+        )
+        self.assertNotIn("added.md", baseline)
+
     def test_requirement_and_verification_evidence_directions_are_distinct(self):
         companion = {"schema_version": 1,
             "source": {"path": "graph.bin", "surface": "companion_metadata", "baseline_digest": "absent"},
@@ -1004,6 +1044,83 @@ export function runtime() {}
             {"source.py", "source.py.keystone.json"}, set(captured)
         )
         self.assertFalse(absent)
+
+    def test_non_utf8_supported_source_reconstructs_from_companion(self):
+        source = self.write_bytes(
+            "generated.py",
+            "generated output\n".encode("utf-16"),
+        )
+        digest = "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest()
+        self.write("generated.py.keystone.json", json.dumps({
+            "schema_version": 1,
+            "source": {
+                "path": "generated.py",
+                "surface": "companion_metadata",
+                "baseline_digest": digest,
+            },
+            "nodes": [{
+                "id": "key.output.generated",
+                "kind": "output_artifact",
+                "artifact_kind": "code",
+                "locator": {"path": "generated.py"},
+                "lifecycle": "active",
+                "provenance": {"produced_from": [], "governed_by": []},
+            }],
+            "relations": [],
+        }))
+
+        snapshot, diagnostics = reconstruct(self.root, ("generated.py",))
+
+        self.assertEqual({"key.output.generated"}, {node.id for node in snapshot.nodes})
+        self.assertFalse(diagnostics)
+
+    def test_invalid_companion_encoding_has_scanner_reconstruction_parity(self):
+        self.write_bytes("generated.py", "generated output\n".encode("utf-16"))
+        self.write_bytes("generated.py.keystone.json", b"\xff\xfe")
+
+        scan = ReferenceScanner(self.root).scan(ScanScope.REPOSITORY)
+        snapshot, diagnostics = reconstruct(self.root, ("generated.py",))
+
+        self.assertFalse(snapshot.nodes)
+        self.assertEqual(
+            {"unsupported_encoding"},
+            {item.code for item in diagnostics},
+        )
+        self.assertIn(
+            "unsupported_encoding",
+            {item.code for item in scan.diagnostics},
+        )
+
+    def test_ambiguous_anchor_blocks_companion_with_scanner_reconstruction_parity(self):
+        source = self.write(
+            "example.ts",
+            "const sample = `\n"
+            "// keystone: id=key.ambiguous kind=output_artifact\n",
+        )
+        digest = "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest()
+        self.write("example.ts.keystone.json", json.dumps({
+            "schema_version": 1,
+            "source": {
+                "path": "example.ts",
+                "surface": "companion_metadata",
+                "baseline_digest": digest,
+            },
+            "nodes": [],
+            "relations": [],
+        }))
+
+        scan = ReferenceScanner(self.root).scan(ScanScope.REPOSITORY)
+        snapshot, diagnostics = reconstruct(self.root, ("example.ts",))
+
+        self.assertFalse(snapshot.nodes)
+        self.assertEqual(
+            {"ambiguous_metadata_anchor"},
+            {item.code for item in diagnostics},
+        )
+        self.assertIn(
+            "ambiguous_metadata_anchor",
+            {item.code for item in scan.diagnostics},
+        )
 
     def test_supported_companion_reconstructs_with_absent_logical_source(self):
         self.write("generated.py.keystone.json", json.dumps({

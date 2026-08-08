@@ -405,6 +405,41 @@ plain body
             ),
         )
 
+    def test_non_utf8_supported_source_uses_raw_byte_bound_companion(self):
+        source = self.root / "src/generated.py"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_bytes("# generated\n".encode("utf-16"))
+        digest = "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest()
+        companion = {
+            "schema_version": 1,
+            "source": {
+                "path": "src/generated.py",
+                "surface": "companion_metadata",
+                "baseline_digest": digest,
+            },
+            "nodes": [{
+                "id": "key.artifact.generated",
+                "kind": "output_artifact",
+                "artifact_kind": "code",
+                "locator": {"path": "src/generated.py", "symbol": "generated"},
+                "lifecycle": "active",
+                "provenance": {"produced_from": [], "governed_by": []},
+            }],
+            "relations": [],
+        }
+        self.write("src/generated.py.keystone.json", json.dumps(companion))
+
+        result = ReferenceScanner(self.root).scan(ScanScope.REPOSITORY)
+
+        self.assertEqual(
+            "src/generated.py",
+            owner_for(result, "key.artifact.generated").path,
+        )
+        self.assertNotIn(
+            "unsupported_encoding",
+            {item.code for item in result.diagnostics},
+        )
+
     def test_document_root_and_companion_sources_cannot_escape_scope(self):
         outside = Path(self.temp.name) / "outside"
         outside.mkdir()

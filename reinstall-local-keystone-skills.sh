@@ -29,12 +29,53 @@ if [ ! -s "$PACKAGE_VERSION_FILE" ]; then
 fi
 PACKAGE_VERSION="$(tr -d '[:space:]' < "$PACKAGE_VERSION_FILE")"
 
+PYTHON_ISOLATED_ARGS=()
+if python3 -I -c 'pass' >/dev/null 2>&1; then
+  PYTHON_ISOLATED_ARGS=(-I)
+fi
+
+run_python_help() {
+  python3 "${PYTHON_ISOLATED_ARGS[@]}" "$1" --help >/dev/null
+}
+
+require_file_parity() {
+  local expected="$1"
+  local candidate
+  shift
+  for candidate in "$@"; do
+    if ! cmp -s "$expected" "$candidate"; then
+      echo "Installer byte parity failed: $candidate" >&2
+      exit 1
+    fi
+  done
+}
+
 for skill in "${SKILLS[@]}"; do
   if [ ! -f "$REPO_ROOT/skills/$skill/SKILL.md" ]; then
     echo "Missing source skill: $REPO_ROOT/skills/$skill/SKILL.md" >&2
     exit 1
   fi
 done
+
+OWNED_APPLY_GENERATOR="$REPO_ROOT/scripts/generate_owned_surface_apply_runtimes.py"
+OWNED_APPLY_CANONICAL_RUNTIME="$REPO_ROOT/scripts/owned_surface_apply_runtime.py"
+AUTHOR_OWNED_APPLY_RUNTIME="$REPO_ROOT/skills/keystone-author/scripts/owned_surface_apply_runtime.py"
+AUTHOR_OWNED_APPLY_RUNNER="$REPO_ROOT/skills/keystone-author/scripts/run_owned_surface_apply.py"
+COORDINATOR_OWNED_APPLY_RUNTIME="$REPO_ROOT/skills/keystone-coordinator/scripts/owned_surface_apply_runtime.py"
+COORDINATOR_OWNED_APPLY_RUNNER="$REPO_ROOT/skills/keystone-coordinator/scripts/run_owned_surface_apply.py"
+for source in "$OWNED_APPLY_GENERATOR" "$OWNED_APPLY_CANONICAL_RUNTIME" \
+  "$AUTHOR_OWNED_APPLY_RUNTIME" "$AUTHOR_OWNED_APPLY_RUNNER" \
+  "$COORDINATOR_OWNED_APPLY_RUNTIME" "$COORDINATOR_OWNED_APPLY_RUNNER"; do
+  if [ ! -f "$source" ]; then
+    echo "Missing owned-surface apply package file: $source" >&2
+    exit 1
+  fi
+done
+python3 "${PYTHON_ISOLATED_ARGS[@]}" "$OWNED_APPLY_GENERATOR" --check
+require_file_parity "$OWNED_APPLY_CANONICAL_RUNTIME" \
+  "$AUTHOR_OWNED_APPLY_RUNTIME" "$COORDINATOR_OWNED_APPLY_RUNTIME"
+run_python_help "$AUTHOR_OWNED_APPLY_RUNNER"
+run_python_help "$COORDINATOR_OWNED_APPLY_RUNNER"
 
 AUTHOR_VALIDATOR="$REPO_ROOT/skills/keystone-author/scripts/validate_finalization.py"
 AUTHOR_VALIDATOR_RUNNER="$REPO_ROOT/skills/keystone-author/scripts/run_finalization_validation.py"
@@ -59,6 +100,7 @@ fi
 
 LINKER_GRAPH_VALIDATOR="$REPO_ROOT/skills/keystone-linker/scripts/validate_graph.py"
 LINKER_GRAPH_RUNNER="$REPO_ROOT/skills/keystone-linker/scripts/run_graph_validation.py"
+LINKER_CLASSIFICATION_RUNNER="$REPO_ROOT/skills/keystone-linker/scripts/run_graph_classification.py"
 LINKER_GRAPH_HOOK="$REPO_ROOT/skills/keystone-linker/scripts/check_graph_hook.sh"
 LINKER_GRAPH_RUNTIME="$REPO_ROOT/skills/keystone-linker/scripts/graph_runtime/validator.py"
 LINKER_REFERENCE_RUNTIME="$REPO_ROOT/skills/keystone-linker/scripts/graph_runtime/readiness.py"
@@ -66,7 +108,8 @@ LINKER_SOURCE_UNIT="$REPO_ROOT/skills/keystone-linker/scripts/graph_runtime/sour
 LINKER_GRAPH_REFERENCE="$REPO_ROOT/skills/keystone-linker/references/graph-runtime.md"
 LINKER_REFERENCE_CONTRACT="$REPO_ROOT/skills/keystone-linker/references/reference-index-runtime.md"
 LINKER_GRAPH_TEST="$REPO_ROOT/skills/keystone-linker/tests/test_validate_graph.py"
-for source in "$LINKER_GRAPH_VALIDATOR" "$LINKER_GRAPH_RUNNER" "$LINKER_GRAPH_HOOK" \
+for source in "$LINKER_GRAPH_VALIDATOR" "$LINKER_GRAPH_RUNNER" \
+  "$LINKER_CLASSIFICATION_RUNNER" "$LINKER_GRAPH_HOOK" \
   "$LINKER_GRAPH_RUNTIME" "$LINKER_REFERENCE_RUNTIME" "$LINKER_SOURCE_UNIT" \
   "$LINKER_GRAPH_REFERENCE" \
   "$LINKER_REFERENCE_CONTRACT" "$LINKER_GRAPH_TEST"; do
@@ -122,6 +165,30 @@ for skill in "${SKILLS[@]}"; do
   cp -R "$REPO_ROOT/skills/$skill" "$STAGED_SKILLS/"
 done
 
+INSTALLED_AUTHOR_OWNED_APPLY_RUNTIME="$STAGED_SKILLS/keystone-author/scripts/owned_surface_apply_runtime.py"
+INSTALLED_AUTHOR_OWNED_APPLY_RUNNER="$STAGED_SKILLS/keystone-author/scripts/run_owned_surface_apply.py"
+INSTALLED_COORDINATOR_OWNED_APPLY_RUNTIME="$STAGED_SKILLS/keystone-coordinator/scripts/owned_surface_apply_runtime.py"
+INSTALLED_COORDINATOR_OWNED_APPLY_RUNNER="$STAGED_SKILLS/keystone-coordinator/scripts/run_owned_surface_apply.py"
+for installed in "$INSTALLED_AUTHOR_OWNED_APPLY_RUNTIME" \
+  "$INSTALLED_AUTHOR_OWNED_APPLY_RUNNER" \
+  "$INSTALLED_COORDINATOR_OWNED_APPLY_RUNTIME" \
+  "$INSTALLED_COORDINATOR_OWNED_APPLY_RUNNER"; do
+  if [ ! -f "$installed" ]; then
+    echo "Install failed for owned-surface apply package file: $installed" >&2
+    exit 1
+  fi
+done
+require_file_parity "$OWNED_APPLY_CANONICAL_RUNTIME" \
+  "$AUTHOR_OWNED_APPLY_RUNTIME" "$COORDINATOR_OWNED_APPLY_RUNTIME" \
+  "$INSTALLED_AUTHOR_OWNED_APPLY_RUNTIME" \
+  "$INSTALLED_COORDINATOR_OWNED_APPLY_RUNTIME"
+require_file_parity "$AUTHOR_OWNED_APPLY_RUNNER" \
+  "$INSTALLED_AUTHOR_OWNED_APPLY_RUNNER"
+require_file_parity "$COORDINATOR_OWNED_APPLY_RUNNER" \
+  "$INSTALLED_COORDINATOR_OWNED_APPLY_RUNNER"
+run_python_help "$INSTALLED_AUTHOR_OWNED_APPLY_RUNNER"
+run_python_help "$INSTALLED_COORDINATOR_OWNED_APPLY_RUNNER"
+
 INSTALLED_AUTHOR_VALIDATOR="$STAGED_SKILLS/keystone-author/scripts/validate_finalization.py"
 INSTALLED_AUTHOR_VALIDATOR_RUNNER="$STAGED_SKILLS/keystone-author/scripts/run_finalization_validation.py"
 INSTALLED_AUTHOR_VALIDATOR_HOOK="$STAGED_SKILLS/keystone-author/scripts/check_finalization_hook.sh"
@@ -148,6 +215,7 @@ bash -n "$INSTALLED_AUTHOR_VALIDATOR_HOOK"
 
 INSTALLED_LINKER_GRAPH_VALIDATOR="$STAGED_SKILLS/keystone-linker/scripts/validate_graph.py"
 INSTALLED_LINKER_GRAPH_RUNNER="$STAGED_SKILLS/keystone-linker/scripts/run_graph_validation.py"
+INSTALLED_LINKER_CLASSIFICATION_RUNNER="$STAGED_SKILLS/keystone-linker/scripts/run_graph_classification.py"
 INSTALLED_LINKER_GRAPH_HOOK="$STAGED_SKILLS/keystone-linker/scripts/check_graph_hook.sh"
 INSTALLED_LINKER_GRAPH_RUNTIME="$STAGED_SKILLS/keystone-linker/scripts/graph_runtime/validator.py"
 INSTALLED_LINKER_REFERENCE_RUNTIME="$STAGED_SKILLS/keystone-linker/scripts/graph_runtime/readiness.py"
@@ -156,7 +224,8 @@ INSTALLED_LINKER_GRAPH_REFERENCE="$STAGED_SKILLS/keystone-linker/references/grap
 INSTALLED_LINKER_REFERENCE_CONTRACT="$STAGED_SKILLS/keystone-linker/references/reference-index-runtime.md"
 INSTALLED_LINKER_GRAPH_TEST="$STAGED_SKILLS/keystone-linker/tests/test_validate_graph.py"
 for installed in "$INSTALLED_LINKER_GRAPH_VALIDATOR" "$INSTALLED_LINKER_GRAPH_RUNNER" \
-  "$INSTALLED_LINKER_GRAPH_HOOK" "$INSTALLED_LINKER_GRAPH_RUNTIME" \
+  "$INSTALLED_LINKER_CLASSIFICATION_RUNNER" "$INSTALLED_LINKER_GRAPH_HOOK" \
+  "$INSTALLED_LINKER_GRAPH_RUNTIME" \
   "$INSTALLED_LINKER_REFERENCE_RUNTIME" "$INSTALLED_LINKER_SOURCE_UNIT" \
   "$INSTALLED_LINKER_GRAPH_REFERENCE" \
   "$INSTALLED_LINKER_REFERENCE_CONTRACT" "$INSTALLED_LINKER_GRAPH_TEST"; do
@@ -167,6 +236,7 @@ for installed in "$INSTALLED_LINKER_GRAPH_VALIDATOR" "$INSTALLED_LINKER_GRAPH_RU
 done
 python3 "$INSTALLED_LINKER_GRAPH_VALIDATOR" --help >/dev/null
 python3 "$INSTALLED_LINKER_GRAPH_RUNNER" --help >/dev/null
+python3 "$INSTALLED_LINKER_CLASSIFICATION_RUNNER" --help >/dev/null
 bash -n "$INSTALLED_LINKER_GRAPH_HOOK"
 
 INSTALLED_COORDINATOR_SKILL="$STAGED_SKILLS/keystone-coordinator/SKILL.md"
@@ -286,8 +356,11 @@ FINAL_AUTHOR_VALIDATOR="$DEST_ROOT/keystone-author/scripts/validate_finalization
 FINAL_AUTHOR_RUNNER="$DEST_ROOT/keystone-author/scripts/run_finalization_validation.py"
 FINAL_AUTHOR_HOOK="$DEST_ROOT/keystone-author/scripts/check_finalization_hook.sh"
 FINAL_AUTHOR_FINALIZATION_GLOBAL="$DEST_ROOT/keystone-author/scripts/finalization_global.py"
+FINAL_AUTHOR_OWNED_APPLY_RUNTIME="$DEST_ROOT/keystone-author/scripts/owned_surface_apply_runtime.py"
+FINAL_AUTHOR_OWNED_APPLY_RUNNER="$DEST_ROOT/keystone-author/scripts/run_owned_surface_apply.py"
 FINAL_LINKER_VALIDATOR="$DEST_ROOT/keystone-linker/scripts/validate_graph.py"
 FINAL_LINKER_RUNNER="$DEST_ROOT/keystone-linker/scripts/run_graph_validation.py"
+FINAL_LINKER_CLASSIFICATION_RUNNER="$DEST_ROOT/keystone-linker/scripts/run_graph_classification.py"
 FINAL_LINKER_HOOK="$DEST_ROOT/keystone-linker/scripts/check_graph_hook.sh"
 FINAL_REFERENCE_RUNTIME="$DEST_ROOT/keystone-linker/scripts/graph_runtime/readiness.py"
 FINAL_LINKER_SOURCE_UNIT="$DEST_ROOT/keystone-linker/scripts/graph_runtime/source_unit.py"
@@ -306,9 +379,13 @@ FINAL_COORDINATOR_V3_TEST="$DEST_ROOT/keystone-coordinator/tests/test_validate_c
 FINAL_COORDINATOR_SNAPSHOT_TEST="$DEST_ROOT/keystone-coordinator/tests/test_closure_actual_state.py"
 FINAL_COORDINATOR_CAPTURE_TEST="$DEST_ROOT/keystone-coordinator/tests/test_capture_assignment_snapshot.py"
 FINAL_COORDINATOR_ACCEPTANCE_TEST="$DEST_ROOT/keystone-coordinator/tests/test_record_acceptance_event.py"
+FINAL_COORDINATOR_OWNED_APPLY_RUNTIME="$DEST_ROOT/keystone-coordinator/scripts/owned_surface_apply_runtime.py"
+FINAL_COORDINATOR_OWNED_APPLY_RUNNER="$DEST_ROOT/keystone-coordinator/scripts/run_owned_surface_apply.py"
 for installed in "$FINAL_AUTHOR_VALIDATOR" "$FINAL_AUTHOR_RUNNER" "$FINAL_AUTHOR_HOOK" \
-  "$FINAL_AUTHOR_FINALIZATION_GLOBAL" \
-  "$FINAL_LINKER_VALIDATOR" "$FINAL_LINKER_RUNNER" "$FINAL_LINKER_HOOK" \
+  "$FINAL_AUTHOR_FINALIZATION_GLOBAL" "$FINAL_AUTHOR_OWNED_APPLY_RUNTIME" \
+  "$FINAL_AUTHOR_OWNED_APPLY_RUNNER" \
+  "$FINAL_LINKER_VALIDATOR" "$FINAL_LINKER_RUNNER" \
+  "$FINAL_LINKER_CLASSIFICATION_RUNNER" "$FINAL_LINKER_HOOK" \
   "$FINAL_REFERENCE_RUNTIME" "$FINAL_LINKER_SOURCE_UNIT" "$FINAL_REFERENCE_CONTRACT" \
   "$FINAL_COORDINATOR_SKILL" "$FINAL_COORDINATOR_VALIDATOR" \
   "$FINAL_COORDINATOR_ACTUAL_STATE" "$FINAL_COORDINATOR_CAPTURE" \
@@ -317,18 +394,30 @@ for installed in "$FINAL_AUTHOR_VALIDATOR" "$FINAL_AUTHOR_RUNNER" "$FINAL_AUTHOR
   "$FINAL_COORDINATOR_REFERENCE" "$FINAL_COORDINATOR_TEST" \
   "$FINAL_COORDINATOR_V2_TEST" "$FINAL_COORDINATOR_V3_TEST" \
   "$FINAL_COORDINATOR_SNAPSHOT_TEST" "$FINAL_COORDINATOR_CAPTURE_TEST" \
-  "$FINAL_COORDINATOR_ACCEPTANCE_TEST" \
+  "$FINAL_COORDINATOR_ACCEPTANCE_TEST" "$FINAL_COORDINATOR_OWNED_APPLY_RUNTIME" \
+  "$FINAL_COORDINATOR_OWNED_APPLY_RUNNER" \
   "$DEST_ROOT/.keystone-install.json"; do
   if [ ! -f "$installed" ]; then
     echo "Final installed-package verification failed: $installed" >&2
     exit 1
   fi
 done
+require_file_parity "$OWNED_APPLY_CANONICAL_RUNTIME" \
+  "$AUTHOR_OWNED_APPLY_RUNTIME" "$COORDINATOR_OWNED_APPLY_RUNTIME" \
+  "$FINAL_AUTHOR_OWNED_APPLY_RUNTIME" \
+  "$FINAL_COORDINATOR_OWNED_APPLY_RUNTIME"
+require_file_parity "$AUTHOR_OWNED_APPLY_RUNNER" \
+  "$FINAL_AUTHOR_OWNED_APPLY_RUNNER"
+require_file_parity "$COORDINATOR_OWNED_APPLY_RUNNER" \
+  "$FINAL_COORDINATOR_OWNED_APPLY_RUNNER"
+run_python_help "$FINAL_AUTHOR_OWNED_APPLY_RUNNER"
+run_python_help "$FINAL_COORDINATOR_OWNED_APPLY_RUNNER"
 python3 "$FINAL_AUTHOR_VALIDATOR" --help >/dev/null
 python3 "$FINAL_AUTHOR_RUNNER" --help >/dev/null
 bash -n "$FINAL_AUTHOR_HOOK"
 python3 "$FINAL_LINKER_VALIDATOR" --help >/dev/null
 python3 "$FINAL_LINKER_RUNNER" --help >/dev/null
+python3 "$FINAL_LINKER_CLASSIFICATION_RUNNER" --help >/dev/null
 bash -n "$FINAL_LINKER_HOOK"
 python3 "$FINAL_COORDINATOR_VALIDATOR" --help >/dev/null
 python3 "$FINAL_COORDINATOR_CAPTURE" --help >/dev/null

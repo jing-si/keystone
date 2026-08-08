@@ -28,6 +28,8 @@ from graph_runtime.planner import (
     changed_seed_candidates,
     plan_graph_sync,
 )
+from graph_runtime.validator import validate_transaction
+from graph_runtime.wire import transaction_wire
 
 
 class GraphPlannerTests(unittest.TestCase):
@@ -73,6 +75,17 @@ class GraphPlannerTests(unittest.TestCase):
             exact_patch,
         )
 
+    def _delta_for_patch(self, patch):
+        return Delta(
+            DeltaKind.DOCUMENT
+            if patch.target_path.endswith((".md", ".markdown"))
+            else DeltaKind.ARTIFACT,
+            patch.target_path,
+            (Locator(patch.target_path),),
+            "bind executable patch",
+            patch.baseline_digest,
+        )
+
     def test_plan_emits_exact_add_mutation_and_stable_patch_id(self):
         new_node = Node("key.capability.new", NodeKind.CAPABILITY,
                         locator=Locator("00_docs/feature.md", heading="New"))
@@ -91,8 +104,41 @@ class GraphPlannerTests(unittest.TestCase):
     def test_update_uses_exact_existing_before_state(self):
         moved = Node(self.code.id, self.code.kind, self.code.artifact_kind,
                      Locator("src/new_feature.py", symbol="Feature"))
-        transaction = plan_graph_sync(self.snapshot, (self.delta,), "scope:s02",
-                                      requested_nodes_after=(moved,), patch_specs=(self.patch,))
+        body = "class Feature:\n    pass\n"
+        code_patch = PatchSpec(
+            PatchOwner.MAIN,
+            PatchSurface.CODE_ANCHOR,
+            moved.locator.path,
+            "absent",
+            body,
+            patch_format="full_replacement",
+            patch_body=body,
+            expected_after_digest="sha256:" + hashlib.sha256(
+                body.encode("utf-8")
+            ).hexdigest(),
+            baseline_content=None,
+        )
+        old_body = "# old location retired\n"
+        old_patch = PatchSpec(
+            PatchOwner.MAIN,
+            PatchSurface.CODE_ANCHOR,
+            self.code.locator.path,
+            "absent",
+            old_body,
+            patch_format="full_replacement",
+            patch_body=old_body,
+            expected_after_digest="sha256:" + hashlib.sha256(
+                old_body.encode("utf-8")
+            ).hexdigest(),
+            baseline_content=None,
+        )
+        transaction = plan_graph_sync(
+            self.snapshot,
+            (self._delta_for_patch(old_patch), self._delta_for_patch(code_patch)),
+            "scope:s02",
+            requested_nodes_after=(moved,),
+            patch_specs=(old_patch, code_patch),
+        )
         mutation = transaction.canonical_mutations[0]
         self.assertEqual(mutation.operation, MutationOperation.UPDATE)
         self.assertEqual(mutation.before, self.code)
@@ -130,7 +176,7 @@ class GraphPlannerTests(unittest.TestCase):
                                       evidence=Evidence.OBSERVED)
         self.assertEqual(transaction.canonical_mutations[0].evidence, MutationEvidence.OBSERVED)
 
-        observed_relation = Relation(self.code.id, RelationType.USES, self.test.id,
+        observed_relation = Relation(self.code.id, RelationType.USES, self.capability.id,
                                      Evidence.OBSERVED,
                                      Provenance(surface="document_metadata",
                                                 locator=Locator("00_docs/feature.md")))
@@ -150,7 +196,15 @@ class GraphPlannerTests(unittest.TestCase):
                             transaction_schema_version=1)
 
     def test_direct_item_to_artifact_requires_named_bounded_case_and_reason(self):
-        direct = Relation(self.item.id, RelationType.DOCUMENTS, self.code.id)
+        direct = Relation(
+            self.item.id,
+            RelationType.DOCUMENTS,
+            self.code.id,
+            provenance=Provenance(
+                surface="document_metadata",
+                locator=Locator("00_docs/feature.md"),
+            ),
+        )
         with self.assertRaisesRegex(ValueError, "capability-first"):
             plan_graph_sync(self.snapshot, (self.delta,), "scope:s02",
                             requested_relations_after=(direct,), patch_specs=(self.patch,))
@@ -182,7 +236,14 @@ class GraphPlannerTests(unittest.TestCase):
 
     def test_verification_requirement_traverses_and_plans_without_bounded_direct_exception(self):
         requirement = Relation(
-            self.item.id, RelationType.REQUIRES_VERIFICATION_OF, self.code.id)
+            self.item.id,
+            RelationType.REQUIRES_VERIFICATION_OF,
+            self.code.id,
+            provenance=Provenance(
+                surface="document_metadata",
+                locator=Locator("00_docs/feature.md"),
+            ),
+        )
         snapshot = GraphSnapshot(self.snapshot.nodes, self.snapshot.relations + (requirement,))
 
         candidates = changed_seed_candidates(snapshot, (self.code.id,))
@@ -390,7 +451,10 @@ class GraphPlannerTests(unittest.TestCase):
         )
 
         current = plan_graph_sync(
-            self.snapshot, (), "scope:s02", patch_specs=(executable,)
+            self.snapshot,
+            (self._delta_for_patch(executable),),
+            "scope:s02",
+            patch_specs=(executable,),
         )
         legacy = plan_graph_sync(
             self.snapshot,
@@ -433,7 +497,7 @@ class GraphPlannerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "schema-v1.*v2"):
             plan_graph_sync(
                 self.snapshot,
-                (),
+                (self._delta_for_patch(executable),),
                 "scope:s02",
                 patch_specs=(executable,),
                 transaction_schema_version=1,
@@ -484,6 +548,8 @@ class GraphPlannerTests(unittest.TestCase):
         forbidden = (
             PatchSpec(PatchOwner.MAIN, PatchSurface.DOCUMENT_METADATA,
                       self.patch.target_path, self.patch.baseline_digest, "x"),
+            PatchSpec(PatchOwner.AUTHOR, PatchSurface.DOCUMENT_METADATA,
+                      "src/security.py", "sha256:" + "2" * 64, "x"),
             PatchSpec(PatchOwner.AUTHOR, PatchSurface.CODE_ANCHOR,
                       "src/feature.py", "sha256:" + "2" * 64, "x"),
             PatchSpec(PatchOwner.AUTHOR, PatchSurface.COMPANION_METADATA,
@@ -527,6 +593,261 @@ class GraphPlannerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "required patch"):
             plan_graph_sync(self.snapshot, (self.delta,), "scope:s02",
                             requested_nodes_after=(new_node,), patch_specs=(optional,))
+
+    def test_schema_v2_requires_each_mutation_to_have_a_required_owning_patch(self):
+        new_node = Node(
+            "key.capability.new",
+            NodeKind.CAPABILITY,
+            locator=Locator("00_docs/other.md"),
+        )
+
+        with self.assertRaisesRegex(ValueError, "required owning patch"):
+            plan_graph_sync(
+                self.snapshot,
+                (self.delta,),
+                "scope:s03",
+                requested_nodes_after=(new_node,),
+                patch_specs=(self.patch,),
+            )
+
+    def test_schema_v2_forbids_mutation_bearing_optional_patch(self):
+        new_node = Node(
+            "key.capability.new",
+            NodeKind.CAPABILITY,
+            locator=Locator("00_docs/optional.md"),
+        )
+        optional_body = "optional mutation\n"
+        optional = PatchSpec(
+            PatchOwner.AUTHOR,
+            PatchSurface.DOCUMENT_METADATA,
+            target_path="00_docs/optional.md",
+            baseline_digest="absent",
+            exact_patch=optional_body,
+            required=False,
+            patch_format="full_replacement",
+            patch_body=optional_body,
+            expected_after_digest="sha256:" + hashlib.sha256(
+                optional_body.encode("utf-8")
+            ).hexdigest(),
+            baseline_content=None,
+        )
+
+        with self.assertRaisesRegex(ValueError, "mutation-bearing optional"):
+            plan_graph_sync(
+                self.snapshot,
+                (self.delta, self._delta_for_patch(optional)),
+                "scope:s03",
+                requested_nodes_after=(new_node,),
+                patch_specs=(self.patch, optional),
+            )
+
+    def test_schema_v2_update_forbids_optional_patch_on_before_surface(self):
+        moved = replace(
+            self.code,
+            locator=Locator("src/moved_feature.py", symbol="Feature"),
+        )
+        required_body = "class Feature:\n    pass\n"
+        required = PatchSpec(
+            PatchOwner.MAIN,
+            PatchSurface.CODE_ANCHOR,
+            moved.locator.path,
+            "absent",
+            required_body,
+            patch_format="full_replacement",
+            patch_body=required_body,
+            expected_after_digest="sha256:" + hashlib.sha256(
+                required_body.encode("utf-8")
+            ).hexdigest(),
+            baseline_content=None,
+        )
+        optional_body = "# retire old location\n"
+        optional = PatchSpec(
+            PatchOwner.MAIN,
+            PatchSurface.CODE_ANCHOR,
+            self.code.locator.path,
+            "absent",
+            optional_body,
+            required=False,
+            patch_format="full_replacement",
+            patch_body=optional_body,
+            expected_after_digest="sha256:" + hashlib.sha256(
+                optional_body.encode("utf-8")
+            ).hexdigest(),
+            baseline_content=None,
+        )
+
+        with self.assertRaisesRegex(ValueError, "mutation-bearing optional"):
+            plan_graph_sync(
+                self.snapshot,
+                (self._delta_for_patch(required), self._delta_for_patch(optional)),
+                "scope:s03",
+                requested_nodes_after=(moved,),
+                patch_specs=(required, optional),
+            )
+
+    def test_schema_v2_allows_ancillary_optional_patch_and_v1_keeps_legacy_policy(self):
+        new_node = Node(
+            "key.capability.new",
+            NodeKind.CAPABILITY,
+            locator=Locator(self.patch.target_path),
+        )
+        optional_body = "ancillary\n"
+        optional = PatchSpec(
+            PatchOwner.AUTHOR,
+            PatchSurface.DOCUMENT_METADATA,
+            "00_docs/ancillary.md",
+            "absent",
+            optional_body,
+            required=False,
+            patch_format="full_replacement",
+            patch_body=optional_body,
+            expected_after_digest="sha256:" + hashlib.sha256(
+                optional_body.encode("utf-8")
+            ).hexdigest(),
+            baseline_content=None,
+        )
+
+        current = plan_graph_sync(
+            self.snapshot,
+            (self.delta, self._delta_for_patch(optional)),
+            "scope:s03",
+            requested_nodes_after=(new_node,),
+            patch_specs=(self.patch, optional),
+        )
+        legacy = plan_graph_sync(
+            self.snapshot,
+            (self.delta,),
+            "scope:s03",
+            requested_nodes_after=(Node(
+                "key.capability.legacy",
+                NodeKind.CAPABILITY,
+                locator=Locator("00_docs/legacy.md"),
+            ),),
+            patch_specs=(self._legacy_patch(),),
+            transaction_schema_version=1,
+        )
+
+        self.assertFalse(next(
+            patch.required for patch in current.surface_patches
+            if patch.target_path == optional.target_path
+        ))
+        self.assertEqual(1, legacy.schema_version)
+
+    def test_schema_v2_rejects_artifact_document_lifecycle(self):
+        invalid = replace(self.code, lifecycle=Lifecycle.DRAFT)
+        body = "class Feature:\n    pass\n"
+        patch = PatchSpec(
+            PatchOwner.MAIN,
+            PatchSurface.CODE_ANCHOR,
+            invalid.locator.path,
+            "absent",
+            body,
+            patch_format="full_replacement",
+            patch_body=body,
+            expected_after_digest="sha256:" + hashlib.sha256(
+                body.encode("utf-8")
+            ).hexdigest(),
+            baseline_content=None,
+        )
+
+        with self.assertRaisesRegex(ValueError, "lifecycle.*domain"):
+            plan_graph_sync(
+                self.snapshot,
+                (self._delta_for_patch(patch),),
+                "scope:s03",
+                requested_nodes_after=(invalid,),
+                patch_specs=(patch,),
+            )
+
+    def test_schema_v2_move_requires_both_old_and_new_surface_patches(self):
+        moved = replace(
+            self.code,
+            locator=Locator("src/moved_feature.py", symbol="Feature"),
+        )
+        old_body = "# retired\n"
+        new_body = "class Feature:\n    pass\n"
+        old_patch = PatchSpec(
+            PatchOwner.MAIN,
+            PatchSurface.CODE_ANCHOR,
+            self.code.locator.path,
+            "absent",
+            old_body,
+            patch_format="full_replacement",
+            patch_body=old_body,
+            expected_after_digest="sha256:" + hashlib.sha256(
+                old_body.encode("utf-8")
+            ).hexdigest(),
+            baseline_content=None,
+        )
+        new_patch = PatchSpec(
+            PatchOwner.MAIN,
+            PatchSurface.CODE_ANCHOR,
+            moved.locator.path,
+            "absent",
+            new_body,
+            patch_format="full_replacement",
+            patch_body=new_body,
+            expected_after_digest="sha256:" + hashlib.sha256(
+                new_body.encode("utf-8")
+            ).hexdigest(),
+            baseline_content=None,
+        )
+
+        for patch in (old_patch, new_patch):
+            with self.subTest(path=patch.target_path), self.assertRaisesRegex(
+                ValueError, "required owning patch"
+            ):
+                plan_graph_sync(
+                    self.snapshot,
+                    (self._delta_for_patch(patch),),
+                    "scope:s03",
+                    requested_nodes_after=(moved,),
+                    patch_specs=(patch,),
+                )
+
+    def test_schema_v2_patch_requires_bound_graph_relevant_input_delta(self):
+        new_node = Node(
+            "key.capability.delta-bound",
+            NodeKind.CAPABILITY,
+            locator=Locator(self.patch.target_path),
+        )
+        with self.assertRaisesRegex(ValueError, "graph-relevant input delta"):
+            plan_graph_sync(
+                self.snapshot,
+                (),
+                "scope:s03",
+                requested_nodes_after=(new_node,),
+                patch_specs=(self.patch,),
+            )
+
+    def test_schema_v2_bounded_direct_relation_removal_needs_no_reason(self):
+        direct = Relation(
+            self.item.id,
+            RelationType.DOCUMENTS,
+            self.code.id,
+            provenance=Provenance(
+                surface="document_metadata",
+                locator=Locator(self.patch.target_path),
+            ),
+        )
+        baseline = GraphSnapshot(nodes=self.snapshot.nodes, relations=(direct,))
+        transaction = plan_graph_sync(
+            baseline,
+            (self.delta,),
+            "scope:s03",
+            requested_relation_removals=((
+                direct.source,
+                direct.relation,
+                direct.target,
+            ),),
+            patch_specs=(self.patch,),
+        )
+
+        self.assertIsNone(transaction.canonical_mutations[0].direct_relation_reason)
+        self.assertEqual((), validate_transaction(
+            transaction_wire(transaction),
+            source_snapshot=baseline,
+        ))
 
 
 if __name__ == "__main__":

@@ -194,10 +194,11 @@ Parsing과 normalization은 다음 기준을 따른다.
 
 1. `key.id`와 code anchor `id`는 stable artifact identity로 보고 locator와 분리한다.
 2. `key.refs`는 탐색 후보 edge로만 사용하고 required impact relation으로 확정하지 않는다.
-3. Document item은 부모 document와 section의 `governed_by`, source authority와 lifecycle을
-   상속할 수 있지만 `id`와 `supersedes`는 상속하지 않는다. Effective `governed_by`는 부모
-   effective set과 child declared set의 ordered union이며 inherited target을 child의 typed
-   relation으로 복제하지 않는다.
+3. Document-domain item은 부모 document와 section의 `governed_by`, source authority, lifecycle과
+   approval을 상속할 수 있지만 `id`와 `supersedes`는 상속하지 않는다. Effective `governed_by`는
+   부모 effective set과 child declared set의 ordered union이며 inherited target을 child의 typed
+   relation으로 복제하지 않는다. `output_artifact`는 이 document metadata를 상속하지 않고 직접
+   선언이 없으면 artifact lifecycle `active`를 사용한다.
 4. Decision의 일부만 대체되면 decision document 전체가 아니라 declared `key.claim.*`
    relation을 impact seed로 사용한다. Claim metadata가 없으면 부분 대체를 확정하지 않고
    metadata gap으로 보고한다.
@@ -314,6 +315,18 @@ Graph-relevant `document_delta | artifact_delta`가 둘 이상의 source surface
 Transaction trigger는 current scope, Coordinator permission, worker assignment 또는 acceptance를
 자동 생성하지 않는다.
 
+Authority-bearing `not_applicable`은 package-owned
+`scripts/run_graph_classification.py --root ROOT --manifest INPUT`으로만 만든다. Schema-v1 input은
+exact ordered delta set/digest와 complete delta-source coverage를 resolved root에 결속하고, output은
+disposition, 같은 delta digest, repository source/graph generation digest, inspected sources, reason
+codes, exact locator별 `exclusion_evidence`와 strict diagnostic envelope를 반환한다. Positive
+added-source exclusion은 delta/locator index를 실제 inspected source/companion index와
+`added_plain_unowned_source`에 결속하고 empty set은 `empty_delta_set`과 빈 mapping을 사용한다.
+Caller의 `graph_relevant` flag는 authority가 아니며
+Linker가 current inline/companion metadata, document delta, deletion, locator ownership과 discovery
+completeness를 다시 판정한다. Baseline graph evidence가 없는 `modified | type_replaced`는
+`required`이고 empty set 또는 added+baseline-absent plain/unowned source만 `not_applicable`이다.
+
 1. Delta locator와 각 source의 UTF-8 raw-byte SHA-256 baseline을 수집한다.
 2. `declared` evidence는 admissible로, `observed` evidence는 surface-owner `confirm` 조건으로
    수용하며 `inferred` evidence는 mutation에서 제외한다.
@@ -326,7 +339,14 @@ Transaction trigger는 current scope, Coordinator permission, worker assignment 
    surface의 canonical representation을 공통 `SourceUnit` 정책으로 골라 exact patch를 만든다.
    Companion만 선언하면 companion, inline만 선언하면 inline을 사용하고 둘 다 Keystone
    declaration을 가지면 merge하지 않고 `metadata_surface_conflict`로 실패한다. 중앙 registry를
-   만들지 않는다.
+   만들지 않는다. Supported source가 UTF-8 decode에 실패해도 valid companion이 있으면 raw source
+   bytes와 companion bytes를 함께 generation에 결속하고 companion을 선택한다. Companion이 없으면
+   `unsupported_encoding`으로 실패한다. Generic adapter는 string/template/raw-string과 block
+   comment를 mask하고 line의 첫 유효 token인 실제 comment anchor만 declared metadata로 읽는다.
+   Unterminated lexical region의 metadata-like text는 `ambiguous_metadata_anchor`로 보고하고 node를
+   선언하거나 companion을 자동 선택하지 않는다. 완전한 ECMAScript lexical-goal 판정이 필요한
+   JavaScript/TypeScript source에서 `${` bytes와 metadata-like first-token comment bytes가 함께
+   발견되면 위치를 추론하지 않고 source 전체를 같은 진단으로 차단해 companion surface를 요구한다.
 6. Attestation이 모두 `confirm`이고 baseline이 유효할 때만 apply handoff를 ready로 만든다.
 7. Apply 후 source를 cache 없이 재구성하고 mutation과 일치하는지 비교한다. Derived cache는
    선택적·비권위이며 source mismatch 시 폐기한다.
@@ -351,6 +371,69 @@ Output focus:
 5. Transaction state and resumable apply results
 6. Reconstruction and mechanical validation evidence
 7. Current transaction completeness and separate project coverage debt
+
+### Application authority manifest와 read-only verification
+
+Canonical graph transaction schema v2 자체는 변경하지 않는다. Standalone transaction 또는
+graph-validation manifest schema v1 안의 transaction은 shape/replay와 recorded/current after-state를
+검사하는 structural evidence다. 신규 apply authority success에는 canonical raw-byte
+graph-validation manifest schema v2가 필요하다. Manifest v2의 exact required field는
+`schema_version`, `sources`, `transaction`, `application_evidence`이고 `scope`, `coverage`만 optional이다.
+`application_evidence`는 disjoint external evidence root 아래 aggregate의 exact `{path, digest}`
+reference다. Schema-v1 manifest는 historical/structural reading에 남지만 Coordinator schema v3의
+신규 required graph-sync success를 authorize할 수 없다.
+
+Manifest schema v2 authority 검증은 authenticated owner receipt의 full patch
+`baseline_content`/`baseline_digest`에서 applied physical surface의 pre-application generation을
+복원한다. Linker는 동일 SourceUnit 정책으로 baseline GraphSnapshot을 재구성해 transaction
+`reconstruction.baseline`과 exact equality를 요구하고, node/relation mutation의 `before`를 그
+snapshot에 순서대로 결속한다. 이 receipt-bound baseline이 없는 standalone v2 검증은
+structural/current-after 범위를 넘지 않는다.
+
+`transaction_digest`는 `schema_version`, `transaction_id`, `scope_ref`, `input_deltas`,
+`canonical_mutations`, `surface_patches` exact immutable plan projection의 canonical JSON SHA-256이다.
+Apply 뒤 변하는 `reconstruction`은 이 projection에서 제외한다. Aggregate application-evidence schema
+v1 exact fields는 `schema_version`, `transaction_id`, `transaction_digest`, `repository_root_digest`,
+`assignment_id`,
+`assignment_digest`, `receipts`다. Ordered `receipts`의 각 reference는 exact `{path, digest}`다.
+Transaction `apply_results` 순서에서 `result: applied`인 required/optional patch마다 정확히 한 owner
+`confirm`과 한 receipt가 필요하고 extra/reordered/duplicate receipt를 거절한다. Omitted ancillary
+optional은 applied result와 receipt를 0개 가진다.
+
+Owner receipt schema v1은 exact envelope `schema_version`, `producer`, `status`, `subject`, `receipt`를
+사용한다. `subject` exact fields는 `transaction_id`, `transaction_digest`, `assignment_id`,
+`assignment_digest`, `phase_id`, `phase_baseline_snapshot_digest`,
+`phase_parent_evidence_digest`, `repository_root_digest`, `owner`, `scope_digest`다. Receipt body exact
+fields는 `schema_version`, `trust_model`, `command_id`, `runner_executable_digest`, `runtime_digest`,
+`evidence_root_digest`, `request_digest`, `prior_receipt_digest`, `nonce`,
+`authority_key_fingerprint`, `patch_receipt`, `mac`다. `patch_receipt`는 exact
+`{patch, result, resulting_digest}`이며 full transaction-v2 patch와 `result: applied`를 가진다.
+
+Linker verifier는 source-write-free다. Aggregate/receipt canonical bytes와 single-link/no-follow
+identity, ordered raw-digest chain, exact patch/result/current digest equality, authoritative
+transaction/root/assignment/owner 값, signed phase/scope/request field shape, current package
+runner/runtime bytes와 HMAC을 read-only로 검증한다. Phase/scope/request의 authoritative 의미는
+Coordinator v3가 immutable assignment, phase chain, actor scope와 patch에서 full request를 재구성해
+비교한다. Applied owner별 external pinned key가 필요하고 distinct owner key fingerprint는 서로
+달라야 한다. Key는 repository/evidence root 밖 absolute symlink-free path의 current-user-owned,
+owner-only, single-link regular file이며 32 raw bytes 이상이다. Trusted-host receipt는 exact signed
+bytes와 protected-key possession을 증명하지만 independent binary execution, external clock,
+OS-user/organization identity나 이후 authorized write를 증명하지 않는다.
+
+Authority 검증 CLI는 다음 exact flag surface를 사용한다.
+
+```sh
+python3 scripts/run_graph_validation.py \
+  --root ROOT [--source SOURCE ...] --manifest MANIFEST [--transaction TRANSACTION] \
+  [--scope transaction|repository] --evidence-root EVIDENCE_ROOT \
+  [--owner-key OWNER=PATH ...] [--owner-key-sha256 OWNER=sha256:... ...] \
+  [--validator VALIDATOR] [--extension EXTENSION] [--timeout-seconds SECONDS]
+```
+
+Core `scripts/validate_graph.py`는 `--validator`, `--extension`, `--timeout-seconds`를 제외한 같은
+flag를 받는다. Schema-v2 inline transaction과 `--transaction`은 같아야 하고 authority option은
+schema-v2 manifest에서만 허용한다. Authority 요청 시 runner는 canonical core validator와 isolated
+Python을 사용하고 validator override와 extension을 금지한다.
 
 <!-- key: id=key.standard.skill.linker.output-contract refs=key.role.linker key.contract.output key.topic.impact-review -->
 ## Output contract
@@ -470,48 +553,68 @@ linker_report:
     reason:
   graph_synchronization:
     schema_version: 2
-    transaction_id:
     graph_relevance:
       relevant: true | false
       disposition: required | not_applicable | deferred
       reason:
-    input_deltas:
-      - kind: document_delta | artifact_delta
-        source_surface:
-        baseline_digest: sha256:<64-lowercase-hex> | absent
-    canonical_mutations:
-      - operation: add | update | remove
-        entity: node | relation
-        before:
-        after:
-        evidence: declared | observed
-        direct_relation_reason:
-    surface_patches:
-      - patch_id:
-        owner: author | main | coordinator
-        surface: document_metadata | code_anchor | config_anchor | schema_anchor | api_anchor | test_anchor | companion_metadata
-        target_path:
-        baseline_digest: sha256:<64-lowercase-hex> | absent
-        baseline_content: <UTF-8 string> | null
-        exact_patch:
-        patch_format: unified_diff | full_replacement
-        patch_body:
-        expected_after_digest: sha256:<64-lowercase-hex>
-        required: true | false
-    attestations:
-      - patch_id:
-        decision: confirm | reject | needs_revision
-        evidence:
-    apply_results:
-      - patch_id:
-        result: applied | failed | stale_baseline
-        resulting_digest:
-    transaction_state: proposed | awaiting_attestation | ready_to_apply | applying | partially_applied | verified | conflicted | failed
-    failure_reason: transient_io | permission_denied | validation_failed | source_conflict | tool_failure | unknown | null
-    reconstruction:
-    mechanical_validation:
-    coverage_debt: []
+    transaction:
+      schema_version: 2
+      transaction_id:
+      scope_ref:
+      input_deltas:
+        - kind: document_delta | artifact_delta
+          source_surface:
+          change_kind: added | modified | deleted | type_replaced
+          changed_locators:
+            - path: src/example.py
+              symbol: Example.run
+          semantic_summary:
+          baseline_digest: sha256:<64-lowercase-hex> | absent
+          resulting_digest: sha256:<64-lowercase-hex> | absent
+          graph_relevant: true | false
+      canonical_mutations:
+        - operation: add | update | remove
+          entity: node | relation
+          before:
+          after:
+          evidence: declared | observed
+          direct_relation_reason:
+      surface_patches:
+        - patch_id:
+          owner: author | main | coordinator
+          surface: document_metadata | code_anchor | config_anchor | schema_anchor | api_anchor | test_anchor | companion_metadata
+          target_path:
+          baseline_digest: sha256:<64-lowercase-hex> | absent
+          baseline_content: <UTF-8 string> | null
+          exact_patch:
+          patch_format: unified_diff | full_replacement
+          patch_body:
+          expected_after_digest: sha256:<64-lowercase-hex>
+          required: true | false
+      attestations:
+        - patch_id:
+          owner: author | main | coordinator
+          decision: confirm | reject | needs_revision
+          evidence:
+      apply_results:
+        - patch_id:
+          result: applied | failed | stale_baseline
+          resulting_digest:
+          evidence:
+      state: proposed | awaiting_attestation | ready_to_apply | applying | partially_applied | verified | conflicted | failed
+      failure_reason: transient_io | permission_denied | validation_failed | source_conflict | tool_failure | unknown | null
+      reconstruction:
+      mechanical_validation:
+      coverage_debt: []
+    prior_attempts:
+      - <canonical graph_transaction from an earlier attempt>
 ```
+
+`graph_relevance`와 `prior_attempts`는 synchronization/report envelope field이고 canonical
+transaction field가 아니다. Current transaction과 각 prior attempt는 동일한 exact
+`graph_transaction` wire를 사용하며 상태 필드명은 `state`다. `changed_locators`는 required `path`와
+해당되는 `heading | symbol | test_name | config_key | schema_name`만 가진 canonical object이고,
+사용하지 않는 optional locator field는 생략한다.
 
 Schema v2 mutation의 node/relation `before`와 `after`, reconstruction snapshot은 Artifact Graph
 기준서의 domain-specific lifecycle wire를 사용한다. Document-domain node는
@@ -526,6 +629,14 @@ Source-derived relation lifecycle은 node lifecycle을 그대로 복사하지 �
 patch의 executable field를 요구한다. Schema v1 descriptive transaction은 명시적 legacy opt-in
 에서만 만들며 mixed patch와 같은 physical `target_path`의 복수 patch를 거부한다. V2 applied
 result의 `resulting_digest`는 planned `expected_after_digest`와 같아야 한다.
+Schema-v2 canonical mutation은 `operation`, `entity`, `before`, `after`, `evidence`,
+`direct_relation_reason` exact field만 사용하며 planner와 direct-wire validator가 relation direction,
+lifecycle domain, bounded direct relation과 owning surface를 같은 policy로 재검사한다. 각 mutation은
+적어도 하나의 required owning patch로 실현하고 mutation-bearing optional patch를 금지한다.
+Optional은 ancillary surface로만 허용하며 미적용은 completion을 막지 않는다. 실제 applied된
+required/optional patch는 모두 owner confirm, apply 직전 baseline 확인과
+`resulting_digest == expected_after_digest == current source digest`를 만족하고 final verification에서
+다시 검사한다.
 
 `candidate_budget`은 후보가 많아 output을 줄였을 때만 사용한다. Linker는 `required` 후보를
 자의적으로 숨기지 않으며, 생략이 필요하면 `omitted_summary`에 evidence type, keyword, path
@@ -600,7 +711,9 @@ Graph metadata나 relation의 단순 부재는 stop condition이 아니다.
    flat `depends_on`과 structured dependency는 semantic relation으로 유지하되 legacy Work gate로
    승격하지 않는다.
 3. Relation target, gate scope/condition, legacy conflict, duplicate/self/invalid step을 검증하고
-   cycle은 expanded event graph evidence가 있을 때만 확정한다.
+   cycle은 expanded event graph evidence가 있을 때만 확정한다. 신규 gate condition은 flat
+   `approval_state`를 사용하고 nested `approval` 또는 두 표현의 충돌을 fail-closed로 거절한다.
+   Gate와 `applies_to`/`condition` nested object의 unknown field도 거절한다.
 4. Dependency 판정을 work status mutation, automatic assignment/cancellation/acceptance로 바꾸지 않는다.
 5. Graph evidence가 부족하면 `unknown`/`unresolvable`과 필요한 Author/Main handoff를 보고한다.
 

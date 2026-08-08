@@ -331,7 +331,7 @@ worker_report:
   artifact_deltas:
     - kind: artifact_delta
       source_surface:
-      change_kind: added | modified | deleted
+      change_kind: added | modified | deleted | type_replaced
       changed_locators:
         - path: src/example.py
           symbol: Example.run

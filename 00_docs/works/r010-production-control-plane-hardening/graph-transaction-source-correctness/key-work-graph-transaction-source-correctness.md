@@ -65,6 +65,7 @@ Include:
 
 - Package-owned Linker classification runner와 Coordinator evidence binding
 - Applied required/optional patch의 confirm, baseline, expected/result/current digest invariant
+- Surface-owner package runner의 check→write→reread receipt와 graph-validation manifest schema v2
 - Schema-v2 canonical mutation의 required-patch realization과 mutation-bearing optional 금지
 - Partial resume와 finalization에서 실제 applied patch 전체 재검증
 - Non-UTF-8 supported source, inline/companion selection과 raw-byte binding
@@ -132,12 +133,17 @@ Implementation:
 2. Mutation-bearing optional patch를 금지한다. Optional은 canonical graph after-state에 영향을
    주지 않는 ancillary surface 또는 immutable historical compatibility evidence에만 한정하며,
    선택적 canonical mutation은 별도 transaction으로 계획한다.
-3. Required/optional 구분과 무관하게 `applied patches ⊆ confirmed patches`와
-   `applied patches ⊆ baseline-checked patches`를 reconciler와 wire validator에 모두 적용한다.
-4. 모든 applied patch는 자기 owner의 confirm과 fresh baseline evidence를 가지며
-   `resulting_digest == expected_after_digest == current source digest`를 만족해야 한다.
-5. Finalization과 partial resume는 실제 applied된 모든 patch의 confirm, baseline과 digest를
-   다시 검증한다.
+3. Required/optional 구분과 무관하게 `applied patches ⊆ confirmed patches`를
+   reconciler와 transaction-v2 wire validator에 적용한다. `applied patches ⊆ baseline-checked
+   patches`는 live reconciler와 package-owned external application evidence에서 검증하고,
+   durable receipt가 없는 standalone transaction-v2 wire를 apply-time authority로 사용하지 않는다.
+4. Surface owner package runner가 planned baseline과 쓰기 직전 current bytes를 비교한 뒤
+   write·reread를 수행하고 HMAC receipt를 남긴다. Linker graph-validation manifest schema
+   v2는 모든 applied patch의 owner confirm, receipt와
+   `resulting_digest == expected_after_digest == current source digest`를 재검증한다.
+5. Coordinator schema v3는 receipt request를 immutable transaction plan, assignment, actor scope,
+   phase baseline·parent evidence와 actor delta에 다시 결속하고, finalization과 partial resume에서
+   실제 applied된 모든 patch의 confirm, receipt과 current digest를 재검증한다.
 6. Already-applied patch는 current digest가 recorded result와 같을 때만 skip한다.
 
 Verification:
@@ -147,6 +153,8 @@ Verification:
 - Mutation-bearing optional, required patch 없는 선택적 mutation과 optional omission으로 달라지는
   canonical graph after-state는 실패한다.
 - Unattested apply, stale baseline, source redrift와 forged result는 실패한다.
+- External application evidence가 없는 crafted `verified` transaction-v2 wire는 structural/current-after
+  validation을 통과하더라도 Coordinator-v3 authority success를 만들지 못한다.
 - Required/optional mixed transaction의 모든 허용·금지 상태 전이를 탐색한다.
 
 Done when: structured input을 직접 만들어도 applied optional patch의 owner·baseline·exact bytes
@@ -164,7 +172,10 @@ Implementation:
 3. Companion evidence를 logical source raw bytes와 companion bytes에 함께 결속한다.
 4. Generic language adapter는 string, template literal과 raw string을 masking한 뒤 실제 comment
    anchor만 metadata candidate로 인정한다.
-5. 모호한 anchor는 declared node가 아니라 diagnostic/observed candidate로 남긴다.
+5. 모호한 anchor는 declared node가 아니라 diagnostic/observed candidate로 남긴다. 완전한
+   ECMAScript lexical-goal 판정이 필요한 JavaScript/TypeScript source에서 `${` bytes와
+   metadata-like first-token comment bytes가 함께 발견되면 source 전체를 fail-closed ambiguity로
+   분류하고 companion surface를 요구한다.
 
 Verification:
 

@@ -34,6 +34,41 @@ from graph_runtime.validator import validate_snapshot
 
 
 class GraphMetadataTest(unittest.TestCase):
+    def test_artifact_heading_does_not_break_document_inheritance_chain(self):
+        source = """---
+document_lifecycle: draft
+approval:
+  state: pending
+authority:
+  source: project-standard
+key:
+  id: key.doc
+  kind: source_document
+---
+<!-- key: id=key.code.feature kind=output_artifact artifact_kind=code -->
+## Feature
+<!-- key: id=key.item.child kind=document_item -->
+- Child item
+"""
+
+        result = parse_source(source, "00_docs/example.md", MarkdownAdapter())
+        nodes = {node.id: node for node in result.snapshot.nodes}
+
+        self.assertFalse(result.diagnostics)
+        self.assertEqual(Lifecycle.ACTIVE, nodes["key.code.feature"].lifecycle)
+        self.assertIsNone(nodes["key.code.feature"].approval_state)
+        self.assertEqual((), nodes["key.code.feature"].source_authority)
+        self.assertEqual("key.doc", nodes["key.item.child"].parent_id)
+        self.assertEqual(Lifecycle.DRAFT, nodes["key.item.child"].lifecycle)
+        self.assertEqual(
+            ApprovalState.PENDING,
+            nodes["key.item.child"].approval_state,
+        )
+        self.assertEqual(
+            (("source", "project-standard"),),
+            nodes["key.item.child"].source_authority,
+        )
+
     def test_markdown_hierarchy_uses_actual_annotated_and_unannotated_headings(self):
         source = """---
 key: {id: key.doc.hierarchy, kind: source_document}
@@ -383,6 +418,30 @@ key:
         self.assertIn(("key.doc.old", RelationType.DOCUMENTS, "key.claim.document"), relations)
         self.assertIn(("key.doc.old", RelationType.GOVERNED_BY, "key.standard.project"), relations)
         self.assertFalse(any(source != "key.doc.old" for source, _, _ in relations))
+
+    def test_output_artifact_in_document_does_not_inherit_document_state(self):
+        source = """---
+document_lifecycle: draft
+approval:
+  state: pending
+authority:
+  source: project-standard
+key:
+  id: key.doc.draft
+  kind: source_document
+  governed_by: [key.standard.project]
+---
+<!-- key: id=key.code.feature kind=output_artifact artifact_kind=code -->
+## Feature implementation
+"""
+        result = parse_source(source, "00_docs/draft.md", MarkdownAdapter())
+        artifact = {node.id: node for node in result.snapshot.nodes}["key.code.feature"]
+
+        self.assertFalse(result.diagnostics)
+        self.assertEqual(Lifecycle.ACTIVE, artifact.lifecycle)
+        self.assertIsNone(artifact.approval_state)
+        self.assertEqual((), artifact.provenance.governed_by)
+        self.assertEqual((), artifact.source_authority)
 
     def test_structured_and_legacy_dependency_conflict_is_diagnosed(self):
         source = """---

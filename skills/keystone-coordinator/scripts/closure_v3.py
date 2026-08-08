@@ -7,6 +7,9 @@ import os
 import re
 import secrets
 import stat
+import subprocess
+import sys
+import tempfile
 import unicodedata
 from datetime import datetime
 from pathlib import Path, PurePosixPath
@@ -146,6 +149,106 @@ CAPTURE_TIME_PATTERN = re.compile(
 )
 DOCUMENT_ROOT_LINE_PATTERN = re.compile(r"^document_root[ ]*:[ ]*(.*)$")
 DEFAULT_DOCUMENT_ROOT = "00_docs"
+CLASSIFICATION_INPUT_FIELDS = {
+    "schema_version",
+    "delta_set_digest",
+    "deltas",
+    "source_context",
+}
+CLASSIFICATION_SOURCE_CONTEXT_FIELDS = {
+    "repository_root_digest",
+    "coverage",
+    "sources",
+}
+CLASSIFICATION_COVERAGE_FIELDS = {
+    "mode",
+    "complete",
+    "source_count",
+    "source_path_digest",
+}
+CLASSIFICATION_OUTPUT_FIELDS = {
+    "schema_version",
+    "status",
+    "disposition",
+    "delta_set_digest",
+    "source_generation_digest",
+    "inspected_sources",
+    "exclusion_evidence",
+    "reason_codes",
+    "diagnostics",
+    "summary",
+}
+CLASSIFICATION_EXCLUSION_FIELDS = {
+    "delta_index",
+    "locator_index",
+    "locator",
+    "reason_code",
+    "inspected_source_indexes",
+}
+CLASSIFICATION_DIAGNOSTIC_FIELDS = {"code", "message", "severity", "path"}
+CLASSIFICATION_INSPECTED_FIELDS = {
+    "regular_file": {"path", "type", "raw_byte_digest", "executable"},
+    "absent": {"path", "type"},
+    "symlink": {"path", "type", "symlink_target"},
+    "directory": {"path", "type"},
+    "special": {"path", "type"},
+    "unreadable": {"path", "type"},
+}
+GRAPH_VALIDATION_MANIFEST_V2_FIELDS = {
+    "schema_version",
+    "sources",
+    "transaction",
+    "application_evidence",
+}
+GRAPH_VALIDATION_MANIFEST_V2_OPTIONAL_FIELDS = {"scope", "coverage"}
+APPLICATION_EVIDENCE_FIELDS = {
+    "schema_version",
+    "transaction_id",
+    "transaction_digest",
+    "repository_root_digest",
+    "assignment_id",
+    "assignment_digest",
+    "receipts",
+}
+APPLICATION_REFERENCE_FIELDS = {"path", "digest"}
+APPLICATION_ENVELOPE_FIELDS = {
+    "schema_version", "producer", "status", "subject", "receipt",
+}
+APPLICATION_SUBJECT_FIELDS = {
+    "transaction_id",
+    "transaction_digest",
+    "assignment_id",
+    "assignment_digest",
+    "phase_id",
+    "phase_baseline_snapshot_digest",
+    "phase_parent_evidence_digest",
+    "repository_root_digest",
+    "owner",
+    "scope_digest",
+}
+APPLICATION_RECEIPT_FIELDS = {
+    "schema_version",
+    "trust_model",
+    "command_id",
+    "runner_executable_digest",
+    "runtime_digest",
+    "evidence_root_digest",
+    "request_digest",
+    "prior_receipt_digest",
+    "nonce",
+    "authority_key_fingerprint",
+    "patch_receipt",
+    "mac",
+}
+APPLICATION_PATCH_RECEIPT_FIELDS = {"patch", "result", "resulting_digest"}
+APPLICATION_PLAN_FIELDS = (
+    "schema_version",
+    "transaction_id",
+    "scope_ref",
+    "input_deltas",
+    "canonical_mutations",
+    "surface_patches",
+)
 
 
 class DuplicateJsonKey(ValueError):
@@ -163,6 +266,14 @@ def _reject_duplicate_keys(pairs: Sequence[Any]) -> Dict[str, Any]:
 
 def _reject_nonfinite_json(value: str) -> None:
     raise ValueError("non-finite JSON number is forbidden: %s" % value)
+
+
+def _loads_json_strict(value: str) -> Any:
+    return json.loads(
+        value,
+        object_pairs_hook=_reject_duplicate_keys,
+        parse_constant=_reject_nonfinite_json,
+    )
 
 
 def _mapping(value: Any) -> Mapping[str, Any]:
@@ -882,6 +993,1180 @@ def _read_immutable_evidence_bytes(
     finally:
         if directory_fd is not None:
             os.close(directory_fd)
+
+
+def package_classification_runner_path() -> Path:
+    """Return the canonical package-owned Linker classification entrypoint."""
+
+    package_skills = Path(__file__).resolve().parents[2]
+    return (
+        package_skills
+        / "keystone-linker"
+        / "scripts"
+        / "run_graph_classification.py"
+    )
+
+
+def _classification_input(
+    root: Path, deltas: Sequence[Mapping[str, Any]],
+) -> Dict[str, Any]:
+    projected = [dict(item) for item in deltas]
+    sources = sorted({str(item.get("source_surface")) for item in projected})
+    return {
+        "schema_version": 1,
+        "delta_set_digest": digest_json(projected),
+        "deltas": projected,
+        "source_context": {
+            "repository_root_digest": digest_json(
+                str(resolved_repository_root(root))
+            ),
+            "coverage": {
+                "mode": "delta_set",
+                "complete": True,
+                "source_count": len(sources),
+                "source_path_digest": digest_json(sources),
+            },
+            "sources": sources,
+        },
+    }
+
+
+def _read_classification_evidence(
+    evidence_root: Path, relative: Any, expected_digest: Any, path: str,
+    diagnostics: List[Diagnostic],
+) -> Tuple[Optional[Mapping[str, Any]], Optional[bytes]]:
+    normalized = normalize_relative_path(relative)
+    if normalized is None or normalized == ".":
+        diagnostics.append(diagnostic(
+            "evidence_path_invalid",
+            "Classification evidence path must be repository-independent relative evidence.",
+            path,
+        ))
+        return None, None
+    if not _digest(expected_digest):
+        diagnostics.append(diagnostic(
+            "evidence_digest_invalid",
+            "Classification evidence requires a canonical raw-byte digest.",
+            path,
+        ))
+        return None, None
+    raw = _read_immutable_evidence_bytes(
+        evidence_root, normalized, path, diagnostics,
+    )
+    if raw is None:
+        return None, None
+    if actual_state.digest_bytes(raw) != expected_digest:
+        diagnostics.append(diagnostic(
+            "evidence_digest_mismatch",
+            "Classification evidence raw bytes do not match the recorded digest.",
+            path,
+        ))
+    try:
+        payload = _loads_json_strict(raw.decode("utf-8"))
+    except (
+        UnicodeError,
+        json.JSONDecodeError,
+        DuplicateJsonKey,
+        TypeError,
+        ValueError,
+    ) as error:
+        diagnostics.append(diagnostic(
+            "evidence_unreadable", str(error), path,
+        ))
+        return None, raw
+    if not isinstance(payload, Mapping):
+        diagnostics.append(diagnostic(
+            "evidence_invalid", "Classification evidence must be a JSON object.", path,
+        ))
+        return None, raw
+    if raw != _canonical_json_bytes(payload):
+        diagnostics.append(diagnostic(
+            "classification_evidence_noncanonical",
+            "Classification evidence must use canonical JSON bytes.",
+            path,
+        ))
+    return payload, raw
+
+
+def _valid_classification_input_shape(value: Any) -> bool:
+    if not isinstance(value, Mapping) or set(value) != CLASSIFICATION_INPUT_FIELDS:
+        return False
+    if type(value.get("schema_version")) is not int or value.get("schema_version") != 1:
+        return False
+    if not _digest(value.get("delta_set_digest")) or not isinstance(value.get("deltas"), list):
+        return False
+    context = value.get("source_context")
+    if not isinstance(context, Mapping) or set(context) != CLASSIFICATION_SOURCE_CONTEXT_FIELDS:
+        return False
+    if not _digest(context.get("repository_root_digest")):
+        return False
+    sources = context.get("sources")
+    if (
+        not isinstance(sources, list)
+        or not all(normalize_relative_path(item) is not None for item in sources)
+        or sources != sorted(set(sources))
+    ):
+        return False
+    coverage = context.get("coverage")
+    return bool(
+        isinstance(coverage, Mapping)
+        and set(coverage) == CLASSIFICATION_COVERAGE_FIELDS
+        and coverage.get("mode") == "delta_set"
+        and type(coverage.get("complete")) is bool
+        and type(coverage.get("source_count")) is int
+        and coverage.get("source_count") == len(sources)
+        and _digest(coverage.get("source_path_digest"))
+        and coverage.get("source_path_digest") == digest_json(sources)
+    )
+
+
+def _valid_inspected_sources(value: Any) -> bool:
+    if not isinstance(value, list):
+        return False
+    paths: List[str] = []
+    for item in value:
+        if not isinstance(item, Mapping):
+            return False
+        source_type = item.get("type")
+        expected_fields = CLASSIFICATION_INSPECTED_FIELDS.get(source_type)
+        if expected_fields is None or set(item) != expected_fields:
+            return False
+        path = normalize_relative_path(item.get("path"))
+        if path is None:
+            return False
+        paths.append(path)
+        if source_type == "regular_file" and (
+            not _digest(item.get("raw_byte_digest"))
+            or type(item.get("executable")) is not bool
+        ):
+            return False
+        if source_type == "symlink" and not _text(item.get("symlink_target")):
+            return False
+    return paths == sorted(set(paths))
+
+
+def _valid_classification_output(
+    value: Any, returncode: int,
+    classification_input: Optional[Mapping[str, Any]] = None,
+) -> bool:
+    if not isinstance(value, Mapping) or set(value) != CLASSIFICATION_OUTPUT_FIELDS:
+        return False
+    if type(value.get("schema_version")) is not int or value.get("schema_version") != 1:
+        return False
+    expected_status = {0: "pass", 1: "fail", 2: "error"}.get(returncode)
+    if value.get("status") != expected_status:
+        return False
+    if value.get("disposition") not in {"required", "not_applicable", "deferred"}:
+        return False
+    if value.get("delta_set_digest") != "absent" and not _digest(
+        value.get("delta_set_digest")
+    ):
+        return False
+    if value.get("source_generation_digest") != "absent" and not _digest(
+        value.get("source_generation_digest")
+    ):
+        return False
+    if not _valid_inspected_sources(value.get("inspected_sources")):
+        return False
+    exclusion_evidence = value.get("exclusion_evidence")
+    if not isinstance(exclusion_evidence, list):
+        return False
+    inspected_sources = value["inspected_sources"]
+    covered_locators = []
+    for item in exclusion_evidence:
+        if not isinstance(item, Mapping) or set(item) != CLASSIFICATION_EXCLUSION_FIELDS:
+            return False
+        delta_index = item.get("delta_index")
+        locator_index = item.get("locator_index")
+        source_indexes = item.get("inspected_source_indexes")
+        locator = item.get("locator")
+        if (
+            type(delta_index) is not int
+            or delta_index < 0
+            or type(locator_index) is not int
+            or locator_index < 0
+            or not isinstance(locator, Mapping)
+            or "path" not in locator
+            or set(locator) - LOCATOR_FIELDS
+            or normalize_relative_path(locator.get("path")) is None
+            or any(not _text(field) for field in locator.values())
+            or item.get("reason_code") != "added_plain_unowned_source"
+            or not isinstance(source_indexes, list)
+            or not source_indexes
+            or source_indexes != sorted(set(source_indexes))
+            or any(
+                type(index) is not int
+                or index < 0
+                or index >= len(inspected_sources)
+                for index in source_indexes
+            )
+        ):
+            return False
+        if classification_input is not None:
+            deltas = classification_input.get("deltas")
+            if not isinstance(deltas, list) or delta_index >= len(deltas):
+                return False
+            delta = deltas[delta_index]
+            locators = delta.get("changed_locators") if isinstance(delta, Mapping) else None
+            if (
+                not isinstance(locators, list)
+                or locator_index >= len(locators)
+                or locator != locators[locator_index]
+            ):
+                return False
+            source = delta.get("source_surface")
+            expected_paths = {source, str(source) + ".keystone.json"}
+            if any(
+                inspected_sources[index].get("path") not in expected_paths
+                for index in source_indexes
+            ):
+                return False
+        covered_locators.append((delta_index, locator_index))
+    reason_codes = value.get("reason_codes")
+    if (
+        not isinstance(reason_codes, list)
+        or not reason_codes
+        or not all(_text(item) for item in reason_codes)
+        or reason_codes != sorted(set(reason_codes))
+    ):
+        return False
+    diagnostics = value.get("diagnostics")
+    if not isinstance(diagnostics, list) or not all(
+        isinstance(item, Mapping)
+        and set(item) == CLASSIFICATION_DIAGNOSTIC_FIELDS
+        and _text(item.get("code"))
+        and _text(item.get("message"))
+        and item.get("severity") in {"error", "warning"}
+        and _text(item.get("path"))
+        for item in diagnostics
+    ):
+        return False
+    summary = value.get("summary")
+    if (
+        not isinstance(summary, Mapping)
+        or set(summary) != {"errors", "warnings"}
+        or type(summary.get("errors")) is not int
+        or type(summary.get("warnings")) is not int
+    ):
+        return False
+    errors = sum(item["severity"] == "error" for item in diagnostics)
+    warnings = sum(item["severity"] == "warning" for item in diagnostics)
+    if summary != {"errors": errors, "warnings": warnings}:
+        return False
+    if value.get("status") == "pass":
+        if diagnostics or value.get("disposition") not in {
+            "required", "not_applicable",
+        }:
+            return False
+        if value.get("disposition") == "required":
+            return not exclusion_evidence
+        if reason_codes == ["empty_delta_set"]:
+            return not exclusion_evidence and bool(
+                classification_input is None
+                or classification_input.get("deltas") == []
+            )
+        if reason_codes != ["added_plain_unowned_source"]:
+            return False
+        if classification_input is None:
+            return bool(exclusion_evidence)
+        expected_coverage = [
+            (delta_index, locator_index)
+            for delta_index, delta in enumerate(classification_input["deltas"])
+            for locator_index, _locator in enumerate(delta["changed_locators"])
+        ]
+        return covered_locators == expected_coverage
+    if exclusion_evidence:
+        return False
+    return value.get("disposition") == "deferred"
+
+
+def _run_classification(
+    runner: Path, root: Path, manifest: Mapping[str, Any], timeout_seconds: float,
+    diagnostics: List[Diagnostic], path: str,
+) -> Optional[Mapping[str, Any]]:
+    try:
+        runner_identity = runner.lstat()
+        resolved_runner = runner.resolve(strict=True)
+    except OSError:
+        runner_identity = None
+        resolved_runner = None
+    if (
+        runner_identity is None
+        or resolved_runner != runner
+        or not stat.S_ISREG(runner_identity.st_mode)
+        or runner_identity.st_nlink != 1
+    ):
+        diagnostics.append(diagnostic(
+            "linker_runner_unavailable",
+            "Package-owned Linker classification runner must be a single-link regular file "
+            "without symlink aliases.",
+            path,
+        ))
+        return None
+    with tempfile.TemporaryDirectory(
+        prefix="keystone-coordinator-classification-"
+    ) as directory:
+        manifest_path = Path(directory) / "classification-input.json"
+        manifest_path.write_bytes(_canonical_json_bytes(manifest))
+        runner_environment = {"PATH": os.defpath}
+        for name in ("SYSTEMROOT", "WINDIR"):
+            if name in os.environ:
+                runner_environment[name] = os.environ[name]
+        try:
+            process = subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    str(runner),
+                    "--root",
+                    str(root),
+                    "--manifest",
+                    str(manifest_path),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+                env=runner_environment,
+            )
+        except subprocess.TimeoutExpired:
+            diagnostics.append(diagnostic(
+                "runner_timeout", "Linker classification runner timed out.", path,
+            ))
+            return None
+        except (OSError, subprocess.SubprocessError) as error:
+            diagnostics.append(diagnostic(
+                "runner_execution_failed", str(error), path,
+            ))
+            return None
+    try:
+        payload = _loads_json_strict(process.stdout)
+    except (
+        json.JSONDecodeError,
+        DuplicateJsonKey,
+        TypeError,
+        ValueError,
+    ):
+        diagnostics.append(diagnostic(
+            "runner_output_malformed",
+            "Linker classification runner output is not strict JSON.",
+            path,
+        ))
+        return None
+    if not _valid_classification_output(payload, process.returncode, manifest):
+        diagnostics.append(diagnostic(
+            "runner_output_malformed",
+            "Linker classification runner envelope and exit code are inconsistent.",
+            path,
+        ))
+        return None
+    if payload.get("status") == "error":
+        diagnostics.append(diagnostic(
+            "runner_reported_error",
+            "Linker classification runner reported an execution error.",
+            path,
+        ))
+    return payload
+
+
+def _application_plan_digest(transaction: Mapping[str, Any]) -> str:
+    projection = {
+        field: transaction.get(field) for field in APPLICATION_PLAN_FIELDS
+    }
+    return digest_json(projection)
+
+
+def _graph_delta_projection(delta: Mapping[str, Any]) -> Dict[str, Any]:
+    return {
+        "kind": delta.get("kind"),
+        "source_surface": delta.get("source_surface"),
+        "changed_locators": delta.get("changed_locators"),
+        "semantic_summary": delta.get("semantic_summary"),
+        "baseline_digest": delta.get("baseline_digest"),
+        "graph_relevant": delta.get("graph_relevant"),
+    }
+
+
+def _read_graph_validation_manifest_v3(
+    evidence_root: Path, relative: Any, expected_digest: Any,
+    diagnostics: List[Diagnostic], path: str, *, require_canonical: bool = False,
+) -> Tuple[Optional[Mapping[str, Any]], Optional[bytes]]:
+    normalized = normalize_relative_path(relative)
+    if normalized is None or normalized == ".":
+        diagnostics.append(diagnostic(
+            "evidence_path_invalid",
+            "Graph validation evidence path must be normalized and relative.",
+            path,
+        ))
+        return None, None
+    if not _digest(expected_digest):
+        diagnostics.append(diagnostic(
+            "evidence_digest_invalid",
+            "Graph validation evidence requires a canonical raw digest.",
+            path,
+        ))
+        return None, None
+    raw = _read_immutable_evidence_bytes(
+        evidence_root, normalized, path, diagnostics,
+    )
+    if raw is None:
+        return None, None
+    if actual_state.digest_bytes(raw) != expected_digest:
+        diagnostics.append(diagnostic(
+            "evidence_digest_mismatch",
+            "Graph validation manifest raw bytes do not match the recorded digest.",
+            path,
+        ))
+    try:
+        payload = _loads_json_strict(raw.decode("utf-8"))
+    except (
+        UnicodeError,
+        json.JSONDecodeError,
+        DuplicateJsonKey,
+        TypeError,
+        ValueError,
+    ) as error:
+        diagnostics.append(diagnostic(
+            "evidence_unreadable", str(error), path,
+        ))
+        return None, raw
+    if not isinstance(payload, Mapping):
+        diagnostics.append(diagnostic(
+            "evidence_invalid",
+            "Graph validation manifest must be a JSON object.",
+            path,
+        ))
+        return None, raw
+    if require_canonical and raw != _canonical_json_bytes(payload):
+        diagnostics.append(diagnostic(
+            "graph_validation_manifest_noncanonical",
+            "Graph validation manifest must use canonical JSON bytes.",
+            path,
+        ))
+    return payload, raw
+
+
+def _valid_graph_runner_output(value: Any, returncode: int) -> bool:
+    if not isinstance(value, Mapping):
+        return False
+    fields = {"schema_version", "status", "diagnostics", "summary"}
+    if "coverage" in value:
+        fields.add("coverage")
+        if not isinstance(value.get("coverage"), Mapping):
+            return False
+    if set(value) != fields:
+        return False
+    if type(value.get("schema_version")) is not int or value.get(
+        "schema_version"
+    ) != 1:
+        return False
+    expected_status = {0: "pass", 1: "fail", 2: "error"}.get(returncode)
+    if value.get("status") != expected_status:
+        return False
+    runner_diagnostics = value.get("diagnostics")
+    summary = value.get("summary")
+    if not isinstance(runner_diagnostics, list) or not isinstance(summary, Mapping):
+        return False
+    for item in runner_diagnostics:
+        if (
+            not isinstance(item, Mapping)
+            or not {"code", "message", "severity"} <= set(item)
+            or set(item) - {"code", "message", "severity", "path", "locator"}
+            or not _text(item.get("code"))
+            or not _text(item.get("message"))
+            or item.get("severity") not in {"error", "warning"}
+        ):
+            return False
+    errors = sum(item["severity"] == "error" for item in runner_diagnostics)
+    warnings = sum(item["severity"] == "warning" for item in runner_diagnostics)
+    return summary == {"errors": errors, "warnings": warnings}
+
+
+def _run_graph_validation_v3(
+    runner: Path, root: Path, manifest_bytes: bytes, evidence_root: Path,
+    owner_keys: Mapping[str, Path], owner_key_digests: Mapping[str, str],
+    timeout_seconds: float, diagnostics: List[Diagnostic], path: str,
+) -> Optional[Mapping[str, Any]]:
+    try:
+        identity = runner.lstat()
+        resolved = runner.resolve(strict=True)
+    except OSError:
+        identity = None
+        resolved = None
+    if (
+        identity is None
+        or resolved != runner
+        or not stat.S_ISREG(identity.st_mode)
+        or identity.st_nlink != 1
+    ):
+        diagnostics.append(diagnostic(
+            "linker_runner_unavailable",
+            "Package-owned Linker runner must be a single-link regular file.",
+            path,
+        ))
+        return None
+    with tempfile.TemporaryDirectory(
+        prefix="keystone-coordinator-graph-validation-"
+    ) as directory:
+        manifest_path = Path(directory) / "graph-validation.json"
+        manifest_path.write_bytes(manifest_bytes)
+        command = [
+            sys.executable,
+            "-I",
+            str(runner),
+            "--root",
+            str(root),
+            "--manifest",
+            str(manifest_path),
+            "--evidence-root",
+            str(evidence_root),
+        ]
+        for owner in sorted(owner_keys):
+            command.extend((
+                "--owner-key", "%s=%s" % (owner, owner_keys[owner]),
+            ))
+        for owner in sorted(owner_key_digests):
+            command.extend((
+                "--owner-key-sha256",
+                "%s=%s" % (owner, owner_key_digests[owner]),
+            ))
+        environment = {"PATH": os.defpath}
+        for name in ("SYSTEMROOT", "WINDIR"):
+            if name in os.environ:
+                environment[name] = os.environ[name]
+        try:
+            process = subprocess.run(
+                command,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+                env=environment,
+            )
+        except subprocess.TimeoutExpired:
+            diagnostics.append(diagnostic(
+                "runner_timeout", "Linker graph validation timed out.", path,
+            ))
+            return None
+        except (OSError, subprocess.SubprocessError) as error:
+            diagnostics.append(diagnostic(
+                "runner_execution_failed", str(error), path,
+            ))
+            return None
+    try:
+        payload = _loads_json_strict(process.stdout)
+    except (
+        json.JSONDecodeError,
+        DuplicateJsonKey,
+        TypeError,
+        ValueError,
+    ):
+        diagnostics.append(diagnostic(
+            "runner_output_malformed",
+            "Linker graph validation output is not strict JSON.",
+            path,
+        ))
+        return None
+    if not _valid_graph_runner_output(payload, process.returncode):
+        diagnostics.append(diagnostic(
+            "runner_output_malformed",
+            "Linker graph validation envelope and exit code are inconsistent.",
+            path,
+        ))
+        return None
+    if payload.get("status") == "error":
+        diagnostics.append(diagnostic(
+            "runner_reported_error",
+            "Linker graph validation reported an execution error.",
+            path,
+        ))
+    elif payload.get("status") != "pass":
+        diagnostics.append(diagnostic(
+            "linker_runner_failed",
+            "Required Linker application-evidence validation did not pass.",
+            path,
+        ))
+    return payload
+
+
+def _read_application_receipts_for_binding(
+    graph_manifest: Mapping[str, Any], evidence_root: Path,
+    diagnostics: List[Diagnostic], path: str,
+) -> Tuple[
+    Optional[Mapping[str, Any]],
+    List[Tuple[Mapping[str, Any], str]],
+]:
+    reference = graph_manifest.get("application_evidence")
+    if not isinstance(reference, Mapping) or set(reference) != APPLICATION_REFERENCE_FIELDS:
+        diagnostics.append(diagnostic(
+            "graph_application_evidence_missing",
+            "Schema-v2 graph validation requires aggregate application evidence.",
+            path,
+        ))
+        return None, []
+    aggregate, raw = _read_graph_validation_manifest_v3(
+        evidence_root,
+        reference.get("path"),
+        reference.get("digest"),
+        diagnostics,
+        path,
+    )
+    if aggregate is None or raw is None:
+        return None, []
+    if raw != _canonical_json_bytes(aggregate):
+        diagnostics.append(diagnostic(
+            "graph_application_evidence_noncanonical",
+            "Aggregate application evidence must use canonical JSON bytes.",
+            path,
+        ))
+    if (
+        set(aggregate) != APPLICATION_EVIDENCE_FIELDS
+        or type(aggregate.get("schema_version")) is not int
+        or aggregate.get("schema_version") != 1
+        or not isinstance(aggregate.get("receipts"), list)
+    ):
+        diagnostics.append(diagnostic(
+            "graph_application_evidence_invalid",
+            "Aggregate application evidence does not match exact schema v1.",
+            path,
+        ))
+        return aggregate, []
+    envelopes: List[Tuple[Mapping[str, Any], str]] = []
+    for index, receipt_reference in enumerate(aggregate["receipts"]):
+        receipt_path = "%s.receipts[%d]" % (path, index)
+        if (
+            not isinstance(receipt_reference, Mapping)
+            or set(receipt_reference) != APPLICATION_REFERENCE_FIELDS
+        ):
+            diagnostics.append(diagnostic(
+                "graph_application_receipt_invalid",
+                "Application receipt reference is invalid.",
+                receipt_path,
+            ))
+            continue
+        envelope, receipt_raw = _read_graph_validation_manifest_v3(
+            evidence_root,
+            receipt_reference.get("path"),
+            receipt_reference.get("digest"),
+            diagnostics,
+            receipt_path,
+        )
+        if envelope is None or receipt_raw is None:
+            continue
+        if receipt_raw != _canonical_json_bytes(envelope):
+            diagnostics.append(diagnostic(
+                "graph_application_receipt_noncanonical",
+                "Application receipt must use canonical JSON bytes.",
+                receipt_path,
+            ))
+        subject = envelope.get("subject")
+        receipt = envelope.get("receipt")
+        patch_receipt = (
+            receipt.get("patch_receipt")
+            if isinstance(receipt, Mapping) else None
+        )
+        if (
+            set(envelope) != APPLICATION_ENVELOPE_FIELDS
+            or not isinstance(subject, Mapping)
+            or set(subject) != APPLICATION_SUBJECT_FIELDS
+            or not isinstance(receipt, Mapping)
+            or set(receipt) != APPLICATION_RECEIPT_FIELDS
+            or not isinstance(patch_receipt, Mapping)
+            or set(patch_receipt) != APPLICATION_PATCH_RECEIPT_FIELDS
+        ):
+            diagnostics.append(diagnostic(
+                "graph_application_receipt_invalid",
+                "Application receipt does not match the trusted schema.",
+                receipt_path,
+            ))
+            continue
+        envelopes.append((envelope, actual_state.digest_bytes(receipt_raw)))
+    return aggregate, envelopes
+
+
+def _logical_patch_source(patch: Mapping[str, Any]) -> Any:
+    target = patch.get("target_path")
+    if (
+        patch.get("surface") == "companion_metadata"
+        and isinstance(target, str)
+        and target.endswith(".keystone.json")
+    ):
+        return target[:-len(".keystone.json")]
+    return target
+
+
+def _phase_actor_artifacts(
+    phase: Mapping[str, Any], actor: str,
+) -> List[Mapping[str, Any]]:
+    artifacts: List[Mapping[str, Any]] = []
+    for raw_delta in _list(phase.get("actor_deltas")):
+        actor_delta = _mapping(raw_delta)
+        if actor_delta.get("actor") != actor:
+            continue
+        artifacts.extend(
+            item for item in _list(actor_delta.get("artifact_deltas"))
+            if isinstance(item, Mapping)
+        )
+    return artifacts
+
+
+def _validate_application_authority_bindings(
+    *,
+    aggregate: Mapping[str, Any],
+    envelopes: Sequence[Tuple[Mapping[str, Any], str]],
+    transaction: Mapping[str, Any],
+    root: Path,
+    assignment_id: Any,
+    assignment_digest: Any,
+    authorities: Mapping[str, Mapping[str, Any]],
+    worker_phase: Mapping[str, Any],
+    pre_phase: Mapping[str, Any],
+    post_phase: Mapping[str, Any],
+    diagnostics: List[Diagnostic],
+) -> None:
+    path = "keystone_closure.graph_sync.application_evidence"
+    if (
+        aggregate.get("assignment_id") != assignment_id
+        or aggregate.get("assignment_digest") != assignment_digest
+    ):
+        diagnostics.append(diagnostic(
+            "graph_application_assignment_mismatch",
+            "Application evidence does not bind the authoritative assignment.",
+            path,
+        ))
+    if (
+        aggregate.get("transaction_id") != transaction.get("transaction_id")
+        or aggregate.get("transaction_digest") != _application_plan_digest(
+            transaction
+        )
+    ):
+        diagnostics.append(diagnostic(
+            "graph_application_transaction_mismatch",
+            "Application evidence does not bind the immutable transaction plan.",
+            path,
+        ))
+    phase_bindings = {
+        "pre_acceptance_closure": (
+            pre_phase,
+            pre_phase.get("baseline_snapshot_digest"),
+            _mapping(worker_phase.get("capture_evidence")).get("digest"),
+        ),
+        "post_acceptance": (
+            post_phase,
+            post_phase.get("baseline_snapshot_digest"),
+            _mapping(post_phase.get("acceptance_event")).get("digest"),
+        ),
+    }
+    seen_post = False
+    prior_receipt_digest = ABSENT_DIGEST
+    for index, receipt_item in enumerate(envelopes):
+        envelope, raw_receipt_digest = receipt_item
+        receipt_path = "%s.receipts[%d]" % (path, index)
+        subject = _mapping(envelope.get("subject"))
+        receipt = _mapping(envelope.get("receipt"))
+        patch_receipt = _mapping(receipt.get("patch_receipt"))
+        patch = _mapping(patch_receipt.get("patch"))
+        owner = subject.get("owner")
+        actor = "author" if owner == "author" else "repository_owner"
+        if owner not in {"author", "main", "coordinator"}:
+            diagnostics.append(diagnostic(
+                "graph_application_owner_invalid",
+                "Application receipt owner is not authoritative.",
+                receipt_path,
+            ))
+            continue
+        phase_id = subject.get("phase_id")
+        binding = phase_bindings.get(str(phase_id))
+        if binding is None or not binding[0]:
+            diagnostics.append(diagnostic(
+                "graph_application_phase_mismatch",
+                "Application receipt does not name an available closure phase.",
+                receipt_path,
+            ))
+            continue
+        if phase_id == "post_acceptance":
+            seen_post = True
+        elif seen_post:
+            diagnostics.append(diagnostic(
+                "graph_application_phase_order_invalid",
+                "Pre-acceptance receipts cannot follow post-acceptance receipts.",
+                receipt_path,
+            ))
+        phase, baseline_digest, parent_evidence_digest = binding
+        if (
+            subject.get("phase_baseline_snapshot_digest") != baseline_digest
+            or subject.get("phase_parent_evidence_digest")
+            != parent_evidence_digest
+        ):
+            diagnostics.append(diagnostic(
+                "graph_application_phase_mismatch",
+                "Receipt phase baseline and result-parent evidence must match exactly.",
+                receipt_path,
+            ))
+        authority = authorities.get(actor, {})
+        scope = {
+            "allowed": authority.get("allowed_edit_scope"),
+            "excluded": authority.get("excluded_scope"),
+        }
+        if subject.get("scope_digest") != digest_json(scope):
+            diagnostics.append(diagnostic(
+                "graph_application_scope_mismatch",
+                "Signed owner scope must equal authoritative phase scope.",
+                receipt_path,
+            ))
+        request = {
+            "schema_version": 1,
+            "transaction_id": transaction.get("transaction_id"),
+            "transaction_digest": _application_plan_digest(transaction),
+            "assignment_id": assignment_id,
+            "assignment_digest": assignment_digest,
+            "phase_id": phase_id,
+            "phase_baseline_snapshot_digest": baseline_digest,
+            "phase_parent_evidence_digest": parent_evidence_digest,
+            "repository_root_digest": phase_capture_root_digest(root),
+            "owner": owner,
+            "scope": scope,
+            "scope_digest": digest_json(scope),
+            "prior_receipt_digest": prior_receipt_digest,
+            "patch": dict(patch),
+        }
+        if receipt.get("request_digest") != digest_json(request):
+            diagnostics.append(diagnostic(
+                "graph_application_request_mismatch",
+                "Signed request digest does not bind the exact Coordinator authority request.",
+                receipt_path,
+            ))
+        if (
+            subject.get("assignment_id") != assignment_id
+            or subject.get("assignment_digest") != assignment_digest
+        ):
+            diagnostics.append(diagnostic(
+                "graph_application_assignment_mismatch",
+                "Receipt assignment binding is stale or substituted.",
+                receipt_path,
+            ))
+        prior_receipt_digest = raw_receipt_digest
+        source = _logical_patch_source(patch)
+        matches = [
+            item for item in _phase_actor_artifacts(phase, actor)
+            if item.get("source_surface") == source
+        ]
+        if len(matches) != 1:
+            diagnostics.append(diagnostic(
+                "graph_application_actor_delta_mismatch",
+                "Receipt requires one exact actor artifact delta in its signed phase.",
+                receipt_path,
+            ))
+            continue
+        delta = matches[0]
+        if (
+            delta.get("baseline_digest") != patch.get("baseline_digest")
+            or delta.get("resulting_digest")
+            != patch_receipt.get("resulting_digest")
+            or delta.get("resulting_digest")
+            != patch.get("expected_after_digest")
+            or delta.get("graph_relevant") is not True
+        ):
+            diagnostics.append(diagnostic(
+                "graph_application_actor_delta_mismatch",
+                "Receipt patch and result must equal the exact graph-relevant actor delta.",
+                receipt_path,
+            ))
+
+
+def _validate_required_graph_sync_evidence_v3(
+    value: Mapping[str, Any], deltas: List[Mapping[str, Any]], root: Path,
+    evidence_root: Path, linker_runner: Path, timeout_seconds: float,
+    diagnostics: List[Diagnostic], *, assignment_id: Any,
+    assignment_digest: Any, authorities: Mapping[str, Mapping[str, Any]],
+    worker_phase: Mapping[str, Any], pre_phase: Mapping[str, Any],
+    post_phase: Mapping[str, Any], owner_keys: Mapping[str, Path],
+    owner_key_digests: Mapping[str, str],
+) -> None:
+    path = "keystone_closure.graph_sync"
+    fields = {
+        "disposition", "state", "reason", "validation_manifest_path",
+        "validation_manifest_digest", "transaction_id", "delta_set_digest",
+        "envelope_digest",
+    }
+    _unknown_fields(value, fields, path, diagnostics)
+    _missing_fields(value, fields, path, diagnostics)
+    if value.get("state") != "verified":
+        diagnostics.append(diagnostic(
+            "graph_sync_incomplete",
+            "Required graph sync must be verified.",
+            path + ".state",
+        ))
+    if not _text(value.get("reason")):
+        diagnostics.append(diagnostic(
+            "graph_sync_reason_missing", "Graph sync requires a concrete reason.",
+            path + ".reason",
+        ))
+    if value.get("delta_set_digest") != digest_json(deltas):
+        diagnostics.append(diagnostic(
+            "graph_delta_set_mismatch",
+            "Graph evidence is not bound to the exact phase delta set.",
+            path + ".delta_set_digest",
+        ))
+    graph_manifest, raw_manifest = _read_graph_validation_manifest_v3(
+        evidence_root,
+        value.get("validation_manifest_path"),
+        value.get("validation_manifest_digest"),
+        diagnostics,
+        path + ".validation_manifest_path",
+        require_canonical=True,
+    )
+    if graph_manifest is None or raw_manifest is None:
+        return
+    manifest_fields = set(graph_manifest)
+    if (
+        type(graph_manifest.get("schema_version")) is not int
+        or graph_manifest.get("schema_version") != 2
+        or not GRAPH_VALIDATION_MANIFEST_V2_FIELDS <= manifest_fields
+        or manifest_fields - (
+            GRAPH_VALIDATION_MANIFEST_V2_FIELDS
+            | GRAPH_VALIDATION_MANIFEST_V2_OPTIONAL_FIELDS
+        )
+    ):
+        diagnostics.append(diagnostic(
+            "graph_validation_manifest_schema_not_authoritative",
+            "Coordinator v3 requires exact Linker validation manifest schema 2.",
+            path + ".validation_manifest_path",
+        ))
+    transaction = _mapping(graph_manifest.get("transaction"))
+    if (
+        type(transaction.get("schema_version")) is not int
+        or transaction.get("schema_version") != 2
+    ):
+        diagnostics.append(diagnostic(
+            "graph_transaction_schema_not_authoritative",
+            "Coordinator v3 requires a canonical transaction schema v2.",
+            path + ".validation_manifest_path",
+        ))
+    if (
+        transaction.get("transaction_id") != value.get("transaction_id")
+        or transaction.get("state") != "verified"
+    ):
+        diagnostics.append(diagnostic(
+            "graph_transaction_mismatch",
+            "Graph evidence must reference the same verified transaction.",
+            path + ".transaction_id",
+        ))
+    expected_inputs = sorted(
+        (_graph_delta_projection(delta) for delta in deltas),
+        key=lambda item: str(item.get("source_surface")),
+    )
+    actual_inputs = sorted(
+        _list(transaction.get("input_deltas")),
+        key=lambda item: str(_mapping(item).get("source_surface")),
+    )
+    if actual_inputs != expected_inputs:
+        diagnostics.append(diagnostic(
+            "graph_transaction_delta_mismatch",
+            "Graph transaction inputs must equal every phase artifact delta.",
+            path + ".validation_manifest_path",
+        ))
+    payload = _run_graph_validation_v3(
+        linker_runner,
+        root,
+        raw_manifest,
+        evidence_root,
+        owner_keys,
+        owner_key_digests,
+        timeout_seconds,
+        diagnostics,
+        path + ".envelope_digest",
+    )
+    if payload is not None and value.get("envelope_digest") != digest_json(payload):
+        diagnostics.append(diagnostic(
+            "runner_envelope_digest_mismatch",
+            "Fresh Linker output is not bound to the recorded envelope digest.",
+            path + ".envelope_digest",
+        ))
+    if payload is None or payload.get("status") != "pass":
+        return
+    aggregate, envelopes = _read_application_receipts_for_binding(
+        graph_manifest,
+        evidence_root,
+        diagnostics,
+        path + ".application_evidence",
+    )
+    if aggregate is None:
+        return
+    _validate_application_authority_bindings(
+        aggregate=aggregate,
+        envelopes=envelopes,
+        transaction=transaction,
+        root=root,
+        assignment_id=assignment_id,
+        assignment_digest=assignment_digest,
+        authorities=authorities,
+        worker_phase=worker_phase,
+        pre_phase=pre_phase,
+        post_phase=post_phase,
+        diagnostics=diagnostics,
+    )
+
+
+def validate_graph_sync_evidence_v3(
+    value: Mapping[str, Any], deltas: List[Mapping[str, Any]], root: Path,
+    evidence_root: Path, linker_runner: Path, timeout_seconds: float,
+    diagnostics: List[Diagnostic], *, assignment_id: Any = None,
+    assignment_digest: Any = None,
+    authorities: Optional[Mapping[str, Mapping[str, Any]]] = None,
+    worker_phase: Optional[Mapping[str, Any]] = None,
+    pre_phase: Optional[Mapping[str, Any]] = None,
+    post_phase: Optional[Mapping[str, Any]] = None,
+    owner_keys: Optional[Mapping[str, Path]] = None,
+    owner_key_digests: Optional[Mapping[str, str]] = None,
+) -> None:
+    """Validate schema-v3 graph evidence with package-owned classification."""
+
+    if value.get("disposition") == "required":
+        _validate_required_graph_sync_evidence_v3(
+            value,
+            deltas,
+            root,
+            evidence_root,
+            linker_runner,
+            timeout_seconds,
+            diagnostics,
+            assignment_id=assignment_id,
+            assignment_digest=assignment_digest,
+            authorities=authorities or {},
+            worker_phase=worker_phase or {},
+            pre_phase=pre_phase or {},
+            post_phase=post_phase or {},
+            owner_keys=owner_keys or {},
+            owner_key_digests=owner_key_digests or {},
+        )
+        return
+    if value.get("disposition") != "not_applicable":
+        validate_graph_sync_evidence(
+            value, deltas, root, evidence_root, linker_runner,
+            timeout_seconds, diagnostics,
+        )
+        return
+    path = "keystone_closure.graph_sync"
+    fields = {
+        "disposition",
+        "state",
+        "reason",
+        "classification_input_path",
+        "classification_input_digest",
+        "classification_path",
+        "classification_digest",
+        "delta_set_digest",
+        "source_generation_digest",
+        "envelope_digest",
+    }
+    _unknown_fields(value, fields, path, diagnostics)
+    _missing_fields(value, fields, path, diagnostics)
+    if value.get("state") != "not_applicable":
+        diagnostics.append(diagnostic(
+            "graph_sync_incomplete",
+            "Not-applicable graph sync requires not_applicable state.",
+            path + ".state",
+        ))
+    if not _text(value.get("reason")):
+        diagnostics.append(diagnostic(
+            "graph_sync_reason_missing",
+            "Graph sync requires a concrete reason.",
+            path + ".reason",
+        ))
+    expected_input = _classification_input(root, deltas)
+    expected_delta_digest = expected_input["delta_set_digest"]
+    if value.get("delta_set_digest") != expected_delta_digest:
+        diagnostics.append(diagnostic(
+            "graph_delta_set_mismatch",
+            "Graph classification is not bound to the exact phase delta set.",
+            path + ".delta_set_digest",
+        ))
+    recorded_input, _ = _read_classification_evidence(
+        evidence_root,
+        value.get("classification_input_path"),
+        value.get("classification_input_digest"),
+        path + ".classification_input_path",
+        diagnostics,
+    )
+    if recorded_input is not None:
+        if not _valid_classification_input_shape(recorded_input):
+            diagnostics.append(diagnostic(
+                "graph_classification_input_invalid",
+                "Recorded Linker classification input is not canonical schema v1.",
+                path + ".classification_input_path",
+            ))
+        if recorded_input != expected_input:
+            diagnostics.append(diagnostic(
+                "graph_classification_delta_mismatch",
+                "Recorded classification input must equal every phase artifact/document delta.",
+                path + ".classification_input_path",
+            ))
+
+    recorded_output, _ = _read_classification_evidence(
+        evidence_root,
+        value.get("classification_path"),
+        value.get("classification_digest"),
+        path + ".classification_path",
+        diagnostics,
+    )
+    if recorded_output is not None and not _valid_classification_output(
+        recorded_output, 0, expected_input,
+    ):
+        diagnostics.append(diagnostic(
+            "graph_classification_output_invalid",
+            "Recorded Linker classification output is not a passing schema-v1 envelope.",
+            path + ".classification_path",
+        ))
+
+    fresh = _run_classification(
+        package_classification_runner_path(),
+        root,
+        expected_input,
+        timeout_seconds,
+        diagnostics,
+        path + ".classification_path",
+    )
+    if fresh is None:
+        return
+    if fresh.get("status") != "pass":
+        diagnostics.append(diagnostic(
+            "linker_classification_failed",
+            "Fresh package-owned graph classification did not pass.",
+            path + ".classification_path",
+        ))
+    if fresh.get("disposition") != "not_applicable":
+        diagnostics.append(diagnostic(
+            "graph_classification_disposition_mismatch",
+            "Fresh Linker classification does not permit not_applicable graph sync.",
+            path + ".disposition",
+        ))
+    if fresh.get("delta_set_digest") != expected_delta_digest:
+        diagnostics.append(diagnostic(
+            "graph_classification_delta_mismatch",
+            "Fresh Linker classification omitted or changed a phase delta.",
+            path + ".delta_set_digest",
+        ))
+    if fresh.get("source_generation_digest") != value.get(
+        "source_generation_digest"
+    ):
+        diagnostics.append(diagnostic(
+            "graph_classification_source_stale",
+            "Recorded graph classification belongs to a different source generation.",
+            path + ".source_generation_digest",
+        ))
+    if recorded_output is not None and recorded_output != fresh:
+        diagnostics.append(diagnostic(
+            "graph_classification_output_mismatch",
+            "Recorded classification does not equal a fresh package-owned runner result.",
+            path + ".classification_path",
+        ))
+    if value.get("envelope_digest") != digest_json(fresh):
+        diagnostics.append(diagnostic(
+            "runner_envelope_digest_mismatch",
+            "Fresh classification output is not bound to the recorded envelope digest.",
+            path + ".envelope_digest",
+        ))
 
 
 def _read_project_config_bytes(root: Path) -> Optional[bytes]:
@@ -2407,6 +3692,8 @@ def validate_v3(
     capture_authority_key: Path, capture_authority_key_digest: str,
     acceptance_authority_key: Optional[Path] = None,
     acceptance_authority_key_digest: Optional[str] = None,
+    owner_keys: Optional[Mapping[str, Path]] = None,
+    owner_key_digests: Optional[Mapping[str, str]] = None,
 ) -> List[Diagnostic]:
     """Validate schema-v3 closure against immutable phases and live repository state."""
 
@@ -2558,6 +3845,19 @@ def validate_v3(
                 "Coordinator capture and Main acceptance must use distinct authority keys.",
                 "--acceptance-authority-key",
             ))
+    authority_fingerprints = [capture_authority_key_digest]
+    if acceptance_authority_key_digest is not None:
+        authority_fingerprints.append(acceptance_authority_key_digest)
+    authority_fingerprints.extend((owner_key_digests or {}).values())
+    canonical_fingerprints = [
+        value for value in authority_fingerprints if _digest(value)
+    ]
+    if len(canonical_fingerprints) != len(set(canonical_fingerprints)):
+        diagnostics.append(diagnostic(
+            "application_authority_key_separation_required",
+            "Capture, acceptance, and each owner-apply command lane require distinct keys.",
+            "--owner-key-sha256",
+        ))
 
     seen_receipt_nonces: Set[str] = set()
     assignment_digest_value: Optional[str] = None
@@ -2932,9 +4232,17 @@ def validate_v3(
     for name in ("document_sync", "metadata_sync"):
         validate_sync_evidence(name, _mapping(closure.get(name)), diagnostics)
     all_artifacts = list(worker_artifacts) + pre_artifacts + post_artifacts
-    validate_graph_sync_evidence(
+    validate_graph_sync_evidence_v3(
         _mapping(closure.get("graph_sync")), all_artifacts, root, evidence_root,
         linker_runner, timeout_seconds, diagnostics,
+        assignment_id=assignment.get("assignment_id"),
+        assignment_digest=assignment_digest,
+        authorities=authorities,
+        worker_phase=worker_phase,
+        pre_phase=pre_phase,
+        post_phase=post_phase,
+        owner_keys=owner_keys or {},
+        owner_key_digests=owner_key_digests or {},
     )
     if stage == "post_acceptance":
         if (
@@ -2947,10 +4255,28 @@ def validate_v3(
                 "Keystone closure acceptance must equal post-acceptance phase evidence.",
                 "keystone_closure.acceptance_ref",
             ))
+    author_runner_arguments: List[str] = []
+    if stage == "post_acceptance":
+        author_runner_arguments.extend((
+            "--graph-evidence-root",
+            str(evidence_root),
+        ))
+        for owner in sorted(owner_keys or {}):
+            author_runner_arguments.extend((
+                "--graph-owner-key",
+                "%s=%s" % (owner, (owner_keys or {})[owner]),
+            ))
+        for owner in sorted(owner_key_digests or {}):
+            author_runner_arguments.extend((
+                "--graph-owner-key-sha256",
+                "%s=%s" % (owner, (owner_key_digests or {})[owner]),
+            ))
     author_status = validate_finalization_evidence(
         stage, closure, _mapping(closure.get("finalization")),
         _list(_mapping(context.get("work_context")).get("step_refs")),
         evidence_root, root, author_runner, timeout_seconds, diagnostics,
+        runner_arguments=author_runner_arguments,
+        isolated=(stage == "post_acceptance"),
     )
 
     finalization = _mapping(closure.get("finalization"))

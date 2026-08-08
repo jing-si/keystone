@@ -1,6 +1,8 @@
 import hashlib
+import tempfile
 import unittest
 from dataclasses import replace
+from pathlib import Path
 
 from graph_runtime.model import (
     ApplicationResult,
@@ -11,6 +13,8 @@ from graph_runtime.model import (
     CanonicalMutation,
     ConflictReason,
     Diagnostic,
+    Delta,
+    DeltaKind,
     Evidence,
     GraphRelevance,
     GraphSnapshot,
@@ -108,6 +112,13 @@ class GraphWireTest(unittest.TestCase):
         )
         transaction = GraphTransaction(
             "tx-wire-v2", "R008/S06",
+            input_deltas=(Delta(
+                DeltaKind.ARTIFACT,
+                patch.target_path,
+                (Locator(patch.target_path, symbol="wire"),),
+                "bind executable patch",
+                patch.baseline_digest,
+            ),),
             canonical_mutations=(CanonicalMutation(
                 MutationOperation.ADD, MutationEntity.NODE, None, self.node,
                 Evidence.DECLARED,
@@ -133,9 +144,30 @@ class GraphWireTest(unittest.TestCase):
             "artifact",
             wire["canonical_mutations"][0]["after"]["lifecycle_domain"],
         )
-        self.assertEqual((), validate_transaction(
-            wire, source_snapshot=transaction.reconstruction,
-        ))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "src").mkdir()
+            (root / "src/wire.py").write_text(body, encoding="utf-8")
+            self.assertEqual((), validate_transaction(
+                wire,
+                root=root,
+                source_snapshot=transaction.reconstruction,
+            ))
+
+        rootless_codes = {
+            item.code for item in validate_transaction(
+                wire,
+                source_snapshot=transaction.reconstruction,
+            )
+        }
+        sourceless_codes = {
+            item.code for item in validate_transaction(wire, root=Path(directory))
+        }
+        self.assertTrue({
+            "actual_state_unverified",
+            "verified_actual_state_root_missing",
+        } <= rootless_codes)
+        self.assertIn("verified_source_snapshot_missing", sourceless_codes)
 
     def test_unfinished_and_failed_states_round_trip_without_promotion(self):
         proposed = GraphTransaction("tx-proposed", "R005/S03")

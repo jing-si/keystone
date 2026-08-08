@@ -1,5 +1,6 @@
 import json
 import hashlib
+import os
 import subprocess
 import sys
 import tempfile
@@ -1282,6 +1283,7 @@ class FinalizationRunnerCliTest(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.root = Path(self.temp_dir.name)
+        self.package_counter = 0
         self.manifest = self.root / "manifest.json"
         self.manifest.write_text("{}", encoding="utf-8")
 
@@ -1308,7 +1310,49 @@ class FinalizationRunnerCliTest(unittest.TestCase):
         )
         return process, json.loads(process.stdout) if process.stdout else None
 
-    def run_graph_runner(self, graph_runner, extension=None):
+    def authority_package(self, *, core_source=None, graph_source=None):
+        self.package_counter += 1
+        skill_root = self.root / ("authority-package-%d" % self.package_counter) / "skills"
+        author_scripts = skill_root / "keystone-author" / "scripts"
+        linker_scripts = skill_root / "keystone-linker" / "scripts"
+        author_scripts.mkdir(parents=True)
+        linker_scripts.mkdir(parents=True)
+        runner = author_scripts / "run_finalization_validation.py"
+        validator = author_scripts / "validate_finalization.py"
+        graph_runner = linker_scripts / "run_graph_validation.py"
+        runner.write_bytes(RUNNER.read_bytes())
+        validator.write_text(
+            core_source
+            or (
+                "import json\n"
+                "print(json.dumps({'schema_version':1,'status':'pass',"
+                "'diagnostics':[],'summary':{'errors':0,'warnings':0}}))\n"
+            ),
+            encoding="utf-8",
+        )
+        graph_runner.write_text(
+            graph_source
+            or (
+                "import json\n"
+                "print(json.dumps({'schema_version':1,'status':'pass',"
+                "'diagnostics':[],'summary':{'errors':0,'warnings':0}}))\n"
+            ),
+            encoding="utf-8",
+        )
+        return runner.resolve(), validator.resolve(), graph_runner.resolve()
+
+    def run_graph_runner(
+        self,
+        graph_runner,
+        extension=None,
+        *,
+        graph_schema=1,
+        graph_arguments=(),
+        runner=RUNNER,
+        validator=None,
+        env=None,
+        isolated_runner=False,
+    ):
         manifest = {
             "schema_version": 2,
             "graph_sync": {
@@ -1318,20 +1362,289 @@ class FinalizationRunnerCliTest(unittest.TestCase):
         }
         self.manifest.write_text(json.dumps(manifest), encoding="utf-8")
         (self.root / "graph.json").write_text(json.dumps({
-            "schema_version": 1, "sources": [],
+            "schema_version": graph_schema, "sources": [],
             "transaction": {"transaction_id": "tx-1"},
         }), encoding="utf-8")
-        core = self.root / "core.py"
-        core.write_text(
-            "import json\nprint(json.dumps({'schema_version':1,'status':'pass','diagnostics':[],"
-            "'summary':{'errors':0,'warnings':0}}))\n", encoding="utf-8")
-        command = [sys.executable, str(RUNNER), "--root", str(self.root), "--manifest",
-                   str(self.manifest), "--validator", str(core), "--graph-runner", str(graph_runner),
-                   "--timeout-seconds", "0.1"]
+        core = validator or self.root / "core.py"
+        if validator is None:
+            core.write_text(
+                "import json\nprint(json.dumps({'schema_version':1,'status':'pass',"
+                "'diagnostics':[],'summary':{'errors':0,'warnings':0}}))\n",
+                encoding="utf-8",
+            )
+        command = [sys.executable]
+        if isolated_runner:
+            command.append("-I")
+        command.extend((
+            str(runner), "--root", str(self.root), "--manifest",
+            str(self.manifest), "--validator", str(core),
+            "--graph-runner", str(graph_runner), "--timeout-seconds", "0.1",
+        ))
+        command.extend(graph_arguments)
         if extension:
             command.extend(("--extension", str(extension)))
-        process = subprocess.run(command, capture_output=True, text=True, check=False)
+        process = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+            env=env,
+        )
         return process, json.loads(process.stdout) if process.stdout else None
+
+    def test_schema_v2_graph_runner_requires_and_forwards_application_context(self):
+        marker = self.root / "graph-arguments.json"
+        runner, validator, graph = self.authority_package(graph_source=(
+            "import json,sys\n"
+            f"open({str(marker)!r}, 'w').write(json.dumps(sys.argv[1:]))\n"
+            "print(json.dumps({'schema_version':1,'status':'pass','diagnostics':[],"
+            "'summary':{'errors':0,'warnings':0}}))\n"
+        ))
+
+        missing_process, missing_payload = self.run_graph_runner(
+            graph,
+            graph_schema=2,
+            runner=runner,
+            validator=validator,
+        )
+        self.assertEqual(2, missing_process.returncode)
+        self.assertEqual(
+            "graph_application_evidence_context_missing",
+            missing_payload["diagnostics"][0]["code"],
+        )
+        self.assertFalse(marker.exists())
+
+        evidence_root = self.root / "evidence"
+        evidence_root.mkdir()
+        process, payload = self.run_graph_runner(
+            graph,
+            graph_schema=2,
+            runner=runner,
+            validator=validator,
+            graph_arguments=(
+                "--graph-evidence-root",
+                str(evidence_root),
+                "--graph-owner-key",
+                "author=/external/author.key",
+                "--graph-owner-key-sha256",
+                "author=sha256:" + "a" * 64,
+            ),
+        )
+
+        self.assertEqual(0, process.returncode, payload)
+        forwarded = json.loads(marker.read_text(encoding="utf-8"))
+        self.assertIn("--evidence-root", forwarded)
+        self.assertIn(str(evidence_root), forwarded)
+        self.assertIn("--owner-key", forwarded)
+        self.assertIn("author=/external/author.key", forwarded)
+        self.assertIn("--owner-key-sha256", forwarded)
+        self.assertIn("author=sha256:" + "a" * 64, forwarded)
+
+    def test_schema_v2_rejects_validator_and_graph_runner_overrides(self):
+        evidence_root = self.root / "authority-evidence"
+        evidence_root.mkdir()
+        graph_arguments = ("--graph-evidence-root", str(evidence_root))
+        runner, validator, graph_runner = self.authority_package()
+
+        validator_marker = self.root / "override-validator-ran"
+        override_validator = self.root / "override-validator.py"
+        override_validator.write_text(
+            "from pathlib import Path\n"
+            f"Path({str(validator_marker)!r}).write_text('ran')\n",
+            encoding="utf-8",
+        )
+        process, payload = self.run_graph_runner(
+            graph_runner,
+            graph_schema=2,
+            graph_arguments=graph_arguments,
+            runner=runner,
+            validator=override_validator,
+        )
+
+        self.assertEqual(2, process.returncode)
+        self.assertEqual("error", payload["status"])
+        self.assertEqual(
+            "authority_validator_override_forbidden",
+            payload["diagnostics"][0]["code"],
+        )
+        self.assertFalse(validator_marker.exists())
+
+        graph_marker = self.root / "override-graph-runner-ran"
+        override_graph_runner = self.root / "override-graph-runner.py"
+        override_graph_runner.write_text(
+            "from pathlib import Path\n"
+            f"Path({str(graph_marker)!r}).write_text('ran')\n",
+            encoding="utf-8",
+        )
+        process, payload = self.run_graph_runner(
+            override_graph_runner,
+            graph_schema=2,
+            graph_arguments=graph_arguments,
+            runner=runner,
+            validator=validator,
+        )
+
+        self.assertEqual(2, process.returncode)
+        self.assertEqual("error", payload["status"])
+        self.assertEqual(
+            "authority_graph_runner_override_forbidden",
+            payload["diagnostics"][0]["code"],
+        )
+        self.assertFalse(graph_marker.exists())
+
+    def test_schema_v2_rejects_symlink_and_hardlink_authority_executables(self):
+        evidence_root = self.root / "link-evidence"
+        evidence_root.mkdir()
+        graph_arguments = ("--graph-evidence-root", str(evidence_root))
+
+        runner, validator, graph_runner = self.authority_package()
+        validator_alias = self.root / "validator-symlink.py"
+        validator_alias.symlink_to(validator)
+        process, payload = self.run_graph_runner(
+            graph_runner,
+            graph_schema=2,
+            graph_arguments=graph_arguments,
+            runner=runner,
+            validator=validator_alias,
+        )
+        self.assertEqual(2, process.returncode)
+        self.assertEqual("error", payload["status"])
+        self.assertEqual(
+            "authority_validator_override_forbidden",
+            payload["diagnostics"][0]["code"],
+        )
+
+        runner, validator, graph_runner = self.authority_package()
+        graph_alias = self.root / "graph-runner-symlink.py"
+        graph_alias.symlink_to(graph_runner)
+        process, payload = self.run_graph_runner(
+            graph_alias,
+            graph_schema=2,
+            graph_arguments=graph_arguments,
+            runner=runner,
+            validator=validator,
+        )
+        self.assertEqual(2, process.returncode)
+        self.assertEqual("error", payload["status"])
+        self.assertEqual(
+            "authority_graph_runner_override_forbidden",
+            payload["diagnostics"][0]["code"],
+        )
+
+        runner, validator, graph_runner = self.authority_package()
+        os.link(str(validator), str(self.root / "validator-hardlink.py"))
+        process, payload = self.run_graph_runner(
+            graph_runner,
+            graph_schema=2,
+            graph_arguments=graph_arguments,
+            runner=runner,
+            validator=validator,
+        )
+        self.assertEqual(2, process.returncode)
+        self.assertEqual("error", payload["status"])
+        self.assertEqual(
+            "authority_validator_override_forbidden",
+            payload["diagnostics"][0]["code"],
+        )
+
+        runner, validator, graph_runner = self.authority_package()
+        os.link(str(graph_runner), str(self.root / "graph-runner-hardlink.py"))
+        process, payload = self.run_graph_runner(
+            graph_runner,
+            graph_schema=2,
+            graph_arguments=graph_arguments,
+            runner=runner,
+            validator=validator,
+        )
+        self.assertEqual(2, process.returncode)
+        self.assertEqual("error", payload["status"])
+        self.assertEqual(
+            "authority_graph_runner_override_forbidden",
+            payload["diagnostics"][0]["code"],
+        )
+
+    def test_schema_v2_core_isolated_from_hostile_python_environment(self):
+        hostile = self.root / "hostile-python"
+        hostile.mkdir()
+        hostile_marker = self.root / "sitecustomize-loaded"
+        (hostile / "sitecustomize.py").write_text(
+            "from pathlib import Path\n"
+            f"Path({str(hostile_marker)!r}).write_text('loaded')\n"
+            "raise SystemExit('hostile sitecustomize loaded')\n",
+            encoding="utf-8",
+        )
+        core_environment = self.root / "core-environment.json"
+        runner, validator, graph_runner = self.authority_package(core_source=(
+            "import json,os,sys\n"
+            "from pathlib import Path\n"
+            f"Path({str(core_environment)!r}).write_text(json.dumps({{"
+            "'PYTHONPATH':os.environ.get('PYTHONPATH'),"
+            "'PYTHONHOME':os.environ.get('PYTHONHOME'),"
+            "'isolated':sys.flags.isolated}))\n"
+            "print(json.dumps({'schema_version':1,'status':'pass','diagnostics':[],"
+            "'summary':{'errors':0,'warnings':0}}))\n"
+        ))
+        evidence_root = self.root / "isolated-evidence"
+        evidence_root.mkdir()
+        environment = os.environ.copy()
+        environment.update({
+            "PYTHONPATH": str(hostile),
+            "PYTHONHOME": str(hostile),
+        })
+
+        process, payload = self.run_graph_runner(
+            graph_runner,
+            graph_schema=2,
+            graph_arguments=("--graph-evidence-root", str(evidence_root)),
+            runner=runner,
+            validator=validator,
+            env=environment,
+            isolated_runner=True,
+        )
+
+        self.assertEqual(0, process.returncode, payload)
+        self.assertEqual("pass", payload["status"])
+        self.assertFalse(hostile_marker.exists())
+        self.assertEqual(
+            {"PYTHONPATH": None, "PYTHONHOME": None, "isolated": 1},
+            json.loads(core_environment.read_text(encoding="utf-8")),
+        )
+
+    def test_schema_v2_extension_cannot_override_core_failure(self):
+        runner, validator, graph_runner = self.authority_package(core_source=(
+            "import json,sys\n"
+            "print(json.dumps({'schema_version':1,'status':'fail',"
+            "'diagnostics':[{'severity':'error','code':'core_failed',"
+            "'message':'core failed'}],"
+            "'summary':{'errors':1,'warnings':0}}))\n"
+            "sys.exit(1)\n"
+        ))
+        extension_marker = self.root / "authority-extension-ran"
+        extension = self.root / "authority-extension.py"
+        extension.write_text(
+            "import json\n"
+            "from pathlib import Path\n"
+            f"Path({str(extension_marker)!r}).write_text('ran')\n"
+            "print(json.dumps({'schema_version':1,'status':'pass','diagnostics':[],"
+            "'summary':{'errors':0,'warnings':0}}))\n",
+            encoding="utf-8",
+        )
+        evidence_root = self.root / "extension-evidence"
+        evidence_root.mkdir()
+
+        process, payload = self.run_graph_runner(
+            graph_runner,
+            extension=extension,
+            graph_schema=2,
+            graph_arguments=("--graph-evidence-root", str(evidence_root)),
+            runner=runner,
+            validator=validator,
+        )
+
+        self.assertEqual(1, process.returncode)
+        self.assertEqual("fail", payload["status"])
+        self.assertEqual("core_failed", payload["diagnostics"][0]["code"])
+        self.assertFalse(extension_marker.exists())
 
     def test_missing_validator_maps_to_validator_unavailable(self):
         process, payload = self.run_runner(self.root / "missing.py")

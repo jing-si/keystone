@@ -1011,6 +1011,42 @@ class ClosureV2ValidationTest(unittest.TestCase):
 
         self.assertEqual([original], runner_inputs)
 
+    def test_v2_captured_manifest_runner_has_no_extra_arguments_by_default(self):
+        commands = []
+
+        def capture_command(command, *_args):
+            commands.append(command)
+            return {"status": "pass"}
+
+        with mock.patch.object(
+            closure_v2,
+            "_run_evidence",
+            side_effect=capture_command,
+        ):
+            closure_v2._run_captured_manifest(
+                Path("runner.py"),
+                self.root,
+                json_bytes({"schema_version": 1}),
+                1.0,
+                digest_json({"status": "pass"}),
+                "evidence.envelope_digest",
+                [],
+                "author",
+            )
+
+        self.assertEqual(1, len(commands))
+        self.assertEqual(6, len(commands[0]))
+        self.assertEqual(
+            [
+                sys.executable,
+                "runner.py",
+                "--root",
+                str(self.root),
+                "--manifest",
+            ],
+            commands[0][:-1],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

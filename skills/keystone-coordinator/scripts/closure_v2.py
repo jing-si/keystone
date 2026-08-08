@@ -824,19 +824,36 @@ def _run_captured_manifest(
     path: str,
     diagnostics: List[Diagnostic],
     runner_kind: str,
+    *,
+    runner_arguments: Sequence[str] = (),
+    isolated: bool = False,
 ) -> Optional[Mapping[str, Any]]:
     with tempfile.TemporaryDirectory(prefix="keystone-coordinator-evidence-") as directory:
         manifest_path = Path(directory) / "manifest.json"
         manifest_path.write_bytes(raw_manifest)
+        command = [sys.executable]
+        if isolated:
+            command.append("-I")
+        command.extend((
+            str(runner),
+            "--root",
+            str(root),
+            "--manifest",
+            str(manifest_path),
+            *runner_arguments,
+        ))
+        if isolated:
+            return _run_evidence(
+                command,
+                timeout_seconds,
+                expected_digest,
+                path,
+                diagnostics,
+                runner_kind,
+                isolated=True,
+            )
         return _run_evidence(
-            [
-                sys.executable,
-                str(runner),
-                "--root",
-                str(root),
-                "--manifest",
-                str(manifest_path),
-            ],
+            command,
             timeout_seconds,
             expected_digest,
             path,
@@ -938,10 +955,19 @@ def _valid_runner_envelope(
 def _run_evidence(
     command: Sequence[str], timeout_seconds: float, expected_digest: Any,
     path: str, diagnostics: List[Diagnostic], runner_kind: str,
+    *, isolated: bool = False,
 ) -> Optional[Mapping[str, Any]]:
+    run_options: Dict[str, Any] = {}
+    if isolated:
+        environment = {"PATH": os.defpath}
+        for name in ("SYSTEMROOT", "WINDIR"):
+            if name in os.environ:
+                environment[name] = os.environ[name]
+        run_options["env"] = environment
     try:
         process = subprocess.run(
-            list(command), check=False, capture_output=True, text=True, timeout=timeout_seconds
+            list(command), check=False, capture_output=True, text=True,
+            timeout=timeout_seconds, **run_options,
         )
     except subprocess.TimeoutExpired:
         diagnostics.append(diagnostic("runner_timeout", "Evidence runner timed out.", path))
@@ -1125,7 +1151,8 @@ def _validate_graph_sync(
 def _validate_finalization(
     phase: Any, closure: Mapping[str, Any], value: Mapping[str, Any],
     assignment_steps: List[str], evidence_root: Path, root: Path,
-    author_runner: Path, timeout_seconds: float, diagnostics: List[Diagnostic]
+    author_runner: Path, timeout_seconds: float, diagnostics: List[Diagnostic],
+    *, runner_arguments: Sequence[str] = (), isolated: bool = False,
 ) -> Optional[str]:
     if phase == "pre_acceptance":
         _unknown_fields(value, {"state", "evidence"},
@@ -1221,6 +1248,8 @@ def _validate_finalization(
         author_runner, root, finalization_manifest_bytes, timeout_seconds,
         value.get("envelope_digest"),
         "keystone_closure.finalization.envelope_digest", diagnostics, "author",
+        runner_arguments=runner_arguments,
+        isolated=isolated,
     )
     if payload is not None and payload.get("status") != value.get("runner_status"):
         diagnostics.append(diagnostic("author_runner_status_mismatch",
@@ -1280,6 +1309,9 @@ def validate_finalization_evidence(
     author_runner: Path,
     timeout_seconds: float,
     diagnostics: List[Diagnostic],
+    *,
+    runner_arguments: Sequence[str] = (),
+    isolated: bool = False,
 ) -> Optional[str]:
     """Validate Author finalization evidence for a closure schema consumer."""
 
@@ -1293,6 +1325,8 @@ def validate_finalization_evidence(
         author_runner,
         timeout_seconds,
         diagnostics,
+        runner_arguments=runner_arguments,
+        isolated=isolated,
     )
 
 

@@ -758,6 +758,8 @@ def validate_manifest(
     capture_authority_key_digest: Optional[str] = None,
     acceptance_authority_key: Optional[Path] = None,
     acceptance_authority_key_digest: Optional[str] = None,
+    owner_keys: Optional[Mapping[str, Path]] = None,
+    owner_key_digests: Optional[Mapping[str, str]] = None,
     timeout_seconds: float = 30.0,
 ) -> Dict[str, Any]:
     diagnostics: List[Diagnostic] = []
@@ -774,6 +776,11 @@ def validate_manifest(
                 != (capture_authority_key_digest is None)
                 or (acceptance_authority_key is None)
                 != (acceptance_authority_key_digest is None)
+                or set(owner_keys or {}) != set(owner_key_digests or {})
+                or bool(
+                    set(owner_keys or {})
+                    - {"author", "main", "coordinator"}
+                )
             )
         )
         package_skills = Path(__file__).parents[2]
@@ -795,7 +802,8 @@ def validate_manifest(
             diagnostics.append(
                 _diagnostic(
                     "v3_runtime_context_invalid",
-                    "Each schema-v3 authority key path and pinned digest must be supplied together.",
+                    "Each schema-v3 authority key path and pinned digest must be supplied "
+                    "together for a canonical owner.",
                     "schema_version",
                 )
             )
@@ -883,6 +891,8 @@ def validate_manifest(
                                 acceptance_authority_key_digest=(
                                     acceptance_authority_key_digest
                                 ),
+                                owner_keys=owner_keys or {},
+                                owner_key_digests=owner_key_digests or {},
                             )
                         )
                 except (OSError, RuntimeError, UnicodeError, TypeError, ValueError) as error:
@@ -934,6 +944,24 @@ def _error_result(code: str, message: str) -> Dict[str, Any]:
     }
 
 
+def _parse_owner_bindings(
+    values: Sequence[str], flag: str,
+) -> Mapping[str, str]:
+    result: Dict[str, str] = {}
+    for value in values:
+        if not isinstance(value, str) or "=" not in value:
+            raise ValueError("%s requires OWNER=VALUE" % flag)
+        owner, bound = value.split("=", 1)
+        if owner not in {"author", "main", "coordinator"} or not bound:
+            raise ValueError(
+                "%s owner must be author, main, or coordinator" % flag
+            )
+        if owner in result:
+            raise ValueError("%s owner binding is duplicated: %s" % (flag, owner))
+        result[owner] = bound
+    return result
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", required=True, type=Path)
@@ -956,7 +984,27 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--trusted-capture-authority-key-sha256")
     parser.add_argument("--acceptance-authority-key", type=Path)
     parser.add_argument("--trusted-acceptance-authority-key-sha256")
+    parser.add_argument(
+        "--owner-key", action="append", default=[], metavar="OWNER=PATH"
+    )
+    parser.add_argument(
+        "--owner-key-sha256",
+        action="append",
+        default=[],
+        metavar="OWNER=sha256:...",
+    )
     args = parser.parse_args(argv)
+    try:
+        owner_key_values = _parse_owner_bindings(
+            args.owner_key, "--owner-key"
+        )
+        owner_key_digest_values = _parse_owner_bindings(
+            args.owner_key_sha256, "--owner-key-sha256"
+        )
+    except ValueError as exc:
+        result = _error_result("owner_key_argument_invalid", str(exc))
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+        return 2
     try:
         manifest_bytes = args.manifest.read_bytes()
         manifest = _loads_json_strict(manifest_bytes.decode("utf-8"))
@@ -1013,6 +1061,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         acceptance_authority_key_digest=(
             args.trusted_acceptance_authority_key_sha256
         ),
+        owner_keys={
+            owner: Path(path) for owner, path in owner_key_values.items()
+        },
+        owner_key_digests=owner_key_digest_values,
         timeout_seconds=args.timeout_seconds,
     )
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))

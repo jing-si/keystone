@@ -35,6 +35,11 @@ def build_source_node(
     path: str,
 ) -> SourceNodeResult:
     diagnostics = []
+    inherits_document_metadata = bool(
+        parent is not None
+        and node_lifecycle_domain(kind) == "document"
+        and node_lifecycle_domain(parent.kind) == "document"
+    )
     raw_lifecycle = data.get("_document_lifecycle", data.get("lifecycle"))
     declared_lifecycle = (
         _lifecycle(raw_lifecycle)
@@ -42,7 +47,7 @@ def build_source_node(
         else None
     )
     effective_lifecycle = declared_lifecycle or (
-        parent.lifecycle if parent is not None else Lifecycle.ACTIVE
+        parent.lifecycle if inherits_document_metadata else Lifecycle.ACTIVE
     )
     if not node_lifecycle_admitted(kind, effective_lifecycle):
         diagnostics.append(Diagnostic(
@@ -58,10 +63,10 @@ def build_source_node(
     effective_approval = (
         declared_approval
         if declared_approval is not None
-        else (parent.approval_state if parent is not None else None)
+        else (parent.approval_state if inherits_document_metadata else None)
     )
     if (
-        parent is not None
+        inherits_document_metadata
         and parent.approval_state in {
             ApprovalState.PENDING,
             ApprovalState.REJECTED,
@@ -78,7 +83,7 @@ def build_source_node(
 
     declared_governed_by = metadata_strings(data.get("governed_by"))
     parent_governed_by = (
-        parent.provenance.governed_by if parent is not None else ()
+        parent.provenance.governed_by if inherits_document_metadata else ()
     )
     effective_governed_by = tuple(dict.fromkeys(
         parent_governed_by + declared_governed_by
@@ -86,10 +91,10 @@ def build_source_node(
 
     declared_authority = _authority_entries(data.get("_source_authority"))
     effective_authority = declared_authority or (
-        parent.source_authority if parent is not None else ()
+        parent.source_authority if inherits_document_metadata else ()
     )
     if (
-        parent is not None
+        inherits_document_metadata
         and declared_authority
         and not set(declared_authority) <= set(parent.source_authority)
     ):

@@ -51,6 +51,60 @@ class SourceUnitTest(unittest.TestCase):
         self.assertEqual(("src/generated.py.keystone.json",), unit.generation_paths)
         self.assertIsNone(unit.source_bytes)
 
+    def test_non_utf8_supported_source_falls_back_to_companion(self):
+        raw_source = "# generated\n".encode("utf-16")
+
+        unit = resolve_source_unit(
+            "src/generated.py",
+            raw_source,
+            b'{"schema_version":1}',
+        )
+
+        self.assertEqual(SourceSurface.COMPANION, unit.surface)
+        self.assertEqual(raw_source, unit.source_bytes)
+        self.assertFalse(unit.diagnostics)
+        self.assertEqual(
+            ("src/generated.py", "src/generated.py.keystone.json"),
+            unit.generation_paths,
+        )
+
+    def test_non_utf8_supported_source_without_companion_is_diagnostic(self):
+        unit = resolve_source_unit(
+            "src/generated.py",
+            "# generated\n".encode("utf-16"),
+            None,
+        )
+
+        self.assertIsNone(unit.surface)
+        self.assertEqual("unsupported_encoding", unit.diagnostics[0].code)
+
+    def test_non_utf8_companion_is_rejected_by_the_shared_resolver(self):
+        unit = resolve_source_unit(
+            "src/generated.py",
+            "# generated\n".encode("utf-16"),
+            b"\xff\xfe",
+        )
+
+        self.assertIsNone(unit.surface)
+        self.assertEqual("unsupported_encoding", unit.diagnostics[0].code)
+        self.assertEqual(
+            "src/generated.py.keystone.json",
+            unit.diagnostics[0].path,
+        )
+
+    def test_ambiguous_unterminated_anchor_blocks_companion_precedence(self):
+        unit = resolve_source_unit(
+            "src/example.ts",
+            b'const sample = `\n// keystone: id=key.ambiguous\n',
+            b'{"schema_version":1}',
+        )
+
+        self.assertIsNone(unit.surface)
+        self.assertEqual(
+            "ambiguous_metadata_anchor",
+            unit.diagnostics[0].code,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

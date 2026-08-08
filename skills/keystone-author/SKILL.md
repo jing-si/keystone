@@ -122,6 +122,25 @@ acceptance event:
    historical acceptance or graph evidence merely to make it current-state replayable.
    Use `global_state.active_round: none` only when `active_steps` is empty.
 
+Run finalization with the exact package-runner flag surface:
+
+```sh
+python3 scripts/run_finalization_validation.py \
+  --root ROOT --manifest FINALIZATION_MANIFEST \
+  [--validator VALIDATOR] [--extension EXTENSION] [--graph-runner GRAPH_RUNNER] \
+  [--graph-evidence-root EVIDENCE_ROOT] \
+  [--graph-owner-key OWNER=PATH ...] \
+  [--graph-owner-key-sha256 OWNER=sha256:... ...] \
+  [--timeout-seconds SECONDS]
+```
+
+When a required finalization names graph-validation manifest schema v2, `--graph-evidence-root` is
+mandatory and the repeatable graph-owner key/digest bindings are forwarded to the isolated package
+Linker runner. Graph-validation schema v1 remains readable historical/structural evidence, but neither
+it nor a standalone canonical transaction v2 can authorize a new Coordinator-v3 required graph-sync
+success. Coordinator post-acceptance validation forwards its own evidence-root and owner bindings to
+these graph-prefixed flags; Author does not invent or weaken them.
+
 The finalization hard gate is scoped: while a Work has an incomplete required finalization, block only
 that same Work's next implement assignment, transition to `in_progress`, next-Step Main acceptance,
 and Work closure. Allow documentation repair, investigation, verification, and finalization resume.
@@ -132,6 +151,13 @@ They cannot remove core manifest fields, convert a core failure to success, edit
 or mark finalization complete. Hook absence is distinct from validator unavailability.
 
 ## Document Delta and Graph Synchronization
+
+An ordinary in-scope single-document semantic, progress, or finalization edit stays in Author's normal
+direct-write lane when it needs no coordinated source-surface graph sync. It does not require an
+owner-apply request/receipt merely because Author records a document delta or refreshes an index. Enter
+the external application-evidence lane only after Linker classifies synchronization as `required` and
+provides an exact Author-owned transaction-v2 patch. Author never creates the transaction, expands
+scope, or treats direct-edit evidence as application authority.
 
 After an approved document meaning or independently addressable metadata item changes, Author emits a
 delta. `graph_relevant: true` invokes Linker classification; it does not automatically require a graph
@@ -171,6 +197,41 @@ Linker alone decides canonical mutations and exact per-surface patches. Author c
 creates a typed relation, reinterprets Linker's mutation, or attests another surface. Apply only a
 confirmed in-scope patch, rechecking the target's raw UTF-8 SHA-256 baseline immediately before write;
 on mismatch, do not write and return `stale_baseline`.
+
+For that required transaction lane, apply each confirmed Author patch only through:
+
+```sh
+python3 scripts/run_owned_surface_apply.py \
+  --root ROOT --request REQUEST --evidence-root EVIDENCE_ROOT --output RECEIPT \
+  --authority-key EXTERNAL_AUTHOR_KEY --pinned-key-sha256 sha256:...
+```
+
+The canonical owner-apply request schema v1 contains exactly `schema_version`, `transaction_id`,
+`transaction_digest`, `assignment_id`, `assignment_digest`, `phase_id`,
+`phase_baseline_snapshot_digest`, `phase_parent_evidence_digest`, `repository_root_digest`, `owner`,
+`scope`, `scope_digest`, `prior_receipt_digest`, and `patch`. `scope` contains exactly `allowed` and
+`excluded`; `patch` is the full exact transaction-v2 patch. The Author runner accepts only
+`owner: author` with `document_metadata` on `.md | .markdown`, or `companion_metadata` for such a
+document. It checks observed baseline against the planned baseline, replays and writes exact expected
+bytes, rereads the result, and emits one canonical HMAC receipt in the same operation. A
+failed/stale/rollback path emits no receipt. Diagnostic pass/fail/error maps to exit `0/1/2`.
+For an existing target, same-directory atomic exchange preserves the displaced live entry and compares
+its exact bytes/type/identity with the planned baseline. If the OS/filesystem exchange primitive is not
+available, fail with `atomic_exchange_unavailable` and leave source and receipt unauthoritative.
+Rollback and receipt cleanup never unlink a public name directly: atomically move it with no-replace to
+a same-directory high-entropy quarantine, delete only a private entry matching the recorded
+runner-owned identity/bytes/mode, and restore or preserve every mismatch as recovery evidence while
+failing with `rollback_failed`.
+
+Every applied required or optional patch needs exactly one receipt; an omitted ancillary optional needs
+none. The signed envelope binds transaction plan, assignment, closure phase and parent evidence,
+repository root, owner scope, full patch, request, prior receipt, nonce, evidence root, external pinned
+Author key and current package runner/runtime digests. The key is a current-user-owned, owner-only,
+single-link regular file of at least 32 raw bytes on an absolute symlink-free path outside repository
+and evidence roots. This trusted-host HMAC proves exact signed bytes and protected-key possession, not
+independent execution, external time, OS-user/organization identity, or absence of a later authorized
+write. Linker remains the source-write-free verifier, and Coordinator compares the signed phase/scope/
+assignment/delta bindings before new v3 authority succeeds.
 
 Preserve every `applied | failed | stale_baseline` result. Partial success remains
 `partially_applied`; a resume skips patches whose current digest equals their recorded resulting digest
