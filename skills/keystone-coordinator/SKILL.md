@@ -239,27 +239,66 @@ Run the package-local validator described in
 [references/closure-validator.md](references/closure-validator.md). It is diagnostic-only: it does not
 edit sources, decide graph meaning, grant acceptance, or complete Author finalization.
 
-New authority-bearing validation uses Coordinator closure manifest schema v2. Before execution,
-persist an immutable validator assignment projection outside the repository source tree when possible.
-It contains the assignment ID, execution mode, purpose, authority, exact goal, bounded Context Pack,
-injected skill IDs/modes, normalized scope, and the full pre-work repository path/raw-byte digest
-snapshot. After execution, invoke the validator with `--root`, `--assignment`, `--manifest`, and an
-existing host-controlled external `--evidence-root`. Manifest schema v1 remains readable for diagnostics but cannot authorize
-`accept_candidate` or `closure_complete`.
+New authority-bearing validation uses Coordinator assignment and closure manifest schema v3. Before
+execution, persist an immutable validator assignment projection outside the repository source tree when
+possible. It contains the assignment ID, execution mode, purpose, authority, exact goal, bounded Context
+Pack, injected skill IDs/modes, normalized scope, a normalized `snapshot_policy`, and the root
+`document_root` and `assignment_phase`. Snapshot policy and canonical repository snapshot are independently parsed schema-v3
+objects. The assignment phase holds one complete, stable repository snapshot with a distinct
+assignment-owned `expected_absences` collection inside that canonical snapshot. Existing entries
+distinguish regular files, directories, and symlinks; regular-file raw bytes, executable bit, symlink
+target, both path-set counts/digests, completeness, truncation, and stable-capture evidence are
+authority-bearing.
 
-The validator derives added, modified, and deleted paths from the immutable snapshot and current root.
-It compares that set with the report, checks actual baseline/resulting digests and allowed/excluded
-scope, binds report/review to assignment and Context Pack digests, matches `skill_usage` to injected
-skills, and applies work-completion gates when `closure_target: work`. A Step closure names one
-assignment-scoped `closure_step_ref`; Step-only and Work-only gate projections are kept in their
-matching arrays, and misfiled or duplicate gates fail closed. Required graph sync accepts only a
-schema-v2 verified transaction and invokes the package-owned Linker runner; every post-acceptance
-decision invokes the package-owned Author runner against canonical Author finalization schema v5.
-Schema v4 remains historical Author read compatibility and cannot authorize a new Coordinator
-closure. Missing roots/evidence, unavailable runners,
-timeouts, malformed output, and child runner execution errors remain diagnostic `error` rather than an
-ordinary closure finding.
-Coordinator evidence strings never substitute for these checks.
+Create that T0 snapshot with the package-owned `scripts/capture_assignment_snapshot.py` before any
+worker write, then run the same entrypoint at worker, pre-acceptance, and post-acceptance boundaries.
+Its diagnostic envelope remains schema v1 and embeds canonical repository snapshot schema v3 plus an
+external single-link `{path,digest}` capture reference. Each capture binds repository/policy,
+assignment ID, Context Pack digest, phase, snapshot/evidence parents, result snapshot, current package
+command digest, disjoint evidence root, fresh nonce and a strictly increasing UTC time. It also binds
+the canonical non-circular assignment authority core (every assignment field except
+`assignment_phase`) so later scope/actor reassignment cannot reuse a capture. Each receipt is
+HMAC-authenticated with an independently pinned, external owner-private Coordinator key. Embed the exact
+T0 snapshot and reference in the immutable assignment bytes. The HMAC proves protected-key possession,
+not independent binary execution, clock, OS-user or organizational identity.
+
+After execution, invoke the validator with `--root`, `--assignment`, `--manifest`, and an existing
+host-controlled external `--evidence-root`. The schema-v3 manifest links `worker_phase`,
+`pre_acceptance_closure_phase`, and, after Main acceptance, `post_acceptance_phase`. Every non-root phase
+binds its baseline snapshot digest to the previous phase result, records a complete result snapshot, and
+attributes every changed path and artifact delta to one authorized writer. The worker report owns only
+the worker phase. Author and repository-surface-owner writes are separate actor deltas; Linker supplies
+classification, transaction, or validation evidence and never a source-write delta. The current root
+must equal the terminal declared phase result, so an unrecorded inter-phase generation fails closed.
+The assignment `document_root` must equal actual project configuration (or the standard default), and
+Author scope must remain below it. Worker and repository-owner edit scopes cannot overlap that document
+root. Explicit `document_root: .` is ambiguous with every other repository surface, so every write
+actor scope must be empty until a deterministic document-surface registry exists.
+Post-acceptance completion additionally binds the schema-v5 manifest,
+Author runner envelope, post snapshot, and non-empty Author finalization delta. Before Author writes,
+Main uses `scripts/record_acceptance_event.py` with a distinct pinned Main key. The exact evidence chain
+is pre-capture digest -> Main acceptance-event digest -> post-capture digest; pre validation does not
+require or receive the Main key. The acceptance runner reads the canonical pre snapshot from the
+external evidence root and performs a fresh complete capture with the same policy and expected
+absences. It emits no event unless the observed wire and digest equal the pre snapshot, so an Author
+write cannot be moved retroactively across the Main boundary.
+
+The validator checks actual baseline/resulting digests and actor-specific allowed/excluded scope, binds
+report/review to assignment and Context Pack digests, matches `skill_usage` to injected skills, and
+applies work-completion gates when `closure_target: work`. A Step closure names one assignment-scoped
+`closure_step_ref`; Step-only and Work-only gate projections remain in their matching arrays, and
+misfiled or duplicate gates fail closed. Required graph sync still accepts only a Linker graph
+transaction schema v2 and invokes the package-owned Linker runner. Graph and Author manifest digest,
+parse, and child-runner input must all use one stable captured byte generation. Every post-acceptance decision still
+invokes the package-owned Author runner against canonical Author finalization schema v5.
+
+Coordinator manifest schemas v1 and v2 remain readable for historical diagnostics, but neither can
+authorize a new `accept_candidate` or `closure_complete`. Do not rewrite accepted v2 evidence; restart
+unfinished authority-bearing work from a freshly captured v3 assignment because completeness and phase
+provenance cannot be inferred retrospectively. The diagnostic envelope remains schema v1. Missing
+roots/evidence, unavailable runners, timeouts, malformed output, and child runner execution errors remain
+diagnostic `error` rather than an ordinary closure finding. Coordinator evidence strings never
+substitute for these checks.
 
 ## Artifact Delta and Graph Synchronization
 
@@ -297,7 +336,7 @@ graph_apply_results:
 
 `changed_locators` is a non-empty array of canonical locator objects. Every locator requires
 `path`; omit unused optional `heading`, `symbol`, `test_name`, `config_key`, and `schema_name`
-fields. Plain locator strings are historical schema-v1 input only and cannot authorize schema-v2
+fields. Plain locator strings are historical schema-v1 input only and cannot authorize schema-v3
 closure.
 
 Linker alone decides canonical mutations and exact patches. Coordinator or Main attests only the
@@ -469,11 +508,14 @@ Pack must explicitly carry its accepted-decisions array (use `[]` only when none
 criteria, scope boundaries, forbidden changes, verification expectations, and artifact/Reader/Author
 context status plus evidence. `ready` and `not_applicable` require evidence; `blocked` prevents readiness.
 
-The rich `worker_assignment` above remains the agent-facing handoff. The schema-v2 closure validator
-uses a strict immutable projection with only `schema_version`, `assignment_id`, `execution_mode`,
-`purpose`, `authority`, `goal`, `context_pack`, injected skill IDs/modes, normalized `scope`, and
-`baseline_snapshot`. The full worker report is likewise projected to the strict closure fields described
-in the validator reference. Unknown authority-bearing fields must not be smuggled into either projection.
+The rich `worker_assignment` above remains the agent-facing handoff. The schema-v3 closure validator
+uses a strict immutable projection with only the fields defined by the validator reference, including
+the assignment identity and authority, `context_pack`, injected skill IDs/modes, normalized `scope`,
+`snapshot_policy`, and root `assignment_phase`. The full worker report is projected only into
+the strict top-level `worker_report` and validated only against `worker_phase`; it cannot claim later
+Author, repository-owner, Linker, acceptance, or finalization work.
+Unknown authority-bearing fields must not be smuggled into any assignment, phase, actor-delta, report,
+review, snapshot, or expected-absence object.
 
 Worker report:
 
@@ -500,8 +542,8 @@ worker_report:
   changed_key_ids:
   changed_item_or_claim_ids:
   changed_capabilities:
-  changed_files: [] # explicit; [] only when no repository surface changed
-  artifact_deltas: [] # explicit; one kind: artifact_delta entry per changed file
+  changed_files: [] # explicit; worker-phase repository changes only
+  artifact_deltas: [] # explicit; one kind: artifact_delta entry per worker-phase changed file
   graph_attestations:
   graph_apply_results:
   graph_transaction_state:
@@ -562,7 +604,7 @@ worker_report_review:
   graph_transaction_complete: true | false
   document_sync_result: complete | not_applicable | pending | blocked
   metadata_sync_result: complete | not_applicable | pending | blocked
-  keystone_closure_phase: pre_acceptance | post_acceptance
+  keystone_closure_stage: pre_acceptance | post_acceptance
   finalization_result: not_started | in_progress | complete | waived | blocked
   source_conflict_result:
   main_context_preserved: true | false
@@ -584,16 +626,17 @@ the structured `document_sync`, `metadata_sync`, and `graph_sync` results above.
 Only `DONE` is ready for an `accept_candidate`. `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`,
 `NEEDS_SCOPE_CHANGE`, and `BLOCKED` remain non-ready until their named concern or blocker is resolved.
 The worker report's `execution_mode` must match its assignment. `changed_files` and `artifact_deltas`
-are explicit arrays; genuine no-change uses `[]` for both. Each actual changed file has exactly one
-delta with `kind: artifact_delta`, `change_kind`, baseline/resulting digests, and `graph_relevant`.
-Schema-v2 validation derives the change set from repository bytes instead of trusting `scope_check`.
+are explicit arrays; genuine no-change uses `[]` for both. Each worker-phase changed file has exactly
+one delta with `kind: artifact_delta`, `change_kind`, baseline/resulting digests, and `graph_relevant`.
+Schema-v3 validation derives every phase change set from adjacent complete snapshots instead of trusting
+`scope_check` or attributing later Author/finalization writes to the worker.
 
 For every post-acceptance decision, record acceptance separately from finalization:
 
 ```yaml
 keystone_closure:
   acceptance_ref:
-  acceptance_evidence: []
+  acceptance_event: {path:, digest:} # schema-v3 authority; legacy schemas keep text evidence
   accepted_steps: []
   finalization:
     state: complete | waived | blocked
@@ -651,6 +694,8 @@ worker_assignment:
 
 worker_report:
   assignment_id: r002-s02-coordinator-runtime
+  assignment_digest: sha256:<immutable-assignment-bytes>
+  context_digest: sha256:<canonical-context-pack>
   execution_mode: direct_execution
   status: DONE
   scope_check: within_scope
@@ -679,8 +724,9 @@ Review every worker report against actual state, not just its claimed status.
 10. Require complete pre-acceptance document, metadata, graph, and verification closure before
     `accept_candidate`.
 11. Leave acceptance to Main. Worker `DONE`, Coordinator review, and successful verification do not independently accept work.
-12. Every post-acceptance record, including repair, escalation, and block decisions, carries
-    `keystone_closure.acceptance_ref` and non-empty `acceptance_evidence`. `closure_complete` also
+12. Every schema-v3 post-acceptance record, including repair, escalation, and block decisions, carries
+    `keystone_closure.acceptance_ref` and a HMAC-authenticated `acceptance_event` reference. Historical
+    schema-v1/v2 diagnostics retain `acceptance_evidence`. `closure_complete` also
     requires ready Context Pack/report/scope/verification/sync evidence and Author finalization evidence.
     Finalization may be `complete` or explicitly `waived`; a waiver states a concrete `waiver_reason`.
 
@@ -753,3 +799,15 @@ Verify Coordinator behavior by checking:
 18. External `DONE` cannot pass an incomplete document, metadata, graph, verification, or finalization
     closure gate.
 19. The package-local closure validator returns a diagnostic envelope and fail-closed exit code.
+20. `scripts/capture_assignment_snapshot.py` returns a passing diagnostic envelope schema v1 with one
+    complete canonical snapshot schema v3 before worker execution, and immutable assignment bytes embed
+    and bind that exact snapshot. Every phase receipt verifies against an independently pinned external
+    Coordinator key and its preceding evidence raw digest.
+21. Parent-linked worker, pre-acceptance, and post-acceptance phases derive every change from adjacent
+    complete snapshots and attribute it to one authorized writer; Linker owns no source-write delta.
+22. Coordinator manifest v1/v2 remains historical diagnostic compatibility while only schema v3 can
+    authorize a new acceptance candidate or closure completion.
+23. `scripts/record_acceptance_event.py` binds Main acceptance to exact assignment/context/policy,
+    pre-acceptance snapshot, closure target, accepted Steps and a distinct pinned Main key before the
+    post-acceptance Author delta. It recaptures the live root under the same policy and expected
+    absences and refuses to emit the event unless that complete wire equals the pre snapshot.

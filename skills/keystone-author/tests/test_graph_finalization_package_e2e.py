@@ -65,10 +65,18 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
         cls.coordinator_skill = cls.codex_home / "skills" / "keystone-coordinator" / "SKILL.md"
         cls.coordinator_validator = (cls.codex_home / "skills" / "keystone-coordinator" / "scripts"
                                      / "validate_closure.py")
+        cls.coordinator_capture = (cls.codex_home / "skills" / "keystone-coordinator" / "scripts"
+                                   / "capture_assignment_snapshot.py")
+        cls.coordinator_acceptance = (cls.codex_home / "skills" / "keystone-coordinator" / "scripts"
+                                      / "record_acceptance_event.py")
+        cls.coordinator_v3 = (cls.codex_home / "skills" / "keystone-coordinator" / "scripts"
+                              / "closure_v3.py")
         cls.coordinator_reference = (cls.codex_home / "skills" / "keystone-coordinator" / "references"
                                      / "closure-validator.md")
         cls.coordinator_test = (cls.codex_home / "skills" / "keystone-coordinator" / "tests"
                                 / "test_validate_closure.py")
+        cls.coordinator_v3_test = (cls.codex_home / "skills" / "keystone-coordinator" / "tests"
+                                   / "test_validate_closure_v3.py")
         cls.install_seconds = time.monotonic() - started
 
     @classmethod
@@ -304,8 +312,12 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
         for path in (
             self.coordinator_skill,
             self.coordinator_validator,
+            self.coordinator_capture,
+            self.coordinator_acceptance,
+            self.coordinator_v3,
             self.coordinator_reference,
             self.coordinator_test,
+            self.coordinator_v3_test,
         ):
             self.assertTrue(path.is_file(), path)
         process = subprocess.run(
@@ -313,6 +325,16 @@ class InstalledGraphFinalizationE2E(unittest.TestCase):
             capture_output=True, text=True, check=False,
         )
         self.assertEqual(0, process.returncode, process.stdout + process.stderr)
+        capture = subprocess.run(
+            [sys.executable, str(self.coordinator_capture), "--help"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(0, capture.returncode, capture.stdout + capture.stderr)
+        acceptance = subprocess.run(
+            [sys.executable, str(self.coordinator_acceptance), "--help"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(0, acceptance.returncode, acceptance.stdout + acceptance.stderr)
 
     def test_post_swap_coordinator_validator_failure_restores_every_package_and_manifest(self):
         with tempfile.TemporaryDirectory() as temporary:

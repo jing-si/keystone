@@ -449,6 +449,19 @@ class ClosureValidationTest(unittest.TestCase):
         self.assertEqual("error", payload["status"])
         self.assertEqual("manifest_unreadable", payload["diagnostics"][0]["code"])
 
+    def test_schema_v3_authority_key_path_and_digest_are_an_exact_pair(self):
+        result = validate_manifest(
+            {"schema_version": 3},
+            root=Path("."),
+            assignment={},
+            assignment_digest="sha256:" + "1" * 64,
+            evidence_root=Path("."),
+            capture_authority_key=Path("capture.key"),
+        )
+
+        self.assertEqual("error", result["status"])
+        self.assertEqual({"v3_runtime_context_invalid"}, codes(result))
+
 
 if __name__ == "__main__":
     unittest.main()

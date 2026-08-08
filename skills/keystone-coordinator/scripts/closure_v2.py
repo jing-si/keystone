@@ -1,14 +1,17 @@
 """Strict actual-state validation for Coordinator closure manifest schema v2."""
 
 import json
+import os
+import stat
 import subprocess
 import sys
-from pathlib import Path
+import tempfile
+from pathlib import Path, PurePosixPath
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
 
 from closure_actual_state import (
     changed_paths,
-    digest_file,
+    digest_bytes,
     digest_json,
     normalize_relative_path,
     path_in_scope,
@@ -56,6 +59,10 @@ class DuplicateJsonKey(ValueError):
     pass
 
 
+class NonfiniteJsonValue(ValueError):
+    pass
+
+
 def _reject_duplicate_keys(pairs: Sequence[Any]) -> Dict[str, Any]:
     value: Dict[str, Any] = {}
     for key, item in pairs:
@@ -65,8 +72,16 @@ def _reject_duplicate_keys(pairs: Sequence[Any]) -> Dict[str, Any]:
     return value
 
 
+def _reject_nonfinite_json(value: str) -> None:
+    raise NonfiniteJsonValue("non-finite JSON number is forbidden: %s" % value)
+
+
 def _loads_json_strict(value: str) -> Any:
-    return json.loads(value, object_pairs_hook=_reject_duplicate_keys)
+    return json.loads(
+        value,
+        object_pairs_hook=_reject_duplicate_keys,
+        parse_constant=_reject_nonfinite_json,
+    )
 
 
 def package_runner_paths() -> Tuple[Path, Path]:
@@ -704,30 +719,130 @@ def _safe_evidence_path(evidence_root: Path, value: Any) -> Optional[Path]:
     return candidate
 
 
+def _evidence_file_identity(value: os.stat_result) -> Tuple[int, ...]:
+    return (
+        value.st_dev,
+        value.st_ino,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+        value.st_nlink,
+        stat.S_IFMT(value.st_mode),
+    )
+
+
+def _read_evidence_bytes(evidence_root: Path, relative: Any) -> bytes:
+    normalized = normalize_relative_path(relative)
+    if normalized is None:
+        raise ValueError("evidence path is not normalized")
+    if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_DIRECTORY"):
+        raise OSError("evidence reads require no-follow descriptor APIs")
+    root = evidence_root.resolve(strict=True)
+    directory_flags = (
+        os.O_RDONLY
+        | os.O_DIRECTORY
+        | os.O_NOFOLLOW
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+    file_flags = os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
+    directory_fd = os.open(str(root), directory_flags)
+    try:
+        parts = PurePosixPath(normalized).parts
+        for component in parts[:-1]:
+            next_fd = os.open(component, directory_flags, dir_fd=directory_fd)
+            os.close(directory_fd)
+            directory_fd = next_fd
+        before = os.stat(parts[-1], dir_fd=directory_fd, follow_symlinks=False)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+            raise OSError("evidence must be a single-link regular file")
+        file_fd = os.open(parts[-1], file_flags, dir_fd=directory_fd)
+        try:
+            opened = os.fstat(file_fd)
+            if _evidence_file_identity(opened) != _evidence_file_identity(before):
+                raise OSError("evidence identity changed before read")
+            chunks: List[bytes] = []
+            while True:
+                chunk = os.read(file_fd, 1024 * 1024)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+            after_fd = os.fstat(file_fd)
+            if _evidence_file_identity(after_fd) != _evidence_file_identity(opened):
+                raise OSError("evidence changed during read")
+        finally:
+            os.close(file_fd)
+        after_path = os.stat(parts[-1], dir_fd=directory_fd, follow_symlinks=False)
+        if _evidence_file_identity(after_path) != _evidence_file_identity(before):
+            raise OSError("evidence changed after read")
+        raw = b"".join(chunks)
+        if len(raw) != before.st_size:
+            raise OSError("evidence size changed during read")
+        return raw
+    finally:
+        os.close(directory_fd)
+
+
 def _read_evidence_json(
     evidence_root: Path,
     relative: Any,
     expected_digest: Any,
     path: str,
     diagnostics: List[Diagnostic],
-) -> Tuple[Optional[Path], Optional[Mapping[str, Any]]]:
+) -> Tuple[Optional[Path], Optional[Mapping[str, Any]], Optional[bytes]]:
     evidence_path = _safe_evidence_path(evidence_root, relative)
     if evidence_path is None:
         diagnostics.append(diagnostic("evidence_path_invalid", "Evidence path is invalid.", path))
-        return None, None
+        return None, None, None
     try:
-        actual_digest = digest_file(evidence_path)
-        payload = _loads_json_strict(evidence_path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError, DuplicateJsonKey) as error:
+        raw = _read_evidence_bytes(evidence_root, relative)
+        actual_digest = digest_bytes(raw)
+        payload = _loads_json_strict(raw.decode("utf-8"))
+    except (
+        OSError,
+        UnicodeError,
+        json.JSONDecodeError,
+        DuplicateJsonKey,
+        NonfiniteJsonValue,
+    ) as error:
         diagnostics.append(diagnostic("evidence_unreadable", str(error), path))
-        return evidence_path, None
+        return evidence_path, None, None
     if actual_digest != expected_digest:
         diagnostics.append(diagnostic("evidence_digest_mismatch",
                                       "Evidence raw-byte digest does not match the manifest.", path))
     if not isinstance(payload, Mapping):
         diagnostics.append(diagnostic("evidence_invalid", "Evidence JSON must be an object.", path))
-        return evidence_path, None
-    return evidence_path, payload
+        return evidence_path, None, None
+    return evidence_path, payload, raw
+
+
+def _run_captured_manifest(
+    runner: Path,
+    root: Path,
+    raw_manifest: bytes,
+    timeout_seconds: float,
+    expected_digest: Any,
+    path: str,
+    diagnostics: List[Diagnostic],
+    runner_kind: str,
+) -> Optional[Mapping[str, Any]]:
+    with tempfile.TemporaryDirectory(prefix="keystone-coordinator-evidence-") as directory:
+        manifest_path = Path(directory) / "manifest.json"
+        manifest_path.write_bytes(raw_manifest)
+        return _run_evidence(
+            [
+                sys.executable,
+                str(runner),
+                "--root",
+                str(root),
+                "--manifest",
+                str(manifest_path),
+            ],
+            timeout_seconds,
+            expected_digest,
+            path,
+            diagnostics,
+            runner_kind,
+        )
 
 
 def _valid_linker_coverage(value: Any) -> bool:
@@ -836,7 +951,7 @@ def _run_evidence(
         return None
     try:
         payload = _loads_json_strict(process.stdout)
-    except (json.JSONDecodeError, TypeError, DuplicateJsonKey):
+    except (json.JSONDecodeError, TypeError, DuplicateJsonKey, NonfiniteJsonValue):
         diagnostics.append(diagnostic("runner_output_malformed", "Runner output is not JSON.", path))
         return None
     if not _valid_runner_envelope(payload, process.returncode, runner_kind):
@@ -934,7 +1049,7 @@ def _validate_graph_sync(
         if value.get("state") != "not_applicable":
             diagnostics.append(diagnostic("graph_sync_incomplete", "Graph state is not closed.",
                                           "keystone_closure.graph_sync.state"))
-        _, classification = _read_evidence_json(
+        _, classification, _ = _read_evidence_json(
             evidence_root, value.get("classification_path"),
             value.get("classification_digest"),
             "keystone_closure.graph_sync.classification_path", diagnostics,
@@ -958,12 +1073,12 @@ def _validate_graph_sync(
     if value.get("state") != "verified":
         diagnostics.append(diagnostic("graph_sync_incomplete", "Required graph sync must be verified.",
                                       "keystone_closure.graph_sync.state"))
-    graph_path, graph_manifest = _read_evidence_json(
+    graph_path, graph_manifest, graph_manifest_bytes = _read_evidence_json(
         evidence_root, value.get("validation_manifest_path"),
         value.get("validation_manifest_digest"),
         "keystone_closure.graph_sync.validation_manifest_path", diagnostics,
     )
-    if graph_manifest is None or graph_path is None:
+    if graph_manifest is None or graph_path is None or graph_manifest_bytes is None:
         return
     transaction = _mapping(graph_manifest.get("transaction"))
     transaction_schema = transaction.get("schema_version")
@@ -996,9 +1111,9 @@ def _validate_graph_sync(
         diagnostics.append(diagnostic("linker_runner_unavailable", "Linker runner is unavailable.",
                                       "keystone_closure.graph_sync"))
         return
-    payload = _run_evidence(
-        [sys.executable, str(linker_runner), "--root", str(root), "--manifest", str(graph_path)],
-        timeout_seconds, value.get("envelope_digest"),
+    payload = _run_captured_manifest(
+        linker_runner, root, graph_manifest_bytes, timeout_seconds,
+        value.get("envelope_digest"),
         "keystone_closure.graph_sync.envelope_digest", diagnostics, "linker",
     )
     if payload is not None and payload.get("status") != "pass":
@@ -1037,11 +1152,15 @@ def _validate_finalization(
         diagnostics.append(diagnostic("finalization_evidence_missing",
                                       "Post-acceptance finalization requires evidence.",
                                       "keystone_closure.finalization.evidence"))
-    manifest_path, finalization_manifest = _read_evidence_json(
+    manifest_path, finalization_manifest, finalization_manifest_bytes = _read_evidence_json(
         evidence_root, value.get("manifest_path"), value.get("manifest_digest"),
         "keystone_closure.finalization.manifest_path", diagnostics,
     )
-    if finalization_manifest is None or manifest_path is None:
+    if (
+        finalization_manifest is None
+        or manifest_path is None
+        or finalization_manifest_bytes is None
+    ):
         return None
     author_schema = finalization_manifest.get("schema_version")
     if type(author_schema) is not int or author_schema != 5:
@@ -1098,9 +1217,9 @@ def _validate_finalization(
         diagnostics.append(diagnostic("author_runner_unavailable", "Author runner is unavailable.",
                                       "keystone_closure.finalization"))
         return None
-    payload = _run_evidence(
-        [sys.executable, str(author_runner), "--root", str(root), "--manifest", str(manifest_path)],
-        timeout_seconds, value.get("envelope_digest"),
+    payload = _run_captured_manifest(
+        author_runner, root, finalization_manifest_bytes, timeout_seconds,
+        value.get("envelope_digest"),
         "keystone_closure.finalization.envelope_digest", diagnostics, "author",
     )
     if payload is not None and payload.get("status") != value.get("runner_status"):
@@ -1108,6 +1227,73 @@ def _validate_finalization(
                                       "Author runner status differs from recorded evidence.",
                                       "keystone_closure.finalization.runner_status"))
     return payload.get("status") if payload else None
+
+
+def validate_sync_evidence(
+    name: str, value: Mapping[str, Any], diagnostics: List[Diagnostic]
+) -> None:
+    """Validate one document/metadata sync result for closure schema consumers."""
+
+    _generic_sync(name, value, diagnostics)
+
+
+def validate_assignment_context_evidence(
+    context: Mapping[str, Any],
+    closure_target: Any,
+    closure_step_ref: Any,
+    diagnostics: List[Diagnostic],
+) -> None:
+    """Validate the shared immutable Context Pack and dependency-gate projection."""
+
+    _validate_context(context, closure_target, closure_step_ref, diagnostics)
+
+
+def validate_graph_sync_evidence(
+    value: Mapping[str, Any],
+    deltas: List[Mapping[str, Any]],
+    root: Path,
+    evidence_root: Path,
+    linker_runner: Path,
+    timeout_seconds: float,
+    diagnostics: List[Diagnostic],
+) -> None:
+    """Validate Linker evidence without exposing schema-v2 private helpers."""
+
+    _validate_graph_sync(
+        value,
+        deltas,
+        root,
+        evidence_root,
+        linker_runner,
+        timeout_seconds,
+        diagnostics,
+    )
+
+
+def validate_finalization_evidence(
+    phase: Any,
+    closure: Mapping[str, Any],
+    value: Mapping[str, Any],
+    assignment_steps: List[str],
+    evidence_root: Path,
+    root: Path,
+    author_runner: Path,
+    timeout_seconds: float,
+    diagnostics: List[Diagnostic],
+) -> Optional[str]:
+    """Validate Author finalization evidence for a closure schema consumer."""
+
+    return _validate_finalization(
+        phase,
+        closure,
+        value,
+        assignment_steps,
+        evidence_root,
+        root,
+        author_runner,
+        timeout_seconds,
+        diagnostics,
+    )
 
 
 def validate_v2(
@@ -1319,4 +1505,11 @@ def validate_v2(
             diagnostics.append(diagnostic("post_acceptance_closure_incomplete",
                                           "closure_complete requires passing Author evidence.",
                                           "coordinator_review.decision"))
+    if decision in {"accept_candidate", "closure_complete"}:
+        diagnostics.append(diagnostic(
+            "legacy_schema_not_authoritative",
+            "Coordinator closure schema v2 is historical diagnostic compatibility only; "
+            "authority-bearing success requires schema v3.",
+            "schema_version",
+        ))
     return diagnostics

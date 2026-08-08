@@ -28,7 +28,7 @@ PRE_ACCEPTANCE_DECISIONS = {"accept_candidate", "repair", "review", "verify", "e
 POST_ACCEPTANCE_DECISIONS = {"closure_complete", "repair", "escalate", "block"}
 DEFAULT_WORKER_SKILL = "keystone-default-bounded-worker"
 DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
-V2_EXECUTION_ERROR_CODES = {
+ACTUAL_STATE_EXECUTION_ERROR_CODES = {
     "v2_runtime_context_missing",
     "v2_runtime_context_invalid",
     "v2_validation_execution_failed",
@@ -44,6 +44,23 @@ V2_EXECUTION_ERROR_CODES = {
     "runner_output_malformed",
     "runner_reported_error",
     "v2_runner_override_forbidden",
+    "v3_runtime_context_missing",
+    "v3_runtime_context_invalid",
+    "v3_validation_execution_failed",
+    "v3_runner_override_forbidden",
+    "snapshot_root_unreadable",
+    "snapshot_no_follow_unavailable",
+    "snapshot_discovery_failed",
+    "snapshot_path_unreadable",
+    "snapshot_generation_unstable",
+    "expected_absence_check_failed",
+    "snapshot_symlink_validator_unavailable",
+    "phase_capture_evidence_security_unavailable",
+    "phase_capture_evidence_unreadable",
+    "host_receipt_executable_unavailable",
+    "host_receipt_evidence_root_invalid",
+    "capture_authority_key_invalid",
+    "acceptance_authority_key_invalid",
 }
 
 
@@ -52,6 +69,10 @@ Payload = Mapping[str, Any]
 
 
 class DuplicateJsonKey(ValueError):
+    pass
+
+
+class NonfiniteJsonValue(ValueError):
     pass
 
 
@@ -64,8 +85,16 @@ def _reject_duplicate_keys(pairs: Sequence[Any]) -> Dict[str, Any]:
     return value
 
 
+def _reject_nonfinite_json(value: str) -> None:
+    raise NonfiniteJsonValue("non-finite JSON number is forbidden: %s" % value)
+
+
 def _loads_json_strict(value: str) -> Any:
-    return json.loads(value, object_pairs_hook=_reject_duplicate_keys)
+    return json.loads(
+        value,
+        object_pairs_hook=_reject_duplicate_keys,
+        parse_constant=_reject_nonfinite_json,
+    )
 
 
 def _diagnostic(code: str, message: str, path: str) -> Diagnostic:
@@ -725,6 +754,10 @@ def validate_manifest(
     evidence_root: Optional[Path] = None,
     linker_runner: Optional[Path] = None,
     author_runner: Optional[Path] = None,
+    capture_authority_key: Optional[Path] = None,
+    capture_authority_key_digest: Optional[str] = None,
+    acceptance_authority_key: Optional[Path] = None,
+    acceptance_authority_key_digest: Optional[str] = None,
     timeout_seconds: float = 30.0,
 ) -> Dict[str, Any]:
     diagnostics: List[Diagnostic] = []
@@ -732,7 +765,17 @@ def validate_manifest(
         diagnostics.append(
             _diagnostic("manifest_invalid", "Manifest root must be an object.", "$")
         )
-    elif manifest.get("schema_version") == 2:
+    elif manifest.get("schema_version") in {2, 3}:
+        closure_schema = manifest.get("schema_version")
+        authority_key_arguments_invalid = bool(
+            closure_schema == 3
+            and (
+                (capture_authority_key is None)
+                != (capture_authority_key_digest is None)
+                or (acceptance_authority_key is None)
+                != (acceptance_authority_key_digest is None)
+            )
+        )
         package_skills = Path(__file__).parents[2]
         if linker_runner is None:
             linker_runner = (
@@ -748,59 +791,103 @@ def validate_manifest(
                 / "scripts"
                 / "run_finalization_validation.py"
             )
-        if (
+        if authority_key_arguments_invalid:
+            diagnostics.append(
+                _diagnostic(
+                    "v3_runtime_context_invalid",
+                    "Each schema-v3 authority key path and pinned digest must be supplied together.",
+                    "schema_version",
+                )
+            )
+        elif (
             root is None
             or assignment is None
             or not _has_text(assignment_digest)
             or evidence_root is None
+            or (
+                closure_schema == 3
+                and (
+                    capture_authority_key is None
+                    or not _has_text(capture_authority_key_digest)
+                )
+            )
         ):
             diagnostics.append(
                 _diagnostic(
-                    "v2_runtime_context_missing",
-                    "Schema v2 requires repository root, immutable assignment, evidence root, "
-                    "and package-owned Linker/Author runners.",
+                    f"v{closure_schema}_runtime_context_missing",
+                    f"Schema v{closure_schema} requires repository root, immutable assignment, "
+                    "evidence root, package-owned Linker/Author runners, and for schema v3 "
+                    "an independently pinned capture-authority key.",
                     "schema_version",
                 )
             )
         elif not isinstance(assignment, Mapping):
             diagnostics.append(
                 _diagnostic(
-                    "v2_runtime_context_invalid",
-                    "Schema v2 immutable assignment must be an object.",
+                    f"v{closure_schema}_runtime_context_invalid",
+                    f"Schema v{closure_schema} immutable assignment must be an object.",
                     "assignment",
                 )
             )
         else:
-            from closure_v2 import validate_v2
-
             try:
                 root = Path(root)
                 evidence_root = Path(evidence_root)
                 linker_runner = Path(linker_runner)
                 author_runner = Path(author_runner)
+                if capture_authority_key is not None:
+                    capture_authority_key = Path(capture_authority_key)
+                if acceptance_authority_key is not None:
+                    acceptance_authority_key = Path(acceptance_authority_key)
             except (TypeError, ValueError) as error:
                 diagnostics.append(_diagnostic(
-                    "v2_runtime_context_invalid",
-                    f"Schema v2 runtime paths must be path-like: {error}",
+                    f"v{closure_schema}_runtime_context_invalid",
+                    f"Schema v{closure_schema} runtime paths must be path-like: {error}",
                     "schema_version",
                 ))
             else:
                 try:
-                    diagnostics.extend(
-                        validate_v2(
-                            manifest,
-                            root=root,
-                            assignment=assignment,
-                            assignment_digest=assignment_digest,
-                            evidence_root=evidence_root,
-                            linker_runner=linker_runner,
-                            author_runner=author_runner,
-                            timeout_seconds=timeout_seconds,
+                    if closure_schema == 2:
+                        from closure_v2 import validate_v2
+
+                        diagnostics.extend(
+                            validate_v2(
+                                manifest,
+                                root=root,
+                                assignment=assignment,
+                                assignment_digest=assignment_digest,
+                                evidence_root=evidence_root,
+                                linker_runner=linker_runner,
+                                author_runner=author_runner,
+                                timeout_seconds=timeout_seconds,
+                            )
                         )
-                    )
+                    else:
+                        from closure_v3 import validate_v3
+
+                        diagnostics.extend(
+                            validate_v3(
+                                manifest,
+                                root=root,
+                                assignment=assignment,
+                                assignment_digest=assignment_digest,
+                                evidence_root=evidence_root,
+                                linker_runner=linker_runner,
+                                author_runner=author_runner,
+                                timeout_seconds=timeout_seconds,
+                                capture_authority_key=capture_authority_key,
+                                capture_authority_key_digest=(
+                                    capture_authority_key_digest or ""
+                                ),
+                                acceptance_authority_key=acceptance_authority_key,
+                                acceptance_authority_key_digest=(
+                                    acceptance_authority_key_digest
+                                ),
+                            )
+                        )
                 except (OSError, RuntimeError, UnicodeError, TypeError, ValueError) as error:
                     diagnostics.append(_diagnostic(
-                        "v2_validation_execution_failed",
+                        f"v{closure_schema}_validation_execution_failed",
                         str(error),
                         "schema_version",
                     ))
@@ -826,7 +913,7 @@ def validate_manifest(
             )
 
     execution_error = any(
-        item.get("code") in V2_EXECUTION_ERROR_CODES for item in diagnostics
+        item.get("code") in ACTUAL_STATE_EXECUTION_ERROR_CODES for item in diagnostics
     )
     status = "error" if execution_error else "fail" if diagnostics else "pass"
     return {
@@ -865,6 +952,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=package_skills / "keystone-author" / "scripts" / "run_finalization_validation.py",
     )
     parser.add_argument("--timeout-seconds", type=float, default=30.0)
+    parser.add_argument("--capture-authority-key", type=Path)
+    parser.add_argument("--trusted-capture-authority-key-sha256")
+    parser.add_argument("--acceptance-authority-key", type=Path)
+    parser.add_argument("--trusted-acceptance-authority-key-sha256")
     args = parser.parse_args(argv)
     try:
         manifest_bytes = args.manifest.read_bytes()
@@ -873,18 +964,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         result = _error_result("manifest_unreadable", str(exc))
         print(json.dumps(result, ensure_ascii=False, sort_keys=True))
         return 2
-    except (json.JSONDecodeError, DuplicateJsonKey) as exc:
+    except (json.JSONDecodeError, DuplicateJsonKey, NonfiniteJsonValue) as exc:
         result = _error_result("manifest_json_invalid", str(exc))
         print(json.dumps(result, ensure_ascii=False, sort_keys=True))
         return 2
 
     assignment = None
     assignment_digest = None
-    if isinstance(manifest, Mapping) and manifest.get("schema_version") == 2:
+    if isinstance(manifest, Mapping) and manifest.get("schema_version") in {2, 3}:
+        closure_schema = manifest.get("schema_version")
         if args.root is None or args.assignment is None:
             result = _error_result(
-                "v2_runtime_context_missing",
-                "Schema v2 requires --root and --assignment.",
+                f"v{closure_schema}_runtime_context_missing",
+                f"Schema v{closure_schema} requires --root and --assignment.",
             )
             print(json.dumps(result, ensure_ascii=False, sort_keys=True))
             return 2
@@ -895,7 +987,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             result = _error_result("assignment_unreadable", str(exc))
             print(json.dumps(result, ensure_ascii=False, sort_keys=True))
             return 2
-        except (json.JSONDecodeError, DuplicateJsonKey) as exc:
+        except (json.JSONDecodeError, DuplicateJsonKey, NonfiniteJsonValue) as exc:
             result = _error_result("assignment_json_invalid", str(exc))
             print(json.dumps(result, ensure_ascii=False, sort_keys=True))
             return 2
@@ -913,6 +1005,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         evidence_root=args.evidence_root or args.manifest.parent,
         linker_runner=args.linker_runner,
         author_runner=args.author_runner,
+        capture_authority_key=args.capture_authority_key,
+        capture_authority_key_digest=(
+            args.trusted_capture_authority_key_sha256
+        ),
+        acceptance_authority_key=args.acceptance_authority_key,
+        acceptance_authority_key_digest=(
+            args.trusted_acceptance_authority_key_sha256
+        ),
         timeout_seconds=args.timeout_seconds,
     )
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))

@@ -925,14 +925,25 @@ def build_plan(
              "-p", "test_validate_closure_v2.py"),
         ),
         GateStep(
+            "coordinator_actual_state_v3", "command",
+            (python, "-m", "unittest", "discover", "-s", str(coordinator_tests),
+             "-p", "test_validate_closure_v3.py"),
+        ),
+        GateStep(
             "coordinator_actual_state_self_check", "command",
             (python, "-c", (
                 "from pathlib import Path; "
-                "from closure_actual_state import normalize_relative_path, repository_snapshot; "
+                "from closure_actual_state import (normalize_relative_path, "
+                "normalize_snapshot_policy_v3, repository_snapshot); "
                 "from closure_v2 import validate_v2; "
+                "from closure_v3 import validate_v3; "
                 "assert normalize_relative_path('skills/x') == 'skills/x'; "
                 "assert normalize_relative_path('../x') is None; "
                 "assert callable(validate_v2); "
+                "assert callable(validate_v3); "
+                "assert normalize_snapshot_policy_v3({'schema_version': 3, "
+                "'include_paths': ['.'], 'exclusions': [], "
+                "'entry_budget': 1}).entry_budget == 1; "
                 "assert isinstance(repository_snapshot(Path('.')), dict)"
             )),
             (("PYTHONPATH", str(coordinator_scripts)),),

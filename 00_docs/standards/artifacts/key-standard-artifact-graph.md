@@ -164,6 +164,12 @@ change_delta:
 `config_key`, `schema_name`만 포함하는 canonical locator object다. Canonical emission은 사용하지
 않는 optional field를 생략하며 plain string locator를 허용하지 않는다.
 
+Coordinator schema-v3의 phase/actor provenance는 이 canonical delta를 감싸는 closure evidence다.
+그 provenance를 `change_delta` 또는 graph transaction `input_deltas`의 새 field로 섞지 않는다.
+Worker, Author와 repository surface owner는 자기 phase의 source delta만 소유하고, source-write-free
+Linker는 classification, transaction과 validation evidence만 제공한다. 이 outer closure contract는
+canonical graph snapshot/transaction wire v2의 version을 바꾸지 않는다.
+
 Stable ID owner와 `refs`가 문서와 구현 사이의 기본 직접 탐색 계약이다. Capability node와 typed
 relation은 multi-hop 탐색, semantic role, dependency, verification evidence 또는 reuse 분석이
 필요할 때만 추가한다. Capability를 모든 artifact의 중심 node로 강제하지 않으며 direct owner/ref

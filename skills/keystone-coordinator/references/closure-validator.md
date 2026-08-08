@@ -1,23 +1,110 @@
 # Coordinator actual-state closure validator
 
 `scripts/validate_closure.py` is a diagnostic-only verifier. It never edits sources, creates graph
-mutations, grants Main acceptance, or performs Author finalization. Manifest schema v2 binds a closure
-decision to an immutable assignment and the repository's current raw bytes.
+mutations, grants Main acceptance, or performs Author finalization. Coordinator assignment and closure
+manifest schema v3 bind a closure decision to a complete repository snapshot and a parent-linked actor
+phase chain.
 
-Run canonical schema v2 validation with host-supplied paths:
+## Contents
+
+- Running the validator
+- Complete assignment snapshot
+- Phase-separated actual state
+- Worker, Linker, and Author authority
+- Compatibility and version domains
+
+## Running the validator
+
+Capture the T0 assignment snapshot with the package-owned entrypoint before any worker write:
+
+```bash
+python3 <keystone-coordinator-package>/scripts/capture_assignment_snapshot.py \
+  --root <repository-root> \
+  --policy <snapshot-policy-v3.json> \
+  --phase-id assignment \
+  --parent-snapshot-digest absent \
+  --parent-evidence-digest absent \
+  --assignment-id <assignment-id> \
+  --assignment-subject-digest sha256:<non-circular-assignment-core> \
+  --context-digest sha256:<canonical-context-pack> \
+  --evidence-root <external-evidence-directory> \
+  --capture-evidence-path <assignment-capture.json> \
+  --capture-authority-key <external-coordinator-key> \
+  --trusted-capture-authority-key-sha256 sha256:<pinned-key-bytes>
+```
+
+The capture command emits diagnostic envelope schema 1 with an embedded canonical repository snapshot
+schema 3 and a `{path,digest}` reference to a newly created, single-link canonical phase-capture file.
+Use the same command with phase IDs `worker`, `pre_acceptance_closure`, and `post_acceptance`, always
+passing the preceding snapshot digest and preceding evidence raw-byte digest as parents. Only a passing
+package-owned capture can establish a
+phase boundary. The immutable assignment embeds the exact T0 snapshot and capture reference. Each
+capture file binds repository root, policy, assignment ID, non-circular assignment authority core,
+Context Pack digest, phase, parent, result,
+UTC capture time, current package command digest, disjoint evidence root, random nonce and protected-key
+HMAC with `trust_model: trusted-host-hmac-sha256`; times must increase strictly across the chain.
+
+The capture key is an absolute, owner-private, single-link regular file of at least 32 raw bytes outside
+both repository and evidence root. Its independently pinned SHA-256 fingerprint is host input, never a
+manifest field. The HMAC proves possession of that protected host key and prevents repository/evidence
+authors without the key from hand-writing a passing receipt. It does not prove an independently
+controlled clock, binary execution, OS-user separation, or organizational independence. The trusted
+Coordinator still owns the live-boundary invocation and protects the key and disjoint evidence root.
+
+After Main accepts the pre-acceptance subject and before Author finalization writes, record a separate
+acceptance event with a distinct Main key:
+
+```bash
+python3 <keystone-coordinator-package>/scripts/record_acceptance_event.py \
+  --root <repository-root> \
+  --evidence-root <external-evidence-directory> \
+  --acceptance-event-path <main-acceptance.json> \
+  --assignment-id <assignment-id> \
+  --assignment-digest sha256:<raw-assignment-bytes> \
+  --context-digest sha256:<canonical-context-pack> \
+  --policy-digest sha256:<snapshot-policy> \
+  --closure-target step \
+  --closure-step-ref R010/S02 \
+  --pre-snapshot-path <pre-acceptance-snapshot.json> \
+  --pre-snapshot-digest sha256:<pre-acceptance-snapshot> \
+  --parent-evidence-digest sha256:<pre-capture-raw-bytes> \
+  --acceptance-ref R010/S02/main-acceptance \
+  --accepted-step R010/S02 \
+  --accepted-by main \
+  --acceptance-authority-key <external-main-key> \
+  --trusted-acceptance-authority-key-sha256 sha256:<pinned-main-key-bytes>
+```
+
+The Main key follows the same filesystem controls and must differ from the Coordinator capture key.
+`--pre-snapshot-path` names a single-link canonical RepositorySnapshot-v3 JSON file below the external
+evidence root. The runner parses that exact wire, recaptures the live repository with its embedded
+policy and expected-absence set, and refuses acceptance unless the complete observed wire and digest
+equal the pre-acceptance snapshot. This prevents a finalization or other write made before the Main
+event from being relabeled as a post-acceptance delta.
+The post-acceptance capture receipt names the acceptance-event raw digest as its evidence parent, which
+forms `pre capture -> Main acceptance -> post capture` ordering.
+
+Run canonical schema-v3 closure validation with host-supplied paths:
 
 ```bash
 python3 <keystone-coordinator-package>/scripts/validate_closure.py \
   --root <repository-root> \
-  --assignment <pre-work-assignment-v2.json> \
-  --manifest <coordinator-closure-v2.json> \
-  --evidence-root <external-evidence-directory>
+  --assignment <pre-work-assignment-v3.json> \
+  --manifest <coordinator-closure-v3.json> \
+  --evidence-root <external-evidence-directory> \
+  --capture-authority-key <external-coordinator-key> \
+  --trusted-capture-authority-key-sha256 sha256:<pinned-key-bytes>
 ```
 
-`--linker-runner`, `--author-runner`, and `--timeout-seconds` are host options for package integration
-and tests. A manifest cannot select executable commands. By default the validator invokes the sibling
-installed Linker and Author runners. The repository root must resolve to an existing directory, and the
-evidence root must be an existing host-controlled directory disjoint from the repository tree.
+Post-acceptance validation also requires `--acceptance-authority-key` and
+`--trusted-acceptance-authority-key-sha256`. Pre-acceptance validation never requires the Main key.
+
+`--linker-runner`, `--author-runner`, and `--timeout-seconds` are host integration/test options. A
+manifest cannot select executable commands. By default the validator invokes the sibling installed
+Linker and Author runners. Graph and Author manifests are read once through a stable no-follow
+descriptor; their digest and parsed object come from those same bytes, and the child runner receives a
+private immutable copy of that captured generation. The repository root must be an existing directory. The host-controlled
+evidence root must be an existing directory disjoint from the repository tree.
 
 Every output keeps diagnostic envelope schema 1:
 
@@ -30,82 +117,213 @@ Every output keeps diagnostic envelope schema 1:
 }
 ```
 
-Exit `0` means the declared phase passed. Exit `1` means valid inputs produced deterministic closure
-diagnostics. Exit `2` means required input could not be read or parsed, including missing v2 runtime
-context. Repository/evidence read failures, unavailable or timed-out runners, malformed runner output,
-and a child runner `error` envelope also remain `status: error`/exit `2`.
+Exit `0` means the declared phase chain passed. Exit `1` means valid inputs produced deterministic
+closure diagnostics. Exit `2` means required input could not be read or parsed. Repository/evidence read
+failures, unavailable or timed-out runners, malformed runner output, and a child-runner `error` envelope
+also remain `status: error`/exit `2`.
 
-## Immutable assignment
+## Complete assignment snapshot
 
-The separate assignment is captured before work and uses `schema_version: 2`. It contains:
-
-- assignment ID, execution mode, purpose, authority, and exact goal;
-- the complete bounded Context Pack and injected skill IDs/modes;
-- normalized repository-relative read, allowed-edit, and excluded scopes;
-- a full pre-work path/raw-byte SHA-256 snapshot, excluding only `.git` internals.
-
-The validator hashes the assignment's raw bytes. Worker report and Coordinator review must repeat the
-same assignment ID and digest. The report also carries the canonical JSON digest of the Context Pack.
-Unknown fields in authority-bearing schema-v2 objects are errors. Direct library callers are a trusted
-host boundary: they must supply the raw-byte assignment digest in canonical SHA-256 form; the CLI
-computes it instead of trusting manifest input.
-
-## Actual changed state
-
-The validator snapshots `--root` without following symlinks and derives every added, modified, and
-deleted file. The derived sorted path set must exactly equal `changed_files`; every path has exactly one
-artifact delta with:
+The immutable assignment uses `schema_version: 3`. In addition to identity, execution mode, purpose,
+authority, exact goal, Context Pack, injected skills, and normalized scope, it contains:
 
 ```yaml
-kind: artifact_delta
-source_surface:
-change_kind: added | modified | deleted
-changed_locators:
-  - path: src/example.py
-    symbol: Example.run
-semantic_summary:
-baseline_digest: sha256:<64-lowercase-hex> | absent
-resulting_digest: sha256:<64-lowercase-hex> | absent
-graph_relevant: true | false
+snapshot_policy:
+  schema_version: 3
+  include_paths:
+    - .
+  exclusions:
+    - path:
+      reason:
+  entry_budget:
+document_root: 00_docs # exact configured document root; "." is explicit repository root
+assignment_phase:
+  phase_id: assignment
+  actor: coordinator
+  authority: verification
+  capture_evidence: {path:, digest:}
+  result_snapshot:
+    schema_version: 3
+    policy: # exact snapshot_policy value
+    policy_digest:
+    discovered_path_count:
+    path_set_digest:
+    complete: true
+    truncated: false
+    entries:
+      - path:
+        path_type: regular_file | directory | symlink
+        raw_byte_digest: # regular_file only
+        executable: # regular_file only
+        symlink_target_b64: # symlink only
+        entry_digest:
+    expected_absences:
+      - path/to/expected-absent-target
+    expected_absence_count:
+    expected_absence_path_set_digest:
+    expected_absences_complete: true
+    snapshot_digest:
+phase_authorities:
+  worker: {authority:, allowed_edit_scope: [], excluded_scope: []}
+  author: {authority: document_edit, allowed_edit_scope: [], excluded_scope: []}
+  repository_owner: {authority: bounded_edit, allowed_edit_scope: [], excluded_scope: []}
+  linker: {authority: read_only, allowed_edit_scope: [], excluded_scope: []}
 ```
 
-`changed_locators` must be a non-empty array of canonical locator objects. Each object requires a
-repository-relative `path`; unused optional `heading`, `symbol`, `test_name`, `config_key`, and
-`schema_name` fields are omitted. Plain strings remain schema-v1 diagnostic compatibility only and
-cannot authorize schema-v2 closure.
+`document_root` must equal `.keystone/config.yaml` when that config exists, or the standard `00_docs`
+default otherwise. The configured directory must exist inside the repository. Author allowed-edit
+selectors stay at or below this independently resolved root. Worker and repository-owner allowed-edit
+selectors must not equal, contain, or sit below the document root; an assignment cannot relabel a
+document path as worker-owned or a code path as an Author document surface. With explicit
+`document_root: .`, every write actor scope must be empty because schema v3 cannot distinguish a
+root-wide document surface from code and repository-owner surfaces.
 
-Baseline and resulting digests are recomputed from assignment and current bytes. Changed paths are
-checked against allowed and excluded scope. Read-only, review-only, and verification authority cannot
-carry actual changes. An allowed scope containing a symlink that escapes the repository fails closed.
-This includes a selector equal to or below the escaping symlink, not only an ancestor selector.
-`scope_check` is compared with the derived result rather than trusted.
+`include_paths` and exclusion selectors are normalized repository-relative paths. Every exclusion, including a
+runtime-generated path, is assignment-owned and carries a reason; there is no implicit cache, build,
+coverage, or IDE ignore list. Existing entries and expected absences are separate sets. A nonexistent
+path can appear only in `expected_absences`, never as a discovered entry with type `absent`.
 
-`skill_usage` must exactly match the assignment's injected skill IDs and modes. A `work` closure target
-applies required work-completion gates; a `step` target applies active-Step gates. Invalid,
-unresolvable, and unknown gates remain fail-closed, while optional waiting gates remain non-blocking.
-Step closure declares one `closure_step_ref` inside assignment `work_context.step_refs`. The schema-v2
-projection keeps Step-only gates in `active_step_gates` and Work-only gates in
-`work_completion_gates`; misfiled, duplicate, out-of-assignment, or evidence-free non-satisfied gate
-summaries fail closed.
+Snapshot capture independently discovers the path set before, between, and after two full entry reads,
+never follows a symlink, and rejects Unicode-normalized case-fold collisions. The two entry captures
+must be byte-for-byte equal. Regular files use no-follow open plus pre/post `fstat`; directories and
+symlinks use no-follow identity checks. Size, mtime, ctime, inode, global entry, path-set, or type drift,
+unreadable paths, budget exhaustion, or truncation trigger a bounded retry and then fail closed. The
+canonical snapshot digest binds the normalized policy, complete
+typed path set, raw-byte digests, executable bits, symlink targets, expected-absence set, counts, and
+complete/truncated state. All later phase snapshots use the same policy digest.
+An allowed selector equal to, below, or above an escaping symlink fails closed. A safe in-root symlink
+whose resolved target is excluded or outside the include policy also fails closed.
 
-## Linker and Author runner binding
+The CLI hashes the assignment's raw bytes. Worker report and Coordinator review repeat the assignment ID
+and digest, and the report carries the canonical Context Pack digest. Unknown fields in every
+authority-bearing schema-v3 object are errors.
+Each capture also binds `assignment_subject_digest`, derived from every assignment field except the
+circular `assignment_phase`: schema/id/mode/purpose/authority/goal/context/injected skills/scope,
+document root, snapshot policy and phase authorities. Reassigning actor authority after capture fails.
 
-Required graph sync records a raw-byte-digested Linker validation manifest, verified transaction ID,
-exact artifact-delta-set digest, and expected runner-envelope digest. The transaction input deltas must
-equal the report projection, the transaction must be canonical schema v2, and the package-owned Linker
-runner must return a passing envelope.
-`not_applicable` graph sync requires a digested Linker classification bound to the same delta-set
-digest; a reason string alone is insufficient.
+## Phase-separated actual state
 
-Every post-acceptance closure records a digested Author finalization manifest and expected runner
-envelope. Closure, finalization, and Author acceptance refs must be equal. Author accepted Steps must
-equal the closure event's Steps and remain inside assignment scope. The authority-bearing manifest must
-use Author schema v5; schema v4 remains historical Author read compatibility only. Only a passing Author
-runner and `complete | waived` evidence can produce `closure_complete`; waiver still requires a concrete
-reason.
+The closure manifest uses `schema_version: 3` and carries this exact top-level phase shape:
 
-## Compatibility
+```yaml
+schema_version: 3
+closure_stage: pre_acceptance | post_acceptance
+closure_target: step | work
+closure_step_ref:
+worker_report:
+worker_phase:
+  phase_id: worker
+  baseline_snapshot_digest:
+  result_snapshot:
+  capture_evidence: {path:, digest:}
+  actor_delta:
+    actor: worker
+    authority:
+    allowed_edit_scope: []
+    excluded_scope: []
+    changed_paths: []
+    artifact_deltas: []
+pre_acceptance_closure_phase:
+  phase_id: pre_acceptance_closure
+  baseline_snapshot_digest:
+  result_snapshot:
+  capture_evidence: {path:, digest:}
+  actor_deltas: []
+post_acceptance_phase: null # required object when closure_stage is post_acceptance
+keystone_closure:
+coordinator_review:
+```
 
-Manifest schema v1 remains readable for historical diagnostics, but `accept_candidate` and
-`closure_complete` receive `legacy_schema_not_authoritative`. New authority-bearing closure evidence
-must use schema v2. Diagnostic-envelope version and manifest version are deliberately separate.
+The post-acceptance object uses this exact additional shape:
+
+```yaml
+post_acceptance_phase:
+  phase_id: post_acceptance
+  baseline_snapshot_digest:
+  result_snapshot:
+  capture_evidence: {path:, digest:}
+  acceptance_ref:
+  acceptance_event: {path:, digest:}
+  accepted_steps: []
+  author_evidence_binding:
+    finalization_manifest_digest:
+    runner_envelope_digest:
+    source_snapshot_digest:
+  actor_deltas: []
+```
+
+`worker_phase.baseline_snapshot_digest` equals the assignment result digest;
+`pre_acceptance_closure_phase.baseline_snapshot_digest` equals the worker result digest; and the
+post-acceptance baseline equals the pre-acceptance result digest. These digest equalities are the parent
+links; v3 does not add a separate `parent_phase_id`. The current repository must equal the terminal phase
+result. Each adjacent snapshot delta is added, modified, deleted, or `type_replaced` and belongs to
+exactly one actor delta. The union of actor changed paths must equal the independently derived phase
+delta; overlap, omission, an extra path, or an inter-phase generation fails closed.
+
+An actor delta records actor identity/role, authority, normalized scope, changed paths, and exactly one
+canonical artifact delta per changed source surface. The validator derives scope and before/after values
+from adjacent snapshots rather than trusting `scope_check`. Worker writes stay inside assignment edit
+scope. Author writes stay on Author-owned document/metadata surfaces. A repository owner writes only its
+assigned repository surface. Post-acceptance Author finalization cannot precede Main acceptance and uses
+the same acceptance ref throughout.
+
+```yaml
+changed_paths:
+  - path:
+    change_kind: added | modified | deleted | type_replaced
+    before_entry_digest: sha256:<64-lowercase-hex> | absent
+    after_entry_digest: sha256:<64-lowercase-hex> | absent
+```
+
+`post_acceptance_phase` is explicit `null` for a pre-acceptance manifest and a required object for
+post-acceptance closure. It then carries `phase_id: post_acceptance`, baseline/result snapshot, capture
+evidence, acceptance ref/event, accepted Steps, `author_evidence_binding`, and actor deltas.
+`author_evidence_binding` repeats the finalization manifest digest, Author runner-envelope digest, and
+post snapshot digest. Closure completion requires a non-empty Author delta after acceptance; every
+accepted-Step progress/finalization progress source must change, and every actual post-acceptance Author
+change must be declared by the schema-v5 manifest. A pre-acceptance no-write phase may use empty actor
+deltas but still supplies matching complete baseline/result snapshots and required capture evidence.
+
+## Worker, Linker, and Author authority
+
+The worker report is evidence for `worker_phase` only. Its changed files and artifact deltas must equal
+that phase's actual delta and cannot claim subsequent document sync, repository-owner repair, Main
+acceptance, or finalization writes.
+
+Linker is source-write-free. Its classification, graph validation, or verified transaction is stored in
+`keystone_closure.graph_sync`, never as a source artifact delta. If a phase contains a Linker actor
+entry, both changed paths and artifact deltas are empty. Required graph sync remains bound to an exact
+artifact-delta-set digest and a canonical Linker graph transaction `schema_version: 2`; the package-owned
+Linker runner must pass.
+
+Every post-acceptance closure records a raw-byte-digested Author finalization manifest and expected
+runner envelope. The HMAC-authenticated Main acceptance event binds the exact assignment bytes,
+Context Pack, policy, closure target, pre-acceptance snapshot, ref and accepted Steps. Its timestamp must
+be strictly after the pre capture and before the post capture. Closure, phase, event, finalization, and
+Author acceptance refs must be equal. Accepted Steps
+remain inside assignment scope. New authority requires Author finalization `schema_version: 5` and a
+passing package-owned Author runner. `complete` or an explicitly evidenced `waived` state can close the
+phase; a waiver still requires a concrete reason.
+
+Step closure names one `closure_step_ref` inside assignment `work_context.step_refs`. A work closure
+applies required work-completion gates; a step closure applies active-Step gates. Misfiled, duplicate,
+out-of-assignment, invalid, unresolved, unknown, or evidence-free blocking gates fail closed. Optional
+waiting gates remain non-blocking.
+
+## Compatibility and version domains
+
+| Domain | Current authority version | Compatibility rule |
+|---|---:|---|
+| Coordinator diagnostic envelope | 1 | Output/exit-code contract remains unchanged. |
+| Snapshot policy | 3 | Embedded by value and digest in every assignment/phase snapshot. |
+| Trusted-host phase-capture receipt / embedded snapshot | 1 / 3 | Every phase binds assignment/context, evidence parent, command digest, key fingerprint, time, and exact snapshot. |
+| Main acceptance event / host receipt | 1 / 1 | A distinct pinned Main key binds the exact pre-acceptance subject before Author writes. |
+| Coordinator assignment and closure manifest | 3 | Only v3 can authorize new acceptance readiness or closure completion. |
+| Coordinator manifest v1/v2 | historical | Readable diagnostics only; authority decisions receive `legacy_schema_not_authoritative`. |
+| Linker graph snapshot/transaction | 2 | Unchanged and independently versioned. |
+| Author finalization | 5 | Required for new post-acceptance Coordinator closure. |
+
+Do not rewrite previously accepted v2 evidence. An unfinished v1/v2 authority attempt must restart from
+a new v3 assignment and complete snapshot; a complete path set and actor phase chain cannot be inferred
+from the old single baseline/current diff. Diagnostic envelope, Coordinator manifest, snapshot-policy,
+Linker transaction, and Author finalization versions are deliberately separate contracts.

@@ -79,19 +79,31 @@ done
 COORDINATOR_SKILL="$REPO_ROOT/skills/keystone-coordinator/SKILL.md"
 COORDINATOR_VALIDATOR="$REPO_ROOT/skills/keystone-coordinator/scripts/validate_closure.py"
 COORDINATOR_ACTUAL_STATE="$REPO_ROOT/skills/keystone-coordinator/scripts/closure_actual_state.py"
+COORDINATOR_CAPTURE="$REPO_ROOT/skills/keystone-coordinator/scripts/capture_assignment_snapshot.py"
+COORDINATOR_ACCEPTANCE="$REPO_ROOT/skills/keystone-coordinator/scripts/record_acceptance_event.py"
 COORDINATOR_V2="$REPO_ROOT/skills/keystone-coordinator/scripts/closure_v2.py"
+COORDINATOR_V3="$REPO_ROOT/skills/keystone-coordinator/scripts/closure_v3.py"
 COORDINATOR_REFERENCE="$REPO_ROOT/skills/keystone-coordinator/references/closure-validator.md"
 COORDINATOR_TEST="$REPO_ROOT/skills/keystone-coordinator/tests/test_validate_closure.py"
 COORDINATOR_V2_TEST="$REPO_ROOT/skills/keystone-coordinator/tests/test_validate_closure_v2.py"
+COORDINATOR_V3_TEST="$REPO_ROOT/skills/keystone-coordinator/tests/test_validate_closure_v3.py"
+COORDINATOR_SNAPSHOT_TEST="$REPO_ROOT/skills/keystone-coordinator/tests/test_closure_actual_state.py"
+COORDINATOR_CAPTURE_TEST="$REPO_ROOT/skills/keystone-coordinator/tests/test_capture_assignment_snapshot.py"
+COORDINATOR_ACCEPTANCE_TEST="$REPO_ROOT/skills/keystone-coordinator/tests/test_record_acceptance_event.py"
 for source in "$COORDINATOR_SKILL" "$COORDINATOR_VALIDATOR" "$COORDINATOR_REFERENCE" \
-  "$COORDINATOR_ACTUAL_STATE" "$COORDINATOR_V2" "$COORDINATOR_TEST" \
-  "$COORDINATOR_V2_TEST"; do
+  "$COORDINATOR_ACTUAL_STATE" "$COORDINATOR_CAPTURE" "$COORDINATOR_ACCEPTANCE" \
+  "$COORDINATOR_V2" \
+  "$COORDINATOR_V3" "$COORDINATOR_TEST" "$COORDINATOR_V2_TEST" \
+  "$COORDINATOR_V3_TEST" "$COORDINATOR_SNAPSHOT_TEST" "$COORDINATOR_CAPTURE_TEST" \
+  "$COORDINATOR_ACCEPTANCE_TEST"; do
   if [ ! -f "$source" ]; then
     echo "Missing Coordinator closure package file: $source" >&2
     exit 1
   fi
 done
 python3 "$COORDINATOR_VALIDATOR" --help >/dev/null
+python3 "$COORDINATOR_CAPTURE" --help >/dev/null
+python3 "$COORDINATOR_ACCEPTANCE" --help >/dev/null
 
 DEST_PARENT="$(dirname "$DEST_ROOT")"
 mkdir -p "$DEST_PARENT" "$DEST_ROOT"
@@ -160,20 +172,33 @@ bash -n "$INSTALLED_LINKER_GRAPH_HOOK"
 INSTALLED_COORDINATOR_SKILL="$STAGED_SKILLS/keystone-coordinator/SKILL.md"
 INSTALLED_COORDINATOR_VALIDATOR="$STAGED_SKILLS/keystone-coordinator/scripts/validate_closure.py"
 INSTALLED_COORDINATOR_ACTUAL_STATE="$STAGED_SKILLS/keystone-coordinator/scripts/closure_actual_state.py"
+INSTALLED_COORDINATOR_CAPTURE="$STAGED_SKILLS/keystone-coordinator/scripts/capture_assignment_snapshot.py"
+INSTALLED_COORDINATOR_ACCEPTANCE="$STAGED_SKILLS/keystone-coordinator/scripts/record_acceptance_event.py"
 INSTALLED_COORDINATOR_V2="$STAGED_SKILLS/keystone-coordinator/scripts/closure_v2.py"
+INSTALLED_COORDINATOR_V3="$STAGED_SKILLS/keystone-coordinator/scripts/closure_v3.py"
 INSTALLED_COORDINATOR_REFERENCE="$STAGED_SKILLS/keystone-coordinator/references/closure-validator.md"
 INSTALLED_COORDINATOR_TEST="$STAGED_SKILLS/keystone-coordinator/tests/test_validate_closure.py"
 INSTALLED_COORDINATOR_V2_TEST="$STAGED_SKILLS/keystone-coordinator/tests/test_validate_closure_v2.py"
+INSTALLED_COORDINATOR_V3_TEST="$STAGED_SKILLS/keystone-coordinator/tests/test_validate_closure_v3.py"
+INSTALLED_COORDINATOR_SNAPSHOT_TEST="$STAGED_SKILLS/keystone-coordinator/tests/test_closure_actual_state.py"
+INSTALLED_COORDINATOR_CAPTURE_TEST="$STAGED_SKILLS/keystone-coordinator/tests/test_capture_assignment_snapshot.py"
+INSTALLED_COORDINATOR_ACCEPTANCE_TEST="$STAGED_SKILLS/keystone-coordinator/tests/test_record_acceptance_event.py"
 for installed in "$INSTALLED_COORDINATOR_SKILL" "$INSTALLED_COORDINATOR_VALIDATOR" \
-  "$INSTALLED_COORDINATOR_ACTUAL_STATE" "$INSTALLED_COORDINATOR_V2" \
+  "$INSTALLED_COORDINATOR_ACTUAL_STATE" "$INSTALLED_COORDINATOR_CAPTURE" \
+  "$INSTALLED_COORDINATOR_ACCEPTANCE" \
+  "$INSTALLED_COORDINATOR_V2" "$INSTALLED_COORDINATOR_V3" \
   "$INSTALLED_COORDINATOR_REFERENCE" "$INSTALLED_COORDINATOR_TEST" \
-  "$INSTALLED_COORDINATOR_V2_TEST"; do
+  "$INSTALLED_COORDINATOR_V2_TEST" "$INSTALLED_COORDINATOR_V3_TEST" \
+  "$INSTALLED_COORDINATOR_SNAPSHOT_TEST" "$INSTALLED_COORDINATOR_CAPTURE_TEST" \
+  "$INSTALLED_COORDINATOR_ACCEPTANCE_TEST"; do
   if [ ! -f "$installed" ]; then
     echo "Install failed for Coordinator closure package file: $installed" >&2
     exit 1
   fi
 done
 python3 "$INSTALLED_COORDINATOR_VALIDATOR" --help >/dev/null
+python3 "$INSTALLED_COORDINATOR_CAPTURE" --help >/dev/null
+python3 "$INSTALLED_COORDINATOR_ACCEPTANCE" --help >/dev/null
 
 SOURCE_REVISION="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
 SOURCE_DIRTY=false
@@ -270,17 +295,29 @@ FINAL_REFERENCE_CONTRACT="$DEST_ROOT/keystone-linker/references/reference-index-
 FINAL_COORDINATOR_SKILL="$DEST_ROOT/keystone-coordinator/SKILL.md"
 FINAL_COORDINATOR_VALIDATOR="$DEST_ROOT/keystone-coordinator/scripts/validate_closure.py"
 FINAL_COORDINATOR_ACTUAL_STATE="$DEST_ROOT/keystone-coordinator/scripts/closure_actual_state.py"
+FINAL_COORDINATOR_CAPTURE="$DEST_ROOT/keystone-coordinator/scripts/capture_assignment_snapshot.py"
+FINAL_COORDINATOR_ACCEPTANCE="$DEST_ROOT/keystone-coordinator/scripts/record_acceptance_event.py"
 FINAL_COORDINATOR_V2="$DEST_ROOT/keystone-coordinator/scripts/closure_v2.py"
+FINAL_COORDINATOR_V3="$DEST_ROOT/keystone-coordinator/scripts/closure_v3.py"
 FINAL_COORDINATOR_REFERENCE="$DEST_ROOT/keystone-coordinator/references/closure-validator.md"
 FINAL_COORDINATOR_TEST="$DEST_ROOT/keystone-coordinator/tests/test_validate_closure.py"
 FINAL_COORDINATOR_V2_TEST="$DEST_ROOT/keystone-coordinator/tests/test_validate_closure_v2.py"
+FINAL_COORDINATOR_V3_TEST="$DEST_ROOT/keystone-coordinator/tests/test_validate_closure_v3.py"
+FINAL_COORDINATOR_SNAPSHOT_TEST="$DEST_ROOT/keystone-coordinator/tests/test_closure_actual_state.py"
+FINAL_COORDINATOR_CAPTURE_TEST="$DEST_ROOT/keystone-coordinator/tests/test_capture_assignment_snapshot.py"
+FINAL_COORDINATOR_ACCEPTANCE_TEST="$DEST_ROOT/keystone-coordinator/tests/test_record_acceptance_event.py"
 for installed in "$FINAL_AUTHOR_VALIDATOR" "$FINAL_AUTHOR_RUNNER" "$FINAL_AUTHOR_HOOK" \
   "$FINAL_AUTHOR_FINALIZATION_GLOBAL" \
   "$FINAL_LINKER_VALIDATOR" "$FINAL_LINKER_RUNNER" "$FINAL_LINKER_HOOK" \
   "$FINAL_REFERENCE_RUNTIME" "$FINAL_LINKER_SOURCE_UNIT" "$FINAL_REFERENCE_CONTRACT" \
   "$FINAL_COORDINATOR_SKILL" "$FINAL_COORDINATOR_VALIDATOR" \
-  "$FINAL_COORDINATOR_ACTUAL_STATE" "$FINAL_COORDINATOR_V2" \
-  "$FINAL_COORDINATOR_REFERENCE" "$FINAL_COORDINATOR_TEST" "$FINAL_COORDINATOR_V2_TEST" \
+  "$FINAL_COORDINATOR_ACTUAL_STATE" "$FINAL_COORDINATOR_CAPTURE" \
+  "$FINAL_COORDINATOR_ACCEPTANCE" \
+  "$FINAL_COORDINATOR_V2" "$FINAL_COORDINATOR_V3" \
+  "$FINAL_COORDINATOR_REFERENCE" "$FINAL_COORDINATOR_TEST" \
+  "$FINAL_COORDINATOR_V2_TEST" "$FINAL_COORDINATOR_V3_TEST" \
+  "$FINAL_COORDINATOR_SNAPSHOT_TEST" "$FINAL_COORDINATOR_CAPTURE_TEST" \
+  "$FINAL_COORDINATOR_ACCEPTANCE_TEST" \
   "$DEST_ROOT/.keystone-install.json"; do
   if [ ! -f "$installed" ]; then
     echo "Final installed-package verification failed: $installed" >&2
@@ -294,6 +331,8 @@ python3 "$FINAL_LINKER_VALIDATOR" --help >/dev/null
 python3 "$FINAL_LINKER_RUNNER" --help >/dev/null
 bash -n "$FINAL_LINKER_HOOK"
 python3 "$FINAL_COORDINATOR_VALIDATOR" --help >/dev/null
+python3 "$FINAL_COORDINATOR_CAPTURE" --help >/dev/null
+python3 "$FINAL_COORDINATOR_ACCEPTANCE" --help >/dev/null
 PYTHONPATH="$DEST_ROOT/keystone-linker/scripts" python3 -c \
   'from graph_runtime.readiness import context_readiness; assert callable(context_readiness)'
 

@@ -414,9 +414,10 @@ return report contract는 모든 worker에게 적용되는 Keystone 기본 경�
 명시된 경우 해당 스킬은 `injected_skills`로 들어가지만 이 기본 경계를 대체하지 않는다.
 
 Agent-facing worker assignment는 위의 풍부한 handoff shape를 유지한다. Actual-state validator에는
-그중 authority-bearing subset과 pre-work full snapshot만 가진 strict schema-v2 assignment
-projection을 전달한다. Full report도 validator reference가 정의한 strict closure projection으로
-정규화하며, unknown field나 report의 자기신고를 actual-state evidence로 사용하지 않는다.
+그중 authority-bearing subset, normalized snapshot policy와 package-owned T0 capture에 결속된
+`assignment_phase`만 가진 strict schema-v3 assignment projection을 전달한다. Full report는
+validator reference가 정의한 `worker_phase` projection으로만 정규화한다. Unknown field, report의
+자기신고나 closure 시점에 제출된 self-consistent path 목록을 actual-state evidence로 사용하지 않는다.
 
 <!-- key: id=key.standard.skill.coordinator.injected-skill-selection refs=key.role.coordinator key.topic.external-assist key.topic.skill-contract key.standard.subagent -->
 ### Injected skill selection contract
@@ -482,8 +483,8 @@ worker_report:
       outputs_used:
       candidates_found:
       limits_hit:
-  changed_files:
-  artifact_deltas: []
+  changed_files: # worker_phase changes only
+  artifact_deltas: [] # worker_phase deltas only
   changed_key_ids:
   changed_capabilities:
   local_decisions:
@@ -518,7 +519,9 @@ worker_report:
 ```
 
 `document_sync_needed`와 `metadata_sync_needed`는 compatibility hint다. 새 report는 구조화된
-document/metadata/graph sync 결과를 사용하고 모든 changed file을 `artifact_deltas`로 덮는다.
+document/metadata/graph sync 결과를 사용한다. Worker report의 `changed_files`와
+`artifact_deltas`는 worker phase만 덮으며, 후속 Author·repository owner·finalization write를
+worker에게 귀속하지 않는다.
 
 Worker report review는 다음 shape을 우선 사용한다.
 
@@ -648,7 +651,9 @@ Coordinator는 direct/delegated 구현을 같은 closure workflow로 회수한�
 7. Missing, deferred, pending, blocked 또는 evidence-free closure가 하나라도 있으면 worker의
    성공 보고와 무관하게 `accept_candidate`를 만들지 않는다.
 8. Pre-acceptance closure가 완료되면 Main acceptance 후보로 전달한다. Post-acceptance decision은
-   `keystone_closure.acceptance_ref`와 non-empty `acceptance_evidence`를 기록한 경우에만 실행한다.
+   schema-v3 `keystone_closure.acceptance_ref`와 HMAC-authenticated `acceptance_event` reference를
+   기록한 경우에만 실행한다. Historical schema-v1/v2 diagnostic은 기존 text
+   `acceptance_evidence`를 유지한다.
    Author의 canonical schema-v5 finalization과 ready Context Pack/report/scope/verification/sync
    evidence가
    모두 있고 finalization이 `complete` 또는 concrete `waiver_reason`을 기록한 explicitly `waived`
@@ -658,33 +663,67 @@ Installed Coordinator package의 `scripts/validate_closure.py`는 이 gate를 di
 exit code로 검사한다. Validator는 source edit, graph mutation, Main acceptance 또는 Author
 finalization 권한을 가지지 않는다.
 
-9. 새 authority-bearing closure는 manifest schema v2를 사용한다. 구현 전 Coordinator-owned
-   assignment projection은 assignment ID, execution mode, purpose, authority, goal, Context Pack,
-   injected skill IDs/modes, normalized scope와 전체 pre-work repository path/raw-byte digest snapshot을
-   별도 immutable input으로 보존한다.
-10. Validator는 `--root`, `--assignment`, `--manifest`, external evidence root를 입력받아 현재
-    repository snapshot에서 added/modified/deleted path를 직접 계산한다. 이 path set,
-    baseline/resulting digest와 report/artifact delta가 정확히 같지 않거나 allowed/excluded scope를
-    벗어나면 실패한다. Root와 host-controlled evidence root는 실제 directory여야 하고 evidence는
-    repository snapshot 밖에 둔다. Allowed selector와 겹치는 ancestor/descendant escaping symlink도
-    실패한다.
-11. Report와 review의 assignment ID/digest, Context Pack digest, execution/purpose/authority/goal,
-    `skill_usage`는 immutable assignment와 같아야 한다. Authority-bearing object의 unknown field는
-    fail-closed다.
-12. Required graph sync는 exact delta-set에 결속된 Linker validation manifest와 transaction ID를
-    요구하고 canonical schema-v2 verified transaction에 대해 package-owned Linker runner를
-    실행한다. Post-acceptance decision은 acceptance ref와 non-empty unique accepted Steps가 같은
-    Author manifest를 요구하고 package-owned Author runner를 실행한다.
-13. Manifest schema v1은 historical diagnostic compatibility만 제공하며 `accept_candidate` 또는
-    `closure_complete` authority를 만들 수 없다. Diagnostic envelope schema와 manifest schema는
-    서로 다른 version contract다.
-14. Step closure는 assignment Step 안의 concrete `closure_step_ref`를 기록한다. V2 gate projection은
-    Step-only와 Work-only scope를 각 array에 분리하고 misfiled, duplicate, out-of-assignment 또는
-    evidence-free non-satisfied gate를 실패로 처리한다. Root/evidence read, runner availability,
-    timeout, output parsing 또는 child runner execution failure는 `status: error`와 exit 2를 유지한다.
-15. Author schema v4는 Author runner의 historical read compatibility로만 남는다. 신규 Coordinator
-    schema-v2 `closure_complete` authority는 semantic round/category invariant가 있는 Author
-    schema-v5 evidence만 허용한다.
+9. 새 authority-bearing closure는 Coordinator assignment와 manifest schema v3를 사용한다. 구현
+   전과 worker/pre-acceptance/post-acceptance 각 경계에서 package-owned
+   `scripts/capture_assignment_snapshot.py`를 실행한다. Capture diagnostic envelope는 schema v1이고
+   embedded canonical snapshot은 schema v3다. External single-link capture evidence는 repository
+   root, policy, assignment ID, Context Pack digest, phase, snapshot/evidence parent, result snapshot,
+   package command digest, evidence root, fresh nonce와 strictly increasing UTC time을 결속한다.
+   Capture subject는 circular `assignment_phase`를 제외한 assignment schema/id/mode/purpose/authority,
+   goal/context/injected skill/scope/document root/policy/phase authority의 canonical digest도 결속해
+   capture 뒤 actor scope 재귀속을 차단한다.
+   Receipt는 repository/evidence root 밖의 independently pinned owner-private Coordinator key로
+   HMAC-authenticated한다. HMAC은 protected-key possession을 증명하지만 독립 binary 실행, 외부
+   clock, OS-user 또는 조직적 독립성을 증명하지 않는다.
+10. Schema-v3 assignment는 canonical SnapshotPolicy v3의 normalized include/exclusion policy,
+    `regular_file | directory | symlink`
+    existing entries와 같은 canonical snapshot 안의 assignment-owned `expected_absences`
+    array/count/digest/complete, raw-byte digest, executable bit, symlink target, completeness와 stable
+    capture evidence를 root `assignment_phase`에 보존한다. Exclusion은 path와 reason을 명시하며
+    암묵적인 cache/build/IDE ignore를 두지 않는다.
+11. Capture는 같은 policy로 before/middle/after path set과 두 full entry generation을 독립
+    capture하고 no-follow `lstat/open/fstat` identity를 확인한다. Path/type/global-entry/identity drift,
+    include 밖 또는 exclusion 안 entry, Unicode-normalized case-fold
+    collision, unreadable/budget/truncated capture는 bounded retry 뒤 fail-closed한다. Closure 시점의
+    self-consistent host path 목록은 T0 completeness를 대신하지 않는다.
+12. Schema-v3 assignment는 actual `.keystone/config.yaml` 또는 표준 default에서 independently
+    resolved `document_root`를 기록한다. Schema-v3 manifest는 `worker_phase`,
+    `pre_acceptance_closure_phase`, post-acceptance decision의 `post_acceptance_phase`를 capture-evidence
+    parent-linked chain으로 기록한다. 각 non-root phase baseline snapshot digest는 직전 phase result와
+    같고, 같은 policy의 complete result snapshot과 actor delta를 가진다. Current root는 terminal phase
+    result와 같아야 한다.
+    Author edit selector는 document root 아래에만 존재하고 Worker/repository-owner edit selector는
+    document root와 equal/ancestor/descendant overlap이 없어야 한다. `document_root: .`은 document와
+    code/repository-owner surface를 결정적으로 구분할 수 없으므로 모든 write actor scope가 empty여야
+    한다.
+13. Worker report는 worker phase만 소유한다. Author와 repository surface owner의 write는 별도 actor
+    delta로 scope/authority를 검사하고 모든 adjacent-snapshot delta는 정확히 한 writer에 귀속한다.
+    Linker는 classification/transaction/validation evidence만 제공하며 source-write actor delta를
+    가질 수 없다. Unattributed, overlapping 또는 inter-phase generation은 실패한다.
+14. Report와 review의 assignment ID/digest, Context Pack digest, execution/purpose/authority/goal,
+    `skill_usage`는 immutable assignment와 같아야 한다. Assignment, snapshot, phase, actor delta,
+    report와 review를 포함한 authority-bearing object의 unknown field는 fail-closed다.
+15. Required graph sync는 exact delta-set에 결속된 Linker validation manifest와 transaction ID를
+    요구하고 canonical Linker graph transaction schema v2에 대해 package-owned Linker runner를
+    실행한다. Main은 Author write 전에 `scripts/record_acceptance_event.py`와 Coordinator capture
+    key와 다른 pinned Main key로 exact assignment/context/policy, pre snapshot, closure target,
+    acceptance ref와 unique accepted Steps를 기록한다. Runner는 external evidence root의 canonical
+    pre-snapshot wire를 읽고 같은 policy/expected absences로 live repository를 다시 capture하며,
+    observed wire/digest가 pre snapshot과 다르면 event를 만들지 않는다. Post phase capture는 그
+    event raw digest를 evidence parent로 사용한다. 같은 값의 Author finalization schema v5 manifest를 요구하고
+    package-owned Author runner를 실행한다. Graph/Author manifest의 digest, parse와 child runner input은
+    하나의 stable no-follow read에서 얻은 동일 byte generation을 사용한다. Post phase는
+    non-empty Author finalization delta와 manifest/runner/post-snapshot digest binding을 요구한다.
+16. Coordinator manifest schema v1과 v2는 historical diagnostic compatibility만 제공하며 새로운
+    `accept_candidate` 또는 `closure_complete` authority를 만들 수 없다. Accepted v2 evidence는
+    재작성하지 않고 unfinished v1/v2 attempt는 fresh schema-v3 assignment capture로 다시 시작한다.
+    Diagnostic envelope schema v1, Coordinator manifest v3, SnapshotPolicy/RepositorySnapshot v3,
+    Linker transaction v2와 Author finalization v5는 서로 다른 version contract다.
+17. Step closure는 assignment Step 안의 concrete `closure_step_ref`를 기록한다. Schema-v3 gate
+    projection은 Step-only와 Work-only scope를 각 array에 분리하고 misfiled, duplicate,
+    out-of-assignment 또는 evidence-free non-satisfied gate를 실패로 처리한다. Root/evidence read,
+    runner availability, timeout, output parsing 또는 child runner execution failure는
+    `status: error`와 exit 2를 유지한다.
 
 <!-- key: id=key.standard.skill.coordinator.graph-synchronization refs=key.role.coordinator key.role.linker key.topic.artifact-graph key.topic.verification key.topic.change-set -->
 ## Artifact delta와 graph synchronization
@@ -736,7 +775,7 @@ graph_apply_results:
 
 `changed_locators`는 비어 있지 않은 canonical locator object 배열이다. 각 object는 `path`를
 필수로 하고 필요한 `heading`, `symbol`, `test_name`, `config_key`, `schema_name`만 포함한다.
-Plain string은 schema-v1 diagnostic compatibility에만 남으며 schema-v2 closure authority가
+Plain string은 schema-v1 diagnostic compatibility에만 남으며 schema-v3 closure authority가
 될 수 없다.
 
 <!-- key: id=key.standard.skill.coordinator.review-verification-flow refs=key.role.coordinator key.topic.verification key.topic.review key.topic.keystone-metadata key.topic.artifact-graph -->
@@ -785,7 +824,8 @@ Main acceptance는 다음 조건이 충족될 때만 가능하다.
 10. Source conflict가 있으면 resolved, excluded, or next action으로 분리되어 있다.
 11. 모든 changed surface가 artifact delta로 회수되고 document, metadata와 graph sync가 required
     completion 또는 evidence-backed `not_applicable` 상태다.
-12. Package-local closure validator가 current phase manifest를 통과했다.
+12. Package-local closure validator가 package-owned T0 capture에 결속된 current terminal phase
+    manifest를 통과했다.
 
 Completion evidence가 있을 때 `work_status: complete`로 전이하고, Main acceptance 후에만
 `approval.state: accepted`로 전이한다. 두 상태는 서로 대체하지 않는다.
@@ -922,6 +962,14 @@ Coordinator 기준은 다음 방법으로 검증한다.
 29. Main acceptance 뒤 Author finalization evidence가 없으면 `closure_complete`가 되지 않아야 한다.
 30. `scripts/validate_closure.py`의 정상, incomplete, no-change, invalid mode fixture가 stable
     diagnostic envelope와 exit code를 반환해야 한다.
+31. `scripts/capture_assignment_snapshot.py`가 complete canonical snapshot schema v3를 diagnostic
+    envelope schema v1 안에 반환하고 assignment bytes가 그 exact snapshot을 embed/bind하며 각
+    phase HMAC receipt가 pinned Coordinator key와 preceding evidence digest를 검증해야 한다.
+32. Worker, Author, repository owner와 finalization delta가 parent-linked phase별 authority에
+    귀속되고 Linker가 source-write delta를 소유하지 않아야 한다.
+33. `scripts/record_acceptance_event.py`가 distinct pinned Main key로 pre-acceptance subject를
+    acceptance ref/Steps에 결속하고, acceptance 직전 live recapture가 exact pre snapshot과 같으며,
+    acceptance time이 pre capture 뒤이자 post capture 전이어야 한다.
 
 <!-- key: id=key.standard.skill.coordinator.permissionless-linker-boundary refs=key.role.coordinator key.role.linker key.standard.subagent key.boundary.scope-control -->
 ## Permissionless Linker와 Coordinator 허락 경계

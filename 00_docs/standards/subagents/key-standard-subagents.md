@@ -311,9 +311,15 @@ change, verification, 관련 기준서·작업서·진행 기록과 필요한 Re
 포함한다. 전체 문서 corpus를 worker에게 재해석시키는 것은 Context Pack이 아니다.
 
 구현 뒤 direct 또는 delegated output은 같은 canonical worker report로 정규화한다.
-Coordinator actual-state closure에서는 worker report가 immutable assignment의 raw-byte digest와
-Context Pack canonical digest를 함께 반환한다. `changed_files`와 artifact delta는 worker의 추정이
-아니라 pre-work snapshot과 current repository bytes의 차이와 같아야 한다.
+Coordinator schema-v3 actual-state closure에서는 worker report가 immutable assignment의 raw-byte
+digest와 Context Pack canonical digest를 함께 반환하고 `worker_phase`에만 결속된다. Assignment의
+T0 baseline은 package-owned capture가 만든 complete canonical snapshot schema v3여야 한다.
+Phase capture evidence는 assignment ID와 Context Pack digest를 함께 결속해 다른 assignment로의
+capture-chain replay를 막고, preceding evidence digest와 independently pinned Coordinator-host
+key HMAC을 검증한다. HMAC은 host key possession의 operational evidence이며 worker에게 capture나
+Main acceptance authority를 주지 않는다.
+`changed_files`와 artifact delta는 worker의 추정이나 최종 repository 전체 diff가 아니라
+`assignment_phase` result와 `worker_phase` result 사이의 actual source delta와 같아야 한다.
 
 ```yaml
 worker_report:
@@ -354,10 +360,16 @@ worker_report:
 `config_key`, `schema_name`만 포함하는 canonical locator object다. 사용하지 않는 optional
 field는 생략하고 plain string은 발행하지 않는다.
 
-각 changed surface는 artifact delta를 가져야 한다. `not_applicable`도 구체적인 reason과 evidence가
-필요하다. Required 또는 deferred closure가 미완료이면 Coordinator는 worker success를
-`accept_candidate`로 승격하지 않는다. Graph 의미는 Linker, source-document와 finalization은
-Author가 소유하고 Coordinator는 두 handoff의 완료를 감독한다.
+각 worker-phase changed surface는 artifact delta를 가져야 한다. `not_applicable`도 구체적인
+reason과 evidence가 필요하다. Required 또는 deferred closure가 미완료이면 Coordinator는 worker
+success를 `accept_candidate`로 승격하지 않는다. Worker report는 후속 Author 문서 sync,
+repository-owner patch, Main acceptance 또는 Author finalization write를 자기 변경으로 주장하지
+않는다. Graph 의미는 Linker, source-document와 finalization은 Author가 소유하고 Coordinator는
+parent-linked `pre_acceptance_closure_phase`와 `post_acceptance_phase`에서 각 handoff를 감독한다.
+Main acceptance는 distinct pinned Main key로 pre snapshot과 acceptance ref/Steps를 결속한 event로
+pre/post capture 사이에 기록한다. Event runner는 같은 policy/expected absences로 live repository를
+재캡처해 exact pre snapshot과 같은 경우에만 event를 만든다. Linker는 source-write-free evidence
+owner이며 actor write delta를 가질 수 없다.
 
 규칙은 다음과 같다.
 
@@ -456,6 +468,8 @@ Worker report는 purpose-specific payload를 추가할 수 있지만, 기본 env
 ```yaml
 worker_report:
   assignment_id:
+  assignment_digest:
+  context_digest:
   execution_mode: direct_execution | orchestration
   status: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | NEEDS_SCOPE_CHANGE | BLOCKED
   status_reason:
@@ -497,7 +511,10 @@ worker_report:
 
 `document_sync_needed`와 `metadata_sync_needed`는 기존 report compatibility hint다. 새 report는
 구조화된 `document_sync`, `metadata_sync`, `graph_sync` disposition/state/reason/evidence를
-사용하며 Coordinator closure validator가 이를 fail-closed로 확인한다.
+사용하며 Coordinator closure validator가 이를 fail-closed로 확인한다. Strict schema-v3 manifest의
+top-level worker report는 `worker_phase`의 adjacent-snapshot delta와 대조되며 worker 이후 actor
+phase의 changed path를 포함하지 않는다. Coordinator manifest v1/v2와 그 report projection은
+historical diagnostics로만 읽으며 새 acceptance 또는 closure authority를 만들 수 없다.
 
 `NEEDS_CONTEXT` report는 가능하면 다음 reason code를 포함한다.
 

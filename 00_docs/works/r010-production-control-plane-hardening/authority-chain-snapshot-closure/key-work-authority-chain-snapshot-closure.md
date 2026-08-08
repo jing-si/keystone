@@ -59,11 +59,16 @@ Coordinator actual-state closure를 manifest linter가 아닌 authority-chain ve
 
 Include:
 
-- Normalized include/exclude policy, discovered existing path set, path type와 raw-byte digest
+- Package-owned T0 capture entrypoint, normalized include/exclude policy, discovered existing path set,
+  path type와 raw-byte digest
 - Existing `regular_file | directory | symlink` entries와 별도 assignment-owned
   `expected_absences`, count/path-set digest와 `complete` evidence
 - Assignment, worker, pre-acceptance closure와 post-acceptance phase snapshot chain
 - Worker/Author/repository owner delta, scope와 source-write authority 검증
+- Configured document root와 Author document-surface authority의 independent binding
+- Assignment/worker/pre/post package-owned phase-capture evidence와 replay 방지 binding
+- External pinned Coordinator/Main keys, HMAC host receipts와 pre-capture -> acceptance-event ->
+  post-capture evidence chain
 - Existing closure compatibility, strict schema와 stable diagnostic tests
 
 Exclude:
@@ -98,8 +103,10 @@ Gate boundary:
 
 Implementation:
 
-1. Assignment digest에 normalized include/exclude policy, 전체 discovered path set, path type와
-   raw-byte digest를 결속한다.
+1. Package-owned `scripts/capture_assignment_snapshot.py`가 worker write 전 T0 source generation을
+   capture하고 diagnostic envelope schema v1 안에 canonical snapshot schema v3를 반환한다.
+   Package-owned invocation은 operational T0 authority boundary다. Immutable assignment bytes가
+   exact captured snapshot을 embed하고 assignment raw-byte digest가 그 bytes를 결속한다.
 2. Snapshot의 existing entries는 `regular_file | directory | symlink`만 허용하고, 존재하지
    않아야 할 assignment-owned 경로는 별도 `expected_absences` 집합으로 기록한다.
 3. `discovered_path_count`, `expected_absence_count`, 각 집합의 canonical path digest,
@@ -116,6 +123,8 @@ Implementation:
    digest를 요구한다.
 8. Runtime-generated path는 default ignore가 아니라 assignment-owned exclusion reason으로만
    제외한다.
+9. Closure 시점에 host가 제공한 self-consistent path 목록은 package-owned T0 capture completeness를
+   대신할 수 없다.
 
 Verification:
 
@@ -143,13 +152,25 @@ Implementation:
 4. 추가·수정·삭제·type replacement가 정확히 한 phase에 귀속되는지 확인하고 inter-phase
    unrecorded generation을 차단한다.
 5. Finalization phase의 acceptance ref와 event order를 검증하고 기존 closure wire compatibility를
-   명시한다.
+   명시한다. Coordinator capture와 Main acceptance는 서로 다른 external pinned key를 사용하고,
+   acceptance event는 exact assignment/context/policy, pre snapshot, target/ref/Steps에 결속한다.
+   Main event runner는 같은 snapshot policy/expected absences로 live repository를 재캡처하고 exact
+   pre snapshot과 일치할 때만 event를 발행한다.
+   신규 authority-bearing assignment/manifest는 schema v3로 발행하고 schema v1/v2는
+   historical diagnostic-only/non-authoritative로 보존한다. Diagnostic envelope schema v1,
+   SnapshotPolicy/RepositorySnapshot v3, Linker transaction v2와 Author finalization v5는 독립
+   version domain이다.
 
 Verification:
 
 - Worker code only, worker+Author sync, worker+post-acceptance finalization은 통과한다.
 - Worker document write, Author code write, unattributed change와 parent digest mismatch는 실패한다.
+- Configured document root가 repository root이면 모든 write actor scope를 fail-closed로 거부한다.
+- Pre snapshot 이후 Main event 전에 발생한 finalization 또는 다른 write는 live recapture mismatch로
+  실패한다.
 - Acceptance 이전 finalization과 다른 acceptance ref는 실패한다.
+- 임의 producer 문자열, 잘못된 HMAC/key fingerprint, evidence predecessor replay와 같은
+  Coordinator/Main key 사용은 실패한다.
 
 Done when: 하나의 final diff가 아니라 actual source bytes로 모든 delta를 정확히 한 phase와 actor에
 귀속할 수 있다.
@@ -158,8 +179,8 @@ Done when: 하나의 final diff가 아니라 actual source bytes로 모든 delta
 ## Change Set
 
 - Intent: closure success를 complete snapshot과 actor/phase provenance에 결속한다.
-- Required candidates: Coordinator model/parser/validator/contract, snapshot filesystem adapter,
-  strict wire와 adversarial fixtures
+- Required candidates: Coordinator model/parser/validator/contract, package-owned T0 snapshot capture
+  entrypoint/filesystem adapter, strict schema-v3 wire와 adversarial fixtures
 - Conditional candidates: Author finalization runner binding과 release gate는 phase envelope가 바뀌는
   범위만 검토한다.
 - Excluded: S03 package-owned classification/transaction과 S04-S07 owned runtime, unrelated refactor와
@@ -175,14 +196,15 @@ Work Order는 criterion statement만 소유하고 현재 state/evidence는 S02 P
 
 <!-- key: id=key.acceptance.authority-chain.complete-snapshot -->
 - `R010-S02-CC-01` Snapshot policy, 전체 discovered path set, path type와 raw-byte digest가
-  assignment에 결속되고 count/path-set digest/`complete` evidence가 일치한다.
+  package-owned T0 capture와 assignment bytes에 결속되고 count/path-set digest/`complete` evidence가
+  일치한다.
 <!-- key: id=key.acceptance.authority-chain.hidden-change-detection -->
 - `R010-S02-CC-02` Omission, hidden path, deletion, type replacement와 truncated scan이
   fail-closed다.
 <!-- key: id=key.acceptance.authority-chain.expected-absences -->
-- `R010-S02-CC-03` Existing entries는 `regular_file | directory | symlink`로 한정되고
-  assignment-owned `expected_absences`는 별도 policy/count/path digest/`complete` evidence와
-  pre/post 부재 검증을 가진다.
+- `R010-S02-CC-03` Existing entries는 `regular_file | directory | symlink`로 한정되고 같은
+  canonical RepositorySnapshot v3 안의 assignment-owned `expected_absences`
+  array/count/path-set digest/`complete` evidence가 pre/post 부재 검증과 일치한다.
 <!-- key: id=key.acceptance.authority-chain.stable-capture -->
 - `R010-S02-CC-04` Capture 전후 path set 및 no-follow `lstat/open/fstat` identity
   `(size, mtime, ctime, inode)`가 일치하거나 bounded retry 뒤 fail-closed한다.
@@ -190,14 +212,20 @@ Work Order는 criterion statement만 소유하고 현재 state/evidence는 S02 P
 - `R010-S02-CC-05` Symlink target, executable-bit와 Unicode-normalized case-fold collision이
   digest-bearing evidence로 검증된다.
 <!-- key: id=key.acceptance.authority-chain.phase-parent-chain -->
-- `R010-S02-CC-06` 각 phase baseline digest가 이전 phase result digest와 일치한다.
+- `R010-S02-CC-06` 각 phase baseline digest가 이전 phase result digest와 일치하고, capture receipt가
+  preceding evidence raw digest와 non-circular assignment authority-core digest에 결속된다.
 <!-- key: id=key.acceptance.authority-chain.actor-delta-scope -->
-- `R010-S02-CC-07` Worker, Author, repository owner와 finalization delta가 actor authority 안에 있다.
+- `R010-S02-CC-07` Worker, Author, repository owner와 finalization delta가 actor authority 안에 있고,
+  Worker/repository-owner edit scope는 independently configured document root와 겹치지 않는다.
 <!-- key: id=key.acceptance.authority-chain.unattributed-ordering -->
 - `R010-S02-CC-08` Inter-phase unattributed mutation과 acceptance 이전 finalization이 실패한다.
+  Main acceptance event는 distinct pinned key, exact pre-acceptance subject와 raw evidence predecessor
+  chain에 결속된다.
 <!-- key: id=key.acceptance.authority-chain.closure-compatibility -->
-- `R010-S02-CC-09` Existing closure compatibility와 strict unknown-field policy가 regression으로
-  보존된다.
+- `R010-S02-CC-09` 신규 authority-bearing closure는 Coordinator schema v3만 사용하고 v1/v2는
+  historical diagnostic-only/non-authoritative compatibility로 보존한다. Diagnostic envelope v1,
+  SnapshotPolicy/RepositorySnapshot v3, Linker transaction v2와 Author finalization v5의 version
+  domain 및 strict unknown-field policy가 regression으로 고정된다.
 <!-- key: id=key.acceptance.authority-chain.prerequisite-verification -->
 - `R010-S02-CC-10` S01 Work가 `complete + accepted`이고 S02 focused/package/cross-skill
   verification이 통과한다.
@@ -214,7 +242,8 @@ Work Order는 criterion statement만 소유하고 현재 state/evidence는 S02 P
 <!-- key: id=key.work.authority-chain-snapshot-closure.order.expected-output refs=key.topic.verification key.topic.work-recovery -->
 ## Expected Output
 
-- Complete snapshot policy/value object, capture adapter와 validation envelope
+- Complete SnapshotPolicy/RepositorySnapshot v3 value object, package-owned T0 capture entrypoint와
+  validation envelope
 - Phase-separated closure chain, parser/validator와 stable diagnostics
 - Contract/reference updates, adversarial unit/integration fixtures와 Progress evidence
 

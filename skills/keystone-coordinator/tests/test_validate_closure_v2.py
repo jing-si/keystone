@@ -192,6 +192,10 @@ class ClosureV2ValidationTest(unittest.TestCase):
     def codes(result):
         return {item["code"] for item in result["diagnostics"]}
 
+    def assert_historical_v2_valid(self, result):
+        self.assertEqual("fail", result["status"])
+        self.assertEqual({"legacy_schema_not_authoritative"}, self.codes(result))
+
     @staticmethod
     def runner_process(payload, returncode):
         return subprocess.CompletedProcess(
@@ -221,12 +225,11 @@ class ClosureV2ValidationTest(unittest.TestCase):
 
     def test_valid_v2_no_change_is_bound_to_actual_state(self):
         result = self.validate()
-        self.assertEqual("pass", result["status"])
-        self.assertEqual([], result["diagnostics"])
+        self.assert_historical_v2_valid(result)
 
     def test_actual_modified_file_requires_exact_report_and_digests(self):
         self.record_modified_source()
-        self.assertEqual("pass", self.validate()["status"])
+        self.assert_historical_v2_valid(self.validate())
 
         self.manifest["worker_report"]["artifact_deltas"][0]["resulting_digest"] = (
             "sha256:" + "0" * 64
@@ -273,7 +276,7 @@ class ClosureV2ValidationTest(unittest.TestCase):
             "schema_name": None,
         }]
         self.write_classification()
-        self.assertEqual("pass", self.validate()["status"])
+        self.assert_historical_v2_valid(self.validate())
 
     def test_scope_is_computed_instead_of_trusting_worker_claim(self):
         secret = self.root / "secret" / "value.txt"
@@ -440,7 +443,7 @@ class ClosureV2ValidationTest(unittest.TestCase):
             assignment_digest=self.assignment_digest,
             evidence_root=str(self.evidence),
         )
-        self.assertEqual("pass", result["status"])
+        self.assert_historical_v2_valid(result)
 
     def test_direct_api_malformed_runtime_context_returns_error_envelope(self):
         cases = (
@@ -598,7 +601,7 @@ class ClosureV2ValidationTest(unittest.TestCase):
             },
         ]
         self.write_classification()
-        self.assertEqual("pass", self.validate()["status"])
+        self.assert_historical_v2_valid(self.validate())
 
     def test_required_graph_sync_executes_runner_and_binds_transaction(self):
         self.record_modified_source()
@@ -643,7 +646,7 @@ class ClosureV2ValidationTest(unittest.TestCase):
             closure_v2.subprocess, "run",
             return_value=self.runner_process(runner_payload, 0),
         ) as run:
-            self.assertEqual("pass", self.validate()["status"])
+            self.assert_historical_v2_valid(self.validate())
             command = run.call_args.args[0]
             self.assertEqual(
                 closure_v2.package_runner_paths()[0], Path(command[1]).resolve()
@@ -728,7 +731,7 @@ class ClosureV2ValidationTest(unittest.TestCase):
             closure_v2.subprocess, "run",
             return_value=self.runner_process(runner_payload, 0),
         ) as run:
-            self.assertEqual("pass", self.validate()["status"])
+            self.assert_historical_v2_valid(self.validate())
             command = run.call_args.args[0]
             self.assertEqual(
                 closure_v2.package_runner_paths()[1], Path(command[1]).resolve()
@@ -788,7 +791,7 @@ class ClosureV2ValidationTest(unittest.TestCase):
         self.assertEqual(2, process.returncode)
         self.assertIn("v2_runtime_context_missing", self.codes(json.loads(process.stdout)))
 
-    def test_cli_accepts_complete_v2_actual_state_context(self):
+    def test_cli_reads_complete_v2_context_but_denies_authority(self):
         manifest_path = self.evidence / "closure.json"
         assignment_path = self.evidence / "assignment.json"
         manifest_path.write_bytes(json_bytes(self.manifest))
@@ -810,8 +813,12 @@ class ClosureV2ValidationTest(unittest.TestCase):
             capture_output=True,
             text=True,
         )
-        self.assertEqual(0, process.returncode, process.stdout + process.stderr)
-        self.assertEqual("pass", json.loads(process.stdout)["status"])
+        self.assertEqual(1, process.returncode, process.stdout + process.stderr)
+        payload = json.loads(process.stdout)
+        self.assertEqual("fail", payload["status"])
+        self.assertEqual(
+            {"legacy_schema_not_authoritative"}, self.codes(payload)
+        )
 
     def test_cli_runner_overrides_fail_closed(self):
         manifest_path = self.evidence / "closure.json"
@@ -951,6 +958,58 @@ class ClosureV2ValidationTest(unittest.TestCase):
         self.assertEqual(2, process.returncode, payload)
         self.assertEqual("error", payload["status"])
         self.assertIn("repository_root_unavailable", self.codes(payload))
+
+    def test_evidence_digest_parse_and_runner_use_one_captured_byte_generation(self):
+        evidence_path = self.evidence / "stable-manifest.json"
+        original = json_bytes({"schema_version": 1, "value": "captured"})
+        replacement = json_bytes({"schema_version": 1, "value": "replaced"})
+        evidence_path.write_bytes(original)
+        diagnostics = []
+
+        def digest_then_replace(raw):
+            evidence_path.write_bytes(replacement)
+            return digest_bytes(raw)
+
+        with mock.patch.object(
+            closure_v2,
+            "digest_bytes",
+            side_effect=digest_then_replace,
+        ):
+            _, payload, captured = closure_v2._read_evidence_json(
+                self.evidence,
+                "stable-manifest.json",
+                digest_bytes(original),
+                "evidence",
+                diagnostics,
+            )
+
+        self.assertEqual([], diagnostics)
+        self.assertEqual("captured", payload["value"])
+        self.assertEqual(original, captured)
+
+        runner_inputs = []
+
+        def inspect_runner(command, *_args):
+            runner_inputs.append(Path(command[-1]).read_bytes())
+            return {"status": "pass"}
+
+        with mock.patch.object(
+            closure_v2,
+            "_run_evidence",
+            side_effect=inspect_runner,
+        ):
+            closure_v2._run_captured_manifest(
+                Path("runner.py"),
+                self.root,
+                captured,
+                1.0,
+                digest_json({"status": "pass"}),
+                "evidence.envelope_digest",
+                diagnostics,
+                "author",
+            )
+
+        self.assertEqual([original], runner_inputs)
 
 
 if __name__ == "__main__":
