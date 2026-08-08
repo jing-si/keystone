@@ -49,9 +49,10 @@ key:
   `sha256:4d72440502488e1a3ab5c24293e80217f3ab0f3786c0261f535a209d5fe6faa0`와
   Author manifest
   `sha256:89337300456c8b83261ea6ecf06fb4deccf52ae0592d87d949cb55eee8074b86`.
-- Implementation state: activation만 완료했으며 S03 source implementation이나 criterion
-  verification은 아직 시작하지 않았다.
-- Resume point: PC85-04 classification과 PC85-03 transaction patch RED fixture 구현부터 시작한다.
+- Implementation state: commit `ba47bc7833bfaa7988fd42e231a042bdd50528e0`에서 S03 runtime,
+  contract와 adversarial regression 구현을 완료하고 post-commit technical replay를 통과했다.
+- Resume point: Main acceptance review와 schema-v3 acceptance/finalization evidence generation을
+  시작한다. Acceptance 전에는 `complete` 또는 `accepted`를 주장하지 않는다.
 
 Active steps: [R010/S03, R010/S04]
 
@@ -62,25 +63,47 @@ Active steps: [R010/S03, R010/S04]
 - PC85-05: SourceUnit·source parser 해석 단일화
 - PC85-06: Domain-aware lifecycle inheritance
 - PC85-07: Canonical mutation strict schema
-- 상태 경계: 계획 수립만 완료했으며 implementation/verification completion을 주장하지 않는다.
+- 상태 경계: implementation과 technical verification은 완료했지만 Main acceptance와 Author
+  finalization은 pending이며 Work status는 `in_progress`를 유지한다.
 - Early-work 경계: gate 전 source write나 canonical schema commitment는 발생하지 않았다.
 
 ## Criterion Status
 
 | Criterion ID | State | Evidence ref | Subject | Generation/result digest |
 |---|---|---|---|---|
-| `key.acceptance.graph-source.package-classification` | pending | — | — | — |
-| `key.acceptance.graph-source.optional-applied-control` | pending | — | — | — |
-| `key.acceptance.graph-source.optional-omission` | pending | — | — | — |
-| `key.acceptance.graph-source.mutation-required-patch` | pending | — | — | — |
-| `key.acceptance.graph-source.applied-patch-integrity` | pending | — | — | — |
-| `key.acceptance.graph-source.nonutf8-companion` | pending | — | — | — |
-| `key.acceptance.graph-source.lexical-anchor` | pending | — | — | — |
-| `key.acceptance.graph-source.source-unit-parity` | pending | — | — | — |
-| `key.acceptance.graph-source.cross-domain-inheritance` | pending | — | — | — |
-| `key.acceptance.graph-source.canonical-mutation-strict` | pending | — | — | — |
-| `key.acceptance.graph-source.gate-schema-convergence` | pending | — | — | — |
-| `key.acceptance.graph-source.prerequisite-verification` | pending | S02 prerequisite satisfied; S03 verification 대기 | `a201f410e03a4ffd80f6f7deb4573364067f1ace` | closure `sha256:9b863834a753216d96e56c4c16db447629c1767984402b8ad438cef8459c0dd2`; post `sha256:4d72440502488e1a3ab5c24293e80217f3ab0f3786c0261f535a209d5fe6faa0` |
+| `key.acceptance.graph-source.package-classification` | verified | `R010/S03/technical-replay-2026-08-08#classification` | `ba47bc7833bfaa7988fd42e231a042bdd50528e0` / tree `574892faf80b957ab5c0103e52923797e7af67f9` | `sha256:dcb0732fca5b73066aa403e6781dcbdf0bca1fae1c11f5c58eeacde70d623979` |
+| `key.acceptance.graph-source.optional-applied-control` | verified | `R010/S03/technical-replay-2026-08-08#owner-apply` | `ba47bc7833bfaa7988fd42e231a042bdd50528e0` / tree `574892faf80b957ab5c0103e52923797e7af67f9` | `sha256:dcb0732fca5b73066aa403e6781dcbdf0bca1fae1c11f5c58eeacde70d623979` |
+| `key.acceptance.graph-source.optional-omission` | verified | `R010/S03/technical-replay-2026-08-08#optional-closure` | `ba47bc7833bfaa7988fd42e231a042bdd50528e0` / tree `574892faf80b957ab5c0103e52923797e7af67f9` | `sha256:dcb0732fca5b73066aa403e6781dcbdf0bca1fae1c11f5c58eeacde70d623979` |
+| `key.acceptance.graph-source.mutation-required-patch` | verified | `R010/S03/technical-replay-2026-08-08#mutation-realization` | `ba47bc7833bfaa7988fd42e231a042bdd50528e0` / tree `574892faf80b957ab5c0103e52923797e7af67f9` | `sha256:dcb0732fca5b73066aa403e6781dcbdf0bca1fae1c11f5c58eeacde70d623979` |
+| `key.acceptance.graph-source.applied-patch-integrity` | verified | `R010/S03/technical-replay-2026-08-08#application-evidence` | `ba47bc7833bfaa7988fd42e231a042bdd50528e0` / tree `574892faf80b957ab5c0103e52923797e7af67f9` | `sha256:dcb0732fca5b73066aa403e6781dcbdf0bca1fae1c11f5c58eeacde70d623979` |
+| `key.acceptance.graph-source.nonutf8-companion` | verified | `R010/S03/technical-replay-2026-08-08#nonutf8` | `ba47bc7833bfaa7988fd42e231a042bdd50528e0` / tree `574892faf80b957ab5c0103e52923797e7af67f9` | `sha256:dcb0732fca5b73066aa403e6781dcbdf0bca1fae1c11f5c58eeacde70d623979` |
+| `key.acceptance.graph-source.lexical-anchor` | verified | `R010/S03/technical-replay-2026-08-08#lexical` | `ba47bc7833bfaa7988fd42e231a042bdd50528e0` / tree `574892faf80b957ab5c0103e52923797e7af67f9` | `sha256:dcb0732fca5b73066aa403e6781dcbdf0bca1fae1c11f5c58eeacde70d623979` |
+| `key.acceptance.graph-source.source-unit-parity` | verified | `R010/S03/technical-replay-2026-08-08#source-unit` | `ba47bc7833bfaa7988fd42e231a042bdd50528e0` / tree `574892faf80b957ab5c0103e52923797e7af67f9` | `sha256:dcb0732fca5b73066aa403e6781dcbdf0bca1fae1c11f5c58eeacde70d623979` |
+| `key.acceptance.graph-source.cross-domain-inheritance` | verified | `R010/S03/technical-replay-2026-08-08#lifecycle` | `ba47bc7833bfaa7988fd42e231a042bdd50528e0` / tree `574892faf80b957ab5c0103e52923797e7af67f9` | `sha256:dcb0732fca5b73066aa403e6781dcbdf0bca1fae1c11f5c58eeacde70d623979` |
+| `key.acceptance.graph-source.canonical-mutation-strict` | verified | `R010/S03/technical-replay-2026-08-08#mutation-strict` | `ba47bc7833bfaa7988fd42e231a042bdd50528e0` / tree `574892faf80b957ab5c0103e52923797e7af67f9` | `sha256:dcb0732fca5b73066aa403e6781dcbdf0bca1fae1c11f5c58eeacde70d623979` |
+| `key.acceptance.graph-source.gate-schema-convergence` | verified | `R010/S03/technical-replay-2026-08-08#gate-schema` | `ba47bc7833bfaa7988fd42e231a042bdd50528e0` / tree `574892faf80b957ab5c0103e52923797e7af67f9` | `sha256:dcb0732fca5b73066aa403e6781dcbdf0bca1fae1c11f5c58eeacde70d623979` |
+| `key.acceptance.graph-source.prerequisite-verification` | verified | S02 closure + `R010/S03/technical-replay-2026-08-08#full` | S02 `a201f410e03a4ffd80f6f7deb4573364067f1ace`; S03 `ba47bc7833bfaa7988fd42e231a042bdd50528e0` | S02 closure `sha256:9b863834a753216d96e56c4c16db447629c1767984402b8ad438cef8459c0dd2`; S03 result `sha256:dcb0732fca5b73066aa403e6781dcbdf0bca1fae1c11f5c58eeacde70d623979` |
+
+## Technical Evidence Manifest
+
+아래 JSON object를 UTF-8, sorted keys, compact separators로 canonicalize한 SHA-256이
+`sha256:dcb0732fca5b73066aa403e6781dcbdf0bca1fae1c11f5c58eeacde70d623979`이다.
+
+```json
+{"checks":{"compileall":"pass","diff_check":"pass","docs_readiness":{"discovered":175,"errors":0,"parsed":175,"path_digest":"sha256:135ca7ab635f72127ccf76f588695385436f236c202f5cad310b8cef558300e7","skipped":0,"status":"pass","warnings":129},"generator_parity":"pass","installer_syntax":"pass","repository_graph":{"diagnostics":0,"discovered":299,"parsed":299,"path_digest":"sha256:4b6827f5d9c993ad63ddab8cb11514b4fdf17a4dfc35e8521a6d939e2bef3a3b","status":"pass"}},"reviews":{"atomic_rollback":{"p0":0,"p1":0,"status":"approved"},"authority_boundaries":{"p0":0,"p1":0,"status":"approved"},"scope":{"status":"approved"}},"schema_version":1,"subject":{"commit":"ba47bc7833bfaa7988fd42e231a042bdd50528e0","tree":"574892faf80b957ab5c0103e52923797e7af67f9"},"suites":{"author":{"status":"pass","tests":106},"coordinator":{"status":"pass","tests":175},"cross_skill":{"status":"pass","tests":93},"linker":{"status":"pass","tests":376},"reader":{"status":"pass","tests":2}}}
+```
+
+## Criterion-to-Evidence Mapping
+
+| Criterion | Primary executable evidence |
+|---|---|
+| CC-01 | `test_graph_classification.py`, actual Coordinator→Linker package runner integration |
+| CC-02~05 | `test_application_evidence.py`, owner-apply 34-case suite, transaction planner/reconciler/lifecycle/wire tests, actual Author/Coordinator receipt chains |
+| CC-06~08 | SourceUnit, adapter, scanner, reconstruction, reference-index and graph integration suites |
+| CC-09 | Metadata/source-hierarchy and malicious cross-domain wire regressions |
+| CC-10 | Transaction input/lifecycle/wire strict-schema and receipt-bound relation-baseline regressions |
+| CC-11 | Dependency runtime strict field tests and installed contract parity tests |
+| CC-12 | S02 immutable closure evidence plus Author 106, Coordinator 175, Linker 376, Reader 2, cross-skill 93 suites |
 
 ## 진행 로그
 
@@ -106,9 +129,22 @@ Active steps: [R010/S03, R010/S04]
    `a201f410e03a4ffd80f6f7deb4573364067f1ace`과 external Coordinator closure evidence로 고정한 뒤
    S03를 `in_progress`/Active로 활성화했다. 이 전이는 구현 완료나 criterion verification을
    주장하지 않는다.
+9. 2026-08-08: Package-owned classification, transaction/optional strictness, unified SourceUnit와
+   lifecycle/mutation policy, external owner-apply receipt와 schema-v2 graph authority를 commit
+   `ba47bc7833bfaa7988fd42e231a042bdd50528e0`에 고정했다.
+10. 2026-08-08: 같은 committed subject에서 Author 106, Coordinator 175, Linker 376, Reader 2와
+    cross-skill 93, 합계 752 tests를 재실행해 모두 통과했다.
+11. 2026-08-08: generated runtime parity, external-cache compileall, installer syntax와 diff-check를
+    통과했다. Docs readiness는 175/175, error 0, skipped 0이며 repository graph는 299/299,
+    diagnostics 0이다.
+12. 2026-08-08: Authority boundary, atomic rollback/data preservation과 diff scope를 독립적으로
+    재검토해 unresolved P0/P1 0건으로 승인했다. Main acceptance와 finalization은 아직 수행하지
+    않았다.
 
 ## 다음 작업
 
-1. Forged/stale/omitted classification과 patch state-transition RED fixture를 구현한다.
-2. SourceUnit, lifecycle, mutation과 gate condition의 canonical schema를 확정한다.
-3. S02 closure evidence를 immutable prerequisite로 유지하고 S03-owned verification을 별도로 기록한다.
+1. Main이 criterion/evidence mapping과 unresolved P0/P1 0건을 검토해 acceptance 여부를 결정한다.
+2. Acceptance 뒤 Coordinator schema-v3 event와 Author finalization을 별도 source generation으로
+   실행하고 receipt/manifest/envelope digest를 기록한다.
+3. S02 closure evidence와 S03 technical subject를 immutable prerequisite로 유지하며 S04가
+   complete/accepted/finalized되기 전 S05를 활성화하지 않는다.
