@@ -2,8 +2,8 @@
 doc_type: work
 created_at: "2026-08-07"
 document_lifecycle: active
-approval: {state: pending}
-work_status: in_progress
+approval: {state: accepted, accepted_at: "2026-08-08", accepted_by: main}
+work_status: complete
 key:
   id: key.work.authority-chain-snapshot-closure.index
   refs:
@@ -21,7 +21,7 @@ risk_level: high
 global_state:
   active_round: R010
   latest_accepted_round: R009
-  active_steps: [R010/S02]
+  active_steps: []
 ---
 
 # Authority Chain and Snapshot Closure
@@ -34,17 +34,18 @@ global_state:
 ## 현재 상태
 
 - Step: R010/S02
-- Work status: in_progress
-- Approval state: pending
-- Active: true
+- Work status: complete
+- Approval state: accepted
+- Active: false
 - Dependency: S01 `complete + accepted` start gate와 completion gate가 모두 satisfied다.
 - Activation parent: S01 finalization commit
   `ea42783e6e51e733fbcd641663a14272bec07d2a`.
-- Implementation state: schema-v3 runtime/contract/test candidate가 commit
-  `d548d75398f34ae0e3eb273010a88b622c0a5cc5`에 고정됐고 10개 criterion technical verification이
-  통과했다. Work completion, Main acceptance와 finalization은 pending이다.
-- Next action: Main이 candidate subject, aggregate evidence와 residual trust boundary를 검토한다.
+- Acceptance: Main이 candidate commit `d548d75398f34ae0e3eb273010a88b622c0a5cc5`와 authority-chain
+  evidence를 `R010/S02/main-acceptance`로 수락했다.
+- Finalization: schema-v5 Author finalization이 complete이며, 다음 Step 활성화는 별도 source
+  generation에서 수행한다.
+- Next action: S03/S04 활성화 generation을 별도로 검증한다.
 
-Active steps: [R010/S02]
+Active steps: []
 
 현재 active Step의 권위 있는 목록은 R010 round index, root works index와 Context Map을 따른다.

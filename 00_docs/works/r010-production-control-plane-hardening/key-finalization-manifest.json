@@ -1,40 +1,40 @@
 {
   "schema_version": 5,
-  "acceptance_ref": "R010/S01/main-acceptance",
+  "acceptance_ref": "R010/S02/main-acceptance",
   "steps": [
     {
-      "ref": "R010/S01",
-      "work_ref": "R010/production-control-plane-hardening",
+      "ref": "R010/S02",
+      "work_ref": "R010/authority-chain-snapshot-closure",
       "status": "complete",
       "approval_state": "accepted",
       "finalization_state": "complete",
-      "finalization_acceptance_ref": "R010/S01/main-acceptance",
-      "progress_path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/key-progress.md"
+      "finalization_acceptance_ref": "R010/S02/main-acceptance",
+      "progress_path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/key-progress.md"
     }
   ],
   "accepted_steps": [
-    "R010/S01"
+    "R010/S02"
   ],
   "execution_transitions": [
     {
-      "ref": "R010/S01",
+      "ref": "R010/S02",
       "from": "in_progress",
       "to": "complete"
     }
   ],
   "approval_transitions": [
     {
-      "ref": "R010/S01",
+      "ref": "R010/S02",
       "from": "pending",
       "to": "accepted",
-      "evidence": "Main accepted the S01 correctness candidate and replay evidence on 2026-08-08."
+      "evidence": "Main accepted the S02 candidate and external schema-v3 authority-chain evidence on 2026-08-08."
     }
   ],
   "active_steps": [],
   "active_step_sources": [
     {
       "category": "work_index",
-      "path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/00_key-index.md"
+      "path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/00_key-index.md"
     },
     {
       "category": "round_index",
@@ -52,8 +52,8 @@
     "sources": [
       {
         "category": "work_index",
-        "path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/00_key-index.md",
-        "key_id": "key.work.production-control-plane-hardening.index"
+        "path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/00_key-index.md",
+        "key_id": "key.work.authority-chain-snapshot-closure.index"
       },
       {
         "category": "round_index",
@@ -76,9 +76,10 @@
   "finalization": {
     "required": true,
     "state": "complete",
-    "progress_path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/key-progress.md",
+    "progress_path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/key-progress.md",
     "evidence": [
       "main_acceptance",
+      "authority_chain",
       "impact_dispositions",
       "source_updates",
       "semantic_review",
@@ -88,119 +89,149 @@
   "graph_sync": {
     "required": false,
     "disposition": "not_applicable",
-    "reason": "S01 acceptance and finalization change execution, approval, recovery and global-state projections without changing stable graph identities, typed relations, lifecycle domains or locators."
+    "reason": "S02 acceptance and finalization change execution, approval, recovery, dependency-evaluation and global-state projections without changing stable graph identities, typed relations, lifecycle domains or locators."
   },
   "impact_candidates": [
     {
       "category": "progress",
-      "artifact": "R010/S01 progress",
-      "path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/key-progress.md",
+      "artifact": "R010/S02 progress",
+      "path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/key-progress.md",
       "disposition": "updated",
-      "reason": "Records Main acceptance, complete execution, finalization evidence and the accepted residual boundary."
+      "reason": "Records Main acceptance, external authority-chain evidence, finalization state and the separate activation boundary."
     },
     {
       "category": "work_order_change_set",
-      "artifact": "R010/S01 Work Order and Change Set",
-      "path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/key-work-production-control-plane-hardening.md",
+      "artifact": "R010/S02 Work Order and Change Set",
+      "path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/key-work-authority-chain-snapshot-closure.md",
       "disposition": "updated",
-      "reason": "Records the accepted and complete authority state for the verified S01 scope."
+      "reason": "Records the complete and accepted authority state for the verified S02 scope."
     },
     {
       "category": "work_index",
-      "artifact": "R010/S01 work index",
-      "path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/00_key-index.md",
+      "artifact": "R010/S02 work index",
+      "path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/00_key-index.md",
       "disposition": "updated",
-      "reason": "Closes S01 and records the finalization generation with no active Step."
+      "reason": "Closes S02 and records the finalization generation with no active Step."
     },
     {
       "category": "round_index",
       "artifact": "R010 round index",
       "path": "00_docs/works/r010-production-control-plane-hardening/00_key-index.md",
       "disposition": "updated",
-      "reason": "Records S01 complete and accepted while R010 remains active and S02 stays planned."
+      "reason": "Records S02 complete and accepted while R010 remains active and S03/S04 stay planned."
     },
     {
       "category": "root_index",
       "artifact": "root works index",
       "path": "00_docs/works/00_key-index.md",
       "disposition": "updated",
-      "reason": "Preserves R010 as the active Round and records the temporary empty active-Step set."
+      "reason": "Preserves R010 as the active Round and records the empty active-Step set before separate activation."
     },
     {
       "category": "context_map",
       "artifact": "Context Map",
       "path": "00_docs/key-context-map.md",
       "disposition": "updated",
-      "reason": "Makes S01 acceptance and the pre-S02 no-active-Step recovery state explicit."
+      "reason": "Makes S02 acceptance and the pre-S03/S04 no-active-Step recovery state explicit."
     },
     {
       "category": "standard_decision_plan",
-      "artifact": "Project acceptance and finalization standards",
+      "artifact": "Project acceptance, Coordinator and finalization standards",
       "path": "00_docs/standards/01_key-project-standard.md",
       "disposition": "no_change",
-      "reason": "The accepted transition follows the existing execution, approval and finalization namespaces without changing policy."
+      "reason": "The accepted transition applies the existing schema-v3 authority chain and schema-v5 finalization policy without changing standard meaning."
     },
     {
       "category": "recovery",
       "artifact": "R010 recovery instructions",
       "path": "00_docs/works/r010-production-control-plane-hardening/00_key-index.md",
       "disposition": "updated",
-      "reason": "Recovery now finds accepted S01, planned S02 and an empty active-Step set before separate activation."
+      "reason": "Recovery now finds accepted S02, satisfied S03/S04 gates and an empty active-Step set before separate activation."
+    },
+    {
+      "category": "recovery",
+      "artifact": "R010/S02 schema-v5 finalization manifest",
+      "path": "00_docs/works/r010-production-control-plane-hardening/key-finalization-manifest.json",
+      "disposition": "updated",
+      "reason": "Binds the accepted S02 transition, all post-acceptance source paths and the empty active-Step generation."
     },
     {
       "category": "implementation_gate",
-      "artifact": "R010/S02 start and completion gates",
-      "path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/key-work-authority-chain-snapshot-closure.md",
-      "disposition": "no_change",
-      "reason": "S01 complete and accepted satisfies both declared gates; S02 activation remains a separate transition.",
+      "artifact": "R010/S03 start and completion gates",
+      "path": "00_docs/works/r010-production-control-plane-hardening/graph-transaction-source-correctness/00_key-index.md",
+      "disposition": "updated",
+      "reason": "S02 complete and accepted satisfies the declared dependency while S03 remains planned and inactive until a separate transition.",
       "gate_state": "resolved",
-      "gate_scope": "R010/S02 implementation and Work completion"
+      "gate_scope": "R010/S03 implementation and Work completion prerequisite"
+    },
+    {
+      "category": "implementation_gate",
+      "artifact": "R010/S04 start and completion gates",
+      "path": "00_docs/works/r010-production-control-plane-hardening/work-state-runtime/00_key-index.md",
+      "disposition": "updated",
+      "reason": "S02 complete and accepted satisfies the declared dependency while S04 remains planned and inactive until a separate transition.",
+      "gate_state": "resolved",
+      "gate_scope": "R010/S04 implementation and Work completion prerequisite"
     },
     {
       "category": "residual_risk",
-      "artifact": "R010/S01 residual boundaries",
-      "path": "00_docs/works/r010-production-control-plane-hardening/production-control-plane-hardening/key-progress.md",
-      "disposition": "updated",
-      "reason": "S05 external agent evidence, S06 whole-flow and S07 RC/terminal closure remain explicitly assigned follow-up scope rather than hidden S01 debt.",
+      "artifact": "R010/S02 residual trust boundary",
+      "path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/key-progress.md",
+      "disposition": "no_change",
+      "reason": "External HMAC host trust and later asymmetric or CI-OIDC attestation remain explicitly bounded follow-up rather than hidden S02 debt.",
       "risk_state": "recorded",
       "risk_items": [
-        "Actual model transcript and independent reviewer evidence remain R010/S05 scope.",
-        "Whole-flow and production terminal closure remain R010/S06-S07 scope."
+        "HMAC receipts prove protected-key possession and evidence integrity, not independent binary execution or organizational separation.",
+        "Asymmetric or CI-OIDC attestation remains post-R010/S07 high-assurance follow-up scope."
       ]
     },
     {
       "category": "namespace",
-      "artifact": "R010 Step and acceptance namespaces",
+      "artifact": "R010/S02 Step and acceptance namespaces",
       "path": "00_docs/works/r010-production-control-plane-hardening/00_key-index.md",
       "disposition": "no_change",
-      "reason": "R010/S01 and R010/S02 remain distinct Step identities and the acceptance ref is unique to S01.",
+      "reason": "R010/S02 has one canonical Step identity and its acceptance ref is unique to the Main event.",
       "namespace_state": "checked"
     },
     {
       "category": "progress",
-      "artifact": "R010/S02 progress recovery",
-      "path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/key-progress.md",
+      "artifact": "R010/S03 progress recovery",
+      "path": "00_docs/works/r010-production-control-plane-hardening/graph-transaction-source-correctness/key-progress.md",
       "disposition": "updated",
-      "reason": "Records satisfied dependency evidence without changing the future Step status."
+      "reason": "Records satisfied S02 prerequisite evidence while preserving planned and inactive status."
     },
     {
       "category": "work_index",
-      "artifact": "R010/S02 work recovery index",
-      "path": "00_docs/works/r010-production-control-plane-hardening/authority-chain-snapshot-closure/00_key-index.md",
+      "artifact": "R010/S03 work recovery index",
+      "path": "00_docs/works/r010-production-control-plane-hardening/graph-transaction-source-correctness/00_key-index.md",
       "disposition": "updated",
-      "reason": "Records satisfied gates while preserving planned and inactive status until a separate transition."
+      "reason": "Records satisfied gates while preserving the separate activation boundary."
+    },
+    {
+      "category": "progress",
+      "artifact": "R010/S04 progress recovery",
+      "path": "00_docs/works/r010-production-control-plane-hardening/work-state-runtime/key-progress.md",
+      "disposition": "updated",
+      "reason": "Records satisfied S02 prerequisite evidence while preserving planned and inactive status."
+    },
+    {
+      "category": "work_index",
+      "artifact": "R010/S04 work recovery index",
+      "path": "00_docs/works/r010-production-control-plane-hardening/work-state-runtime/00_key-index.md",
+      "disposition": "updated",
+      "reason": "Records satisfied gates while preserving the separate activation boundary."
     }
   ],
   "namespace_entries": [
     {
       "namespace": "work_step",
-      "value": "R010/S01",
-      "owner": "R010 Production Control Plane Hardening"
+      "value": "R010/S02",
+      "owner": "R010 Authority Chain and Snapshot Closure"
     },
     {
       "namespace": "acceptance_ref",
-      "value": "R010/S01/main-acceptance",
-      "owner": "R010/S01 Main acceptance"
+      "value": "R010/S02/main-acceptance",
+      "owner": "R010/S02 Main acceptance"
     }
   ]
 }

@@ -36,11 +36,13 @@ risk_level: high
 - Work status: planned
 - Approval state: pending
 - Active: false
-- Start gate: waiting — S02가 `complete + accepted`이기 전 R010/S04를 시작하지 않는다.
-- Work completion gate: waiting — S02 `complete + accepted`와 S04 verification을 요구한다.
+- Start gate: satisfied — S02가 `complete + accepted`와 schema-v5 finalization을 완료했다.
+- Work completion gate: S02 prerequisite는 satisfied이며 S04 verification은 pending이다.
 - Pre-gate boundary: read-only 조사와 문서 fixture 설계만 허용한다. Runtime/test/code/config/schema
   write, `in_progress` 전이와 canonical schema commitment는 금지한다.
-- Next action: acceptance event-chain migration과 generated-runtime architecture 후보를 문서 fixture로
-  검토한다.
+- Activation boundary: satisfied gate는 자동 activation이 아니다. 이 Work는 planned/Inactive로
+  유지하며 별도 source transition 전에는 source implementation을 시작하지 않는다.
+- Next action: 별도 activation generation 뒤 acceptance event-chain migration과 generated-runtime
+  architecture를 확정한다.
 
 현재 active Step의 권위 있는 목록은 R010 round index, root works index와 Context Map을 따른다.

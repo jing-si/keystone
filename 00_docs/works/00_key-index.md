@@ -11,7 +11,7 @@ key:
 global_state:
   active_round: R010
   latest_accepted_round: R009
-  active_steps: [R010/S02]
+  active_steps: []
 ---
 
 # 작업서(4) round 색인
@@ -47,7 +47,8 @@ global_state:
 1. 프로젝트 전체 방향은 `00_docs/key-context-map.md`를 먼저 읽는다.
 2. 공통 기준과 용어는 `00_docs/standards/01_key-project-standard.md`를 따른다.
 3. 현재 active round가 있으면 이 파일의 `Work rounds` 표를 권위로 삼는다. 현재 active round는
-   R010이며, 최신 accepted round는 R009다.
+   R010이며 active Step은 없다. 최신 accepted round는 R009다. S03/S04의 satisfied gate는 자동
+   activation이 아니며 별도 source transition을 기다린다.
 4. Round 내부 실행 순서는 해당 round의 `00_key-index.md`에서 확인한다.
 5. 각 work의 세부 목표와 검증은 해당 work node의 `key-work-{slug}.md`에서 확인한다.
 6. 각 work의 진행 상태는 해당 work node의 `key-progress.md`에서 확인한다.

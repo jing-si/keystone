@@ -37,13 +37,13 @@ key:
 - Approval state: pending
 - Active: false
 - Finalization state: pending
-- Dependency evaluation: waiting — S02 `complete + accepted` start gate와 completion gate가 모두
-  충족되지 않았다.
+- Dependency evaluation: satisfied — S02 `complete + accepted` start gate와 completion gate가 모두
+  충족됐다. 이 평가는 자동 status transition이나 implementation authority를 만들지 않는다.
 - Pre-gate boundary: read-only analysis와 이 문서 안의 RED case matrix/fixture design만 허용한다.
   Runtime/test/code/config/schema source write, `in_progress` 전이와 canonical schema commitment는
   금지한다.
-- Resume point: start gate 충족 뒤 PC85-04 classification과 PC85-03 transaction patch RED fixture
-  구현부터 시작한다.
+- Resume point: 별도 activation generation에서 S03를 `in_progress`/Active로 전이한 뒤 PC85-04
+  classification과 PC85-03 transaction patch RED fixture 구현부터 시작한다.
 
 ## 계획 기준선
 
@@ -70,7 +70,7 @@ key:
 | `key.acceptance.graph-source.cross-domain-inheritance` | pending | — | — | — |
 | `key.acceptance.graph-source.canonical-mutation-strict` | pending | — | — | — |
 | `key.acceptance.graph-source.gate-schema-convergence` | pending | — | — | — |
-| `key.acceptance.graph-source.prerequisite-verification` | pending | S02 acceptance와 S03 verification 대기 | — | — |
+| `key.acceptance.graph-source.prerequisite-verification` | pending | S02 acceptance/finalization satisfied; S03 verification 대기 | `R010/S02/main-acceptance` | S02 finalization manifest/runner evidence |
 
 ## 진행 로그
 
@@ -89,12 +89,13 @@ key:
 6. 2026-08-08: Schema-v2 canonical mutation의 required-patch realization, mutation-bearing
    optional 금지, applied 모든 patch의 confirm/baseline/digest와 gate schema의
    `approval_state` 수렴을 pending criterion으로 추가했다.
+7. 2026-08-08: S02가 `R010/S02/main-acceptance`로 complete and accepted되고 schema-v5
+   finalization을 완료해 S03 start/completion dependency가 satisfied됐다. 자동 활성화는 하지 않고
+   planned/Inactive를 유지한다.
 
 ## 다음 작업
 
-1. Gate 전에는 classification 및 required/optional patch의 RED case matrix와 fixture design을 이
-   문서 안에서만 정리한다.
-2. Start gate 충족 뒤 forged/stale/omitted classification과 patch state-transition fixture를
-   구현한다.
-3. SourceUnit, lifecycle, mutation과 gate condition의 canonical schema는 start gate 충족 뒤
-   확정한다.
+1. 별도 activation source transition 전에는 classification 및 required/optional patch의 RED case
+   matrix와 fixture design을 이 문서 안에서만 정리한다.
+2. Activation 뒤 forged/stale/omitted classification과 patch state-transition fixture를 구현한다.
+3. SourceUnit, lifecycle, mutation과 gate condition의 canonical schema는 activation 뒤 확정한다.

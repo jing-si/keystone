@@ -40,12 +40,13 @@ key:
 - Approval state: pending
 - Active: false
 - Finalization state: pending
-- Start gate: waiting — S02가 `complete + accepted`이기 전 R010/S04를 시작하지 않는다.
-- Work completion gate: waiting — S02 `complete + accepted`와 S04 verification을 요구한다.
+- Start gate: satisfied — S02가 `complete + accepted`와 schema-v5 finalization을 완료했다.
+- Work completion gate: S02 prerequisite는 satisfied이며 S04 verification은 pending이다.
 - Pre-gate boundary: read-only 조사와 문서 fixture 설계만 허용한다. Runtime/test/code/config/schema
   write, `in_progress` 전이와 canonical schema commitment는 금지한다.
-- Resume point: S02 acceptance 뒤 accepted ordering Decision과 runtime architecture를 확정하고
-  PC85-08 derived-state fixture 구현부터 시작한다.
+- Resume point: 별도 activation generation에서 S04를 `in_progress`/Active로 전이한 뒤 accepted
+  ordering Decision과 runtime architecture를 확정하고 PC85-08 derived-state fixture 구현부터
+  시작한다.
 
 ## 계획 기준선
 
@@ -64,8 +65,8 @@ key:
 | `key.acceptance.work-state.consumer-runtime` | pending | — | — | — |
 | `key.acceptance.work-state.consumer-parity` | pending | — | — | — |
 | `key.acceptance.work-state.installed-self-containment` | pending | — | — | — |
-| `key.acceptance.work-state.prerequisite-verification` | pending | S02 acceptance와 S04 verification 대기 | — | — |
-| `key.acceptance.work-state.start-gate` | pending | S02 acceptance 대기 | — | — |
+| `key.acceptance.work-state.prerequisite-verification` | pending | S02 acceptance/finalization satisfied; S04 verification 대기 | `R010/S02/main-acceptance` | S02 finalization manifest/runner evidence |
+| `key.acceptance.work-state.start-gate` | verified | S02 complete + accepted + finalization complete | `R010/S02/main-acceptance` | S02 schema-v5 finalization manifest/runner evidence |
 | `key.acceptance.work-state.acceptance-event-chain` | pending | accepted Decision/migration evidence 대기 | — | — |
 | `key.acceptance.work-state.generated-runtime-parity` | pending | accepted architecture와 generated parity evidence 대기 | — | — |
 | `key.acceptance.work-state.prerequisite-finalization-closure` | pending | repository-derived closure consumer evidence 대기 | — | — |
@@ -80,9 +81,14 @@ key:
    schema 제한을 기록했다.
 4. 2026-08-08: 권장 acceptance event chain, generated vendored runtime parity와 S06/S07 prerequisite
    finalization closure를 stable criterion으로 추가했다. 모두 계획이며 실행 evidence는 없다.
+5. 2026-08-08: S02가 `R010/S02/main-acceptance`로 complete and accepted되고 schema-v5
+   finalization을 완료해 S04 start gate가 satisfied됐다. 자동 활성화는 하지 않고
+   planned/Inactive를 유지한다.
 
 ## 다음 작업
 
-1. Pre-gate에서는 acceptance event-chain migration과 runtime 배치 후보를 read-only로 조사한다.
-2. Pre-gate에서는 derived-state, generated parity와 prerequisite closure fixture를 문서로만 설계한다.
-3. S02 acceptance 뒤 Main/User Decision과 architecture evidence를 확정하고 구현을 시작한다.
+1. 별도 activation 전에는 acceptance event-chain migration과 runtime 배치 후보를 read-only로
+   조사한다.
+2. 별도 activation 전에는 derived-state, generated parity와 prerequisite closure fixture를
+   문서로만 설계한다.
+3. Activation 뒤 Main/User Decision과 architecture evidence를 확정하고 구현을 시작한다.

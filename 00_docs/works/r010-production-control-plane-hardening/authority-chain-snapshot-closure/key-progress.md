@@ -2,11 +2,11 @@
 doc_type: progress
 created_at: "2026-08-07"
 document_lifecycle: active
-approval: {state: pending}
-work_status: in_progress
+approval: {state: accepted, accepted_at: "2026-08-08", accepted_by: main}
+work_status: complete
 step_ref: R010/S02
 work_ref: R010/authority-chain-snapshot-closure
-finalization: {state: pending}
+finalization: {state: complete, acceptance_ref: R010/S02/main-acceptance}
 key:
   id: key.work.authority-chain-snapshot-closure.progress
   refs:
@@ -32,21 +32,23 @@ key:
 ## 현재 상태
 
 - Step: R010/S02
-- Work status: in_progress
-- Approval state: pending
-- Active: true
-- Finalization state: pending
+- Work status: complete
+- Approval state: accepted
+- Active: false
+- Finalization state: complete
+- Acceptance ref: `R010/S02/main-acceptance`
 - Dependency evaluation: satisfied — S01 `complete + accepted` start gate와 completion gate가 모두
   충족됐다.
 - Activation parent: S01 finalization commit
   `ea42783e6e51e733fbcd641663a14272bec07d2a`.
-- Implementation state: Coordinator schema-v3 implementation candidate와 contract/test parity가
-  commit `d548d75398f34ae0e3eb273010a88b622c0a5cc5`에 고정됐고 10개 criterion의 technical
-  verification이 통과했다. Main acceptance와 Author finalization은 아직 pending이다.
-- Resume point: Main이 아래 subject/evidence와 residual trust boundary를 검토한다. 수락 전에는
-  S02를 `complete`로 바꾸거나 S03/S04를 활성화하지 않는다.
+- Acceptance state: Main이 Coordinator schema-v3 implementation candidate와 아래 external
+  authority-chain evidence를 검토하고 2026-08-08에 수락했다.
+- Finalization boundary: Author schema-v5 finalization은 S02 closure generation만 닫는다. S03/S04는
+  gate가 satisfied됐지만 planned/Inactive로 남으며 별도 source generation에서 활성화한다.
+- Resume point: S02 post-acceptance Coordinator closure를 검증한 뒤 이 generation을 고정하고,
+  S03/S04 활성화를 별도로 진행한다.
 
-Active steps: [R010/S02]
+Active steps: []
 
 ## 계획 기준선
 
@@ -56,8 +58,8 @@ Active steps: [R010/S02]
   package-owned capture diagnostic envelope는 v1, canonical SnapshotPolicy/RepositorySnapshot은
   v3다. Coordinator manifest v1/v2는 historical diagnostic-only/non-authoritative로 남고 Linker
   transaction v2와 Author finalization v5는 독립 version domain을 유지한다.
-- 상태 경계: implementation candidate와 mechanical verification만 완료했다. Work completion,
-  Main acceptance와 finalization completion은 주장하지 않는다.
+- 상태 경계: candidate technical verification, Main acceptance와 Author finalization은 완료했다.
+  S03/S04 implementation authority는 이 기록이 아니라 별도 activation generation에서 부여한다.
 - Early-work 경계: gate 전 source write나 canonical schema commitment는 발생하지 않았다.
 
 ## Criterion Status
@@ -96,6 +98,27 @@ Active steps: [R010/S02]
   E2E 12와 staged/unstaged `git diff --check` pass.
 - Independent read-only review: reproducible blocker 0 after stable single-read runner input, policy
   binding and actual Coordinator→Author E2E corrections.
+
+## Acceptance Authority Evidence
+
+- External evidence root: `/private/tmp/keystone-s02-authority.5AgGxV/evidence`
+- Assignment evidence: `assignment.json`, raw digest
+  `sha256:29a8b15918ada0a404ab894e9fbbd3e15dd1c2c8224f8b54749d08d2406f37e1`
+- Pre-acceptance snapshot: `pre-snapshot.json`, canonical snapshot digest
+  `sha256:811e374726cfe7129e4e645d27a6fcce36b914237796bf82e2e65b557dcd1838`, raw evidence-file
+  digest `sha256:ba03ac2026b1f3044f7c837046bf9482a06948126ef65fd40a238c1f6812a25b`
+- Main acceptance event: `acceptance-event.json`, raw digest
+  `sha256:c15207129a4e4ccd40fab7c9c49c1b8b87dbeed6414043a66511983dc712b597`
+- Acceptance ref: `R010/S02/main-acceptance`
+- Evidence interpretation: 위 schema-v3 assignment/pre-snapshot/Main event chain이 actual-state
+  acceptance authority를 결속한다. Technical aggregate
+  `sha256:c09b9c7b99513b7204aaa30d721a442748b5ff069112a391644887f7bcff24ac`는
+  test-result aggregation일 뿐 authority proof를 대체하지 않는다.
+- Schema-v5 finalization manifest:
+  `00_docs/works/r010-production-control-plane-hardening/key-finalization-manifest.json`, raw digest
+  `sha256:89337300456c8b83261ea6ecf06fb4deccf52ae0592d87d949cb55eee8074b86`.
+- Package-owned Author runner: exit 0, `status: pass`, errors=warnings=0, canonical envelope digest
+  `sha256:006a4cb13f0e4418425f8a50f6962f16f446026a043159b7c0cc4c375de412ac`.
 
 ## Residual Trust Boundary
 
@@ -153,10 +176,16 @@ Active steps: [R010/S02]
 14. 2026-08-08: Implementation candidate를 commit
     `d548d75398f34ae0e3eb273010a88b622c0a5cc5`에 고정하고 577 tests, readiness, full graph,
     install parity와 independent review evidence를 aggregate result digest에 결속했다.
+15. 2026-08-08: Package-owned Coordinator schema-v3 runner로 assignment, worker와 pre-acceptance
+    snapshot을 external immutable evidence에 결속하고, distinct pinned Main key의 live recapture로
+    `R010/S02/main-acceptance` event를 발행했다.
+16. 2026-08-08: Main acceptance에 따라 S02를 `complete + accepted`로 전이하고 schema-v5 Author
+    finalization을 수행했다. S03/S04 gate는 satisfied지만 이 generation에서는 planned/Inactive와
+    `active_steps: []`를 유지한다.
 
 ## 다음 작업
 
-1. Main이 commit/tree/aggregate evidence와 residual trust boundary를 검토한다.
-2. Main이 수락하면 S02 Work/Progress/index를 `complete + accepted`로 전이하고 Author schema-v5
-   finalization을 별도 source generation으로 실행한다.
-3. S02 finalization pass 전에는 S03/S04 source implementation을 시작하지 않는다.
+1. Package-owned Author finalization runner와 Coordinator post-acceptance closure가 이 generation의
+   actual source bytes를 통과해야 한다.
+2. 통과한 S02 closure generation을 고정한 뒤 S03/S04를 별도 source generation에서 활성화한다.
+3. 별도 activation 전에는 S03/S04 source implementation을 시작하지 않는다.
