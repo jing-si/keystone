@@ -1216,20 +1216,39 @@ def _validate_finalization(
         item.get("ref") for item in raw_author_steps
         if isinstance(item, Mapping)
     ] if isinstance(raw_author_steps, list) else []
+    raw_author_active_steps = finalization_manifest.get("active_steps", [])
+    author_active_steps = (
+        list(raw_author_active_steps)
+        if isinstance(raw_author_active_steps, list)
+        else []
+    )
     author_steps_valid = bool(
         isinstance(raw_author_steps, list)
         and len(author_step_refs) == len(raw_author_steps)
         and all(_text(step) for step in author_step_refs)
+        and len(set(author_step_refs)) == len(author_step_refs)
+    )
+    author_active_steps_valid = bool(
+        isinstance(raw_author_active_steps, list)
+        and all(_text(step) for step in author_active_steps)
+        and len(set(author_active_steps)) == len(author_active_steps)
+    )
+    expected_author_steps = set(accepted_steps if accepted_steps_valid else ())
+    expected_author_steps.update(
+        author_active_steps if author_active_steps_valid else ()
     )
     if (
         not accepted_steps_valid
         or not author_steps_valid
-        or accepted_steps != author_step_refs
+        or not author_active_steps_valid
+        or set(accepted_steps) & set(author_active_steps)
+        or set(author_step_refs) != expected_author_steps
         or accepted_steps != finalization_manifest.get("accepted_steps")
         or any(step not in assignment_steps for step in accepted_steps)
     ):
         diagnostics.append(diagnostic("accepted_steps_mismatch",
-                                      "Accepted Steps must match Author evidence and assignment scope.",
+                                      "Accepted Steps must match Author evidence and assignment "
+                                      "scope; additional Author Steps must be exact active siblings.",
                                       "keystone_closure.accepted_steps"))
     author_state = _mapping(finalization_manifest.get("finalization")).get("state")
     if value.get("state") != author_state:

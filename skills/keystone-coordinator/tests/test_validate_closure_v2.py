@@ -765,6 +765,63 @@ class ClosureV2ValidationTest(unittest.TestCase):
         self.assertEqual("fail", malformed["status"])
         self.assertIn("accepted_steps_mismatch", self.codes(malformed))
 
+    def test_post_acceptance_allows_exact_nonaccepted_active_sibling(self):
+        acceptance_ref = "R010/S01/main-acceptance"
+        finalization_manifest = {
+            "schema_version": 5,
+            "acceptance_ref": acceptance_ref,
+            "steps": [
+                {"ref": "R010/S01"},
+                {"ref": "R010/S02"},
+            ],
+            "accepted_steps": ["R010/S01"],
+            "active_steps": ["R010/S02"],
+            "finalization": {"required": True, "state": "complete"},
+        }
+        finalization_path = self.evidence / "finalization.json"
+        finalization_path.write_bytes(json_bytes(finalization_manifest))
+        runner_payload = {
+            "schema_version": 1,
+            "status": "pass",
+            "diagnostics": [],
+            "summary": {"errors": 0, "warnings": 0},
+        }
+        self.manifest["closure_phase"] = "post_acceptance"
+        self.manifest["keystone_closure"].update({
+            "acceptance_ref": acceptance_ref,
+            "acceptance_evidence": ["Main accepted R010/S01"],
+            "accepted_steps": ["R010/S01"],
+            "finalization": {
+                "state": "complete",
+                "acceptance_ref": acceptance_ref,
+                "evidence": ["Author runner passed"],
+                "manifest_path": "finalization.json",
+                "manifest_digest": file_digest(finalization_path),
+                "envelope_digest": digest_json(runner_payload),
+                "runner_status": "pass",
+            },
+        })
+        self.manifest["coordinator_review"].update({
+            "decision": "closure_complete",
+            "main_acceptance_allowed": False,
+        })
+
+        with mock.patch.object(
+            closure_v2.subprocess,
+            "run",
+            return_value=self.runner_process(runner_payload, 0),
+        ):
+            result = self.validate()
+            finalization_manifest["steps"].append({"ref": "R010/S03"})
+            finalization_path.write_bytes(json_bytes(finalization_manifest))
+            self.manifest["keystone_closure"]["finalization"][
+                "manifest_digest"
+            ] = file_digest(finalization_path)
+            extra_inactive = self.validate()
+
+        self.assert_historical_v2_valid(result)
+        self.assertIn("accepted_steps_mismatch", self.codes(extra_inactive))
+
     def test_v1_readiness_decisions_are_non_authoritative(self):
         legacy = {
             "schema_version": 1,
