@@ -3,7 +3,7 @@ doc_type: progress
 created_at: "2026-08-07"
 document_lifecycle: active
 approval: {state: pending}
-work_status: planned
+work_status: in_progress
 step_ref: R010/S04
 work_ref: R010/work-state-runtime
 finalization: {state: pending}
@@ -36,17 +36,28 @@ key:
 ## 현재 상태
 
 - Step: R010/S04
-- Work status: planned
+- Work status: in_progress
 - Approval state: pending
-- Active: false
+- Active: true
 - Finalization state: pending
 - Start gate: satisfied — S02가 `complete + accepted`와 schema-v5 finalization을 완료했다.
 - Work completion gate: S02 prerequisite는 satisfied이며 S04 verification은 pending이다.
-- Pre-gate boundary: read-only 조사와 문서 fixture 설계만 허용한다. Runtime/test/code/config/schema
-  write, `in_progress` 전이와 canonical schema commitment는 금지한다.
-- Resume point: 별도 activation generation에서 S04를 `in_progress`/Active로 전이한 뒤 accepted
-  ordering Decision과 runtime architecture를 확정하고 PC85-08 derived-state fixture 구현부터
-  시작한다.
+- Activation parent: S02 acceptance/finalization closure commit
+  `a201f410e03a4ffd80f6f7deb4573364067f1ace`.
+- Activation evidence: S02 Coordinator closure manifest
+  `sha256:9b863834a753216d96e56c4c16db447629c1767984402b8ad438cef8459c0dd2`,
+  Coordinator envelope
+  `sha256:006a4cb13f0e4418425f8a50f6962f16f446026a043159b7c0cc4c375de412ac`,
+  post snapshot
+  `sha256:4d72440502488e1a3ab5c24293e80217f3ab0f3786c0261f535a209d5fe6faa0`와
+  Author manifest
+  `sha256:89337300456c8b83261ea6ecf06fb4deccf52ae0592d87d949cb55eee8074b86`.
+- Implementation state: activation만 완료했으며 S04 source implementation이나 criterion
+  verification은 아직 시작하지 않았다.
+- Resume point: accepted ordering Decision과 runtime architecture를 확정하고 PC85-08 derived-state
+  fixture 구현부터 시작한다.
+
+Active steps: [R010/S03, R010/S04]
 
 ## 계획 기준선
 
@@ -65,8 +76,8 @@ key:
 | `key.acceptance.work-state.consumer-runtime` | pending | — | — | — |
 | `key.acceptance.work-state.consumer-parity` | pending | — | — | — |
 | `key.acceptance.work-state.installed-self-containment` | pending | — | — | — |
-| `key.acceptance.work-state.prerequisite-verification` | pending | S02 acceptance/finalization satisfied; S04 verification 대기 | `R010/S02/main-acceptance` | S02 finalization manifest/runner evidence |
-| `key.acceptance.work-state.start-gate` | verified | S02 complete + accepted + finalization complete | `R010/S02/main-acceptance` | S02 schema-v5 finalization manifest/runner evidence |
+| `key.acceptance.work-state.prerequisite-verification` | pending | S02 prerequisite satisfied; S04 verification 대기 | `a201f410e03a4ffd80f6f7deb4573364067f1ace` | closure `sha256:9b863834a753216d96e56c4c16db447629c1767984402b8ad438cef8459c0dd2`; post `sha256:4d72440502488e1a3ab5c24293e80217f3ab0f3786c0261f535a209d5fe6faa0` |
+| `key.acceptance.work-state.start-gate` | verified | S02 complete + accepted + finalization complete | `a201f410e03a4ffd80f6f7deb4573364067f1ace` | Author `sha256:89337300456c8b83261ea6ecf06fb4deccf52ae0592d87d949cb55eee8074b86`; Coordinator `sha256:006a4cb13f0e4418425f8a50f6962f16f446026a043159b7c0cc4c375de412ac` |
 | `key.acceptance.work-state.acceptance-event-chain` | pending | accepted Decision/migration evidence 대기 | — | — |
 | `key.acceptance.work-state.generated-runtime-parity` | pending | accepted architecture와 generated parity evidence 대기 | — | — |
 | `key.acceptance.work-state.prerequisite-finalization-closure` | pending | repository-derived closure consumer evidence 대기 | — | — |
@@ -84,11 +95,13 @@ key:
 5. 2026-08-08: S02가 `R010/S02/main-acceptance`로 complete and accepted되고 schema-v5
    finalization을 완료해 S04 start gate가 satisfied됐다. 자동 활성화는 하지 않고
    planned/Inactive를 유지한다.
+6. 2026-08-08: S02 closure generation을 commit
+   `a201f410e03a4ffd80f6f7deb4573364067f1ace`과 external Coordinator closure evidence로 고정한 뒤
+   S04를 `in_progress`/Active로 활성화했다. 이 전이는 구현 완료나 새 criterion verification을
+   주장하지 않는다.
 
 ## 다음 작업
 
-1. 별도 activation 전에는 acceptance event-chain migration과 runtime 배치 후보를 read-only로
-   조사한다.
-2. 별도 activation 전에는 derived-state, generated parity와 prerequisite closure fixture를
-   문서로만 설계한다.
-3. Activation 뒤 Main/User Decision과 architecture evidence를 확정하고 구현을 시작한다.
+1. Acceptance event-chain migration Decision과 runtime 배치 architecture evidence를 확정한다.
+2. Derived-state, generated parity와 prerequisite closure fixture를 구현한다.
+3. S02 closure evidence를 immutable prerequisite로 유지하고 S04-owned verification을 별도로 기록한다.

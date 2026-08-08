@@ -17,7 +17,7 @@ key:
 global_state:
   active_round: R010
   latest_accepted_round: R009
-  active_steps: []
+  active_steps: [R010/S03, R010/S04]
 ---
 
 # R010 Production Control Plane Hardening 작업서 색인
@@ -31,14 +31,14 @@ correctness, shared work state, 실제 agent behavior, whole-flow와 independent
 <!-- key: id=key.work.round.r010.execution-order refs=key.topic.work-sequence key.topic.work-recovery -->
 ## 실행 순서
 
-Active steps: []
+Active steps: [R010/S03, R010/S04]
 
 | 순서 | Work | 경로 | 상태 | 목적 |
 |---|---|---|---|---|
 | S01 | Production Control Plane Hardening | `production-control-plane-hardening/00_key-index.md` | complete, accepted | lifecycle·transaction·source/finalization·Coordinator actual-state closure와 release evidence를 fail-closed로 정합화했다 |
 | S02 | Authority Chain and Snapshot Closure | `authority-chain-snapshot-closure/00_key-index.md` | complete, accepted | complete snapshot과 phase-separated actor attribution을 actual-state evidence로 닫았다 |
-| S03 | Graph, Transaction and Source Correctness | `graph-transaction-source-correctness/00_key-index.md` | planned | package-owned classification, mutation-bearing optional 금지, SourceUnit/parser, lifecycle와 canonical mutation을 정합화한다 |
-| S04 | Deterministic Work State Runtime | `work-state-runtime/00_key-index.md` | planned | repository-derived global state와 네 consumer의 canonical runtime parity를 구현한다 |
+| S03 | Graph, Transaction and Source Correctness | `graph-transaction-source-correctness/00_key-index.md` | in_progress | package-owned classification, mutation-bearing optional 금지, SourceUnit/parser, lifecycle와 canonical mutation을 정합화한다 |
+| S04 | Deterministic Work State Runtime | `work-state-runtime/00_key-index.md` | in_progress | repository-derived global state와 네 consumer의 canonical runtime parity를 구현한다 |
 | S05 | Actual Agent Behavior Evaluation | `agent-behavior-evaluation/00_key-index.md` | planned | 실제 skill/model invocation으로 setting×repeat×12 scenario evidence와 negative control을 생성·검증한다 |
 | S06 | Whole-Flow Self-Host E2E | `whole-flow-self-host-e2e/00_key-index.md` | planned | 실제 Keystone source의 phase-separated 정상·adversarial·crash/resume workflow를 검증한다 |
 | S07 | Production Candidate 8.5 Closure | `production-candidate-85-closure/00_key-index.md` | planned | independent CI, objective scorecard, RC/terminal subject lineage와 R010 finalization을 결속한다 |
@@ -69,9 +69,10 @@ S02-S04의 `complete + accepted`를 기다린다. S06은 S01-S05, S07은 S01-S06
 `complete + accepted`와 아래 finalization prerequisite closure를 모두 소비한다. Dependency 평가는
 자동 status transition이나 Main acceptance를 만들지 않는다.
 
-S02는 `R010/S02/main-acceptance`로 complete and accepted됐고 schema-v5 finalization을 완료했다.
-S03/S04의 start gate는 satisfied지만 현재 generation에서는 planned/Inactive이며, 활성화는 별도
-source transition으로 수행한다.
+S02는 `R010/S02/main-acceptance`로 complete and accepted됐고 schema-v5 finalization과 Coordinator
+post-acceptance closure를 commit `a201f410e03a4ffd80f6f7deb4573364067f1ace`에 고정했다. 그 뒤 별도
+source transition에서 S03/S04를 `in_progress`/Active로 활성화했다. 두 Work 모두 activation만
+완료했으며 source implementation은 아직 시작하지 않았다.
 
 <!-- key: id=key.work.round.r010.pre-gate-policy refs=key.topic.work-sequence key.topic.work-recovery -->
 ### Pre-gate activity policy

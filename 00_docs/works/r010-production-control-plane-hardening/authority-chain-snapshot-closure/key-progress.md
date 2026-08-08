@@ -43,12 +43,12 @@ key:
   `ea42783e6e51e733fbcd641663a14272bec07d2a`.
 - Acceptance state: Main이 Coordinator schema-v3 implementation candidate와 아래 external
   authority-chain evidence를 검토하고 2026-08-08에 수락했다.
-- Finalization boundary: Author schema-v5 finalization은 S02 closure generation만 닫는다. S03/S04는
-  gate가 satisfied됐지만 planned/Inactive로 남으며 별도 source generation에서 활성화한다.
-- Resume point: S02 post-acceptance Coordinator closure를 검증한 뒤 이 generation을 고정하고,
-  S03/S04 활성화를 별도로 진행한다.
+- Finalization boundary: Author schema-v5 finalization과 Coordinator post-acceptance closure는 S02
+  generation만 닫았고 commit `a201f410e03a4ffd80f6f7deb4573364067f1ace`에 고정됐다.
+- Downstream state: 별도 source generation에서 S03/S04를 `in_progress`/Active로 활성화했다.
+- Resume point: S03/S04가 각자 소유한 구현과 verification을 시작한다.
 
-Active steps: []
+Active steps: [R010/S03, R010/S04]
 
 ## 계획 기준선
 
@@ -119,6 +119,11 @@ Active steps: []
   `sha256:89337300456c8b83261ea6ecf06fb4deccf52ae0592d87d949cb55eee8074b86`.
 - Package-owned Author runner: exit 0, `status: pass`, errors=warnings=0, canonical envelope digest
   `sha256:006a4cb13f0e4418425f8a50f6962f16f446026a043159b7c0cc4c375de412ac`.
+- Finalized source generation: commit `a201f410e03a4ffd80f6f7deb4573364067f1ace`, Coordinator closure
+  manifest digest `sha256:9b863834a753216d96e56c4c16db447629c1767984402b8ad438cef8459c0dd2`,
+  canonical Coordinator envelope digest
+  `sha256:006a4cb13f0e4418425f8a50f6962f16f446026a043159b7c0cc4c375de412ac`, post snapshot digest
+  `sha256:4d72440502488e1a3ab5c24293e80217f3ab0f3786c0261f535a209d5fe6faa0`.
 
 ## Residual Trust Boundary
 
@@ -182,10 +187,13 @@ Active steps: []
 16. 2026-08-08: Main acceptance에 따라 S02를 `complete + accepted`로 전이하고 schema-v5 Author
     finalization을 수행했다. S03/S04 gate는 satisfied지만 이 generation에서는 planned/Inactive와
     `active_steps: []`를 유지한다.
+17. 2026-08-08: Package-owned Coordinator schema-v3 validator의 post-acceptance closure를 통과한
+    S02 source generation을 commit `a201f410e03a4ffd80f6f7deb4573364067f1ace`에 고정했다.
+18. 2026-08-08: S02 closure commit을 activation parent로 삼아 S03/S04를 별도 source generation에서
+    `in_progress`/Active로 전이했다. S02 finalization manifest는 역사적 closure evidence로 보존한다.
 
 ## 다음 작업
 
-1. Package-owned Author finalization runner와 Coordinator post-acceptance closure가 이 generation의
-   actual source bytes를 통과해야 한다.
-2. 통과한 S02 closure generation을 고정한 뒤 S03/S04를 별도 source generation에서 활성화한다.
-3. 별도 activation 전에는 S03/S04 source implementation을 시작하지 않는다.
+1. S03는 package-owned Linker classification과 graph/transaction/source correctness 구현을 시작한다.
+2. S04는 acceptance ordering Decision과 deterministic Work State Runtime architecture를 확정한다.
+3. S02는 complete/accepted/finalized 상태와 closure evidence를 변경 없이 보존한다.
