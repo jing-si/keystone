@@ -31,6 +31,7 @@ from finalization_support import (
     resolve_scoped_path,
     scalar_from_text,
 )
+from work_state_runtime import evaluate_repository
 
 
 DIAGNOSTIC_SCHEMA_VERSION = 1
@@ -50,6 +51,7 @@ V5_MANIFEST_FIELDS = {
     "impact_candidates",
     "namespace_entries",
 }
+V6_MANIFEST_FIELDS = V5_MANIFEST_FIELDS | {"work_state_runtime"}
 
 
 class DuplicateJsonKey(ValueError):
@@ -92,19 +94,21 @@ def validate_manifest(root: Path, manifest: Dict[str, Any]) -> List[Dict[str, st
     findings: List[Dict[str, str]] = []
 
     schema_version = manifest.get("schema_version")
-    if type(schema_version) is not int or schema_version not in {1, 2, 3, 4, 5}:
+    if type(schema_version) is not int or schema_version not in {1, 2, 3, 4, 5, 6}:
         findings.append(diagnostic(
             "schema_version_unsupported",
-            "schema_version must be 1, 2, 3, 4, or 5.",
+            "schema_version must be 1, 2, 3, 4, 5, or 6.",
         ))
-    elif schema_version == 5:
-        for field in sorted(set(manifest) - V5_MANIFEST_FIELDS):
+    elif schema_version in {5, 6}:
+        allowed_fields = V6_MANIFEST_FIELDS if schema_version == 6 else V5_MANIFEST_FIELDS
+        for field in sorted(set(manifest) - allowed_fields):
             findings.append(diagnostic(
                 "manifest_field_unknown",
-                "schema_version 5 does not allow unknown top-level field: %s." % field,
+                "schema_version %s does not allow unknown top-level field: %s."
+                % (schema_version, field),
             ))
 
-    compatibility_version = 4 if schema_version == 5 else schema_version
+    compatibility_version = 4 if schema_version in {5, 6} else schema_version
 
     if not isinstance(manifest.get("acceptance_ref"), str) or not manifest["acceptance_ref"].strip():
         findings.append(diagnostic("acceptance_ref_missing", "acceptance_ref must be a non-empty string."))
@@ -121,12 +125,71 @@ def validate_manifest(root: Path, manifest: Dict[str, Any]) -> List[Dict[str, st
     findings.extend(validate_early_work(manifest.get("early_work"), steps))
 
     findings.extend(validate_global_state(root, manifest, schema_version))
+    if schema_version == 6:
+        findings.extend(_validate_work_state_runtime(root, manifest))
 
     findings.extend(validate_impact_candidates(
         root, manifest.get("impact_candidates"), compatibility_version
     ))
     findings.extend(validate_namespace_entries(manifest.get("namespace_entries")))
 
+    return findings
+
+
+def _validate_work_state_runtime(
+    root: Path, manifest: Dict[str, Any],
+) -> List[Dict[str, str]]:
+    findings: List[Dict[str, str]] = []
+    binding = manifest.get("work_state_runtime")
+    required = {
+        "policy_digest", "result_digest", "source_generation",
+        "path_set_digest", "complete",
+    }
+    if not isinstance(binding, dict) or set(binding) != required:
+        return [diagnostic(
+            "work_state_runtime_binding_invalid",
+            "schema_version 6 requires the exact Work State Runtime binding schema.",
+        )]
+    runtime = evaluate_repository(root)
+    if runtime.get("status") != "pass":
+        for item in runtime.get("diagnostics", []):
+            findings.append(diagnostic(
+                "work_state_runtime_%s" % item.get("code", "invalid"),
+                str(item.get("message", "Work State Runtime failed.")),
+                item.get("path"),
+            ))
+        return findings
+    generation = runtime["generation"]
+    expected = {
+        "policy_digest": runtime["policy_digest"],
+        "result_digest": runtime["result_digest"],
+        "source_generation": generation["source_generation"],
+        "path_set_digest": generation["path_set_digest"],
+        "complete": generation["complete"],
+    }
+    if binding != expected:
+        findings.append(diagnostic(
+            "work_state_runtime_binding_mismatch",
+            "Finalization Work State Runtime binding differs from repository-derived output.",
+        ))
+    state = runtime["state"]
+    manifest_state = manifest.get("global_state")
+    if isinstance(manifest_state, dict):
+        observed = {
+            "active_round": manifest_state.get("active_round"),
+            "latest_accepted_round": manifest_state.get("latest_accepted_round"),
+            "active_steps": manifest_state.get("active_steps"),
+        }
+        expected_state = {
+            "active_round": state["active_round"],
+            "latest_accepted_round": state["latest_accepted_round"],
+            "active_steps": state["active_steps"],
+        }
+        if observed != expected_state:
+            findings.append(diagnostic(
+                "work_state_runtime_global_state_mismatch",
+                "Manifest global_state differs from repository-derived Work State Runtime output.",
+            ))
     return findings
 
 

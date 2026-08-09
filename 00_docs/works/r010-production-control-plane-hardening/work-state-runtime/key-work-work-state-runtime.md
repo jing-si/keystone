@@ -2,8 +2,8 @@
 doc_type: work_order
 created_at: "2026-08-07"
 document_lifecycle: active
-approval: {state: pending}
-work_status: in_progress
+approval: {state: accepted, accepted_at: "2026-08-09", accepted_by: main}
+work_status: complete
 key:
   id: key.work.work-state-runtime.order
   refs:
@@ -103,15 +103,19 @@ Implementation:
 5. 장기 기준서의 특정 active-work path claim은 Context Map/root works index 탐색 규칙으로
    대체한다.
 
-Decision gate:
+Accepted Decision:
 
 - 권장 event record는 `id`, `sequence`, `previous_event_ref`, `round_ref`, `accepted_steps`,
   `acceptance_ref`, `subject_digest`, `accepted_at`, `accepted_by`를 가진다.
 - Genesis를 제외한 event는 predecessor보다 `sequence`가 정확히 1 크고, event ID·sequence와
   predecessor는 각각 유일해야 한다. Fork, cycle, missing predecessor와 같은 Step의 상충
   acceptance를 거절하며 canonical chain head가 `latest_accepted_round`의 event여야 한다.
-- 이 모델은 권장안이다. Historical source의 migration/admission 규칙과 authority를 Main 또는
-  Clarify가 Decision으로 수락하기 전 canonical wire나 schema commitment로 사용하지 않는다.
+- `DEC-WORKS-027`에 따라 R001-R009는 R009 `sequence: 0` migration genesis의 canonical
+  historical-source projection digest로 admission한다. R010/S01-S03 Step acceptance는 local
+  evidence로 보존하고, R010 terminal Round acceptance부터 `sequence +1` forward-only chain을
+  생성한다.
+- Historical per-Round synthetic backfill, date/Round-number fallback와 legacy/event dual
+  ordering authority는 허용하지 않는다.
 
 Verification:
 
@@ -144,12 +148,16 @@ Implementation:
    `envelope_digest`, `author_runner_status: pass`를 가진 closure로 반환한다. `waived`는 non-empty
    reason과 follow-up이 필수이고, 누락·digest mismatch·runner non-pass는 fail-closed다.
 
-Architecture gate:
+Accepted Architecture:
 
-- 기본 권고는 one canonical pure source → build/install generated vendored copies이다. Accepted
-  architecture evidence가 더 나은 방식을 입증할 수 있지만, 단일 policy authority, installed
-  self-containment, policy digest와 byte/API parity를 모두 만족해야 한다.
-- Runtime cross-skill import, repository-local sibling import와 수작업 copy는 수락하지 않는다.
+- `DEC-WORKS-028`에 따라 `scripts/work_state_runtime.py`를 canonical pure source로 두고
+  `scripts/generate_work_state_runtimes.py`가 Reader, Coordinator와 Author package에
+  `scripts/work_state_runtime.py` vendored copy를 생성한다. Release gate는 canonical source를
+  직접 소비한다.
+- Generator `--check`, policy/byte/public-API digest, build/install과 package tests가 exact parity를
+  fail-closed로 검증한다.
+- Runtime cross-skill import, repository-local sibling import, 수작업 copy와 consumer별 별도 policy는
+  수락하지 않는다.
 
 Verification:
 
@@ -164,13 +172,15 @@ Verification:
 Done when: active-state drift를 consumer별 parser 차이로 재현할 수 없고 incomplete coverage는 네
 consumer 모두에서 fail-closed다.
 
-<!-- key: id=key.work.work-state-runtime.order.decision-gates refs=key.doc.decision key.boundary.stop-condition -->
+<!-- key: id=key.work.work-state-runtime.order.decision-gates refs=key.doc.decision key.boundary.stop-condition key.work.decisions.dec-works-027 key.work.decisions.dec-works-028 -->
 ## Decision and Architecture Gates
 
-1. Acceptance ordering authority는 Main/User가 수락하기 전 schema로 고정하지 않는다.
-2. Runtime 배치의 기본 권고는 generated vendored copies지만, installed self-containment와
-   consumer parity evidence를 검토한 accepted architecture만 canonical layout을 결정한다.
-3. Decision 결과와 migration 규칙은 별도 Decision/Progress evidence로 기록한다.
+1. Acceptance ordering authority는 `DEC-WORKS-027`의 R009 migration genesis와 forward-only
+   terminal Round event chain으로 확정했다.
+2. Runtime 배치는 `DEC-WORKS-028`의 canonical pure source와 generated vendored copies로
+   확정했다.
+3. Runtime/schema implementation과 parity evidence는 두 Decision을 변경하지 않고 S04 Progress에
+   별도로 기록한다.
 
 <!-- key: id=key.work.work-state-runtime.order.change-set refs=key.topic.change-set key.topic.impact-review -->
 ## Change Set

@@ -163,9 +163,12 @@ Keystone evidence are complementary and must survive the worker handoff.
 ## Workflow
 
 1. Confirm permission for the current work scope.
-2. Recover the document root, active round, work ID, all equal `active_steps`, recorded `early_work`,
-   and workflow state when Keystone-managed work is claimed. Never collapse multiple active Steps into
-   a primary Step, and never treat early work as activation.
+2. Recover the document root and run the package-local
+   `scripts/work_state_runtime.py --root ROOT`. Put its passing policy/result/source-generation
+   binding, active Round/Works/Steps, latest accepted Round, dependency/finalization gates and
+   prerequisite closures in the Context Pack. Never replace a failed or incomplete runtime result
+   with agreeing pointer claims, collapse multiple active Steps into a primary Step, or treat early
+   work as activation.
 3. Extract Goal, Scope, Source Context, Completion Criteria, Stop Conditions, Verification, and Expected Output.
 4. Extract forbidden changes and accepted decisions from available project sources.
 5. Recover dependency evaluations for every assigned or active Step and work completion. Keep semantic
@@ -274,7 +277,8 @@ The assignment `document_root` must equal actual project configuration (or the s
 Author scope must remain below it. Worker and repository-owner edit scopes cannot overlap that document
 root. Explicit `document_root: .` is ambiguous with every other repository surface, so every write
 actor scope must be empty until a deterministic document-surface registry exists.
-Post-acceptance completion additionally binds the schema-v5 manifest,
+Post-acceptance completion additionally binds the schema-v6 manifest and its complete Work State
+Runtime policy/result/source-generation projection,
 Author runner envelope, post snapshot, and non-empty Author finalization delta. Before Author writes,
 Main uses `scripts/record_acceptance_event.py` with a distinct pinned Main key. The exact evidence chain
 is pre-capture digest -> Main acceptance-event digest -> post-capture digest; pre validation does not
@@ -290,7 +294,7 @@ applies work-completion gates when `closure_target: work`. A Step closure names 
 misfiled or duplicate gates fail closed. Required graph sync still accepts only a Linker graph
 transaction schema v2 and invokes the package-owned Linker runner. Graph and Author manifest digest,
 parse, and child-runner input must all use one stable captured byte generation. Every post-acceptance decision still
-invokes the package-owned Author runner against canonical Author finalization schema v5.
+invokes the package-owned Author runner against canonical Author finalization schema v6.
 Canonical transaction v2 remains unchanged and, by itself, proves only structural/replay validity and
 current after-state. New required graph-sync authority needs canonical graph-validation manifest v2
 with exact required fields `schema_version`, `sources`, `transaction`, `application_evidence` and only

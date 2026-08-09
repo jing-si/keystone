@@ -3,7 +3,7 @@ doc_type: progress
 created_at: "2026-08-07"
 document_lifecycle: active
 approval: {state: pending}
-work_status: planned
+work_status: in_progress
 step_ref: R010/S05
 work_ref: R010/agent-behavior-evaluation
 finalization: {state: pending}
@@ -39,23 +39,23 @@ key:
 ## 현재 상태
 
 - Step: R010/S05
-- Work status: planned
+- Work status: in_progress
 - Approval state: pending
-- Active: false
+- Active: true
 - Finalization state: pending
-- Start gates: waiting — S02-S04가 모두 `complete + accepted`이기 전 R010/S05를 시작하지 않는다.
-- Work completion gates: waiting — S02-S04 `complete + accepted`와 S05 verification을 요구한다.
-- Pre-gate boundary: read-only 조사와 문서 fixture 설계만 허용한다. Runtime/test/code/config/schema
-  write, `in_progress` 전이와 canonical schema commitment는 금지한다.
-- Resume point: S02-S04 acceptance 뒤 invocation/matrix/redaction/control/budget contract를 versioned
-  implementation scope로 확정하고 executable adapter 구현부터 시작한다.
+- Start gates: satisfied — S02-S04가 모두 `complete + accepted`와 required finalization을
+  완료했다.
+- Work completion gates: S02-S04 prerequisite는 satisfied이며 S05 verification은 pending이다.
+- Activation parent: `R010/S04/main-acceptance`와 schema-v6 finalization closure.
+- Resume point: invocation/matrix/redaction/control/budget contract를 versioned implementation
+  scope로 확정하고 executable adapter 구현부터 시작한다.
 
 ## 계획 기준선
 
 - PC85-10: Actual agent behavior eval runner
 - 상태 경계: 계획 수립만 완료했으며 actual invocation, independent review 또는 completion을
   주장하지 않는다.
-- 이 pre-gate 문서 설계는 `early_work`나 R010/S05 activation을 주장하지 않는다.
+- Pre-gate early-work는 없으며 S04 acceptance/finalization 뒤 정상적으로 활성화됐다.
 
 ## Criterion Status
 
@@ -68,8 +68,8 @@ key:
 | `key.acceptance.agent-eval.adversarial-boundaries` | pending | — | — | — |
 | `key.acceptance.agent-eval.reviewer-separation` | pending | external reviewer operation evidence 대기 | — | — |
 | `key.acceptance.agent-eval.evidence-validation` | pending | — | — | — |
-| `key.acceptance.agent-eval.prerequisite-verification` | pending | S02-S04 acceptance와 S05 verification 대기 | — | — |
-| `key.acceptance.agent-eval.start-gates` | pending | S02-S04 acceptance 대기 | — | — |
+| `key.acceptance.agent-eval.prerequisite-verification` | pending | S02-S04 accepted/finalized; S05 verification 대기 | `R010/S04/main-acceptance` | schema-v6 finalization closure |
+| `key.acceptance.agent-eval.start-gates` | verified | S02-S04 complete + accepted + finalization complete | `R010/S04/main-acceptance` | S05 activated 2026-08-09 |
 | `key.acceptance.agent-eval.adapter-binding` | pending | adapter/prompt/tool/model identity evidence 대기 | — | — |
 | `key.acceptance.agent-eval.matrix-schema-migration` | pending | spec/validator/release migration evidence 대기 | — | — |
 | `key.acceptance.agent-eval.fixture-redaction` | pending | isolation/redaction-before-sign evidence 대기 | — | — |
@@ -87,9 +87,11 @@ key:
 4. 2026-08-08: Invocation adapter identity, setting × repeat × scenario schema migration, isolated
    redaction, seeded negative control·hidden review와 execution budget을 stable criterion으로 추가했다.
    모두 계획이며 actual invocation evidence는 없다.
+5. 2026-08-09: S04가 `R010/S04/main-acceptance`와 schema-v6 finalization을 완료해 S02-S04
+   start gate가 satisfied됐고 S05를 `in_progress`/Active로 활성화했다. Early-work는 없다.
 
 ## 다음 작업
 
-1. Pre-gate에서는 adapter/matrix/redaction/control/budget contract를 read-only로 조사한다.
-2. Pre-gate에서는 external credential과 reviewer key를 저장하지 않는 fixture를 문서로만 설계한다.
-3. S02-S04 acceptance 뒤 versioned schema/validator/release migration과 runner 구현을 시작한다.
+1. Adapter/matrix/redaction/control/budget contract를 versioned implementation scope로 확정한다.
+2. External credential과 reviewer key를 저장하지 않는 isolated fixture lifecycle을 구현한다.
+3. Versioned schema/validator/release migration과 actual invocation runner를 구현한다.

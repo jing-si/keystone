@@ -405,10 +405,13 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
    finalization을 `complete`로 전이하지 않는다.
 10. 미완료 graph sync는 Main acceptance를 취소하거나 progress를 되돌리지 않는다. R004의
     accepted 문서·기록을 수정하지 않고 이후 finalization에 additive하게 적용한다.
-11. 새 finalization은 schema v5를 사용한다. Acceptance event의 모든 accepted Step은 canonical
-    Step ref를 사용하고 정확히 한 event Round에 속하며, 각 Progress frontmatter의
-    `finalization.state`와 같은 acceptance ref에 결속한다. Schema v4는 이미 기록된 완료 evidence의
-    validation compatibility로 보존한다.
+11. 새 finalization은 schema v6를 사용한다. Installed Author package의
+    `scripts/work_state_runtime.py --root ROOT`가 반환한 policy digest, result digest, complete source
+    generation과 path-set digest를 `work_state_runtime`에 결속하며 runtime diagnostic 또는 binding
+    mismatch는 fail-closed다. Acceptance event의 모든 accepted Step은 canonical Step ref를 사용하고
+    정확히 한 event Round에 속하며, 각 Progress frontmatter의 `finalization.state`와 같은 acceptance
+    ref에 결속한다. Schema v4와 v5는 이미 기록된 완료 evidence의 validation compatibility로
+    보존한다.
 12. `active_round`, `latest_accepted_round`, `active_steps`는 Context Map, root works index, active
     round index와 active work index의 서로 다른 path에 결속한다. Work/round source의 path와
     `key.id`는 acceptance event Round에, root/context source는 canonical global identity에 결속하며

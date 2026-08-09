@@ -654,8 +654,8 @@ Coordinator는 direct/delegated 구현을 같은 closure workflow로 회수한�
    schema-v3 `keystone_closure.acceptance_ref`와 HMAC-authenticated `acceptance_event` reference를
    기록한 경우에만 실행한다. Historical schema-v1/v2 diagnostic은 기존 text
    `acceptance_evidence`를 유지한다.
-   Author의 canonical schema-v5 finalization과 ready Context Pack/report/scope/verification/sync
-   evidence가
+   Author의 canonical schema-v6 finalization과 complete Work State Runtime policy/result/
+   source-generation binding, ready Context Pack/report/scope/verification/sync evidence가
    모두 있고 finalization이 `complete` 또는 concrete `waiver_reason`을 기록한 explicitly `waived`
    상태일 때만 Coordinator `closure_complete`를 기록한다.
 
@@ -719,7 +719,8 @@ finalization 권한을 가지지 않는다.
     acceptance ref와 unique accepted Steps를 기록한다. Runner는 external evidence root의 canonical
     pre-snapshot wire를 읽고 같은 policy/expected absences로 live repository를 다시 capture하며,
     observed wire/digest가 pre snapshot과 다르면 event를 만들지 않는다. Post phase capture는 그
-    event raw digest를 evidence parent로 사용한다. 같은 값의 Author finalization schema v5 manifest를 요구하고
+    event raw digest를 evidence parent로 사용한다. 같은 값의 Author finalization schema v6 manifest와
+    complete Work State Runtime binding을 요구하고
     package-owned Author runner를 실행한다. Graph/Author manifest의 digest, parse와 child runner input은
     하나의 stable no-follow read에서 얻은 동일 byte generation을 사용한다. Post phase는
     non-empty Author finalization delta와 manifest/runner/post-snapshot digest binding을 요구한다.
@@ -727,7 +728,8 @@ finalization 권한을 가지지 않는다.
     `accept_candidate` 또는 `closure_complete` authority를 만들 수 없다. Accepted v2 evidence는
     재작성하지 않고 unfinished v1/v2 attempt는 fresh schema-v3 assignment capture로 다시 시작한다.
     Diagnostic envelope schema v1, Coordinator manifest v3, SnapshotPolicy/RepositorySnapshot v3,
-    Linker transaction v2와 Author finalization v5는 서로 다른 version contract다.
+    Linker transaction v2와 Author finalization v6는 서로 다른 version contract다. 이미 완료된
+    Author finalization v5는 historical compatibility evidence로 보존한다.
 17. Step closure는 assignment Step 안의 concrete `closure_step_ref`를 기록한다. Schema-v3 gate
     projection은 Step-only와 Work-only scope를 각 array에 분리하고 misfiled, duplicate,
     out-of-assignment 또는 evidence-free non-satisfied gate를 실패로 처리한다. Root/evidence read,

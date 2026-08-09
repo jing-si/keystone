@@ -737,6 +737,42 @@ def _repository_readiness_check(root: Path) -> CommandResult:
     return _readiness_check(root, True)
 
 
+def _work_state_check(root: Path) -> CommandResult:
+    runner = root / "scripts" / "work_state_runtime.py"
+    if runner.is_symlink() or not runner.is_file():
+        return CommandResult(1, "", "canonical Work State Runtime is unavailable")
+    result = _subprocess_executor(
+        (sys.executable, "-I", str(runner), "--root", str(root)),
+        root,
+        _sanitized_environment(root),
+    )
+    if result.returncode != 0:
+        return result
+    try:
+        payload = _strict_json_loads(result.stdout)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return CommandResult(2, result.stdout, "Work State output is not strict JSON")
+    fields = {
+        "schema_version", "status", "policy_digest", "public_api_digest",
+        "generation", "state", "result_digest", "diagnostics", "summary",
+    }
+    generation_fields = {
+        "complete", "source_count", "source_generation", "path_set_digest",
+        "snapshot_digest",
+    }
+    if (not isinstance(payload, dict) or set(payload) != fields
+            or payload.get("schema_version") != 1
+            or payload.get("status") != "pass"
+            or not isinstance(payload.get("generation"), dict)
+            or set(payload["generation"]) != generation_fields
+            or payload["generation"].get("complete") is not True
+            or not isinstance(payload.get("summary"), dict)
+            or payload["summary"].get("errors") != 0
+            or payload.get("diagnostics") != []):
+        return CommandResult(2, result.stdout, "Work State output schema is invalid")
+    return result
+
+
 def _compileall_check(root: Path) -> CommandResult:
     with tempfile.TemporaryDirectory(prefix="keystone-compile-gate-") as temporary:
         environment = _sanitized_environment(root, cache_root=Path(temporary))
@@ -901,6 +937,10 @@ def build_plan(
         GateStep(
             "repository_readiness", "repository_readiness",
             ("<internal>", "graph_runtime.readiness_cli", "--scope", "repository"),
+        ),
+        GateStep(
+            "work_state_runtime", "work_state",
+            ("<internal>", "scripts/work_state_runtime.py", "--root", "."),
         ),
         GateStep(
             "linker_repository_validation", "json_command",
@@ -1079,6 +1119,7 @@ def run_plan(
         "compileall": _compileall_check,
         "docs_readiness": _docs_readiness_check,
         "repository_readiness": _repository_readiness_check,
+        "work_state": _work_state_check,
         "historical_finalization": _historical_finalization_check,
         "current_finalization": _current_finalization_check,
     }

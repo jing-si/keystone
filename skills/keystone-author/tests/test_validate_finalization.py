@@ -315,6 +315,15 @@ class FinalizationValidatorCliTest(unittest.TestCase):
         self.assertEqual([], payload["diagnostics"])
         self.assertEqual({"errors": 0, "warnings": 0}, payload["summary"])
 
+    def test_schema_v6_requires_exact_work_state_runtime_binding(self):
+        manifest = self.valid_manifest()
+        manifest["schema_version"] = 6
+
+        process, payload = self.run_validator(manifest)
+
+        self.assertEqual(1, process.returncode)
+        self.assert_diagnostic(payload, "work_state_runtime_binding_invalid")
+
     def test_missing_manifest_is_an_invocation_error(self):
         process, payload = self.run_validator(None)
 

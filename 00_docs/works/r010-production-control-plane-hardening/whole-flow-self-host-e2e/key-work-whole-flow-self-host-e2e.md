@@ -179,7 +179,8 @@ Implementation:
 3. Worker가 bounded runtime source를 변경하고 Coordinator가 worker phase actual diff를 검증한다.
 4. Package-owned Linker가 graph classification/transaction을 실행하고 Author가 document/metadata를
    pre-acceptance phase에서 동기화한다.
-5. Fixture-local Main acceptance event 뒤 Author가 schema-v5 finalization을 수행하고 Coordinator가
+5. Fixture-local Main acceptance event 뒤 Author가 Work State Runtime binding을 포함한 schema-v6
+   finalization을 수행하고 Coordinator가
    post-acceptance phase를 검증한다.
 6. 새 Reader session이 fixture terminal state를 복구하고 Work State Runtime 결과와 비교한다.
 7. 모든 phase snapshot/delta, acceptance ref, eval evidence와 derived work state를 current fixture

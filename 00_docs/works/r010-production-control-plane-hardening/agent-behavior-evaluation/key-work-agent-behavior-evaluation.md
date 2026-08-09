@@ -3,7 +3,7 @@ doc_type: work_order
 created_at: "2026-08-07"
 document_lifecycle: active
 approval: {state: pending}
-work_status: planned
+work_status: in_progress
 key:
   id: key.work.agent-behavior-evaluation.order
   refs:

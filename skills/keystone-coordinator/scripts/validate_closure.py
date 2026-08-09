@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
+from work_state_runtime import evaluate_repository
+
 
 SCHEMA_VERSION = 1
 EXECUTION_MODES = {"direct_execution", "orchestration"}
@@ -942,6 +944,11 @@ def _error_result(code: str, message: str) -> Dict[str, Any]:
         "diagnostics": [diagnostic],
         "summary": {"errors": 1, "warnings": 0},
     }
+
+
+def derive_repository_work_state(root: Path) -> Dict[str, Any]:
+    """Return the package-local canonical Work State projection for a Context Pack."""
+    return evaluate_repository(Path(root))
 
 
 def _parse_owner_bindings(

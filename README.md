@@ -80,7 +80,7 @@ reviewer ID, and a separately configured key fingerprint. The 12 required scenar
 the evidence or trust material is absent, stale, malformed, symlinked, or not bound to the current
 commit and release-package bytes.
 
-Use the `production` profile only after Main acceptance and schema-v5 finalization have placed the
+Use the `production` profile only after Main acceptance and schema-v6 finalization have placed the
 Context Map in terminal `active_round: none` state. Production adds validation of the latest accepted
 Round's current finalization manifest. Reviewer HMAC proves possession of the configured key; release
 operators must still establish reviewer independence and that the recorded agent execution actually

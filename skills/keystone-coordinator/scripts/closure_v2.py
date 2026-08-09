@@ -53,6 +53,10 @@ LINKER_COVERAGE_FIELDS = {
 LOCATOR_FIELDS = {
     "path", "heading", "symbol", "test_name", "config_key", "schema_name",
 }
+WORK_STATE_RUNTIME_FIELDS = {
+    "policy_digest", "result_digest", "source_generation",
+    "path_set_digest", "complete",
+}
 
 
 class DuplicateJsonKey(ValueError):
@@ -264,6 +268,7 @@ def _validate_context(
         "artifact_context",
         "reader_context",
         "author_context",
+        "work_state_runtime",
         "dependency_status",
         "active_step_gates",
         "work_completion_gates",
@@ -332,6 +337,26 @@ def _validate_context(
                 diagnostic("context_evidence_missing", f"{name} requires evidence.",
                            f"assignment.context_pack.{name}.evidence")
             )
+    work_state = _mapping(context.get("work_state_runtime"))
+    if "work_state_runtime" in context:
+        path = "assignment.context_pack.work_state_runtime"
+        _unknown_fields(work_state, WORK_STATE_RUNTIME_FIELDS, path, diagnostics)
+        _missing_fields(work_state, WORK_STATE_RUNTIME_FIELDS, path, diagnostics)
+        for field in (
+            "policy_digest", "result_digest", "source_generation", "path_set_digest",
+        ):
+            if not _digest(work_state.get(field)):
+                diagnostics.append(diagnostic(
+                    "work_state_runtime_digest_invalid",
+                    "%s must be a canonical SHA-256 digest." % field,
+                    "%s.%s" % (path, field),
+                ))
+        if work_state.get("complete") is not True:
+            diagnostics.append(diagnostic(
+                "work_state_runtime_incomplete",
+                "Context Pack Work State Runtime must bind a complete generation.",
+                path + ".complete",
+            ))
     if context.get("dependency_status") not in DEPENDENCY_STATUSES:
         diagnostics.append(
             diagnostic(
@@ -1190,9 +1215,9 @@ def _validate_finalization(
     ):
         return None
     author_schema = finalization_manifest.get("schema_version")
-    if type(author_schema) is not int or author_schema != 5:
+    if type(author_schema) is not int or author_schema not in {5, 6}:
         diagnostics.append(diagnostic("author_manifest_schema_invalid",
-                                      "Coordinator v2 requires canonical Author schema 5 evidence.",
+                                      "Coordinator v2 requires canonical Author schema 5 or 6 evidence.",
                                       "keystone_closure.finalization.manifest_path"))
     acceptance_ref = closure.get("acceptance_ref")
     refs = {

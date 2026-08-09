@@ -2,11 +2,11 @@
 doc_type: progress
 created_at: "2026-08-07"
 document_lifecycle: active
-approval: {state: pending}
-work_status: in_progress
+approval: {state: accepted, accepted_at: "2026-08-09", accepted_by: main}
+work_status: complete
 step_ref: R010/S03
 work_ref: R010/graph-transaction-source-correctness
-finalization: {state: pending}
+finalization: {state: complete, acceptance_ref: R010/S03/main-acceptance}
 key:
   id: key.work.graph-transaction-source-correctness.progress
   refs:
@@ -33,10 +33,11 @@ key:
 ## 현재 상태
 
 - Step: R010/S03
-- Work status: in_progress
-- Approval state: pending
-- Active: true
-- Finalization state: pending
+- Work status: complete
+- Approval state: accepted
+- Active: false
+- Finalization state: complete
+- Acceptance ref: `R010/S03/main-acceptance`
 - Dependency evaluation: satisfied — S02 `complete + accepted` start gate와 completion gate가 모두
   충족됐다. 이 평가는 자동 status transition이나 implementation authority를 만들지 않는다.
 - Activation parent: S02 acceptance/finalization closure commit
@@ -51,10 +52,15 @@ key:
   `sha256:89337300456c8b83261ea6ecf06fb4deccf52ae0592d87d949cb55eee8074b86`.
 - Implementation state: commit `ba47bc7833bfaa7988fd42e231a042bdd50528e0`에서 S03 runtime,
   contract와 adversarial regression 구현을 완료하고 post-commit technical replay를 통과했다.
-- Resume point: Main acceptance review와 schema-v3 acceptance/finalization evidence generation을
-  시작한다. Acceptance 전에는 `complete` 또는 `accepted`를 주장하지 않는다.
+- Acceptance state: Main이 candidate commit `ba47bc7833bfaa7988fd42e231a042bdd50528e0`,
+  current-HEAD replay와 unresolved P0/P1 0건을 검토하고 2026-08-09에 수락했다.
+- Finalization boundary: schema-v2 graph transaction, package-owned Linker validation,
+  schema-v5 Author finalization과 Coordinator schema-v3 closure가 같은 post-acceptance
+  source generation을 결속한다.
+- Resume point: active Step R010/S04의 acceptance ordering Decision과 generated-runtime
+  architecture를 확정한다.
 
-Active steps: [R010/S03, R010/S04]
+Active steps: [R010/S04]
 
 ## 계획 기준선
 
@@ -63,8 +69,8 @@ Active steps: [R010/S03, R010/S04]
 - PC85-05: SourceUnit·source parser 해석 단일화
 - PC85-06: Domain-aware lifecycle inheritance
 - PC85-07: Canonical mutation strict schema
-- 상태 경계: implementation과 technical verification은 완료했지만 Main acceptance와 Author
-  finalization은 pending이며 Work status는 `in_progress`를 유지한다.
+- 상태 경계: implementation, technical verification, Main acceptance와 Author finalization을
+  완료했고 S04는 독립 active Step으로 유지한다.
 - Early-work 경계: gate 전 source write나 canonical schema commitment는 발생하지 않았다.
 
 ## Criterion Status
@@ -140,11 +146,20 @@ Active steps: [R010/S03, R010/S04]
 12. 2026-08-08: Authority boundary, atomic rollback/data preservation과 diff scope를 독립적으로
     재검토해 unresolved P0/P1 0건으로 승인했다. Main acceptance와 finalization은 아직 수행하지
     않았다.
+13. 2026-08-09: current HEAD에서 Author 106, Coordinator 176, Linker 376, Reader 2와
+    cross-skill 93, 합계 753 tests를 재실행하고 docs readiness 175/175와 repository graph
+    299/299를 다시 통과했다.
+14. 2026-08-09: Main이 `R010/S03/main-acceptance` event로 S03 candidate를 수락했다. Event raw
+    digest는 `sha256:bc141e8a6a689cd9e1d69460d3950e5124146c4a685c9e77eb47340ae988b92f`이며,
+    external evidence root는 `/private/tmp/keystone-s03-authority.zdcUmG/evidence`다.
+15. 2026-08-09: Author-owned document patches를 schema-v2 graph transaction과 signed receipt로
+    적용하고 package-owned Linker graph validation, schema-v5 Author finalization과 Coordinator
+    post-acceptance closure를 완료했다. Canonical transaction과 receipt reference는 R010
+    `key-graph-validation.json` 및 external evidence에 보존한다.
 
 ## 다음 작업
 
-1. Main이 criterion/evidence mapping과 unresolved P0/P1 0건을 검토해 acceptance 여부를 결정한다.
-2. Acceptance 뒤 Coordinator schema-v3 event와 Author finalization을 별도 source generation으로
-   실행하고 receipt/manifest/envelope digest를 기록한다.
-3. S02 closure evidence와 S03 technical subject를 immutable prerequisite로 유지하며 S04가
+1. S02 closure evidence와 S03 technical subject·acceptance event를 immutable prerequisite로 유지한다.
+2. R010/S04 acceptance ordering Decision과 generated-runtime architecture를 확정한다.
+3. S04가
    complete/accepted/finalized되기 전 S05를 활성화하지 않는다.

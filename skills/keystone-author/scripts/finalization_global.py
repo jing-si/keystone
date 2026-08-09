@@ -31,14 +31,14 @@ V5_SOURCE_TYPES = {
 def validate_global_state(root: Path, manifest: Dict[str, Any],
                           schema_version: Any) -> List[Dict[str, str]]:
     """Validate current global state against four distinct typed sources."""
-    if schema_version not in {4, 5}:
+    if schema_version not in {4, 5, 6}:
         return []
     findings: List[Dict[str, str]] = []
     state = manifest.get("global_state")
     if not isinstance(state, dict):
         return [diagnostic(
             "global_state_missing",
-            "schema_version 4 or 5 requires structured global_state.",
+            "schema_version 4, 5, or 6 requires structured global_state.",
         )]
 
     active_round = state.get("active_round")
@@ -76,7 +76,7 @@ def validate_global_state(root: Path, manifest: Dict[str, Any],
             "global_state_active_round_mismatch",
             "global_state.active_round may be none only when active_steps is empty.",
         ))
-    if schema_version == 5:
+    if schema_version in {5, 6}:
         for ref in active_steps:
             match = STEP_PATTERN.fullmatch(ref)
             if match is None:
@@ -173,7 +173,7 @@ def validate_global_state(root: Path, manifest: Dict[str, Any],
                 f"Global-state source key {actual_key} differs from {expected_key}.",
                 source_path,
             ))
-        if schema_version == 5 and category in V5_SOURCE_TYPES:
+        if schema_version in {5, 6} and category in V5_SOURCE_TYPES:
             expected_doc_type, expected_round_role = V5_SOURCE_TYPES[category]
             actual_doc_type = scalar_from_text(text, "doc_type")
             if actual_doc_type != expected_doc_type:
@@ -250,7 +250,7 @@ def validate_global_state(root: Path, manifest: Dict[str, Any],
             "global_state_source_category_missing",
             f"Required global-state source category is missing: {missing}.",
         ))
-    if schema_version == 5:
+    if schema_version in {5, 6}:
         indexes = _v5_works_tree_indexes(root, root_index_path, findings)
         _validate_latest_accepted_round_index(latest_accepted, indexes, findings)
         if active_round == "none":

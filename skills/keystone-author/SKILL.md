@@ -102,7 +102,10 @@ acceptance event:
    validator exit `0`, semantic review, and Main's post-edit verification are all evidenced. Initial
    Step acceptance starts this process but is not post-edit verification. Use `waived` only for
    an explicitly recorded bootstrap or not-applicable case with reason and follow-up.
-8. Emit new finalization manifest `schema_version: 5`. Require canonical accepted Step refs from one
+8. Emit new finalization manifest `schema_version: 6`. Bind the package-local
+   `scripts/work_state_runtime.py --root ROOT` policy digest, result digest, complete source
+   generation, and path-set digest in `work_state_runtime`; any runtime diagnostic or mismatch is
+   fail-closed. Require canonical accepted Step refs from one
    event Round and bind each Step to its Progress `finalization_state` and
    `finalization_acceptance_ref`. Bind `global_state.active_round`,
    `global_state.latest_accepted_round`, and `global_state.active_steps` to distinct typed work-index,
@@ -118,7 +121,7 @@ acceptance event:
    manifest and matching verified transaction before finalization can complete. Version 1 is diagnostic
    compatibility for existing in-progress records only and can never approve `complete`. Version 2 is
    also compatibility-only for unfinished records and cannot approve a new `complete` finalization.
-   Versions 3 and 4 remain compatibility wires for previously completed records; do not rewrite
+   Versions 3, 4, and 5 remain compatibility wires for previously completed records; do not rewrite
    historical acceptance or graph evidence merely to make it current-state replayable.
    Use `global_state.active_round: none` only when `active_steps` is empty.
 
@@ -426,7 +429,8 @@ Check that:
     finalization completes; unavailable or failed execution remains fail-closed and resumable.
 14. Graph-relevant document deltas automatically reach Linker; Author attests and applies only its own
     baseline-matched patch and never declares verified independently.
-15. New finalization uses schema version 5, separates execution and approval transitions, validates
+15. New finalization uses schema version 6, binds the complete package-local Work State Runtime
+    projection, separates execution and approval transitions, validates
     one accepted event Round, every accepted Progress, active-Step round membership, and the typed
     four-source global state, records graph_sync disposition, and accepts only bundled verified
     transaction evidence for required synchronization.

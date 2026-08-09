@@ -1,0 +1,1 @@
+{"events":[{"acceptance_ref":"R009/S01/main-acceptance","accepted_at":"2026-08-06","accepted_by":"main","accepted_steps":["R009/S01"],"id":"R009/accepted-round-migration-genesis","previous_event_ref":null,"round_ref":"R009","sequence":0,"subject_digest":"sha256:4b8c540450950a8b45ceb8e913ed7fd0910cdab9a435915f6f5d41f2598b6c8d"}],"schema_version":1}

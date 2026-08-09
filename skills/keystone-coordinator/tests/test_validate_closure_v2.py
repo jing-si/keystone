@@ -338,6 +338,27 @@ class ClosureV2ValidationTest(unittest.TestCase):
         self.manifest["worker_report"]["trusted"] = True
         self.assertIn("unknown_field", self.codes(self.validate()))
 
+    def test_context_pack_accepts_complete_work_state_runtime_binding(self):
+        binding = {
+            "policy_digest": "sha256:" + "1" * 64,
+            "result_digest": "sha256:" + "2" * 64,
+            "source_generation": "sha256:" + "3" * 64,
+            "path_set_digest": "sha256:" + "4" * 64,
+            "complete": True,
+        }
+        self.assignment["context_pack"]["work_state_runtime"] = binding
+        self.assignment_digest = digest_bytes(json_bytes(self.assignment))
+        self.manifest["worker_report"]["assignment_digest"] = self.assignment_digest
+        self.manifest["worker_report"]["context_digest"] = digest_json(
+            self.assignment["context_pack"]
+        )
+        self.manifest["coordinator_review"]["assignment_digest"] = self.assignment_digest
+
+        self.assert_historical_v2_valid(self.validate())
+
+        binding["complete"] = False
+        self.assertIn("work_state_runtime_incomplete", self.codes(self.validate()))
+
     def test_path_traversal_and_symlink_escape_fail_closed(self):
         self.assignment["scope"]["allowed_edit_scope"] = ["../outside"]
         result_codes = self.codes(self.validate())
@@ -750,6 +771,13 @@ class ClosureV2ValidationTest(unittest.TestCase):
             self.manifest["keystone_closure"]["finalization"][
                 "manifest_digest"
             ] = file_digest(finalization_path)
+            finalization_manifest["schema_version"] = 6
+            finalization_path.write_bytes(json_bytes(finalization_manifest))
+            self.manifest["keystone_closure"]["finalization"][
+                "manifest_digest"
+            ] = file_digest(finalization_path)
+            self.assert_historical_v2_valid(self.validate())
+
             self.manifest["keystone_closure"]["finalization"]["acceptance_ref"] = "forged"
             self.assertIn("acceptance_ref_mismatch", self.codes(self.validate()))
 

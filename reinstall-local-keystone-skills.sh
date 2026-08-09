@@ -77,6 +77,36 @@ require_file_parity "$OWNED_APPLY_CANONICAL_RUNTIME" \
 run_python_help "$AUTHOR_OWNED_APPLY_RUNNER"
 run_python_help "$COORDINATOR_OWNED_APPLY_RUNNER"
 
+WORK_STATE_GENERATOR="$REPO_ROOT/scripts/generate_work_state_runtimes.py"
+WORK_STATE_CANONICAL_RUNTIME="$REPO_ROOT/scripts/work_state_runtime.py"
+WORK_STATE_CANONICAL_MANIFEST="$REPO_ROOT/scripts/work_state_runtime_manifest.json"
+READER_WORK_STATE_RUNTIME="$REPO_ROOT/skills/keystone-reader/scripts/work_state_runtime.py"
+READER_WORK_STATE_MANIFEST="$REPO_ROOT/skills/keystone-reader/scripts/work_state_runtime_manifest.json"
+AUTHOR_WORK_STATE_RUNTIME="$REPO_ROOT/skills/keystone-author/scripts/work_state_runtime.py"
+AUTHOR_WORK_STATE_MANIFEST="$REPO_ROOT/skills/keystone-author/scripts/work_state_runtime_manifest.json"
+COORDINATOR_WORK_STATE_RUNTIME="$REPO_ROOT/skills/keystone-coordinator/scripts/work_state_runtime.py"
+COORDINATOR_WORK_STATE_MANIFEST="$REPO_ROOT/skills/keystone-coordinator/scripts/work_state_runtime_manifest.json"
+for source in "$WORK_STATE_GENERATOR" "$WORK_STATE_CANONICAL_RUNTIME" \
+  "$WORK_STATE_CANONICAL_MANIFEST" "$READER_WORK_STATE_RUNTIME" \
+  "$READER_WORK_STATE_MANIFEST" "$AUTHOR_WORK_STATE_RUNTIME" \
+  "$AUTHOR_WORK_STATE_MANIFEST" "$COORDINATOR_WORK_STATE_RUNTIME" \
+  "$COORDINATOR_WORK_STATE_MANIFEST"; do
+  if [ ! -f "$source" ]; then
+    echo "Missing Work State Runtime package file: $source" >&2
+    exit 1
+  fi
+done
+python3 "${PYTHON_ISOLATED_ARGS[@]}" "$WORK_STATE_GENERATOR" --check
+require_file_parity "$WORK_STATE_CANONICAL_RUNTIME" \
+  "$READER_WORK_STATE_RUNTIME" "$AUTHOR_WORK_STATE_RUNTIME" \
+  "$COORDINATOR_WORK_STATE_RUNTIME"
+require_file_parity "$WORK_STATE_CANONICAL_MANIFEST" \
+  "$READER_WORK_STATE_MANIFEST" "$AUTHOR_WORK_STATE_MANIFEST" \
+  "$COORDINATOR_WORK_STATE_MANIFEST"
+run_python_help "$READER_WORK_STATE_RUNTIME"
+run_python_help "$AUTHOR_WORK_STATE_RUNTIME"
+run_python_help "$COORDINATOR_WORK_STATE_RUNTIME"
+
 AUTHOR_VALIDATOR="$REPO_ROOT/skills/keystone-author/scripts/validate_finalization.py"
 AUTHOR_VALIDATOR_RUNNER="$REPO_ROOT/skills/keystone-author/scripts/run_finalization_validation.py"
 AUTHOR_VALIDATOR_HOOK="$REPO_ROOT/skills/keystone-author/scripts/check_finalization_hook.sh"
@@ -270,6 +300,22 @@ python3 "$INSTALLED_COORDINATOR_VALIDATOR" --help >/dev/null
 python3 "$INSTALLED_COORDINATOR_CAPTURE" --help >/dev/null
 python3 "$INSTALLED_COORDINATOR_ACCEPTANCE" --help >/dev/null
 
+INSTALLED_READER_WORK_STATE_RUNTIME="$STAGED_SKILLS/keystone-reader/scripts/work_state_runtime.py"
+INSTALLED_READER_WORK_STATE_MANIFEST="$STAGED_SKILLS/keystone-reader/scripts/work_state_runtime_manifest.json"
+INSTALLED_AUTHOR_WORK_STATE_RUNTIME="$STAGED_SKILLS/keystone-author/scripts/work_state_runtime.py"
+INSTALLED_AUTHOR_WORK_STATE_MANIFEST="$STAGED_SKILLS/keystone-author/scripts/work_state_runtime_manifest.json"
+INSTALLED_COORDINATOR_WORK_STATE_RUNTIME="$STAGED_SKILLS/keystone-coordinator/scripts/work_state_runtime.py"
+INSTALLED_COORDINATOR_WORK_STATE_MANIFEST="$STAGED_SKILLS/keystone-coordinator/scripts/work_state_runtime_manifest.json"
+require_file_parity "$WORK_STATE_CANONICAL_RUNTIME" \
+  "$INSTALLED_READER_WORK_STATE_RUNTIME" "$INSTALLED_AUTHOR_WORK_STATE_RUNTIME" \
+  "$INSTALLED_COORDINATOR_WORK_STATE_RUNTIME"
+require_file_parity "$WORK_STATE_CANONICAL_MANIFEST" \
+  "$INSTALLED_READER_WORK_STATE_MANIFEST" "$INSTALLED_AUTHOR_WORK_STATE_MANIFEST" \
+  "$INSTALLED_COORDINATOR_WORK_STATE_MANIFEST"
+run_python_help "$INSTALLED_READER_WORK_STATE_RUNTIME"
+run_python_help "$INSTALLED_AUTHOR_WORK_STATE_RUNTIME"
+run_python_help "$INSTALLED_COORDINATOR_WORK_STATE_RUNTIME"
+
 SOURCE_REVISION="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
 SOURCE_DIRTY=false
 if [ -z "$SOURCE_REVISION" ]; then
@@ -381,6 +427,12 @@ FINAL_COORDINATOR_CAPTURE_TEST="$DEST_ROOT/keystone-coordinator/tests/test_captu
 FINAL_COORDINATOR_ACCEPTANCE_TEST="$DEST_ROOT/keystone-coordinator/tests/test_record_acceptance_event.py"
 FINAL_COORDINATOR_OWNED_APPLY_RUNTIME="$DEST_ROOT/keystone-coordinator/scripts/owned_surface_apply_runtime.py"
 FINAL_COORDINATOR_OWNED_APPLY_RUNNER="$DEST_ROOT/keystone-coordinator/scripts/run_owned_surface_apply.py"
+FINAL_READER_WORK_STATE_RUNTIME="$DEST_ROOT/keystone-reader/scripts/work_state_runtime.py"
+FINAL_READER_WORK_STATE_MANIFEST="$DEST_ROOT/keystone-reader/scripts/work_state_runtime_manifest.json"
+FINAL_AUTHOR_WORK_STATE_RUNTIME="$DEST_ROOT/keystone-author/scripts/work_state_runtime.py"
+FINAL_AUTHOR_WORK_STATE_MANIFEST="$DEST_ROOT/keystone-author/scripts/work_state_runtime_manifest.json"
+FINAL_COORDINATOR_WORK_STATE_RUNTIME="$DEST_ROOT/keystone-coordinator/scripts/work_state_runtime.py"
+FINAL_COORDINATOR_WORK_STATE_MANIFEST="$DEST_ROOT/keystone-coordinator/scripts/work_state_runtime_manifest.json"
 for installed in "$FINAL_AUTHOR_VALIDATOR" "$FINAL_AUTHOR_RUNNER" "$FINAL_AUTHOR_HOOK" \
   "$FINAL_AUTHOR_FINALIZATION_GLOBAL" "$FINAL_AUTHOR_OWNED_APPLY_RUNTIME" \
   "$FINAL_AUTHOR_OWNED_APPLY_RUNNER" \
@@ -395,7 +447,10 @@ for installed in "$FINAL_AUTHOR_VALIDATOR" "$FINAL_AUTHOR_RUNNER" "$FINAL_AUTHOR
   "$FINAL_COORDINATOR_V2_TEST" "$FINAL_COORDINATOR_V3_TEST" \
   "$FINAL_COORDINATOR_SNAPSHOT_TEST" "$FINAL_COORDINATOR_CAPTURE_TEST" \
   "$FINAL_COORDINATOR_ACCEPTANCE_TEST" "$FINAL_COORDINATOR_OWNED_APPLY_RUNTIME" \
-  "$FINAL_COORDINATOR_OWNED_APPLY_RUNNER" \
+  "$FINAL_COORDINATOR_OWNED_APPLY_RUNNER" "$FINAL_READER_WORK_STATE_RUNTIME" \
+  "$FINAL_READER_WORK_STATE_MANIFEST" "$FINAL_AUTHOR_WORK_STATE_RUNTIME" \
+  "$FINAL_AUTHOR_WORK_STATE_MANIFEST" "$FINAL_COORDINATOR_WORK_STATE_RUNTIME" \
+  "$FINAL_COORDINATOR_WORK_STATE_MANIFEST" \
   "$DEST_ROOT/.keystone-install.json"; do
   if [ ! -f "$installed" ]; then
     echo "Final installed-package verification failed: $installed" >&2
@@ -412,6 +467,15 @@ require_file_parity "$COORDINATOR_OWNED_APPLY_RUNNER" \
   "$FINAL_COORDINATOR_OWNED_APPLY_RUNNER"
 run_python_help "$FINAL_AUTHOR_OWNED_APPLY_RUNNER"
 run_python_help "$FINAL_COORDINATOR_OWNED_APPLY_RUNNER"
+require_file_parity "$WORK_STATE_CANONICAL_RUNTIME" \
+  "$FINAL_READER_WORK_STATE_RUNTIME" "$FINAL_AUTHOR_WORK_STATE_RUNTIME" \
+  "$FINAL_COORDINATOR_WORK_STATE_RUNTIME"
+require_file_parity "$WORK_STATE_CANONICAL_MANIFEST" \
+  "$FINAL_READER_WORK_STATE_MANIFEST" "$FINAL_AUTHOR_WORK_STATE_MANIFEST" \
+  "$FINAL_COORDINATOR_WORK_STATE_MANIFEST"
+run_python_help "$FINAL_READER_WORK_STATE_RUNTIME"
+run_python_help "$FINAL_AUTHOR_WORK_STATE_RUNTIME"
+run_python_help "$FINAL_COORDINATOR_WORK_STATE_RUNTIME"
 python3 "$FINAL_AUTHOR_VALIDATOR" --help >/dev/null
 python3 "$FINAL_AUTHOR_RUNNER" --help >/dev/null
 bash -n "$FINAL_AUTHOR_HOOK"

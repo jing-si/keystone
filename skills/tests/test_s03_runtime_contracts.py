@@ -25,7 +25,8 @@ class GraphSynchronizationSkillContractTest(unittest.TestCase):
         self.assertIn("kind: document_delta", text)
         self.assertIn("confirm | reject | needs_revision", text)
         self.assertIn("applied | failed | stale_baseline", text)
-        self.assertIn("schema_version: 5", text)
+        self.assertIn("schema_version: 6", text)
+        self.assertIn("work_state_runtime", text)
         self.assertIn("global_state", text)
         self.assertIn("graph_sync", text)
 

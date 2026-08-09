@@ -181,11 +181,19 @@ R004 records are historical acceptance evidence: rerunning this validator does n
 their completion, cancel their acceptance, or require a retroactive state edit. Version 3 preserves
 previously completed records and their graph evidence as a compatibility wire. Version 4 preserves
 the accepted per-Step and four-source equality contract. Any new completion or graph-relevant
-finalization uses version 5. Version 5 retains version-4 closure and adds semantic Step, event-Round,
-source-role, `doc_type`, path, and key binding:
+finalization uses version 6. Version 5 remains a compatibility wire for previously completed records.
+Version 6 retains version-5 semantic Step, event-Round, source-role, `doc_type`, path, and key binding,
+and adds an exact complete Work State Runtime binding:
 
 ```json
 {
+  "work_state_runtime": {
+    "policy_digest": "sha256:...",
+    "result_digest": "sha256:...",
+    "source_generation": "sha256:...",
+    "path_set_digest": "sha256:...",
+    "complete": true
+  },
   "graph_sync": {
     "required": true,
     "disposition": "required",

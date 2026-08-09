@@ -410,8 +410,11 @@ Reader 기준은 다음 방법으로 검증한다.
 사용자가 Codex 세션 시작에 Reader를 명시 호출하면 Reader는 project orientation과 context readiness의
 진입점이 된다. Reader는 cache owner가 아니며 repository source read-only를 유지한다.
 
-1. Configured document root, root/round/work index와 active Progress를 읽어 현재 work context를
-   복구한다.
+1. Installed Reader package의 `scripts/work_state_runtime.py --root ROOT`를 먼저 실행한다. Passing
+   envelope의 initialization, active Round/Works/Steps, latest accepted Round, dependency/finalization
+   gate, diagnostic과 complete source generation을 authoritative work-state projection으로 복구한
+   뒤 root/round/work index와 active Progress를 narrative context로 읽는다. Runtime failure나
+   incomplete generation을 서로 같은 pointer claim으로 대체하지 않는다.
 2. 첫 invocation은 docs discovery scope에 대해 permissionless Linker index-readiness를 요청한다.
    Scope token은 worktree identity, sorted path set과 각 file raw-byte digest를 포함한다.
 3. Code/config/schema/test scan은 artifact context가 요청되거나 downstream skill input에 실제로

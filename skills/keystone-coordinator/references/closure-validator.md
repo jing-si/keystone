@@ -290,7 +290,8 @@ evidence, acceptance ref/event, accepted Steps, `author_evidence_binding`, and a
 `author_evidence_binding` repeats the finalization manifest digest, Author runner-envelope digest, and
 post snapshot digest. Closure completion requires a non-empty Author delta after acceptance; every
 accepted-Step progress/finalization progress source must change, and every actual post-acceptance Author
-change must be declared by the schema-v5 manifest. A pre-acceptance no-write phase may use empty actor
+change must be declared by the schema-v6 manifest and its complete Work State Runtime binding. A
+pre-acceptance no-write phase may use empty actor
 deltas but still supplies matching complete baseline/result snapshots and required capture evidence.
 
 ## Worker, Linker, and Author authority
@@ -369,7 +370,8 @@ runner envelope. The HMAC-authenticated Main acceptance event binds the exact as
 Context Pack, policy, closure target, pre-acceptance snapshot, ref and accepted Steps. Its timestamp must
 be strictly after the pre capture and before the post capture. Closure, phase, event, finalization, and
 Author acceptance refs must be equal. Accepted Steps
-remain inside assignment scope. New authority requires Author finalization `schema_version: 5` and a
+remain inside assignment scope. New authority requires Author finalization `schema_version: 6`, a
+complete package-local Work State Runtime policy/result/source-generation binding, and a
 passing package-owned Author runner. `complete` or an explicitly evidenced `waived` state can close the
 phase; a waiver still requires a concrete reason.
 

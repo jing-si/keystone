@@ -109,7 +109,11 @@ the caller to name a mode.
 When the user explicitly invokes Reader at the start of a Codex session, Reader is the orientation and
 context-readiness entry point, not the cache owner.
 
-1. Recover work from the configured document root, root/round/work indexes, and active Progress.
+1. Run the package-local `scripts/work_state_runtime.py --root ROOT` first and recover initialization,
+   active Round/Works/Steps, latest accepted Round, dependency/finalization gates, diagnostics, and
+   source generation from its passing envelope. Do not replace a failed or incomplete envelope with
+   manual pointer agreement. Use the cited root/round/work indexes and active Progress for narrative
+   context after the canonical projection succeeds.
 2. On the first invocation, request permissionless Linker readiness for the docs discovery scope. Pass
    worktree identity, the sorted path set, and each file's raw-byte SHA-256 digest.
 3. Request a lazy repository scope only when code/config/schema/test artifact context is actually needed.

@@ -149,7 +149,7 @@ Main acceptance 후보로 제출하고, acceptance 이후 별도 Author finaliza
 
 | ID | 개선 항목 | 구현 순서 | 핵심 근거 |
 |---|---|---|---|
-| PC85-12 | Independent RC CI와 R010 closure | 1 | clean current commit, RC version, Main acceptance와 schema-v5 finalization |
+| PC85-12 | Independent RC CI와 R010 closure | 1 | clean current commit, RC version, Main acceptance와 Work State-bound schema-v6 finalization |
 
 <!-- key: id=key.work.production-candidate-85-closure.order.scope refs=key.section.scope key.boundary.scope-control -->
 ## Scope
@@ -163,7 +163,7 @@ Include:
 - Fixed Quality Target, finding/risk disposition과 score evidence
 - RC support matrix, threat model, compatibility matrix, evidence retention policy, operator recovery
   guide와 diagnostic code reference
-- `0.7.0-rc.1`, S07 Main acceptance와 post-acceptance schema-v5 terminal finalization
+- `0.7.0-rc.1`, S07 Main acceptance와 post-acceptance Work State-bound schema-v6 terminal finalization
 - New Reader terminal recovery와 production release gate
 
 Exclude:
@@ -204,7 +204,8 @@ Implementation:
    포함된 exact candidate에서 S05 actual agent eval, S06 whole-flow E2E와 required
    CI/package/installer gate를 모두 다시 실행하고 그 결과로 final Quality Target을 평가해 S07
    acceptance packet을 만든다.
-6. Main이 S07만 새 acceptance event로 수락한 뒤 Author schema-v5 finalization이 accepted Step
+6. Main이 S07만 새 acceptance event로 수락한 뒤 Author schema-v6 finalization이 accepted Step과
+   complete Work State Runtime binding을 결속하고
    `R010/S07`과 그 acceptance ref를 기록한다.
 7. Finalization은 S01-S06의 기존 accepted/finalized evidence/ref를 보존하고 모든 Work의 terminal
    상태에서 R010 Round를 닫는다.
@@ -228,7 +229,7 @@ Release subject lineage:
   `parent_candidate`가 `rc_candidate_subject`의 commit/tree digest와 정확히 일치해야 한다.
 - Finalization 이후 delta가 declared docs-only finalization path set에만 있고 package tree digest가
   `rc_candidate_subject`와 동일하면 terminal subject에서 docs readiness, repository full graph,
-  schema-v5 finalization, Reader recovery와 production gate만 다시 실행하고 RC technical evidence를
+  schema-v6 finalization, Reader recovery와 production gate만 다시 실행하고 RC technical evidence를
   lineage로 재사용할 수 있다.
 - Package tree parity가 깨지거나 docs-only path set 밖의 runtime/config/schema/test/eval/CI source가
   바뀌면 새 `rc_candidate_subject`로 분기해 S05, S06, required CI/package/installer를 포함한 full
@@ -400,7 +401,8 @@ Work Order는 criterion statement만 소유하고 current state/evidence는 S07 
 - `R010-S07-PF-01` Main이 pre-acceptance evidence를 검토하고 R010/S07만 새 acceptance event/ref로
   수락한다.
 <!-- key: id=key.acceptance.production-finalization.author-finalization -->
-- `R010-S07-PF-02` Author schema-v5 finalization이 S07 acceptance ref를 사용하고 S01-S06의 기존
+- `R010-S07-PF-02` Author schema-v6 finalization이 S07 acceptance ref와 complete Work State Runtime
+  binding을 사용하고 S01-S06의 기존
   acceptance/finalization ref를 보존한다.
 <!-- key: id=key.acceptance.production-finalization.terminal-global-state -->
 - `R010-S07-PF-03` Repository-derived global state가 `active_round: none`, empty active Steps와
@@ -429,7 +431,7 @@ Work Order는 criterion statement만 소유하고 current state/evidence는 S07 
 - RC/production gate, current commit/package/installed/evidence digest equality
 - `rc_candidate_subject` version-bump rerun과 `terminal_subject.parent_candidate` lineage
 - S01-S06 finalization state/ref/manifest/envelope/Author-runner prerequisite evidence
-- Post-acceptance Reader recovery, schema-v5 finalization와 `git diff --check`
+- Post-acceptance Reader recovery, schema-v6 finalization와 `git diff --check`
 
 <!-- key: id=key.work.production-candidate-85-closure.order.expected-output refs=key.topic.verification key.topic.work-recovery -->
 ## Expected Output
@@ -440,7 +442,7 @@ Work Order는 criterion statement만 소유하고 current state/evidence는 S07 
 - 평가 전에 동결된 RC support matrix, threat model, compatibility matrix, evidence retention policy,
   operator recovery guide와 diagnostic code reference
 - Exact `rc_candidate_subject`/`terminal_subject` lineage 및 version-bump/terminal rerun evidence
-- S01-S06 preserved acceptance evidence, S07 acceptance/schema-v5 finalization과 terminal Reader
+- S01-S06 preserved acceptance evidence, S07 acceptance/schema-v6 finalization과 terminal Reader
   recovery record
 
 <!-- key: id=key.work.production-candidate-85-closure.order.stop refs=key.boundary.stop-condition -->
