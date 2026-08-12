@@ -32,6 +32,18 @@ Do not use Reader to edit any file, create standards or work records, collect hi
 assign workers, review worker reports, or accept results. Deep artifact impact, stale, reuse, and
 metadata-gap interpretation belongs to Linker.
 
+## Operating Emphasis
+
+Choose one emphasis from the request without requiring the caller to name it:
+
+- **Orientation**: report initialization, project meaning, active state, conflicts, and the next actor.
+- **Navigation**: locate the smallest relevant standards, decisions, Work sources, and stable IDs.
+- **Work preparation**: recover Goal, scope, gates, criteria, verification, and stop conditions for the
+  selected Work without creating an assignment.
+
+When no Work is active, report the empty active set and latest accepted Round. Do not invent a next
+Round, priority, or Work merely to keep the workflow moving.
+
 ## Inputs and Authority
 
 Use the user request, repository root, current instructions, available Keystone configuration, and
@@ -56,9 +68,10 @@ Determine state from actual settings and documents rather than a boolean flag:
 - `partial`: configuration, root, Context Map, standards/works indexes, decision record, project
   standard, or new-project R000 material exists but required parts are incomplete.
 - `conflicted`: valid roots, settings, or document meanings conflict and cannot be chosen safely.
-- `ready`: one authoritative root, Context Map, standards/works indexes, decision record, and an accepted
-  project standard provide recoverable work context. A new project also has an accepted R000; an adopted
-  legacy corpus may be ready without retroactive config or R000.
+- `ready`: one authoritative root, Context Map, standards/works indexes, decision record, and accepted
+  project meaning provide recoverable work context. Accepted project meaning comes from a current
+  accepted project standard or an explicitly resolvable accepted baseline source. A new project also
+  has an accepted R000; an adopted legacy corpus may be ready without retroactive config or R000.
 
 Before initialization, do not create files and do not claim ownership of ordinary code, README,
 configuration, or repository inspection. Main performs that general investigation without a
@@ -76,14 +89,67 @@ If Reader is invoked before `ready`:
 Missing work/progress records or graph evidence alone do not make the project `partial`. Conflicting
 valid document roots are a real decision topic; Reader reports the conflict without choosing one.
 
+## Pending Revision Readiness
+
+A pending standard revision does not change `initialization_state` by itself. Keep structural
+initialization separate from whether the affected policy scope is ready to drive implementation.
+
+1. Read the current source `approval.state` from frontmatter. Pending text is proposal and navigation
+   evidence, never accepted authority.
+2. Count an accepted baseline only when a current accepted source, decision, claim, or preserved
+   accepted version is explicitly identified and resolvable. A Context Map or index `accepted`
+   projection cannot override pending source frontmatter.
+3. Report `pending_with_baseline` when that accepted baseline is resolvable. Use only the accepted
+   baseline for authority and list the pending delta as non-authoritative review context.
+4. Report `pending_without_baseline` when accepted history is asserted but its authoritative meaning
+   cannot be recovered. Do not silently treat the pending document or repository history as the
+   baseline.
+5. Stop only implementation or acceptance that depends on the unresolved affected scope. Unaffected
+   accepted work may continue.
+6. Route `pending_without_baseline` to Author or Main to restore an explicit baseline, review the
+   revision, or obtain acceptance. Do not call Init for a revision-authority gap in an otherwise usable
+   Keystone foundation.
+7. Report `conflicted` when two resolvable accepted meanings disagree and the conflict affects the
+   request; use Clarify only if an actual user decision remains.
+8. Build the view deterministically from source entries bound by stable `key.id`, path, current
+   `approval.state`, and raw-byte digest. Accepted entries form the effective authority; pending entries
+   are a review overlay and never replace that authority. Sort and deduplicate by stable ID and path.
+9. Do not persist this readiness result, create a compatibility manifest, or rewrite project status.
+   It is session context derived from source evidence.
+
+## Resumable Finalization Candidates
+
+When the selected Work's current Progress has `finalization.state: in_progress` and a recorded blocker,
+Reader may return one read-only resume candidate.
+
+1. A complete or waived finalization is not a resume candidate. Preserve its former blocker as history.
+2. Recheck only the recorded blocker condition against current source and the current accepted contract.
+   Do not rerun an obsolete producer merely because the historical record names it.
+3. Classify the candidate as `blocked | resumable | unknown`. `blocked` means the condition still
+   exists; `unknown` means current source cannot decide it safely.
+4. Use `resumable` only with concrete evidence and record the resolution as
+   `resolved_by_source_change` or `resolved_by_contract_change`.
+5. Return an Author resume action containing the affected Progress, resolution evidence, the smallest
+   current check to run, and remaining source synchronization. Do not execute the write action.
+6. Never complete finalization automatically, change Work/Step status, or infer Main acceptance from a
+   resolved blocker.
+7. Do not request an external evidence folder, key, receipt, snapshot, or compatibility artifact to
+   classify the candidate. If current source is insufficient, return `unknown`.
+
 ## Workflow
 
 1. Detect initialization state and resolve or narrow the document-root candidates.
 2. If present, read `key-context-map.md` first.
 3. Follow the project standards and works indexes that actually exist.
-4. For work recovery, read the active round index and every referenced active Work node's order and
-   progress record. Treat a singular `current_step` claim as stale/conflicting evidence, not authority.
-5. Follow only child indexes and references relevant to the request.
+4. For work recovery, read each active parent Round index and use the passing Work State projection to
+   identify active children and Works. Apply the multi-active session-focus gate before opening the Work
+   order/Progress for every candidate. After focus is known, follow only the selected Work's ordered
+   `child_rounds`, Work order, and Progress unless the request explicitly needs a cross-Work view. A flat
+   parent without `child_rounds` keeps the existing direct-Work flow. Treat a singular `current_step`
+   claim as stale/conflicting evidence, not authority.
+5. Use Work State schema v3 `round_hierarchy` and `active_child_rounds` for child navigation. Keep
+   `active_rounds`, `active_round`, `accepted_rounds`, and `latest_accepted_round` parent-only; do not
+   reinterpret a child acceptance as a global Round transition.
 6. Treat document, section, and item-level `key.id`, `key.refs`, typed relations, visible row labels,
    paths, headings, and keywords as navigation evidence, not edit authority or automatic impact
    propagation. Item IDs may narrow a matched section, decision claim, acceptance criterion, or table row.
@@ -101,30 +167,44 @@ condition evidence, and blocking scope. Treat missing, cancelled, superseded, co
 insufficiently evidenced targets as fail-soft risks; never mutate work status or assign work from the
 evaluation.
 
-Use an orientation, navigation, or work-preparation emphasis as the request requires; do not require
-the caller to name a mode.
-
 ## Session Context Readiness
 
 When the user explicitly invokes Reader at the start of a Codex session, Reader is the orientation and
 context-readiness entry point, not the cache owner.
 
 1. Run the package-local `scripts/work_state_runtime.py --root ROOT` first and recover initialization,
-   active Round/Works/Steps, latest accepted Round, dependency/finalization gates, diagnostics, and
-   source generation from its passing envelope. Do not replace a failed or incomplete envelope with
-   manual pointer agreement. Use the cited root/round/work indexes and active Progress for narrative
-   context after the canonical projection succeeds.
-2. On the first invocation, request permissionless Linker readiness for the docs discovery scope. Pass
+   active parent Round(s), child hierarchy, active child Rounds/Works/Steps, latest accepted parent
+   Round, dependency/finalization gates, diagnostics, and source generation from its passing envelope.
+   Do not replace a failed or incomplete envelope with manual pointer agreement. Use the cited
+   parent/child/work indexes and active Progress for narrative context after the canonical projection
+   succeeds.
+2. Apply the session focus gate immediately after a passing Work State projection. When there are two
+   or more active Works and the user's request does not identify one Work or ask for a cross-Work view,
+   show only a compact candidate list from `active_works`: Work ref, parent/local Round, status, active
+   Step refs or unresolved reason. Ask exactly one focused question about which Work to handle in this
+   session. Do not read every candidate Work order or Progress before the answer. Do not start Linker
+   docs readiness before the answer.
+3. Treat the selection as non-authoritative session context. When the user answers, resume automatically
+   with the selected Work. Never mark unselected Works inactive or lower priority, mutate project state,
+   or persist the selection as a canonical pointer.
+4. Skip the focus question when there are zero or one active Work, the request explicitly identifies a
+   Work, or the request asks for all active Works or a cross-Work comparison.
+5. After the focus gate is resolved or skipped, request permissionless Linker readiness for the docs discovery scope. Pass
    worktree identity, the sorted path set, and each file's raw-byte SHA-256 digest.
-3. Request a lazy repository scope only when code/config/schema/test artifact context is actually needed.
-4. Reuse a fresh external index. If it is missing, stale, corrupt, or cannot be locked or written, fall
+6. Request a lazy repository scope only when code/config/schema/test artifact context is actually needed.
+7. Reuse a fresh external index. If it is missing, stale, corrupt, or cannot be locked or written, fall
    back fail-soft to source discovery; a cache problem is not a user decision.
-5. Include the freshness token, discovery scope, source citations, and unresolved gaps in the internal
+8. Include the freshness token, discovery scope, source citations, and unresolved gaps in the internal
    context brief. Downstream skills may reuse a fresh token; after a source write they invalidate the
    affected discovery scope.
-6. Pass a serialized recursion guard with `initiator: reader`. The called Linker must not call Reader
+9. Request `include_source_views` only when the selected context needs criterion verification,
+   effective Decision, or Work output/test summaries. This is a source-bound, session-only projection
+   from Linker's same reconstructed `GraphSnapshot`; request repository scope when output/test targets
+   are needed. Preserve its `source_generation` and unresolved diagnostics, and never treat a
+   `verified` view as automatic acceptance. Default readiness remains the lighter owner/ref result.
+10. Pass a serialized recursion guard with `initiator: reader`. The called Linker must not call Reader
    again in the same chain; a Linker-initiated Reader chain applies the inverse rule.
-7. Keep raw readiness and index payloads agent-facing and hidden from the user by default.
+11. Keep raw readiness and index payloads agent-facing and hidden from the user by default.
 
 ## Result Contract
 
@@ -137,8 +217,28 @@ reader_output:
   request_summary:
   project_summary:
   active_round:
+  active_rounds: []
+  active_child_rounds: []
+  round_hierarchy: []
   active_works: []
   active_steps: []
+  session_focus:
+    state: not_required | selection_required | selected
+    candidates: []
+    selected_work:
+    authority: non_authoritative
+  latest_accepted_round:
+  revision_readiness:
+    state: not_applicable | pending_with_baseline | pending_without_baseline | conflicted
+    pending_sources: []
+    accepted_baseline_sources: []
+    affected_scope: []
+  finalization_resume_candidates:
+    - state: blocked | resumable | unknown
+      progress_path:
+      recorded_blocker:
+      resolution: unresolved | resolved_by_source_change | resolved_by_contract_change
+      author_resume_action:
   early_work: []
   current_work_status:
   dependency_status:
@@ -170,8 +270,10 @@ a final worker assignment.
 ## Default User Response
 
 Give a concise human-facing brief with the initialization/work state, key finding, unavailable context
-or conflict, recommended next action, and key sources. Do not expose the full `reader_output` or context
-brief unless the user requests it or a handoff, audit, debugging, or verification need requires it.
+or conflict, recommended next action, and key sources. When multi-active session focus is required,
+return the compact candidate list and one focus question instead of a deep context brief. Do not expose
+the full `reader_output` or context brief unless the user requests it or a handoff, audit, debugging, or
+verification need requires it.
 
 Apply the Payload Disclosure Gate before responding: do not print raw `*_output`, `*_result`,
 `*_report`, `worker_assignment`, or routing payload blocks by default. Summarize their meaning without
@@ -207,3 +309,7 @@ Check that Reader:
 10. Starts docs-scope readiness, expands to repository scope lazily, and never becomes cache owner.
 11. Treats a downstream source-owner write as invalidating the affected Reader context token and
     prevents Reader-Linker recursion in one call chain; Reader itself remains source read-only.
+12. Keeps global Round identity on the parent while preserving child-local status, Work ownership,
+    active Steps, declared order, and unresolved child evidence from Work State schema v3.
+13. Asks for non-authoritative session focus before multi-Work deep reading, skips the question for an
+    explicit or cross-Work request, and never changes unselected Work status or priority.

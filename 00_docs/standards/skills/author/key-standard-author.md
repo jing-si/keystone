@@ -3,7 +3,9 @@ doc_type: standard
 created_at: "2026-06-10"
 document_lifecycle: active
 approval:
-  state: pending
+  state: accepted
+  accepted_at: "2026-08-11"
+  accepted_by: main
 key:
   id: key.standard.skill.author
   refs:
@@ -332,6 +334,32 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
 5. Acceptance state, status semantics, `active_steps`가 바뀌면 명시적으로 보고한다.
 6. Progress update가 작업서(4)의 scope나 completion criteria를 바꾸면 중단한다.
 
+<!-- key: id=key.standard.skill.author.progress-ownership kind=claim refs=key.role.author key.topic.progress-update key.topic.work-recovery key.topic.acceptance -->
+## Work/Step Progress ownership
+
+1. Aggregate Work Progress인 `key-progress.md`는 Work 전체의 현재 `work_status`,
+   `approval.state`, 선택적 `finalization.state`, 실제 증거와 resume point를 소유하는
+   `aggregate Progress authority`다.
+2. Step Progress인 `key-progress-{step-slug}.md`는 하나의 `step_ref`와 그 Step의
+   `work_status`, `approval.state`, 선택적 `finalization.state`, 실행·검증 증거와 resume point를
+   소유한다.
+3. Work와 현재 Step의 상태 tuple이 같고 독립 보존할 수용 Step이 없으면 `key-progress.md` 하나가
+   `step_ref`를 함께 가진 compatible combined record일 수 있다. 두 상태가 갈라질 때만 Aggregate
+   Work Progress와 Step Progress를 분리하며 모든 Step마다 파일을 미리 만들지 않는다.
+4. Step이 `complete/accepted`가 됐지만 Work가 계속 `in_progress/pending`이면 Step 결과를
+   `key-progress-{step-slug}.md`에 기록하고 Aggregate Work Progress를 Step 상태로 덮어쓰지 않는다.
+5. Step Progress가 하나라도 존재하면 Aggregate Work Progress는 `step_ref`를 갖지 않는다.
+   과거 완료 기록을 이 규칙 때문에 일괄 rewrite하지 않는다.
+6. Work Index의 `work_status`·`approval`과 Context Map·Index의 `global_state`는
+   `optional compatibility projection`이며 생략할 수 있다. 존재하는 값이 aggregate Progress나
+   canonical Work State와 다르면 stale projection으로 진단하고 source authority를 덮어쓰지 않는다.
+7. Work State는 Work identity를 Work Index에서, current Work state를 Aggregate Progress에서,
+   active Step을 compatible combined record 또는 Step Progress에서 복구한다. Aggregate Progress가
+   없는 legacy Work에만 Work Index state fallback을 허용한다.
+8. 기본 문서 수정과 recovery를 위해 새 persistent projection artifact를 만들지 않는다. 별도
+   rendered view가 실제로 필요할 때만 bounded marker와 freshness binding을 가진 선택적 generated
+   block을 사용하고 사람이 작성한 history·rationale 영역을 덮어쓰지 않는다.
+
 <!-- key: id=key.standard.skill.author.section refs=key.role.author key.doc.standard key.topic.document-authoring -->
 ## 기준서 작성 규칙
 
@@ -388,61 +416,60 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
 <!-- key: id=key.standard.skill.author.acceptance-finalization refs=key.role.author key.topic.acceptance key.topic.progress-update key.topic.verification -->
 ## Acceptance finalization
 
-1. Main acceptance 직후 현재 Step의 Progress 또는 Change Set에 finalization 필요성을 판정한다.
-2. 새 상태 체계를 만들지 않고 `required`와 `state: pending | in_progress | complete | waived`를 기록한다.
-3. 현재 Step, Work node, Round, root index, Context Map과 관련 Standard·Decision·Change Set을
-   영향 후보로 검토하되, 형제·미래 Step 상태를 변경하지 않는다.
-4. 미래 Step 선작업은 대상 Step에 `early_work`로 원인, 처리 범위, 남은 범위와
-   `status_effect: none`을 기록한다.
-5. 모든 후보에 disposition과 근거를 남긴 후 bundled validator를 실행한다.
-6. Validator는 `skills/keystone-author/scripts/`의 package-local artifact가 소유하며 외부 Python
-   dependency 없이 설치 package 안에서 실행 가능해야 한다.
-7. Required 기계 검사가 실패하거나 실행되지 않으면 `complete`로 전이하지 않는다. 적용할
-   기계 검사가 없으면 `not_applicable` evidence를 허용한다.
-8. Author만 승인된 범위의 원천 문서를 수정한다. Validator와 hook은 진단만 수행한다.
-9. Graph-relevant change에는 `graph_sync.required`와 `required | not_applicable | deferred`
-   disposition 및 근거를 기록한다. Required이면 verified transaction evidence 없이는
-   finalization을 `complete`로 전이하지 않는다.
-10. 미완료 graph sync는 Main acceptance를 취소하거나 progress를 되돌리지 않는다. R004의
-    accepted 문서·기록을 수정하지 않고 이후 finalization에 additive하게 적용한다.
-11. 새 finalization은 schema v6를 사용한다. Installed Author package의
-    `scripts/work_state_runtime.py --root ROOT`가 반환한 policy digest, result digest, complete source
-    generation과 path-set digest를 `work_state_runtime`에 결속하며 runtime diagnostic 또는 binding
-    mismatch는 fail-closed다. Acceptance event의 모든 accepted Step은 canonical Step ref를 사용하고
-    정확히 한 event Round에 속하며, 각 Progress frontmatter의 `finalization.state`와 같은 acceptance
-    ref에 결속한다. Schema v4와 v5는 이미 기록된 완료 evidence의 validation compatibility로
-    보존한다.
-12. `active_round`, `latest_accepted_round`, `active_steps`는 Context Map, root works index, active
-    round index와 active work index의 서로 다른 path에 결속한다. Work/round source의 path와
-    `key.id`는 acceptance event Round에, root/context source는 canonical global identity에 결속하며
-    네 source의 `doc_type`과 frontmatter structured state가 일치하지 않으면 complete로 전이하지
-    않는다. Event Round가 active이면 `round_status: active`, terminal이면
-    `round_status: accepted`여야 하며 terminal event Work는 `work_status: complete`여야 한다.
-    Schema v3까지는 이미 기록된 acceptance의 호환 wire로 보존한다.
-13. Repository에 active round가 없으면 `active_round: none`으로 부재를 명시한다. `none`은
-    `active_steps: []`일 때만 허용하며 active Step이 있으면 각 canonical Step ref의 round prefix가
-    반드시 해당 `R\d+` active round와 일치해야 한다. Acceptance event Round는 terminal
-    `active_round: none`과 독립적으로 accepted Step ref에서 복구한다.
+1. Main acceptance 직후 Author는 수락된 Step의 `work_status: complete`,
+   `approval.state: accepted`와 acceptance date를 owning Work·Progress·index에 반영한다.
+2. Round index, root works index와 Context Map의 `active_steps`를 같은 current source 상태로
+   동기화하되, 형제·미래 Step을 자동 승인하지 않는다.
+3. 미래 Step의 수행된 부분은 원인, 완료·남은 범위와 `status_effect: none`인
+   `early_work`로 구분한다.
+4. Progress에는 실제 상태·증거·resume point를 바꾸는 document, decision, standard, recovery,
+   gate, residual risk와 namespace disposition만 남긴다. 영향이 없는 category를 열거하지 않는다.
+5. Work/Step 상태가 바뀌면 repository-derived Work State를 실행하고 graph-relevant 의미가 바뀌면
+   affected-scope graph validation을 실행한다. 진단이 있으면 지속 가능한 resume point를
+   Progress에 남긴다.
+6. Current success는 원천 문서 동기화, 상태 변경 시 Work State, graph-relevant 변경 시
+   disposition/validation과 Main post-edit verification으로 판정한다. 새 finalization manifest,
+   external evidence root, owner key 또는 HMAC receipt는 필수 prerequisite가 아니다.
+7. 구 finalization schema v1-v6과 package validator는 historical input을 읽고 진단하는
+   compatibility adapter로만 유지한다. 이 경로는 새 completion·apply·release authority를 만들지 않는다.
+8. 과거 accepted/finalized evidence는 당시 이력으로 보존하고 current contract 변경으로
+   성공·실패를 소급 변경하지 않는다.
+9. 기준서는 정책 의미, Work Order는 Goal/Scope/criterion, Progress는 실제 상태·증거·resume point,
+   index와 Context Map은 active pointer나 집계 상태가 바뀐 경우에만 수정한다.
+10. 일반 문서 변경은 관련 문서 탐색, 승인 scope/diff 확인, 문서 구조와 직접 관련된 검증으로
+    닫는다. Change Set, finalization manifest, receipt, snapshot 또는 acceptance-event를 기본
+    산출물로 만들지 않는다.
+11. Metadata/relation, Work State, 여러 surface의 contract가 함께 바뀔 때만 Linker affected-scope
+    review, graph synchronization 또는 recovery 검증을 추가한다.
+12. Package/installer/historical adapter 검증은 해당 surface가 바뀌거나 release 검증이 명시된
+    경우에만 실행한다.
 
-Package runner의 exact finalization flag surface는 `--root`, `--manifest`, `--validator`,
-`--extension`, `--graph-runner`, `--graph-evidence-root`, repeatable
-`--graph-owner-key OWNER=PATH`, repeatable `--graph-owner-key-sha256 OWNER=sha256:...`,
-`--timeout-seconds`다. Required finalization이 graph-validation manifest schema v2를 가리키면
-`--graph-evidence-root`가 필수이고 graph owner key bindings를 isolated package Linker runner로
-전달한다. Graph-validation schema v1과 standalone canonical transaction v2는
-historical/structural/current-after evidence로 읽을 수 있지만 신규 Coordinator-v3 required graph-sync authority를
-만들 수 없다. Post-acceptance Coordinator는 동일 evidence root와 owner binding을 Author runner의
-graph-prefixed flags로 전달하며 Author는 이를 추정하거나 약화하지 않는다.
+<!-- key: id=key.standard.skill.author.resumable-finalization kind=claim refs=key.role.author key.role.reader key.topic.finalization key.topic.work-recovery key.topic.verification -->
+## Resumable finalization
+
+1. 현재 Progress가 `finalization.state: in_progress`이고 기록된 blocker와 resume point가 있을 때만
+   재개 후보로 판정한다. `complete` 또는 `waived`인 finalization은 과거 blocker가 있어도 후보가 아니다.
+2. Reader는 기록된 blocker 조건을 현재 source와 accepted contract에 대조해
+   `blocked | resumable | unknown`으로 보고하고 source를 수정하지 않는다.
+3. `resumable`은 blocker가 `source_change | contract_change`로 해소됐다는 구체 evidence와 Author가
+   실행할 최소 current verification·source sync action을 포함한다.
+4. Source 변경으로 해소됐으면 current targeted check만 실행한다. 계약 변경으로 예전 요구가 더
+   이상 current authority가 아니면 그 사실을 확인하고 과거 실패는 history로 보존한다.
+5. 재개만을 위해 과거 HMAC receipt, private key, external evidence root, snapshot이나 legacy
+   manifest를 다시 만들지 않는다.
+6. Blocker 해소는 acceptance나 completion이 아니다. Author는 current source sync, 적용되는 Work
+   State 또는 focused verification과 Main post-edit review 전에는 자동으로 `complete`로 바꾸지 않는다.
+7. Blocker가 남았거나 판정할 수 없으면 `in_progress`를 유지하고 실제 evidence나 다음 action이
+   달라졌을 때만 Progress resume point를 갱신한다.
 
 <!-- key: id=key.standard.skill.author.graph-synchronization refs=key.role.author key.role.linker key.topic.artifact-graph key.topic.keystone-metadata key.topic.change-set -->
 ## Document delta와 graph synchronization
 
-승인 범위의 일반적인 단일 문서 semantic/progress/finalization 수정은 coordinated multi-surface
-sync가 필요하지 않으면 Author normal direct-write lane에 남는다. Document delta 기록 또는 index
-refresh만으로 owner-apply receipt를 요구하지 않는다. Linker가 graph synchronization을 `required`로
-분류하고 exact Author-owned transaction-v2 patch를 제공했을 때만 external application-evidence lane에
-들어간다. Author는 transaction을 만들거나 scope를 확대하거나 direct-edit evidence를 apply
-authority로 바꾸지 않는다.
+승인 범위의 단일 문서 semantic/progress 수정은 Author direct-write lane에 남는다.
+Graph synchronization이 `required`이면 Linker가 exact Author-owned transaction-v2 patch를 제공하고
+Author가 자기 surface를 직접 적용한다. 어느 경로도 external application evidence, secret,
+receipt를 current apply authority로 요구하지 않는다. Author는 transaction을 만들거나 scope를
+확대하거나 direct-edit evidence를 Main acceptance로 바꾸지 않는다.
 
 1. Author가 승인 범위에서 문서 의미나 독립 metadata item을 변경하면 path, locator, semantic
    summary와 raw-byte SHA-256 baseline을 가진 `document_delta`를 만든다.
@@ -465,33 +492,16 @@ authority로 바꾸지 않는다.
 9. Author write 뒤 Linker가 source를 재구성하고 validator가 기계 검사를 할 때까지 Author는
    transaction을 `verified`나 finalization `complete`로 선언하지 않는다.
 
-Required transaction의 confirmed Author patch는 package-owned `scripts/run_owned_surface_apply.py`와
-exact flags `--root ROOT`, `--request REQUEST`, `--evidence-root EVIDENCE_ROOT`, `--output RECEIPT`,
-`--authority-key KEY`, `--pinned-key-sha256 sha256:...`로만 apply한다. Canonical
-owner-apply request schema v1 exact fields는 `schema_version`, `transaction_id`,
-`transaction_digest`, `assignment_id`, `assignment_digest`, `phase_id`,
-`phase_baseline_snapshot_digest`, `phase_parent_evidence_digest`, `repository_root_digest`, `owner`,
-`scope`, `scope_digest`, `prior_receipt_digest`, `patch`다. `scope`는 exact `{allowed, excluded}`이고
-`patch`는 full exact transaction-v2 patch object다. Author package runner는 `owner: author`와
-`.md | .markdown`의 `document_metadata` 또는 해당 document의 `companion_metadata`만 받고 baseline
-check→atomic publish→reread→O_EXCL receipt를 한 operation으로 수행한다. Failure/stale/rollback은
-receipt를 남기지 않으며 diagnostic pass/fail/error와 exit `0/1/2`가 일치한다. Existing target은
-same-directory atomic exchange로 displaced live entry를 baseline과 비교하고, 지원 primitive가 없으면
-`atomic_exchange_unavailable` error로 source와 receipt를 만들지 않는다. Rollback/receipt cleanup은
-public name을 직접 unlink하지 않고 same-directory high-entropy quarantine으로 atomic no-replace 이동한
-뒤 기록된 runner-owned identity/bytes/mode와 일치하는 private entry만 삭제한다. 불일치는 원래 public
-name으로 복구하거나 recovery artifact로 보존하고 `rollback_failed`로 닫는다.
+### Historical owner-apply compatibility
 
-Applied required/optional patch마다 exactly one owner confirm/result/receipt가 필요하고 omitted
-ancillary optional은 모두 0개다. Signed receipt는 immutable transaction plan, assignment,
-pre-acceptance 또는 post-acceptance phase/parent, repository root, exact owner scope, full patch,
-request, raw receipt chain, nonce, evidence root, external pinned Author key와 current package
-runner/runtime bytes를 결속한다. Owner key는 repository/evidence root 밖 absolute symlink-free path의
-current-user-owned, owner-only, single-link regular file이며 raw 32 bytes 이상이다. Trusted-host HMAC은
-exact signed bytes와 protected-key possession을 증명하지만 independent execution, external clock,
-OS-user/organization identity 또는 이후 authorized write를 증명하지 않는다. Linker는 source-write-free
-verifier이고 Coordinator는 신규 v3 authority 전에 signed assignment/phase/scope/delta를 authoritative
-closure evidence와 비교한다.
+아래 owner-apply request, receipt, external key와 HMAC 세부는 구 evidence를 읽고 진단하기
+위한 historical compatibility다. Current Author는 이 producer를 실행하거나 새 receipt를
+success prerequisite로 만들지 않는다.
+
+Historical adapter는 보존된 request/receipt의 구조와 recorded result를 읽을 수 있다. External key,
+producer executable 또는 evidence root가 없으면 구조 진단만 반환하고 새 receipt 생성이나 외부
+폴더 권한을 요구하지 않는다. 구 wire의 exact schema는 adapter fixture가 소유하며 current Author
+apply·completion·release contract가 아니다.
 
 ```yaml
 document_delta:
@@ -758,6 +768,14 @@ Author 기준은 다음 방법으로 검증한다.
 17. 새 문서의 `created_at`, accepted 문서의 현재 `approval.accepted_at`, 새 결정의 `결정일`과
     optional temporal field가 Bootstrap 기준과 일치해야 한다.
 18. 기존 문서 날짜를 추측하거나 일반 `updated_at`을 추가하지 않아야 한다.
+19. Main acceptance 후 Work/Progress/index/Context Map, Work State와 graph disposition을 동기화하되
+    새 finalization manifest, external key 또는 HMAC receipt 없이 current closure를 완료할 수 있어야 한다.
+20. Finalization schema v1-v6과 owner-apply receipt는 historical read/diagnostic을 유지하지만
+    current completion·apply·release authority가 아니어야 한다.
+21. 문서 종류별 실제 의미·상태·pointer 변경이 없으면 관련 문서나 index를 갱신하지 않고, 일반
+    변경에서 새 Change Set·manifest·receipt·snapshot을 만들지 않아야 한다.
+22. Default, escalated, release 검증을 변경 surface로 구분하고 package/installer/historical 검증을
+    일반 문서 변경의 기본값으로 실행하지 않아야 한다.
 
 <!-- key: id=key.standard.skill.author.reference-index-contract refs=key.role.author key.role.linker key.topic.keystone-metadata key.topic.artifact-graph -->
 ## Owner/ref authoring과 context invalidation

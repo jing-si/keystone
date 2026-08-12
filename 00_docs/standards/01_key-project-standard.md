@@ -2,10 +2,7 @@
 doc_type: standard
 created_at: "2026-05-31"
 document_lifecycle: active
-approval:
-  state: accepted
-  accepted_at: "2026-08-06"
-  accepted_by: main
+approval: {state: accepted, accepted_at: "2026-08-11", accepted_by: main}
 key:
   id: key.standard.project
   refs:
@@ -677,6 +674,46 @@ Generated reverse index나 cache는 source of truth가 아니라 탐색 최적�
 정식 상태 전이 없이 미래 Step 일부가 먼저 처리되면 대상 Step에 `early_work`로 원인, 처리 범위,
 남은 범위와 `status_effect: none`을 기록한다.
 
+<!-- key: id=key.standard.project.derived-work-state-projection kind=claim refs=key.doc.progress key.topic.work-recovery key.topic.document-system key.topic.verification -->
+#### Source-derived Work State projection
+
+1. Work 전체의 현재 실행·승인 상태는 `key-progress.md`의 aggregate Progress authority가 소유하고,
+   Step 상태는 compatible combined Progress 또는 `key-progress-{step-slug}.md`가 소유한다.
+2. Work Index의 `work_status`·`approval`과 Context Map·Index의 `global_state`는
+   `optional compatibility projection`이다. 생략해도 유효하며, 존재하면 같은 source generation에서
+   계산한 Work State와 일치해야 한다.
+3. Runtime은 Work identity를 Work Index에서, Work state를 aggregate Progress에서 결합한다.
+   Aggregate Progress가 없는 legacy Work만 Work Index 상태를 fallback source로 읽는다.
+4. Persisted projection과 source가 충돌하면 source authority를 숨기지 않고 stale diagnostic을
+   반환한다. 충돌한 projection을 current state의 우선 값으로 사용하지 않는다.
+5. 기본 recovery는 canonical runtime output을 사용하며, 이를 위해 새 persistent projection artifact를
+   만들지 않는다. 사람이 보는 generated block이 별도로 필요할 때만 bounded marker와 freshness
+   binding을 가진 선택적 view로 추가한다.
+6. Dependency evaluator도 같은 effective Work state resolver를 사용한다. `depends_on`은 target
+   identity를, `work_gates`는 적용 범위와 condition을 소유하며 gate 결과나 target current state를
+   Progress·Index에 새 권위로 복제하지 않는다.
+
+<!-- key: id=key.standard.project.source-derived-semantic-views kind=claim refs=key.topic.artifact-graph key.topic.work-recovery key.topic.verification key.topic.acceptance -->
+#### Source-derived semantic views
+
+1. Criterion verification view는 active acceptance criterion의 `requires_verification_of` target과
+   active test 또는 `verification_result`의 `verifies` relation을 join한다. `verified`는 해당 graph
+   evidence가 연결되었다는 뜻이며 criterion approval이나 Work acceptance를 자동 전이하지 않는다.
+2. Effective Decision view는 active·accepted Decision/claim과 admitted `supersedes` chain에서
+   계산한다. Pending Decision/claim은 별도 review overlay로 유지하고 effective authority로
+   승격하지 않는다.
+3. Work artifact view는 active Work Order의 direct `produces` relation에서 output과 test를
+   계산한다. Transitive impact는 이 요약에 추정해서 넣지 않고 기존 Linker impact traversal을
+   요청할 때만 계산한다.
+4. 이 view들은 validator와 same reconstructed `GraphSnapshot`을 사용하고 canonical
+   `source_generation`에 결속한다. `include_source_views`를 명시한 호출의 session-only output이며,
+   default readiness와 disposable owner/ref cache에는 추가하지 않는다.
+5. Missing target, incomplete generation과 relation diagnostic은 숨기지 않는다. View 또는 cache는
+   source를 수정하거나 acceptance, approval, work status의 새 authority가 될 수 없다.
+6. Historical acceptance event의 subject digest와 finalization manifest/envelope binding은 현재
+   projection과 분리된 기존 snapshot 계약을 재사용한다. Semantic view를 위해 새 evidence root,
+   manifest, key 또는 HMAC 체계를 만들지 않는다.
+
 <!-- key: id=key.standard.project.std-keystone-021 refs=key.topic.document-system key.topic.skill-contract -->
 ### STD-KEYSTONE-021: 작업서는 goal assignment를 위해 작업을 나눈다
 
@@ -753,7 +790,7 @@ Subagent report status 값과 의미는 `standards/subagents/key-standard-subage
    validation을 verification 후보로 포함한다.
 5. 필요하면 verifier subagent에게 별도 verification Goal을 배정한다.
 
-<!-- key: id=key.standard.project.std-keystone-026 refs=key.topic.document-system key.doc.work key.topic.work-round -->
+<!-- key: id=key.standard.project.std-keystone-026 refs=key.topic.document-system key.doc.work key.topic.work-round key.claim.r011.round-hierarchy-two-level-limit key.claim.r011.depth-overflow-restructure key.claim.r011.parent-global-round-authority key.claim.r011.child-local-execution-authority key.claim.r011.parent-child-aggregate-gate -->
 ### STD-KEYSTONE-026: 작업서는 round 단위로 묶는다
 
 작업서(4)는 기준서(3)와 달리 하나의 영구 통합 문서가 아니라 특정 시점의 기준서와 목표를
@@ -777,6 +814,28 @@ Subagent report status 값과 의미는 `standards/subagents/key-standard-subage
 11. 의존성이 명시되지 않은 step은 main/user 판단에 따라 병행 검토하거나 선반영할 수 있다.
 12. Author는 step dependency나 acceptance gate를 임의로 만들지 않고, main/user 또는 Clarify가
     수락한 의존성 결정을 작업서에 반영한다.
+13. Round 계층은 parent Round와 그 직접 child Round의 총 2단계까지만 허용한다.
+    Child Round 아래에 grandchild Round를 만드는 3단계 이상 계층은 허용하지 않는다.
+14. 현재 Goal을 수행하기 위해 3단계 이상 Round가 필요해지면 더 깊은 Round를 생성하지
+    않고 작업 플랜이 과도하게 복잡해졌다는 신호로 판정한다. Worker는 진행을 멈추고
+    `NEEDS_SCOPE_CHANGE`와 `work_order_restructure`를 보고하며, Coordinator는 Author/Main에게
+    작업서(4) 또는 작업 플랜 개편을 요청한다.
+15. 개편은 Goal 범위를 줄이거나, 동급 child Round로 분리하거나, 별도 parent Round로
+    분리하는 방법을 우선한다. 이미 수락된 Round·Step ID를 재번호화하거나 재귀적
+    하위 Round 생성으로 복잡도를 숨기지 않는다.
+16. Parent Round Index는 ordered `child_rounds`, umbrella Goal·Scope·Boundary와 전역
+    `round_status`를 소유한다. Root Works Index, Context Map과 Work State의 전역
+    `active_rounds`, `accepted_rounds`, `active_round`, `latest_accepted_round`에는 parent ref만 쓴다.
+17. Child Round Index는 local `round_status`, Work nodes, Step과 Progress를 소유한다.
+    Child ref는 `active_steps`, active Work의 local Round 소유권과 child 집계에는 나타나지만
+    전역 latest-accepted ordering을 전이하지 않는다.
+18. Child를 선언한 parent는 같은 상세 Work를 직접 중복 소유하지 않는다. Work State는
+    parent-child 관계, child local status와 unresolved child를 파생하지만 parent 상태를
+    자동 전이하거나 작업 권한을 만들지 않는다.
+19. Parent Round는 선언한 모든 child가 accepted이고 active, blocked, planned 또는 unresolved
+    child가 없을 때만 Main 수락 후 accepted로 전이할 수 있다. Child local acceptance는
+    parent gate evidence이며 자체로 전역 acceptance event나 새 historical closure 산출물을
+    만들지 않는다.
 
 <!-- key: id=key.standard.project.std-keystone-027 refs=key.doc.work key.topic.work-round key.topic.artifact-graph key.topic.impact-review key.topic.verification key.topic.acceptance -->
 ### STD-KEYSTONE-027: Change Set은 artifact 변경과 impact propagation을 묶는다

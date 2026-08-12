@@ -1,271 +1,62 @@
-# Acceptance Finalization Validator
+# Acceptance finalization compatibility validator
 
-`scripts/run_finalization_validation.py` is the fail-closed package entry point and invokes the
-diagnostic-only `scripts/validate_finalization.py` command bundled with `keystone-author`.
-It reads a JSON manifest and referenced Keystone documents; it never edits files or changes acceptance,
-work status, or `finalization.state`.
+`scripts/run_finalization_validation.py` and `scripts/validate_finalization.py` are read-only
+compatibility adapters for historical finalization manifests. They never edit files, grant Main
+acceptance, update Work State, or create graph authority.
 
-## Invocation
+## Current completion
+
+New work does not create a finalization manifest. Main acceptance is closed by synchronizing only the
+sources whose state or meaning changed:
+
+1. The accepted Step and owning Work/Progress when their state changed.
+2. Work, round, root, and Context Map indexes only when aggregate state or active pointers changed.
+3. Work State only when Work/Step status or recovery pointers changed.
+4. Linker affected-scope validation only for graph-relevant metadata, relation, or multi-surface meaning.
+5. Targeted tests and current diff review for the actual implementation surface.
+
+The durable Progress record is the normal current completion evidence. External evidence roots, owner
+keys, HMAC receipts, snapshot chains, and generated acceptance-event artifacts are not prerequisites.
+
+## Historical invocation
+
+Use the adapter only when an existing historical manifest must be inspected:
 
 ```bash
 python3 <keystone-author-package>/scripts/run_finalization_validation.py \
   --root <repository-or-document-root> \
-  --manifest <finalization-manifest.json>
+  --manifest <historical-finalization-manifest.json>
 ```
 
-The runner evaluates the Author core first, then required Artifact Graph evidence with the installed
-Linker runner, and finally an optional project extension. A failure at any stage stops later stages.
-`--graph-runner` may override the sibling package path for an installed-layout adapter or test, but it
-does not make graph validation optional.
+The runner may invoke the sibling Linker compatibility validator when the historical manifest declares
+graph evidence. A project extension is additive and cannot weaken core structural checks.
 
-An additive project validator may be supplied with `--extension <python-script>`. The package runner
-always evaluates the core validator first and returns a core failure without invoking the extension,
-so a project check cannot weaken or replace core rules. When a repository supports pre-commit or CI,
-its hook may call `scripts/check_finalization_hook.sh` with the same arguments; this wrapper delegates
-to the package runner and has no edit or acceptance authority.
+Exit codes are:
 
-Exit codes:
+- `0`: the historical input passed the checks that were available;
+- `1`: deterministic structural or semantic findings were reported;
+- `2`: the input or required executable could not be read or invoked.
 
-- `0`: required checks passed.
-- `1`: deterministic validation findings were reported.
-- `2`: invocation or execution input was unavailable or malformed.
+Stdout is one diagnostic JSON envelope with `schema_version`, `status`, `diagnostics`, and `summary`.
 
-Stdout is one JSON object containing `schema_version`, `status`, `diagnostics`, and `summary`. Each diagnostic has
-`severity`, `code`, `message`, and an optional repository-relative `path`.
+## Compatibility boundary
 
-## Manifest
+Schemas v1-v6 remain readable for existing records. They are not templates for new work and cannot
+create current completion, apply, or release authority. Previously completed records remain historical
+facts; rerunning a validator neither reaccepts nor cancels them.
 
-```json
-{
-  "schema_version": 5,
-  "acceptance_ref": "R004/S02/main-acceptance",
-  "steps": [
-    {
-      "ref": "R004/S02",
-      "work_ref": "R004/finalization-runtime-validator",
-      "status": "complete",
-      "approval_state": "accepted",
-      "finalization_state": "in_progress",
-      "finalization_acceptance_ref": "R004/S02/main-acceptance",
-      "progress_path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/key-progress.md"
-    }
-  ],
-  "accepted_steps": ["R004/S02"],
-  "execution_transitions": [
-    {"ref": "R004/S02", "from": "in_progress", "to": "complete"}
-  ],
-  "approval_transitions": [
-    {"ref": "R004/S02", "from": "pending", "to": "accepted", "evidence": "Main accepted the verified result."}
-  ],
-  "active_steps": [],
-  "active_step_sources": [
-    {"category": "work_index", "path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/00_key-index.md"},
-    {"category": "round_index", "path": "00_docs/works/r004-acceptance-finalization/00_key-index.md"},
-    {"category": "context_map", "path": "00_docs/key-context-map.md"}
-  ],
-  "global_state": {
-    "active_round": "R004",
-    "latest_accepted_round": "R003",
-    "active_steps": [],
-    "sources": [
-      {"category": "work_index", "path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/00_key-index.md", "key_id": "key.work.finalization-runtime-validator.index"},
-      {"category": "round_index", "path": "00_docs/works/r004-acceptance-finalization/00_key-index.md", "key_id": "key.work.round.r004.index"},
-      {"category": "root_index", "path": "00_docs/works/00_key-index.md", "key_id": "key.work.index"},
-      {"category": "context_map", "path": "00_docs/key-context-map.md", "key_id": "key.context-map"}
-    ]
-  },
-  "early_work": [],
-  "finalization": {
-    "required": true,
-    "state": "in_progress",
-    "progress_path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/key-progress.md",
-    "evidence": ["main_acceptance", "impact_dispositions", "source_updates", "semantic_review"]
-  },
-  "graph_sync": {
-    "required": false,
-    "disposition": "not_applicable",
-    "reason": "No graph-relevant source changed."
-  },
-  "impact_candidates": [
-    {
-      "category": "round_index",
-      "artifact": "R004 round index",
-      "path": "00_docs/works/r004-acceptance-finalization/00_key-index.md",
-      "disposition": "updated",
-      "reason": "The owning round represents S02 activation."
-    },
-    {
-      "category": "progress",
-      "artifact": "S02 progress",
-      "path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/key-progress.md",
-      "disposition": "updated",
-      "reason": "Progress records acceptance and finalization evidence."
-    },
-    {
-      "category": "work_order_change_set",
-      "artifact": "S02 work order and Change Set",
-      "path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/key-work-finalization-runtime-validator.md",
-      "disposition": "updated",
-      "reason": "The implementation result and changed surfaces are recorded."
-    },
-    {
-      "category": "work_index",
-      "artifact": "S02 work index",
-      "path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/00_key-index.md",
-      "disposition": "updated",
-      "reason": "The owning Work status was evaluated."
-    },
-    {
-      "category": "root_index",
-      "artifact": "root works index",
-      "path": "00_docs/works/00_key-index.md",
-      "disposition": "no_change",
-      "reason": "R004 remains the active round."
-    },
-    {
-      "category": "context_map",
-      "artifact": "Context Map",
-      "path": "00_docs/key-context-map.md",
-      "disposition": "updated",
-      "reason": "The active_steps representation changed."
-    },
-    {
-      "category": "standard_decision_plan",
-      "artifact": "accepted S01 sources",
-      "path": "00_docs/works/key-decisions.md",
-      "disposition": "no_change",
-      "reason": "Runtime implements the accepted policy without changing its meaning."
-    },
-    {
-      "category": "recovery",
-      "artifact": "R004 recovery instructions",
-      "path": "00_docs/works/r004-acceptance-finalization/00_key-index.md",
-      "disposition": "updated",
-      "reason": "Recovery starts from the remaining active_steps set."
-    },
-    {
-      "category": "implementation_gate",
-      "artifact": "S02 implementation gates",
-      "path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/key-work-finalization-runtime-validator.md",
-      "disposition": "no_change",
-      "reason": "No unresolved implementation choice remains.",
-      "gate_state": "resolved",
-      "gate_scope": "R004/S02 implementation"
-    },
-    {
-      "category": "residual_risk",
-      "artifact": "S02 residual risks",
-      "path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/key-progress.md",
-      "disposition": "no_change",
-      "reason": "No S02 residual risk requires a source update.",
-      "risk_state": "none",
-      "risk_items": []
-    },
-    {
-      "category": "namespace",
-      "artifact": "shared namespaces",
-      "path": "00_docs/works/r004-acceptance-finalization/finalization-runtime-validator/key-progress.md",
-      "disposition": "no_change",
-      "reason": "No duplicate namespace/value ownership was found.",
-      "namespace_state": "checked"
-    }
-  ],
-  "namespace_entries": []
-}
-```
+When historical trust material, a retired producer, or an external evidence root is unavailable, the
+adapter should validate readable manifest structure, referenced repository sources, and current source
+state where possible. It reports `historical_structure_only` and does not ask the user to recreate keys,
+receipts, snapshots, or external evidence.
 
-Schema versions 1 and 2 are diagnostic compatibility paths for existing unfinished finalization only.
-The live validator never returns success for a version-1 or version-2 `finalization.state: complete`,
-and version 1 cannot contain `graph_sync`. Previously completed
-R004 records are historical acceptance evidence: rerunning this validator does not newly approve
-their completion, cancel their acceptance, or require a retroactive state edit. Version 3 preserves
-previously completed records and their graph evidence as a compatibility wire. Version 4 preserves
-the accepted per-Step and four-source equality contract. Any new completion or graph-relevant
-finalization uses version 6. Version 5 remains a compatibility wire for previously completed records.
-Version 6 retains version-5 semantic Step, event-Round, source-role, `doc_type`, path, and key binding,
-and adds an exact complete Work State Runtime binding:
+An unavailable historical dependency is not a current-work failure. It also must not be represented as
+a full historical authority pass.
 
-```json
-{
-  "work_state_runtime": {
-    "policy_digest": "sha256:...",
-    "result_digest": "sha256:...",
-    "source_generation": "sha256:...",
-    "path_set_digest": "sha256:...",
-    "complete": true
-  },
-  "graph_sync": {
-    "required": true,
-    "disposition": "required",
-    "reason": "Document metadata changed.",
-    "validation_manifest_path": ".keystone/graph-validation.json",
-    "transaction_id": "graph-tx-..."
-  }
-}
-```
+## Safety properties
 
-`disposition` is `required`, `not_applicable`, or `deferred`. `required` is true for `required` and
-`deferred`, and false for `not_applicable`. A required finalization may remain `in_progress` without
-transaction evidence so repair can resume. `complete` requires `not_applicable`, or a required graph
-validation manifest whose inline transaction ID matches `transaction_id` and whose bundled Linker
-validation proves the transaction's full `verified` closure. The Author core independently requires
-the bound transaction state to be exactly `verified`; every non-verified state fails closed before
-completion. The sibling Linker runner then verifies attestations, application results, digests,
-reconstruction, and mechanical evidence instead of trusting that state label alone. `deferred` always
-blocks `complete`. A stored state string, cache, or evidence label cannot replace rerunning Linker
-validation.
-
-The manifest must contain all core categories: `progress`, `work_order_change_set`, `work_index`,
-`round_index`, `root_index`, `context_map`, `standard_decision_plan`, `recovery`,
-`implementation_gate`, `residual_risk`, and `namespace`.
-
-Allowed candidate dispositions are `updated`, `no_change`, `historical`, `out_of_scope`,
-`clarification_required`, and `integration_gate`. Every candidate requires a reason. Candidates that
-claim `updated`, `no_change`, or `historical` also require an existing path under `--root`.
-
-Each Step ref, Work ref, and status must match the referenced Progress `step_ref`, `work_ref`, and
-`work_status`. The work index, round index, and Context Map active-step sources must each contain the
-same `active_steps` set as the manifest. Every `active_steps` ref must resolve
-to a declared Step with an active status. Execution and approval transitions must name refs in
-`accepted_steps`.
-Every accepted Step has exactly one `in_progress` to `complete` execution transition and
-exactly one `pending` to `accepted` approval transition with evidence. In schema versions 4 and 5, every
-accepted Step also declares `finalization_state` and `finalization_acceptance_ref`; both must match its
-Progress frontmatter, and a complete event requires all accepted Steps complete under the manifest
-acceptance ref. Versions 4 and 5 `global_state` bind `active_round`, `latest_accepted_round`, and
-`active_steps` to four distinct paths—work index, round index, root index, and Context Map—and checks
-each source's expected frontmatter `key.id`. Body examples cannot provide or override these values.
-`active_round: none` is the canonical no-active-round value and is valid only when `active_steps` is
-empty. Version 5 additionally requires canonical accepted Step refs from exactly one event Round,
-binds the work and round source path/key to that event Round, binds root index and Context Map to their
-canonical global identity, and validates each source's category `doc_type`. Active Step refs must be
-canonical and their round prefix must equal `active_round`; the event Round remains recoverable when
-the terminal active Round is `none`. The event round index must be `active` while that Round is active
-and `accepted` at terminal closure; a terminal event Work must be `complete`.
-`latest_accepted_round` must resolve to exactly one canonical `doc_type: work_round` index below the
-root works-index directory, with matching round path/key identity and `round_status: accepted`, even
-when another event Round is active. Terminal `active_round: none` is invalid while any canonical
-`doc_type: work` index in that tree has `work_status: planned`, `in_progress`, or `blocked`.
-Future-Step partial work
-belongs in `early_work` with a declared target, cause, completed and remaining scope, and
-`status_effect: none`. Duplicate namespace/value claims by different owners are validation failures.
-Non-historical Markdown candidates are scanned for singular current-step claims because recoverable
-state must be represented by `active_steps`.
-
-## Authority and fail-closed mapping
-
-Author owns manifest preparation, source edits, finalization transitions, and interpretation of the
-diagnostics. The runner maps a missing core validator to `validator_unavailable`; a process start failure,
-timeout, validator exit `2`, or unreadable output to `validator_execution_failed`. Exit `1` preserves
-`finalization.state: in_progress` with the reported findings. Project adapters may add checks but cannot
-remove core fields, turn a core failure into success, or gain source-edit or acceptance authority.
-
-A missing Linker runner maps to `graph_validator_unavailable`; an outer timeout maps to
-`graph_validation_timeout`; malformed JSON or an invalid Linker envelope maps to
-`graph_validation_output_malformed`; and a process start failure maps to
-`graph_validation_execution_failed`. A valid Linker exit-2 diagnostic keeps its Linker reason code.
-Core, graph, and extension diagnostics are additive. Graph findings or execution failures prevent the
-extension from running. None of these outcomes cancels Main acceptance or rewrites progress. Resume
-reuses preserved applied results for a `partially_applied` transaction; a revised `conflicted` or
-`failed` attempt records a new transaction ID, updates the graph evidence reference, and reruns the same
-finalization command.
+- Read referenced files without following unsafe links.
+- Keep package validation deterministic and standard-library-only.
+- Do not mutate acceptance, work status, finalization state, graph state, or indexes.
+- Do not infer that a stored `complete` label proves current source equality.
+- Do not run compatibility suites unless the adapter or release surface itself changed.

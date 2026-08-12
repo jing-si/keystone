@@ -71,7 +71,8 @@ key:
 - Repository closure: docs 177/177, repository/full graph 305/305, skipped/omitted 0,
   errors 0; package/cross tests 769개가 통과했다.
 - Acceptance: Main이 2026-08-09 `R010/S04/main-acceptance`로 candidate를 수락했다.
-- Resume point: R010/S05 Actual Agent Behavior Evaluation을 active recovery target으로 따른다.
+- Resume point: `DEC-WORKS-029`에 따라 R010/S05 Product Direction Realignment를 active recovery
+  target으로 따르고 S04 current source를 retain/simplify inventory input으로 제공한다.
 
 Active steps: [R010/S05]
 
@@ -153,5 +154,5 @@ Active steps: [R010/S05]
 ## 다음 작업
 
 1. S04는 accepted/finalized history로 보존한다.
-2. R010/S05 Progress와 Work Order에서 actual invocation adapter 구현을 복구한다.
-3. R010 terminal Round acceptance event는 S07 Main acceptance에서만 sequence +1로 생성한다.
+2. R010/S05 Progress와 Work Order에서 S04 runtime/consumer를 제품 목표에 따라 분류한다.
+3. R010 terminal Round acceptance event는 개편된 S07 Main acceptance에서만 sequence +1로 생성한다.

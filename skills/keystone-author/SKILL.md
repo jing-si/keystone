@@ -12,425 +12,249 @@ description: "Create or revise Keystone source documents, standards, work orders
 
 ## Purpose
 
-Create and revise human-readable Keystone source documents within the user's request and accepted decisions. Own standards, work orders, progress records, decision records, source-document metadata, indexes, and Change Sets. Edit source documents only; Main verifies and accepts the result.
+Create and revise human-readable Keystone source documents within the user's request and accepted
+decisions. Own standards, work orders, progress records, decision records, source-document metadata,
+indexes, and Change Sets. Edit source documents only; Main verifies and accepts the result.
 
-This installed contract is self-contained. Never require a consuming project to contain `standards/skills/author/**` or another project-local skill standard. Project documents define project meaning, not Author's runtime behavior.
+Use this installed package as the complete Author runtime contract. Do not require a consuming project
+to contain a project-local Author standard. Project documents define project meaning, while this
+package defines Author behavior.
 
 ## Initialization Gate
 
-Detect the document root and initialization state before editing:
+Resolve one document root and classify it as `uninitialized | partial | conflicted | bootstrapping |
+ready` before editing.
 
-- `uninitialized`: no resolvable Keystone root or foundation structure.
-- `partial`: only part of the required configuration or document structure exists.
-- `conflicted`: multiple roots or existing-file meanings cannot be reconciled safely.
-- `bootstrapping`: R000 exists and the project standard is being established.
-- `ready`: one authoritative root, accepted project standard, indexes, decisions, and recoverable work exist. An adopted legacy corpus may be ready without retroactive config or R000.
+- For `uninitialized` or `partial`, ask once whether to initialize or repair, hand off to Init, and
+  preserve the original request and resume point.
+- For `conflicted`, do not choose or overwrite. Send one material decision topic to Clarify.
+- For `ready`, continue with the smallest relevant source set.
+- Ordinary pre-initialization inspection of code, README, configuration, and repository structure
+  belongs to Main and is valid Author input.
 
-For `uninitialized` or `partial`, ask once whether to initialize or repair and then continue the original writing request. Do not repeat the question in the same conversation and scope when consent already exists. Preserve the original request, caller, handoff reason, resume point, accepted decisions, and existing-file risks for `keystone-init`.
+## When To Use
 
-For `conflicted`, do not choose or overwrite. Send one actual decision topic to Clarify when project meaning or document adoption is at stake. Resume after the decision. If initialization is refused, make no files and explain the current limitation.
+Use Author to create or revise:
 
-Before Keystone exists, code, README, configuration, and repository inspection belong to Main's normal capabilities. Accept that evidence as Author input; do not make Reader a prerequisite.
+1. Standards, work orders, progress records, decisions, indexes, and Context Map pointers.
+2. Source-document metadata and independently addressable document-item metadata.
+3. Accepted Clarify results and Main-accepted Step state.
+4. A bounded Change Set when a large document-to-code/test change needs traceability.
+
+Do not use Author for code, config, schema, API, test, generated-file, skill-source edits, worker
+orchestration, deep graph interpretation, or unresolved user decisions.
+
+## Operating Modes
+
+Select the smallest mode that fits the approved document change:
+
+- `create`: create a new source document and its required index entry.
+- `revise`: change existing accepted or pending meaning without rewriting unrelated history.
+- `clarify_apply`: record one resolved Clarify decision and resume the interrupted document task.
+- `normalize`: align structure or metadata while preserving current meaning and authority.
+- `progress_update`: record actual execution, evidence, blocker, or resume-point changes.
+- `acceptance_finalize`: synchronize only the state and aggregate sources changed by Main acceptance.
+
+Do not turn mode selection into a required routing artifact. A mode narrows the edit; it does not grant
+acceptance, code-write authority, or permission to expand scope.
 
 ## Required Context
 
-Use the minimum available context:
+Use only the context needed for the edit:
 
-1. User request or Main-accepted edit instruction.
-2. Document root or initialization state.
-3. Target document/section or the purpose of a new document.
-4. Applicable project standards, accepted decisions, and existing source documents when present.
-5. Scope, acceptance boundary, workspace state, and existing-change risk.
-6. Accepted Clarify result when a user decision was required.
-7. Linker report, graph-relevance assessment, or pending graph transaction resume evidence when graph
-   interpretation or synchronization matters.
+1. User request or Main-approved instruction.
+2. Document root and target documents.
+3. Applicable standards, accepted decisions, work context, and current workspace state.
+4. Scope, exclusions, existing-change risk, and verification expectation.
+5. Linker evidence only when artifact impact, stale/gap meaning, or multi-surface graph synchronization
+   is actually relevant.
 
-A work order and progress record improve recoverability but are not artificial prerequisites for a small, valid, explicit document request. Record routing context only for multiple surfaces, authority boundaries, or real audit/handoff needs.
+A Work Order, Change Set, routing payload, external evidence directory, or finalization manifest is not
+a prerequisite for a small explicit document edit.
 
 ## Workflow
 
-1. Detect initialization state and resolve one document root.
-2. Handoff to Init or Clarify when the Initialization Gate requires it, then resume here.
-3. Classify the request as `create`, `revise`, `clarify_apply`, `normalize`, `progress_update`, or
-   `acceptance_finalize`. Main acceptance automatically selects `acceptance_finalize`; do not wait for
-   a second user request to synchronize the accepted result.
-4. Read only the relevant project standards, decisions, work context, target documents, and indexes.
-5. Confirm that requested targets are Keystone source documents and that the scope is clear. Treat an explicit edit request as authority within its stated scope.
-6. For a large or multi-document change, prepare an Author Edit Contract containing targets, allowed changes, impact candidates, exclusions, forbidden changes, progress policy, and verification. Skip this ceremony for a small unambiguous edit.
-7. If project purpose, scope, policy, terminology, authority, sensitive data, destructive migration, or conflicting valid alternatives require user judgment, hand off exactly one topic to Clarify. Do not ask about built-in metadata, filenames, routing, or safe defaults.
-8. Edit only approved source documents, apply the temporal and document-item metadata rules below, and preserve unrelated user or agent changes.
-9. Check affected indexes, Context Map, decisions, progress, and Change Set needs. A relation is an impact candidate, not automatic edit authority.
-10. Use the source-write-free Linker when artifact relations, stale metadata, gaps, or canonical graph
-    mutations need interpretation. Defer code/config/schema/API/test/skill-source changes to Main direct
-    or a user-permitted Coordinator scope.
-11. Validate links, document and item identifiers, temporal metadata, item inheritance and relations,
-    lifecycle/approval/work-state separation, terminology, and Markdown.
-12. Report changes, intentional exclusions, verification, residual risk, and next action. Main accepts only after checking actual results and verification.
+1. Resolve initialization state and one document root.
+2. Classify the request as `create | revise | clarify_apply | normalize | progress_update |
+   acceptance_finalize`.
+3. Read only the relevant project sources and preserve unrelated changes.
+4. Use an Author Edit Contract only for a large or ambiguous multi-document change.
+5. Edit the approved source documents.
+6. Check actual impact on standards, Work/Progress, decisions, indexes, Context Map, and Change Set.
+7. Use Linker for graph interpretation; hand repository-output edits to Main or a permitted Coordinator.
+8. Run verification proportional to the changed surface and report residual risk.
 
-## Acceptance Finalization Runtime
+## Current Acceptance and Progress Synchronization
 
-After Main accepts one or more processed Steps, automatically run one bounded finalization for that
-acceptance event:
+After Main acceptance, synchronize only sources whose meaning or state changed:
 
-1. Record every accepted Step execution as `work_status: complete` and approval as
-   `approval.state: accepted`, then set every applicable owning Progress and Change Set
-   frontmatter `finalization.state` and shared `acceptance_ref` to `in_progress`. Do not introduce a
-   global `finalized` lifecycle value or infer state from body examples.
-2. Change status directly only for each Step Main actually accepted. Evaluate the owning Work, Round,
-   root works index, and Context Map against their own completion and representation conditions; never
-   infer sibling or future-Step transitions.
-3. Represent concurrent work as a zero-or-more `active_steps` list of equal Step refs. Never create or
-   preserve a singular `current_step` claim as authoritative state. Record partial future-Step work as
-   `early_work` with cause, completed scope, remaining scope, and `status_effect: none`; this does not
-   activate that Step.
-4. Build an impact-candidate manifest covering at least every owning Progress, Work Order/Change Set,
-   work index, round index, root works index, Context Map, related standards/decisions/plans, recovery
-   text, implementation gates, residual/deferred risks, and shared physical namespaces when applicable.
-   Give every candidate one disposition: `updated`, `no_change`, `historical`, `out_of_scope`,
-   `clarification_required`, or `integration_gate`, with a reason. Use `historical` only for genuinely
-   immutable history, never to exempt a live recovery or status claim. For namespace collisions, record
-   each owner and the current Work's integration action; do not edit another Work without authority.
-5. Invoke the bundled runner described in
-   [references/finalization-validator.md](references/finalization-validator.md). The command is
-   diagnostic-only; Author interprets its evidence and retains all edit, acceptance, and transition
-   authority.
-6. Map a missing command to `validator_unavailable`. Map process-start failure, timeout, exit `2`, or
-   unreadable output to `validator_execution_failed`. Exit `1` preserves the diagnostics. All three
-   outcomes keep `finalization.state: in_progress`; record the reason and resume point instead of
-   reporting success.
-7. Set `finalization.state: complete` only after required candidate dispositions, source edits, core
-   validator exit `0`, semantic review, and Main's post-edit verification are all evidenced. Initial
-   Step acceptance starts this process but is not post-edit verification. Use `waived` only for
-   an explicitly recorded bootstrap or not-applicable case with reason and follow-up.
-8. Emit new finalization manifest `schema_version: 6`. Bind the package-local
-   `scripts/work_state_runtime.py --root ROOT` policy digest, result digest, complete source
-   generation, and path-set digest in `work_state_runtime`; any runtime diagnostic or mismatch is
-   fail-closed. Require canonical accepted Step refs from one
-   event Round and bind each Step to its Progress `finalization_state` and
-   `finalization_acceptance_ref`. Bind `global_state.active_round`,
-   `global_state.latest_accepted_round`, and `global_state.active_steps` to distinct typed work-index,
-   round-index, root-index, and Context Map sources with canonical `doc_type`, path role, and frontmatter
-   `key.id`. Work/round sources bind to the accepted event Round even when terminal
-   `active_round: none`; active Step prefixes independently bind to the active Round. Require the event
-   Round to be `active` while it remains active and `accepted` at terminal closure; a terminal event
-   Work must be `complete`. Resolve `latest_accepted_round` to exactly one canonical accepted
-   `work_round` index below the root works-index directory, including while another event Round is
-   active. Terminal `active_round: none` additionally requires every canonical `work` index in that
-   tree to be outside `planned`, `in_progress`, and `blocked`. Assess `graph_sync` as `required`,
-   `not_applicable`, or `deferred`, with a reason. Required graph sync needs a bundled Linker validation
-   manifest and matching verified transaction before finalization can complete. Version 1 is diagnostic
-   compatibility for existing in-progress records only and can never approve `complete`. Version 2 is
-   also compatibility-only for unfinished records and cannot approve a new `complete` finalization.
-   Versions 3, 4, and 5 remain compatibility wires for previously completed records; do not rewrite
-   historical acceptance or graph evidence merely to make it current-state replayable.
-   Use `global_state.active_round: none` only when `active_steps` is empty.
+1. Record the accepted Step as `work_status: complete` and `approval.state: accepted` when those
+   transitions are part of the accepted result.
+2. Update the owning Step Progress and Aggregate Work Progress according to the ownership contract
+   below. Update round/root indexes and Context Map only when their aggregate state or active pointers
+   changed.
+   For a child Step, update the child Work/Progress and child Round index only; child acceptance does
+   not create a global acceptance event or advance `latest_accepted_round`. Accept a parent Round only
+   after every ordered declared child is resolved and locally accepted.
+3. Keep sibling or future Steps unchanged. Record genuine early work with `status_effect: none`.
+4. Run Work State only when Work/Step or active-pointer state changed.
+5. Run Linker affected-scope reconstruction only when metadata, relation, or multi-surface canonical
+   meaning changed.
+6. Record only actual state, verification, residual risk, and resume-point changes in Progress.
 
-Run finalization with the exact package-runner flag surface:
+Current completion does not require a new finalization manifest, external evidence root, owner key,
+HMAC receipt, snapshot chain, or acceptance-event artifact. Existing `finalization.state` may remain a
+recoverable Progress substate, but its current evidence is the synchronized source, Work State when
+applicable, targeted verification, and Main post-edit review.
 
-```sh
-python3 scripts/run_finalization_validation.py \
-  --root ROOT --manifest FINALIZATION_MANIFEST \
-  [--validator VALIDATOR] [--extension EXTENSION] [--graph-runner GRAPH_RUNNER] \
-  [--graph-evidence-root EVIDENCE_ROOT] \
-  [--graph-owner-key OWNER=PATH ...] \
-  [--graph-owner-key-sha256 OWNER=sha256:... ...] \
-  [--timeout-seconds SECONDS]
-```
+## Resumable Finalization
 
-When a required finalization names graph-validation manifest schema v2, `--graph-evidence-root` is
-mandatory and the repeatable graph-owner key/digest bindings are forwarded to the isolated package
-Linker runner. Graph-validation schema v1 remains readable historical/structural evidence, but neither
-it nor a standalone canonical transaction v2 can authorize a new Coordinator-v3 required graph-sync
-success. Coordinator post-acceptance validation forwards its own evidence-root and owner bindings to
-these graph-prefixed flags; Author does not invent or weaken them.
+1. Resume only a current `finalization.state: in_progress` Progress with a recorded blocker and resume
+   point. A complete or waived finalization is not a resume candidate.
+2. Recheck the recorded blocker against current source and the current accepted contract. Keep
+   `blocked` when it remains, use `unknown` when it cannot be decided, and accept a Reader `resumable`
+   candidate only with concrete evidence.
+3. For `resolved_by_source_change`, run only the current targeted verification named by the resume
+   action and synchronize sources whose actual state changed.
+4. For `resolved_by_contract_change`, confirm that the former requirement is no longer current
+   authority, preserve the old failure as history, and run the current targeted verification instead.
+5. Do not recreate legacy manifests, snapshots, HMAC receipts, keys, or evidence roots solely to resume
+   unfinished current state.
+6. Completion still requires current source synchronization, applicable Work State or focused checks,
+   and Main post-edit review. A resolved blocker must never complete automatically or imply acceptance.
+7. If the evidence is `blocked` or `unknown`, keep `finalization.state: in_progress` and update the
+   durable resume point only when its actual evidence or next action changed.
 
-The finalization hard gate is scoped: while a Work has an incomplete required finalization, block only
-that same Work's next implement assignment, transition to `in_progress`, next-Step Main acceptance,
-and Work closure. Allow documentation repair, investigation, verification, and finalization resume.
-Do not serialize independent Work or equal active Steps.
+## Work/Step Progress Ownership
 
-Project adapters and repository hooks may call the same bundled validator and add stricter checks.
-They cannot remove core manifest fields, convert a core failure to success, edit sources, accept work,
-or mark finalization complete. Hook absence is distinct from validator unavailability.
+1. Aggregate Work Progress `key-progress.md` owns the Work-level `work_status`, `approval.state`,
+   optional `finalization.state`, actual evidence, and resume point as the `aggregate Progress
+   authority`.
+2. Step Progress `key-progress-{step-slug}.md` owns one `step_ref` and that Step's execution, approval,
+   optional finalization, verification evidence, and resume point.
+3. A single compatible `key-progress.md` may also carry `step_ref` while the Work and current Step state
+   tuple is identical and no independently accepted Step record must be preserved. 두 상태가 갈라질 때만
+   Aggregate Work Progress와 Step Progress를 분리하고 모든 Step 파일을 미리 만들지 않는다.
+4. When a Step becomes `complete/accepted` while the Work remains `in_progress/pending`, write the Step
+   result to `key-progress-{step-slug}.md`; never replace the Aggregate Work Progress tuple with that
+   accepted Step tuple.
+5. Once any Step Progress exists, omit `step_ref` from Aggregate Work Progress. Do not bulk-rewrite
+   completed historical records only to adopt this layout.
+6. Work Index `work_status`/`approval` and Context Map or Index `global_state` are an
+   `optional compatibility projection`. They may be absent. If present and stale, report the
+   projection conflict without replacing aggregate Progress authority.
+7. Work State joins Work identity from the Work Index with Work state from Aggregate Progress and Step
+   state from a compatible combined or Step Progress record. Fall back to Work Index state only for a
+   legacy Work that has no Aggregate Progress.
+8. 기본 recovery를 위해 새 persistent projection artifact를 만들지 않는다. Add an optional
+   generated block only when a human-facing rendered view is actually needed, and bind it to a bounded
+   marker and freshness generation without overwriting human history or rationale.
 
 ## Document Delta and Graph Synchronization
 
-An ordinary in-scope single-document semantic, progress, or finalization edit stays in Author's normal
-direct-write lane when it needs no coordinated source-surface graph sync. It does not require an
-owner-apply request/receipt merely because Author records a document delta or refreshes an index. Enter
-the external application-evidence lane only after Linker classifies synchronization as `required` and
-provides an exact Author-owned transaction-v2 patch. Author never creates the transaction, expands
-scope, or treats direct-edit evidence as application authority.
+A single approved document surface stays in Author's direct-write lane. Recheck the target immediately
+before writing and preserve the resulting current diff.
 
-After an approved document meaning or independently addressable metadata item changes, Author emits a
-delta. `graph_relevant: true` invokes Linker classification; it does not automatically require a graph
-synchronization transaction and does not
-widen Author scope, create Coordinator permission, or grant acceptance. A safe `not_required`
-assessment for `graph_relevant: false` requires a concrete reason and maps to finalization
-`not_applicable`; it does not change the canonical delta shape.
+1. Use ID/ref refresh for a single-surface metadata change.
+2. Ask Linker for a synchronization transaction only when multiple source surfaces must change
+   together to close canonical meaning.
+3. Linker decides canonical mutations and exact patches; Author confirms and applies only an
+   `owner: author` document patch.
+4. Recheck the raw-byte baseline immediately before apply. Return `stale_baseline` without writing when
+   it differs.
+5. Return `applied | failed | stale_baseline` and the resulting digest for an applied patch.
+6. Linker reconstructs current source and runs transaction-scope mechanical validation. Author does not
+   declare the transaction verified independently.
 
-```yaml
-document_delta:
-  kind: document_delta
-  source_surface:
-  changed_locators:
-    - path: 00_docs/example.md
-      heading: Acceptance
-  semantic_summary:
-  baseline_digest: sha256:<64-lowercase-hex> | absent
-  graph_relevant: true | false
-graph_attestations:
-  - patch_id:
-    owner: author
-    decision: confirm | reject | needs_revision
-    evidence:
-graph_apply_results:
-  - patch_id:
-    result: applied | failed | stale_baseline
-    resulting_digest:
-    evidence:
-```
-
-Each `changed_locators` item is a canonical locator object with required `path` and only the
-applicable `heading`, `symbol`, `test_name`, `config_key`, or `schema_name`; omit unused optional
-fields. Do not emit plain locator strings.
-
-Linker alone decides canonical mutations and exact per-surface patches. Author compares only an
-`owner: author` document-metadata patch with the intended document meaning. Author never independently
-creates a typed relation, reinterprets Linker's mutation, or attests another surface. Apply only a
-confirmed in-scope patch, rechecking the target's raw UTF-8 SHA-256 baseline immediately before write;
-on mismatch, do not write and return `stale_baseline`.
-
-For that required transaction lane, apply each confirmed Author patch only through:
-
-```sh
-python3 scripts/run_owned_surface_apply.py \
-  --root ROOT --request REQUEST --evidence-root EVIDENCE_ROOT --output RECEIPT \
-  --authority-key EXTERNAL_AUTHOR_KEY --pinned-key-sha256 sha256:...
-```
-
-The canonical owner-apply request schema v1 contains exactly `schema_version`, `transaction_id`,
-`transaction_digest`, `assignment_id`, `assignment_digest`, `phase_id`,
-`phase_baseline_snapshot_digest`, `phase_parent_evidence_digest`, `repository_root_digest`, `owner`,
-`scope`, `scope_digest`, `prior_receipt_digest`, and `patch`. `scope` contains exactly `allowed` and
-`excluded`; `patch` is the full exact transaction-v2 patch. The Author runner accepts only
-`owner: author` with `document_metadata` on `.md | .markdown`, or `companion_metadata` for such a
-document. It checks observed baseline against the planned baseline, replays and writes exact expected
-bytes, rereads the result, and emits one canonical HMAC receipt in the same operation. A
-failed/stale/rollback path emits no receipt. Diagnostic pass/fail/error maps to exit `0/1/2`.
-For an existing target, same-directory atomic exchange preserves the displaced live entry and compares
-its exact bytes/type/identity with the planned baseline. If the OS/filesystem exchange primitive is not
-available, fail with `atomic_exchange_unavailable` and leave source and receipt unauthoritative.
-Rollback and receipt cleanup never unlink a public name directly: atomically move it with no-replace to
-a same-directory high-entropy quarantine, delete only a private entry matching the recorded
-runner-owned identity/bytes/mode, and restore or preserve every mismatch as recovery evidence while
-failing with `rollback_failed`.
-
-Every applied required or optional patch needs exactly one receipt; an omitted ancillary optional needs
-none. The signed envelope binds transaction plan, assignment, closure phase and parent evidence,
-repository root, owner scope, full patch, request, prior receipt, nonce, evidence root, external pinned
-Author key and current package runner/runtime digests. The key is a current-user-owned, owner-only,
-single-link regular file of at least 32 raw bytes on an absolute symlink-free path outside repository
-and evidence roots. This trusted-host HMAC proves exact signed bytes and protected-key possession, not
-independent execution, external time, OS-user/organization identity, or absence of a later authorized
-write. Linker remains the source-write-free verifier, and Coordinator compares the signed phase/scope/
-assignment/delta bindings before new v3 authority succeeds.
-
-Preserve every `applied | failed | stale_baseline` result. Partial success remains
-`partially_applied`; a resume skips patches whose current digest equals their recorded resulting digest
-and rechecks remaining baselines. Linker reconstructs the graph from source and runs mechanical
-validation. Author cannot declare the transaction `verified` or finalization complete. A conflicted or
-failed transaction requires Linker's new attempt with a new ID, preserved attempt history, and the
-conflict-reason-specific baseline/mutation/patch change defined by Linker.
-
-Progress and Change Sets retain `graph_sync` disposition/reason, transaction ID/state, delta and patch
-references, owner attestations, apply results, reconstruction, mechanical validation, transaction
-completeness, coverage debt, last successful event, and resume point. Full patch bodies may remain in
-the Linker transaction artifact if Progress contains a resolvable locator to it.
+External owner-apply keys, HMAC receipts, and disjoint evidence roots are not current apply authority.
+Historical finalization v1-v6 and owner-apply/application-evidence inputs may be read by their bundled
+compatibility adapters. Missing legacy producers or trust material yields structural diagnostics; it
+does not trigger a new producer run or external-folder permission request.
 
 ## Document Rules
 
 - Keep standards and works in index-based trees under the configured root.
-- Start ordinary rounds at `R001` and every round's steps at `S01`.
-- Reserve `R000 Project Foundation` for the special pre-standard foundation round; its first step is also `S01`.
-- Give each new work node a `00_key-index.md`, `key-work-{slug}.md`, and `key-progress.md` unless an accepted project rule says otherwise.
-- Keep `document_lifecycle` (`draft`, `active`, `superseded`, `archived`), `approval.state`
-  (`pending`, `accepted`, `rejected` when needed), and `work_status` in separate fields.
-- Do not mark work `accepted` or `complete` before Main acceptance. Worker `DONE` is not Main acceptance.
-- Apply accepted Clarify results without inventing a new decision or expanding their edit plan.
-- Use Change Sets for large changes or document-to-code/test impact that needs traceability.
-- Use `key.refs` for navigation and typed relations for semantic relationships; do not infer automatic propagation.
-
-## Dependency and Work Gates
-
-- Write an accepted semantic dependency as `key.relations.depends_on` from source to target. Treat it
-  as a relation, not as a scheduler command or automatic status transition.
-- Write execution conditions separately in top-level `work_gates`. Require each gate dependency to
-  name a declared `depends_on` target, and require at least one of `applies_to.steps` or
-  `applies_to.work_completion`.
-- Validate target existence, duplicate and self references, source step IDs, and condition values.
-  Use `condition.work_status: complete` and `condition.approval_state: accepted` unless an accepted
-  project rule defines another value.
-- Do not newly write legacy `<!-- keystone: depends_on=... -->` syntax. When structured and legacy
-  evidence coexist, preserve structured metadata as authoritative and report conflicts.
-- Never turn a dependency evaluation into automatic progress mutation, assignment, cancellation, or acceptance.
+- Start ordinary rounds at `R001` and every round's steps at `S01`; reserve `R000` for Project
+  Foundation.
+- A hierarchical plan uses one parent plus one direct child level only. Parent refs remain
+  `R[0-9]{3,}`; child refs use one lower-case suffix such as `R010-a`, and the child index lives at
+  `works/r010-parent/r010-a/00_key-index.md`. The parent owns ordered `child_rounds` and umbrella scope;
+  each child owns its local status, Work, Step, and Progress.
+- Do not create `R010-a-a`, a child below a child, or a sibling-root substitute for a declared child.
+  When a third level appears necessary, stop with `NEEDS_SCOPE_CHANGE / work_order_restructure` and ask
+  Main to simplify, split sibling children, or create a separate parent Round.
+- Keep `document_lifecycle`, `work_status`, `approval.state`, and optional finalization substate
+  separate.
+- Use Change Sets only for large changes or document-to-code/test impact that materially benefits from
+  a durable trace.
+- Use `key.refs` for navigation and typed relations for semantic relationships. A relation is an impact
+  candidate, not automatic edit permission.
+- Do not add or update a document merely to report that it was unaffected.
 
 ## Document Item Metadata
 
-Apply item metadata on approved Keystone source-document surfaces when a heading, list item, decision
-claim, work or acceptance criterion, capability or contract row can be referenced, changed, superseded,
-or verified independently. Do not annotate every sentence, explanatory bullet, example, or repeated
-summary. Existing unannotated corpus is not a bulk-migration requirement unless the approved scope says
-otherwise.
+Annotate a heading, list item, decision claim, acceptance row, or contract row only when it must be
+referenced, changed, superseded, or verified independently.
 
-- Use stable semantic IDs such as `key.rule.*`, `key.claim.*`, and `key.acceptance.*`; visible numbers,
-  row labels, paths, and line numbers are locators rather than substitutes for `key.id`.
-- Put a compact or multiline key comment immediately above a heading or list item. Prefer compact form
-  when `id` and a small relation set are sufficient; use multiline form for list-valued metadata such as
-  `legacy_terms`:
+- Use stable semantic IDs such as `key.rule.*`, `key.claim.*`, and `key.acceptance.*`.
+- Put heading/list metadata immediately above its item; keep table-row metadata in the first cell.
+- Inherit document authority, lifecycle, approval, and `governed_by` only for document-domain children.
+  Never inherit `id`, `supersedes`, or `legacy_terms`.
+- Use claim-level `supersedes` for partial replacement.
+- Use `requires_verification_of` for a requirement and `verifies` only for performed verification.
+- Do not bulk-annotate an existing corpus without explicit scope.
 
-  ```markdown
-  <!-- key: id=key.rule.verification.graph-validation -->
-  - Artifact Graph가 관련되면 graph validation을 verification 후보에 포함한다.
-  ```
+## Dependency and Temporal Rules
 
-- For a Markdown table row, keep the table intact by placing a compact comment in the first cell;
-  do not insert a standalone comment between rows:
+- Keep semantic `depends_on` separate from execution `work_gates`.
+- Validate dependency targets, Step IDs, duplicates, self-reference, and conditions without mutating
+  status, assigning work, cancelling, or accepting.
+- Give new documents their actual `created_at` date and accepted meaning its traceable acceptance date.
+- Give newly recorded decisions a decision date. Do not add generic `updated_at` or speculate about
+  legacy dates.
+- Authority comes from lifecycle, approval, source ownership, and relations—not a newer date.
 
-  ```markdown
-  | <!-- key: id=key.acceptance.worker.planning-grouping requires_verification_of=key.claim.worker.planning-boundary --> `PA-PLAN-01` | 입력 | 기대 결과 |
-  ```
+## Verification Tiers
 
-- Write declared metadata only. Compute effective metadata by inheriting the parent document or section's
-  `governed_by`, source authority, `document_lifecycle`, and approval by default.
-  Never inherit `id` or `supersedes`. Declare item lifecycle only when it differs from the parent, and
-  never use a child declaration to widen or replace parent source authority.
-- When an entire decision is one replacement unit, use a decision ID. When only part of a decision is
-  replaced and the rest remains authoritative, give that meaning a `key.claim.*` ID and declare
-  `supersedes` from the new claim to the old claim. Do not model partial replacement as a document-level
-  supersession.
-- Use `legacy_terms` only on an item that has `supersedes` or an explicitly deprecated/removed lifecycle.
-  Record only exact searchable former names, identifiers, routes, tables, or columns. Do not register
-  broad standalone words such as `batch`, `handler`, or `plan`, and do not treat `legacy_terms` as a
-  typed relation.
-- Use `refs` for navigation. Use `requires_verification_of` when an acceptance criterion or claim states
-  a verification requirement; reserve `verifies` for evidence performed by a test artifact or
-  verification result. Use typed item relations such as `governed_by` and `supersedes` for declared
-  semantics. A relation remains an impact candidate rather than automatic permission to
-  edit another source surface.
+1. **Default Work**: relevant-document search, scope/diff check, Markdown/metadata checks, and directly
+   related verification.
+2. **Escalated**: affected Linker review for metadata/relation or multi-surface meaning; Work State for
+   status/recovery changes; package/historical tests only for those changed adapters.
+3. **Release**: full package, repository, and installer verification only when release/publish/install
+   verification is explicitly requested.
 
-Before writing metadata, inspect the parent document and section so the item declaration does not
-duplicate inherited fields or conflict with their authority. If stale meaning, reverse impact,
-historical exceptions, or metadata-gap interpretation is needed, preserve the approved source edit and
-request Linker evidence rather than inventing a graph conclusion.
+Disposable cache is optional. If an external cache path is absent or inaccessible, use raw source
+without asking for trust/evidence-folder access.
 
-For one approved document surface, apply the source edit directly and notify Linker to invalidate or
-refresh the affected discovery scope. Do not edit the external cache. Require a graph synchronization
-transaction only when multiple source surfaces must change together. Downstream skills must not reuse a
-stale pre-write context token.
+## Output and Boundaries
 
-## Temporal Metadata
+Report:
 
-- Give every new Keystone source document an immutable `created_at: "YYYY-MM-DD"` using its actual creation date.
-- When Main or an authorized user accepts the current document meaning, record that result as `approval.state: accepted` with `approval.accepted_at: "YYYY-MM-DD"`. Author records acceptance; it does not invent or grant it.
-- For a semantic revision, set approval to `pending` and remove the current `accepted_at` until the revised meaning is accepted. Preserve both approval and `accepted_at` for a verified non-semantic formatting change.
-- Give every newly recorded decision a `결정일: YYYY-MM-DD`. Add `기록일`, `대체일`, `effective_from`, or `superseded_at` only when their distinct meaning is needed.
-- Do not add a general `updated_at`. Do not infer or bulk-backfill legacy dates; use a verified repository-history date only within an explicitly approved, bounded migration.
-- Use date-only values for document governance. Use a full ISO 8601 timestamp with an explicit timezone only for a separate execution event whose precise order matters.
-- Never treat a newer date as higher authority. Resolve authority through lifecycle, approval, source authority, and typed relations such as `supersedes`.
+1. Changed source documents and reasons.
+2. Accepted decisions or assumptions used.
+3. Intentionally unchanged related documents.
+4. Verification performed and residual risk.
+5. Required output-artifact handoff and next action.
 
-## Boundaries
-
-Do not:
-
-1. Edit implementation code, config, schema, API, tests, generated files, code anchors, or `skills/**`.
-2. Create user decisions, change scope/acceptance/status semantics/source authority, or approve project meaning.
-3. Perform deep Artifact Graph interpretation or orchestrate workers and reports.
-4. Require mandatory routing payloads, project-local Author standards, or a particular workspace/worktree strategy.
-5. Overwrite existing changes or migrate/rename paths without explicit authority.
-
-If delegation would help, Main may ask the user. Coordinator requires permission for that work scope;
-direct Coordinator invocation counts as permission. Source-write-free Linker analysis and mutation
-planning may be used without separate approval, but it grants no edit authority.
-
-## Handoff and Output
-
-Keep `author_edit_contract` and `author_patch_report` agent-facing. A report may include:
-
-```yaml
-author_patch_report:
-  contract_id:
-  routing_context_ref: # optional
-  edits:
-    - path:
-      section:
-      change_type: create | revise | progress_update | decision_record | index_update
-      reason:
-      source_decision:
-  no_edit_candidates: []
-  progress_updates: []
-  graph_handoff_result:
-    source_document_metadata_applied:
-    document_item_metadata_applied:
-    metadata_gap_candidates_deferred:
-    output_artifact_changes_deferred:
-    linker_report_required:
-    document_delta:
-    graph_sync:
-      disposition: required | not_applicable | deferred
-      reason:
-      transaction_id:
-      state:
-      transaction_ref:
-      resume_point:
-  verification:
-    checks: []
-    result:
-  residual_risk:
-  recommended_next_action:
-```
-
-Apply the Payload Disclosure Gate before responding. By default, do not print raw `*_output`, `*_result`, `*_report`, `worker_assignment`, or `keystone_routing_decision` blocks. Summarize changed documents, intentional no-edit candidates, verification, residual risk, next action, and key sources. Show the full payload only when the user requests it or handoff/audit/debug/verification actually needs it.
+Do not dump internal routing or report payloads by default. Do not edit non-document surfaces, invent
+decisions, expand scope, grant Main acceptance, or overwrite existing changes.
 
 ## Stop Conditions
 
-Stop or request the appropriate handoff when:
-
-1. The document root, target, edit scope, or source authority remains unclear.
-2. A required user decision or unresolved source conflict affects the edit.
-3. Existing changes could be overwritten.
-4. The task requires non-document surfaces or destructive migration.
-5. Index/progress/decision impact cannot be bounded safely.
-6. Formal delegation is needed but Coordinator permission is absent.
+Stop when the document root, target, authority, scope, or required decision is unresolved; when existing
+changes would be overwritten; or when completion requires non-document edits outside the permitted
+Coordinator/Main scope.
 
 ## Verification
 
-Check that:
+Verify that:
 
-1. The installed contract works without project-local skill standards.
-2. Init handoff preserves and resumes the original request.
-3. Only source documents changed and existing edits were preserved.
-4. Relevant links, indexes, Context Map, identifiers, decisions, and statuses remain consistent.
-5. New or changed independent items have stable, unique IDs when admission rules require them; heading
-   and list comments are immediately above their target and table-row comments remain in the first cell.
-6. Item relations resolve to declared targets where the approved source set can establish them;
-   `id`/`supersedes` are not inherited, partial supersession uses claims, and `legacy_terms` satisfies its
-   lifecycle or supersession restriction without broad generic terms.
-7. New documents have immutable creation dates, accepted meaning has a traceable acceptance date, and new decisions have decision dates without speculative legacy backfill.
-8. Rounds and steps follow `R001`/`S01`, with only the R000 foundation exception.
-9. No mandatory routing, host mode, profile, or workspace strategy was introduced.
-10. The default response hides structured payloads while preserving material risks and status.
-11. Structured dependencies and `work_gates` use separate relation/execution fields, valid targets and
-    step IDs, and do not cause automatic work-state changes.
-12. Main acceptance automatically starts finalization; all active Steps are represented as a list,
-    early work has no status effect, every impact candidate has a disposition, and no live source keeps
-    a singular current-step claim.
-13. The bundled validator command exists, returns parseable diagnostics, and exits `0` before required
-    finalization completes; unavailable or failed execution remains fail-closed and resumable.
-14. Graph-relevant document deltas automatically reach Linker; Author attests and applies only its own
-    baseline-matched patch and never declares verified independently.
-15. New finalization uses schema version 6, binds the complete package-local Work State Runtime
-    projection, separates execution and approval transitions, validates
-    one accepted event Round, every accepted Progress, active-Step round membership, and the typed
-    four-source global state, records graph_sync disposition, and accepts only bundled verified
-    transaction evidence for required synchronization.
+1. The package works without project-local Author standards.
+2. Small edits do not require Work Orders, Change Sets, manifests, external keys, or routing payloads.
+3. Only sources with changed meaning, status, evidence, resume point, or active pointers are updated.
+4. IDs, relations, temporal metadata, dependencies, and Markdown remain valid.
+5. Current apply uses owner baseline/result checks and source reconstruction without HMAC receipts.
+6. Historical adapters cannot create current completion, apply, or release authority.
+7. Default, Escalated, and Release verification are selected from the changed surface.
+8. Child acceptance remains local, parent acceptance is gated by all declared children, and no child
+   completion creates a new historical finalization or acceptance-event artifact.

@@ -358,6 +358,7 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
                 dependency_sources.append(DependencySource(
                     source_id=node.id,
                     path=path,
+                    doc_type=str(data.get("_doc_type", "")),
                     work_status=str(data.get("_work_status", "")),
                     approval_state=str(data.get("_approval_state", "")),
                     step_ref=str(data.get("_step_ref", "")),

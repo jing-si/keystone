@@ -14,7 +14,8 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 
 SCHEMA_VERSION = 1
-POLICY_VERSION = "keystone-work-state-v1"
+STATE_SCHEMA_VERSION = 4
+POLICY_VERSION = "keystone-work-state-v4"
 ACCEPTANCE_EVENT_PATH = "00_docs/works/key-acceptance-events.json"
 ACTIVE_WORK_STATUSES = frozenset({"in_progress", "blocked"})
 TERMINAL_RESIDUAL_STATUSES = frozenset({"planned", "in_progress", "blocked"})
@@ -31,13 +32,45 @@ PUBLIC_API = (
     "validate_prerequisite_closures",
 )
 _ROUND_DIRECTORY = re.compile(r"^r(?P<number>\d+)(?:-.+)?$")
+_CHILD_ROUND_DIRECTORY = re.compile(
+    r"^r(?P<number>\d{3,})-(?P<suffix>[a-z])$"
+)
 _ROUND_REF = re.compile(r"^R(?P<number>\d+)$")
-_STEP_REF = re.compile(r"^(?P<round>R\d+)/S\d+(?:-[A-Z0-9]+)*$")
+_CHILD_ROUND_REF = re.compile(
+    r"^(?P<parent>R(?P<number>\d{3,}))-(?P<suffix>[a-z])$"
+)
+_STEP_REF = re.compile(
+    r"^(?P<round>(?:R\d+|R\d{3,}-[a-z]))/S\d+(?:-[A-Z0-9]+)*$"
+)
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 _WORK_INDEX = re.compile(r"^00_docs/works/r\d+(?:-[^/]+)?/[^/]+/00_key-index\.md$")
 _ROUND_INDEX = re.compile(r"^00_docs/works/r\d+(?:-[^/]+)?/00_key-index\.md$")
 _PROGRESS = re.compile(r"^00_docs/works/r\d+(?:-[^/]+)?/[^/]+/key-progress\.md$")
+_STEP_PROGRESS = re.compile(
+    r"^00_docs/works/r\d+(?:-[^/]+)?/[^/]+/key-progress-[^/]+\.md$"
+)
 _WORK_ORDER = re.compile(r"^00_docs/works/r\d+(?:-[^/]+)?/[^/]+/key-work-[^/]+\.md$")
+_CHILD_ROUND_INDEX = re.compile(
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]/00_key-index\.md$"
+)
+_CHILD_WORK_INDEX = re.compile(
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]/[^/]+/00_key-index\.md$"
+)
+_CHILD_PROGRESS = re.compile(
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]/[^/]+/key-progress\.md$"
+)
+_CHILD_STEP_PROGRESS = re.compile(
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]/[^/]+/key-progress-[^/]+\.md$"
+)
+_CHILD_WORK_ORDER = re.compile(
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]/[^/]+/key-work-[^/]+\.md$"
+)
+_ROUND_DEPTH_OVERFLOW = re.compile(
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]/r\d{3,}-[a-z](?:/|$)"
+)
+_INVALID_CHILD_ROUND_INDEX = re.compile(
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]-.+/00_key-index\.md$"
+)
 _FINALIZATION_MANIFEST = re.compile(
     r"^00_docs/works/r\d+(?:-[^/]+)?/key-finalization-manifest\.json$"
 )
@@ -55,6 +88,14 @@ class SourceRecord:
     kind: str
     frontmatter: Mapping[str, Any]
     json_value: Optional[Any] = None
+
+
+@dataclass(frozen=True)
+class EffectiveWorkState:
+    work_status: Any
+    approval_state: Any
+    source_path: str
+    source_mode: str
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -80,6 +121,7 @@ def policy_digest() -> str:
     policy = {
         "policy_version": POLICY_VERSION,
         "schema_version": SCHEMA_VERSION,
+        "state_schema_version": STATE_SCHEMA_VERSION,
         "acceptance_event_path": ACCEPTANCE_EVENT_PATH,
         "active_work_statuses": sorted(ACTIVE_WORK_STATUSES),
         "terminal_residual_statuses": sorted(TERMINAL_RESIDUAL_STATUSES),
@@ -92,6 +134,18 @@ def policy_digest() -> str:
         "migration_genesis": "R009",
         "historical_projection": "accepted-round-step-semantic-v1",
         "early_work_projection": "finalization-manifest-path-order-v1",
+        "terminal_future_plan": "planned-work-under-planned-round-allowed",
+        "terminal_pointer_none": "yaml-null-normalized-to-none-string",
+        "active_round_derivation": "parent-global-active-work-and-step-union-v3",
+        "active_round_compatibility": "zero-none-one-ref-multiple-null",
+        "round_hierarchy": "parent-declared-ordered-child-membership-depth-two-v1",
+        "child_round_identity": "nested-single-lowercase-suffix-rddd-plus-v1",
+        "child_acceptance": "local-only-parent-all-children-accepted-gate-v1",
+        "active_step_resolution": "resolved-or-unresolved-with-source-candidates",
+        "progress_ownership": "aggregate-progress-authority-with-legacy-work-index-projection-v2",
+        "dependency_target_state": "aggregate-progress-owner-with-legacy-work-index-fallback-v1",
+        "pointer_compatibility": "optional-derived-legacy-v1-or-multi-active-v2-v3-v4",
+        "progress_body_consistency": "current-state-work-status-step-active-v1",
         "prerequisite_closure_fields": [
             "work_ref", "result", "waiver_reason", "follow_up",
             "acceptance_ref", "manifest_digest", "envelope_digest",
@@ -303,6 +357,11 @@ def _strict_json(raw: bytes, path: str) -> Any:
 
 
 def _round_from_path(path: str) -> Optional[str]:
+    identity = _round_identity_from_path(path)
+    return identity[1] if identity is not None else None
+
+
+def _round_identity_from_path(path: str) -> Optional[Tuple[str, str]]:
     parts = PurePosixPath(path).parts
     try:
         index = parts.index("works")
@@ -313,7 +372,26 @@ def _round_from_path(path: str) -> Optional[str]:
     match = _ROUND_DIRECTORY.fullmatch(parts[index + 1])
     if match is None:
         return None
-    return "R" + match.group("number").zfill(3)
+    parent_ref = "R" + match.group("number").zfill(3)
+    if index + 2 >= len(parts):
+        return parent_ref, parent_ref
+    child_match = _CHILD_ROUND_DIRECTORY.fullmatch(parts[index + 2])
+    if child_match is None:
+        return parent_ref, parent_ref
+    child_parent_ref = "R" + child_match.group("number").zfill(3)
+    if child_parent_ref != parent_ref:
+        return None
+    child_ref = child_parent_ref + "-" + child_match.group("suffix")
+    return child_ref, parent_ref
+
+
+def _parent_round_ref(round_ref: str) -> Optional[str]:
+    child_match = _CHILD_ROUND_REF.fullmatch(round_ref)
+    if child_match is not None:
+        return child_match.group("parent")
+    if _ROUND_REF.fullmatch(round_ref) is not None:
+        return round_ref
+    return None
 
 
 def _source_kind(path: str) -> Optional[str]:
@@ -323,11 +401,23 @@ def _source_kind(path: str) -> Optional[str]:
         return "context_map"
     if path == ACCEPTANCE_EVENT_PATH:
         return "acceptance_events"
+    if _CHILD_ROUND_INDEX.fullmatch(path):
+        return "child_round_index"
+    if _CHILD_WORK_INDEX.fullmatch(path):
+        return "work_index"
+    if _CHILD_PROGRESS.fullmatch(path):
+        return "progress"
+    if _CHILD_STEP_PROGRESS.fullmatch(path):
+        return "progress"
+    if _CHILD_WORK_ORDER.fullmatch(path):
+        return "work_order"
     if _ROUND_INDEX.fullmatch(path):
         return "round_index"
     if _WORK_INDEX.fullmatch(path):
         return "work_index"
     if _PROGRESS.fullmatch(path):
+        return "progress"
+    if _STEP_PROGRESS.fullmatch(path):
         return "progress"
     if _WORK_ORDER.fullmatch(path):
         return "work_order"
@@ -341,10 +431,29 @@ def _records_from_sources(
 ) -> Tuple[SourceRecord, ...]:
     records: List[SourceRecord] = []
     for path in sorted(sources):
+        raw = sources[path]
+        if _ROUND_DEPTH_OVERFLOW.match(path):
+            diagnostics.append(_diagnostic(
+                "work_state_round_depth_invalid",
+                "Round nesting cannot exceed one parent and one child level.",
+                path,
+            ))
+            continue
+        if _INVALID_CHILD_ROUND_INDEX.fullmatch(path):
+            try:
+                invalid_shape_frontmatter = parse_frontmatter(raw.decode("utf-8"))
+            except (UnicodeError, WorkStateError):
+                invalid_shape_frontmatter = {}
+            if invalid_shape_frontmatter.get("doc_type") == "work_round":
+                diagnostics.append(_diagnostic(
+                    "work_state_child_round_ref_invalid",
+                    "Child Round refs allow exactly one lower-case ASCII suffix.",
+                    path,
+                ))
+                continue
         kind = _source_kind(path)
         if kind is None:
             continue
-        raw = sources[path]
         try:
             if kind in {"acceptance_events", "finalization_manifest"}:
                 json_value = _strict_json(raw, path)
@@ -379,6 +488,105 @@ def _mapping(value: Any) -> Mapping[str, Any]:
 
 def _state_scalar(record: SourceRecord, key: str) -> Any:
     return record.frontmatter.get(key)
+
+
+def _is_aggregate_progress(record: SourceRecord) -> bool:
+    return PurePosixPath(record.path).name == "key-progress.md"
+
+
+def _effective_work_states(
+    records: Sequence[SourceRecord],
+    progress_by_directory: Mapping[str, Sequence[SourceRecord]],
+) -> Tuple[Dict[str, EffectiveWorkState], List[Dict[str, str]]]:
+    states: Dict[str, EffectiveWorkState] = {}
+    diagnostics: List[Dict[str, str]] = []
+    for record in records:
+        if record.kind != "work_index":
+            continue
+        directory = str(PurePosixPath(record.path).parent)
+        aggregate = next((
+            item for item in progress_by_directory.get(directory, ())
+            if _is_aggregate_progress(item)
+        ), None)
+        state_source = aggregate if aggregate is not None else record
+        source_mode = (
+            "aggregate_progress" if aggregate is not None
+            else "legacy_work_index"
+        )
+        state = EffectiveWorkState(
+            _state_scalar(state_source, "work_status"),
+            _approval(state_source),
+            state_source.path,
+            source_mode,
+        )
+        states[directory] = state
+        if aggregate is None:
+            continue
+        stale_fields = []
+        if (
+            "work_status" in record.frontmatter
+            and _state_scalar(record, "work_status") != state.work_status
+        ):
+            stale_fields.append("work_status")
+        if (
+            "approval" in record.frontmatter
+            and _approval(record) != state.approval_state
+        ):
+            stale_fields.append("approval.state")
+        if stale_fields:
+            diagnostics.append(_diagnostic(
+                "work_state_work_projection_stale",
+                "Work Index projection differs from aggregate Progress authority: %s."
+                % ", ".join(stale_fields),
+                record.path,
+            ))
+    return states, diagnostics
+
+
+def _progress_body_conflicts(record: SourceRecord) -> bool:
+    try:
+        text = record.raw_bytes.decode("utf-8")
+    except UnicodeError:
+        return False
+    frontmatter = re.match(
+        r"\A---\r?\n.*?\r?\n---(?:\r?\n|\Z)", text, re.DOTALL
+    )
+    body = text[frontmatter.end():] if frontmatter is not None else text
+    sections = re.findall(
+        r"(?ms)^##[ \t]+(?:Current State|현재 상태)[ \t]*\r?\n"
+        r"(.*?)(?=^##[ \t]+|\Z)",
+        body,
+    )
+    if not sections:
+        return False
+    if len(sections) != 1:
+        return True
+    section = sections[0]
+    claims: Dict[str, List[str]] = {}
+    for label, key in (
+        ("Work status", "work_status"),
+        ("Step", "step_ref"),
+        ("Active", "active"),
+    ):
+        claims[key] = [
+            item.strip().strip("`")
+            for item in re.findall(
+                rf"(?mi)^\s*[-*]\s*{re.escape(label)}\s*:\s*([^\r\n]+)$",
+                section,
+            )
+        ]
+    for key in ("work_status", "step_ref"):
+        values = claims[key]
+        if values and (len(values) != 1 or values[0] != str(_state_scalar(record, key))):
+            return True
+    active_values = claims["active"]
+    if active_values:
+        expected_active = str(
+            _state_scalar(record, "work_status") in ACTIVE_WORK_STATUSES
+        ).lower()
+        if len(active_values) != 1 or active_values[0].lower() != expected_active:
+            return True
+    return False
 
 
 def _approval(record: SourceRecord) -> Any:
@@ -694,23 +902,36 @@ def _pointer_claim(record: SourceRecord) -> Optional[Dict[str, Any]]:
     state = record.frontmatter.get("global_state")
     if not isinstance(state, Mapping):
         return None
+    schema_version = state.get("schema_version", 1)
+    if schema_version in {2, 3, STATE_SCHEMA_VERSION}:
+        return {
+            "path": record.path,
+            "schema_version": schema_version,
+            "active_rounds": state.get("active_rounds"),
+            "latest_accepted_round": state.get("latest_accepted_round"),
+            "active_steps": state.get("active_steps"),
+        }
+    active_round = state.get("active_round")
+    if active_round is None:
+        active_round = "none"
     return {
         "path": record.path,
-        "active_round": state.get("active_round"),
+        "schema_version": schema_version,
+        "active_round": active_round,
         "latest_accepted_round": state.get("latest_accepted_round"),
         "active_steps": state.get("active_steps"),
     }
 
 
-def _dependency_evaluations(records: Sequence[SourceRecord]) -> List[Dict[str, Any]]:
+def _dependency_evaluations(
+    records: Sequence[SourceRecord],
+    effective_work_states: Mapping[str, EffectiveWorkState],
+) -> List[Dict[str, Any]]:
     by_key: Dict[str, SourceRecord] = {}
-    by_directory: Dict[str, SourceRecord] = {}
     for record in records:
         key_id = _mapping(record.frontmatter.get("key")).get("id")
         if isinstance(key_id, str):
             by_key[key_id] = record
-        if record.kind == "work_index":
-            by_directory[str(PurePosixPath(record.path).parent)] = record
     evaluations: List[Dict[str, Any]] = []
     for record in records:
         if record.kind != "work_order":
@@ -723,15 +944,15 @@ def _dependency_evaluations(records: Sequence[SourceRecord]) -> List[Dict[str, A
                 continue
             dependency = gate.get("dependency")
             target = by_key.get(dependency) if isinstance(dependency, str) else None
-            target_index = (
-                by_directory.get(str(PurePosixPath(target.path).parent))
+            target_state = (
+                effective_work_states.get(str(PurePosixPath(target.path).parent))
                 if target is not None else None
             )
             condition = _mapping(gate.get("condition"))
-            target_status = _state_scalar(target_index, "work_status") if target_index else None
-            target_approval = _approval(target_index) if target_index else None
+            target_status = target_state.work_status if target_state else None
+            target_approval = target_state.approval_state if target_state else None
             satisfied = (
-                target_index is not None
+                target_state is not None
                 and target_status == condition.get("work_status")
                 and target_approval == condition.get("approval_state")
             )
@@ -743,6 +964,13 @@ def _dependency_evaluations(records: Sequence[SourceRecord]) -> List[Dict[str, A
                 "target_state": {
                     "work_status": target_status,
                     "approval_state": target_approval,
+                    "state_source": (
+                        {
+                            "path": target_state.source_path,
+                            "mode": target_state.source_mode,
+                        }
+                        if target_state is not None else None
+                    ),
                 },
                 "result": "satisfied" if satisfied else "waiting",
                 "blocking": not bool(gate.get("optional")),
@@ -798,92 +1026,370 @@ def derive_work_state(
         initialization = "initialized"
 
     rounds: Dict[str, SourceRecord] = {}
-    active_rounds: List[str] = []
+    child_round_sources: Dict[str, SourceRecord] = {}
+    declared_children_by_parent: Dict[str, List[str]] = {}
+    unresolved_children_by_parent: Dict[str, List[str]] = {}
+    undeclared_children_by_parent: Dict[str, List[str]] = {}
+    declared_active_rounds: List[str] = []
+    declared_active_child_rounds: List[str] = []
     accepted_rounds: List[str] = []
     for record in records:
-        if record.kind != "round_index":
+        if record.kind not in {"round_index", "child_round_index"}:
             continue
-        round_ref = _round_from_path(record.path)
-        if round_ref is None or round_ref in rounds:
+        identity = _round_identity_from_path(record.path)
+        if identity is None:
             diagnostics.append(_diagnostic(
                 "work_state_round_identity_invalid",
                 "Round index path must resolve to one unique Round ref.", record.path,
             ))
             continue
-        rounds[round_ref] = record
+        round_ref, parent_round_ref = identity
+        is_child = record.kind == "child_round_index"
+        target = child_round_sources if is_child else rounds
+        if round_ref in target or (is_child and round_ref == parent_round_ref):
+            diagnostics.append(_diagnostic(
+                "work_state_round_identity_invalid",
+                "Round index path must resolve to one unique Round ref.", record.path,
+            ))
+            continue
+        target[round_ref] = record
         status = _state_scalar(record, "round_status")
-        if status == "active":
-            active_rounds.append(round_ref)
-        elif status == "accepted":
+        if is_child and status == "active":
+            declared_active_child_rounds.append(round_ref)
+        elif not is_child and status == "active":
+            declared_active_rounds.append(round_ref)
+        elif not is_child and status == "accepted":
             accepted_rounds.append(round_ref)
-    active_rounds.sort()
-    accepted_rounds.sort()
-    if len(active_rounds) > 1:
-        diagnostics.append(_diagnostic(
-            "work_state_multiple_active_rounds",
-            "Repository work state may contain at most one active Round.",
-        ))
-    active_round = active_rounds[0] if len(active_rounds) == 1 else "none"
 
-    active_works: List[Dict[str, str]] = []
+    for parent_ref, record in rounds.items():
+        raw_children = record.frontmatter.get("child_rounds", [])
+        if not isinstance(raw_children, list):
+            diagnostics.append(_diagnostic(
+                "work_state_child_round_membership_invalid",
+                "Parent child_rounds must be an ordered array of canonical child Round refs.",
+                record.path,
+            ))
+            raw_children = []
+        declared_children: List[str] = []
+        seen_children = set()
+        for child_ref in raw_children:
+            child_match = (
+                _CHILD_ROUND_REF.fullmatch(child_ref)
+                if isinstance(child_ref, str) else None
+            )
+            if (child_match is None
+                    or child_match.group("parent") != parent_ref
+                    or child_ref in seen_children):
+                diagnostics.append(_diagnostic(
+                    "work_state_child_round_membership_invalid",
+                    "Each child_rounds entry must be unique and belong to its parent Round.",
+                    record.path,
+                ))
+                continue
+            seen_children.add(child_ref)
+            declared_children.append(child_ref)
+        declared_children_by_parent[parent_ref] = declared_children
+        unresolved = [
+            child_ref for child_ref in declared_children
+            if child_ref not in child_round_sources
+        ]
+        unresolved_children_by_parent[parent_ref] = unresolved
+        for child_ref in unresolved:
+            diagnostics.append(_diagnostic(
+                "work_state_child_round_unresolved",
+                "Declared child Round must resolve to its nested Round index.",
+                record.path,
+            ))
+
+    for child_ref, record in child_round_sources.items():
+        parent_ref = _parent_round_ref(child_ref)
+        if parent_ref not in rounds:
+            diagnostics.append(_diagnostic(
+                "work_state_child_round_parent_unresolved",
+                "Child Round must resolve to one parent Round index.",
+                record.path,
+            ))
+            continue
+        if child_ref not in declared_children_by_parent.get(str(parent_ref), []):
+            undeclared_children_by_parent.setdefault(str(parent_ref), []).append(
+                child_ref
+            )
+            diagnostics.append(_diagnostic(
+                "work_state_child_round_undeclared",
+                "Nested child Round must be declared by its parent child_rounds list.",
+                record.path,
+            ))
+
+    for parent_ref, record in rounds.items():
+        if _state_scalar(record, "round_status") != "accepted":
+            continue
+        incomplete_children = [
+            child_ref
+            for child_ref in declared_children_by_parent.get(parent_ref, [])
+            if child_ref not in child_round_sources
+            or _state_scalar(
+                child_round_sources[child_ref], "round_status"
+            ) != "accepted"
+        ]
+        if incomplete_children:
+            diagnostics.append(_diagnostic(
+                "work_state_parent_acceptance_gate_unsatisfied",
+                "Accepted parent Round requires every declared child Round to be accepted.",
+                record.path,
+            ))
+    declared_active_rounds.sort()
+    declared_active_child_rounds.sort()
+    accepted_rounds.sort()
+
+    progress_by_directory: Dict[str, List[SourceRecord]] = {}
+    for record in records:
+        if record.kind == "progress":
+            progress_by_directory.setdefault(
+                str(PurePosixPath(record.path).parent), []
+            ).append(record)
+    effective_work_states, work_state_diagnostics = _effective_work_states(
+        records, progress_by_directory
+    )
+    diagnostics.extend(work_state_diagnostics)
+
+    active_works: List[Dict[str, Any]] = []
     active_work_directories = set()
+    active_work_by_directory: Dict[str, Dict[str, Any]] = {}
+    active_work_record_by_directory: Dict[str, SourceRecord] = {}
     all_work_records: List[SourceRecord] = []
+    terminal_residual_records: List[Tuple[SourceRecord, Any, Optional[str]]] = []
     for record in records:
         if record.kind != "work_index":
             continue
         all_work_records.append(record)
-        status = _state_scalar(record, "work_status")
-        if status not in ACTIVE_WORK_STATUSES:
-            if active_round == "none" and status in TERMINAL_RESIDUAL_STATUSES:
-                diagnostics.append(_diagnostic(
-                    "work_state_terminal_residual_work",
-                    "Terminal work state cannot contain planned, in-progress, or blocked Work.",
-                    record.path,
-                ))
+        directory = str(PurePosixPath(record.path).parent)
+        effective_state = effective_work_states[directory]
+        status = effective_state.work_status
+        identity = _round_identity_from_path(record.path)
+        if identity is None:
+            diagnostics.append(_diagnostic(
+                "work_state_round_identity_invalid",
+                "Work path must resolve to one parent or declared child Round ref.",
+                record.path,
+            ))
             continue
-        round_ref = _round_from_path(record.path)
+        round_ref, parent_round_ref = identity
+        if (round_ref == parent_round_ref
+                and declared_children_by_parent.get(parent_round_ref)):
+            diagnostics.append(_diagnostic(
+                "work_state_parent_detail_work_conflict",
+                "A parent that declares child Rounds cannot also own detailed Work.",
+                record.path,
+            ))
+        round_record = (
+            child_round_sources.get(round_ref)
+            if round_ref != parent_round_ref else rounds.get(parent_round_ref)
+        )
+        if status not in ACTIVE_WORK_STATUSES:
+            round_status = (
+                _state_scalar(round_record, "round_status")
+                if round_record is not None else None
+            )
+            terminal_residual_records.append((record, status, round_status))
+            continue
         work_ref = _state_scalar(record, "work_id")
-        active_works.append({
-            "round_ref": str(round_ref),
+        work = {
+            "round_ref": round_ref,
+            "parent_round_ref": parent_round_ref,
             "work_ref": str(work_ref),
             "status": str(status),
             "path": record.path,
-        })
-        active_work_directories.add(str(PurePosixPath(record.path).parent))
-        if round_ref != active_round:
+            "state_source": {
+                "path": effective_state.source_path,
+                "mode": effective_state.source_mode,
+            },
+            "active_step_resolution": "unresolved",
+            "active_step_refs": [],
+            "active_step_candidates": [],
+            "unresolved_reason": "active_progress_missing",
+        }
+        active_works.append(work)
+        active_work_directories.add(directory)
+        active_work_by_directory[directory] = work
+        active_work_record_by_directory[directory] = record
+        parent_round_record = rounds.get(parent_round_ref)
+        local_round_active = (
+            round_record is not None
+            and _state_scalar(round_record, "round_status") == "active"
+        )
+        parent_round_active = (
+            parent_round_record is not None
+            and _state_scalar(parent_round_record, "round_status") == "active"
+        )
+        if not local_round_active or not parent_round_active:
             diagnostics.append(_diagnostic(
                 "work_state_active_work_outside_round",
-                "Active Work must belong to the unique active Round.", record.path,
+                "Active Work requires active local and parent Round source status.",
+                record.path,
+            ))
+
+    for directory in active_work_record_by_directory:
+        directory_progress = progress_by_directory.get(directory, [])
+        aggregate = next(
+            (
+                item for item in directory_progress
+                if _is_aggregate_progress(item)
+            ),
+            None,
+        )
+        if aggregate is None:
+            continue
+        ownership_conflicts = []
+        if _finalization(aggregate).get("state") in {"complete", "waived"}:
+            ownership_conflicts.append("finalization.state")
+        has_step_progress = any(
+            not _is_aggregate_progress(item) for item in directory_progress
+        )
+        if has_step_progress and _state_scalar(aggregate, "step_ref") is not None:
+            ownership_conflicts.append("step_ref")
+        if ownership_conflicts:
+            diagnostics.append(_diagnostic(
+                "work_state_progress_ownership_conflict",
+                "Aggregate Work Progress has an invalid active ownership tuple: %s."
+                % ", ".join(ownership_conflicts),
+                aggregate.path,
             ))
 
     active_steps: List[str] = []
-    active_progress: List[SourceRecord] = []
+    invalid_active_progress_directories = set()
     for record in records:
-        if record.kind != "progress" or _state_scalar(record, "work_status") not in ACTIVE_WORK_STATUSES:
+        if record.kind != "progress":
             continue
+        progress_status = _state_scalar(record, "work_status")
+        if (
+            progress_status in ACTIVE_WORK_STATUSES
+            and _progress_body_conflicts(record)
+        ):
+            diagnostics.append(_diagnostic(
+                "work_state_progress_body_conflict",
+                "Progress current-state text conflicts with authoritative frontmatter.",
+                record.path,
+            ))
+        if progress_status not in ACTIVE_WORK_STATUSES:
+            continue
+        directory = str(PurePosixPath(record.path).parent)
+        has_step_progress = any(
+            not _is_aggregate_progress(item)
+            for item in progress_by_directory.get(directory, [])
+        )
         step_ref = _state_scalar(record, "step_ref")
+        if _is_aggregate_progress(record):
+            if has_step_progress or step_ref is None:
+                continue
         if not isinstance(step_ref, str) or _STEP_REF.fullmatch(step_ref) is None:
             diagnostics.append(_diagnostic(
                 "work_state_active_step_invalid", "Active progress requires a canonical Step ref.", record.path,
             ))
+            invalid_active_progress_directories.add(directory)
             continue
         active_steps.append(step_ref)
-        active_progress.append(record)
-        if step_ref.split("/", 1)[0] != active_round:
-            diagnostics.append(_diagnostic(
-                "work_state_active_step_outside_round",
-                "Active Step must belong to the unique active Round.", record.path,
-            ))
-        if str(PurePosixPath(record.path).parent) not in active_work_directories:
+        work = active_work_by_directory.get(directory)
+        if work is None:
             diagnostics.append(_diagnostic(
                 "work_state_active_step_without_work",
                 "Active Step requires an active Work index in the same directory.", record.path,
+            ))
+        elif step_ref.split("/", 1)[0] != work["round_ref"]:
+            diagnostics.append(_diagnostic(
+                "work_state_active_step_outside_round",
+                "Active Step must belong to its active Work Round.", record.path,
+            ))
+        else:
+            work["active_step_refs"].append(step_ref)
+        step_round_ref = step_ref.split("/", 1)[0]
+        parent_round_ref = _parent_round_ref(step_round_ref)
+        round_record = (
+            child_round_sources.get(step_round_ref)
+            if step_round_ref != parent_round_ref else rounds.get(str(parent_round_ref))
+        )
+        parent_round_record = rounds.get(str(parent_round_ref))
+        if (round_record is None
+                or _state_scalar(round_record, "round_status") != "active"
+                or parent_round_record is None
+                or _state_scalar(parent_round_record, "round_status") != "active"):
+            diagnostics.append(_diagnostic(
+                "work_state_active_step_outside_round",
+                "Active Step requires active local and parent Round source status.",
+                record.path,
             ))
     active_steps.sort()
     if len(active_steps) != len(set(active_steps)):
         diagnostics.append(_diagnostic(
             "work_state_active_step_duplicate", "Active Step refs must be unique."
         ))
+
+    for directory, work in active_work_by_directory.items():
+        candidates = []
+        directory_progress = progress_by_directory.get(directory, [])
+        has_step_progress = any(
+            not _is_aggregate_progress(item) for item in directory_progress
+        )
+        for progress in sorted(
+            directory_progress, key=lambda item: item.path
+        ):
+            if has_step_progress and _is_aggregate_progress(progress):
+                continue
+            step_ref = _state_scalar(progress, "step_ref")
+            if isinstance(step_ref, str) and _STEP_REF.fullmatch(step_ref) is not None:
+                candidates.append({
+                    "path": progress.path,
+                    "step_ref": step_ref,
+                    "work_status": str(_state_scalar(progress, "work_status")),
+                })
+        work["active_step_candidates"] = candidates
+        work["active_step_refs"].sort()
+        if work["active_step_refs"]:
+            work["active_step_resolution"] = "resolved"
+            work["unresolved_reason"] = None
+        elif directory in invalid_active_progress_directories:
+            work["unresolved_reason"] = "active_progress_invalid"
+        elif candidates:
+            work["unresolved_reason"] = "active_progress_inactive"
+
+    active_local_rounds = {
+        work["round_ref"] for work in active_works
+    } | {
+        step_ref.split("/", 1)[0] for step_ref in active_steps
+    }
+    active_child_rounds = sorted(
+        round_ref for round_ref in active_local_rounds
+        if _CHILD_ROUND_REF.fullmatch(round_ref) is not None
+    )
+    active_rounds = sorted({
+        str(_parent_round_ref(round_ref)) for round_ref in active_local_rounds
+    })
+    if declared_active_rounds != active_rounds:
+        diagnostics.append(_diagnostic(
+            "work_state_round_source_conflict",
+            "Round source active statuses differ from active Work/Step evidence.",
+        ))
+    if declared_active_child_rounds != active_child_rounds:
+        diagnostics.append(_diagnostic(
+            "work_state_child_round_source_conflict",
+            "Child Round active statuses differ from active Work/Step evidence.",
+        ))
+    active_round: Optional[str]
+    if not active_rounds:
+        active_round = "none"
+    elif len(active_rounds) == 1:
+        active_round = active_rounds[0]
+    else:
+        active_round = None
+
+    if not active_rounds:
+        for record, status, round_status in terminal_residual_records:
+            is_future_plan = status == "planned" and round_status == "planned"
+            if status in TERMINAL_RESIDUAL_STATUSES and not is_future_plan:
+                diagnostics.append(_diagnostic(
+                    "work_state_terminal_residual_work",
+                    "Terminal work state permits planned Work only under a planned Round.",
+                    record.path,
+                ))
 
     historical_digest = _digest_bytes(canonical_json_bytes(
         _historical_projection(records, "R009")
@@ -942,16 +1448,40 @@ def derive_work_state(
     if context_map is not None:
         pointer_sources.append(context_map)
     pointer_sources.extend(
-        record for record in rounds.values() if _round_from_path(record.path) == active_round
+        record for record in rounds.values()
+        if _round_from_path(record.path) in active_rounds
     )
     pointer_sources.extend(record for record in all_work_records if record.path.rsplit("/", 1)[0] in active_work_directories)
     claims = [claim for claim in (_pointer_claim(item) for item in pointer_sources) if claim]
-    expected_claim = {
-        "active_round": active_round,
-        "latest_accepted_round": latest_accepted,
-        "active_steps": active_steps,
-    }
     for claim in claims:
+        if claim.get("schema_version") in {2, 3, STATE_SCHEMA_VERSION}:
+            expected_claim = {
+                "schema_version": claim.get("schema_version"),
+                "active_rounds": active_rounds,
+                "latest_accepted_round": latest_accepted,
+                "active_steps": active_steps,
+            }
+        elif claim.get("schema_version") == 1:
+            if len(active_rounds) > 1:
+                diagnostics.append(_diagnostic(
+                    "work_state_legacy_active_round_unrepresentable",
+                    "Legacy active_round cannot represent multiple active Rounds.",
+                    str(claim["path"]),
+                ))
+                continue
+            expected_claim = {
+                "schema_version": 1,
+                "active_round": active_round,
+                "latest_accepted_round": latest_accepted,
+                "active_steps": active_steps,
+            }
+        else:
+            diagnostics.append(_diagnostic(
+                "work_state_pointer_schema_invalid",
+                "Global-state pointer schema_version is unsupported.",
+                str(claim["path"]),
+            ))
+            continue
         observed = {key: claim.get(key) for key in expected_claim}
         if observed != expected_claim:
             diagnostics.append(_diagnostic(
@@ -960,7 +1490,7 @@ def derive_work_state(
                 str(claim["path"]),
             ))
 
-    dependencies = _dependency_evaluations(records)
+    dependencies = _dependency_evaluations(records, effective_work_states)
     closures, closure_findings = validate_prerequisite_closures(prerequisite_closures)
     diagnostics.extend(closure_findings)
     if not complete:
@@ -981,11 +1511,39 @@ def derive_work_state(
             "complete": bool(complete),
         })),
     }
+    round_hierarchy = []
+    for parent_ref, parent_record in sorted(rounds.items()):
+        child_entries = []
+        for child_ref in declared_children_by_parent.get(parent_ref, []):
+            child_record = child_round_sources.get(child_ref)
+            child_entries.append({
+                "round_ref": child_ref,
+                "path": child_record.path if child_record is not None else None,
+                "status": (
+                    _state_scalar(child_record, "round_status")
+                    if child_record is not None else "unresolved"
+                ),
+            })
+        round_hierarchy.append({
+            "round_ref": parent_ref,
+            "path": parent_record.path,
+            "status": _state_scalar(parent_record, "round_status"),
+            "child_rounds": child_entries,
+            "unresolved_child_rounds": list(
+                unresolved_children_by_parent.get(parent_ref, [])
+            ),
+            "undeclared_child_rounds": sorted(
+                undeclared_children_by_parent.get(parent_ref, [])
+            ),
+        })
     state = {
+        "schema_version": STATE_SCHEMA_VERSION,
         "initialization": initialization,
         "active_round": active_round,
         "active_rounds": active_rounds,
+        "active_child_rounds": active_child_rounds,
         "accepted_rounds": accepted_rounds,
+        "round_hierarchy": round_hierarchy,
         "active_works": sorted(active_works, key=lambda item: item["path"]),
         "active_steps": active_steps,
         "latest_accepted_round": latest_accepted,

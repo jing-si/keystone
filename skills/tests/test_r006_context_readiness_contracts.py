@@ -37,72 +37,55 @@ class R006ContextReadinessContractTest(unittest.TestCase):
         self.assertNotIn("repository scope on the first invocation", readiness)
         self.assertNotIn("Reader writes", readiness)
 
-    def test_linker_owns_external_derived_index_without_source_authority(self):
+    def test_linker_uses_optional_cache_without_source_authority(self):
         text = read("keystone-linker")
-        readiness = section(text, "## Owner/Ref Index Readiness")
+        readiness = section(text, "## Source of Truth")
         for phrase in (
-            "permissionless internal mode",
-            "no repository source-write authority",
-            "outside the repository",
-            "single writer",
-            "sorted path set",
-            "raw-byte SHA-256",
-            "fail-soft",
-            "user-facing command",
-            "initiating lane",
+            "current repository source surfaces",
+            "cache is disposable and optional",
+            "scan source directly",
+            "without asking for additional folder access",
         ):
             self.assertIn(phrase, readiness)
-        self.assertNotIn("write a repository source surface", readiness)
-        self.assertNotIn("Linker requires Coordinator permission", readiness)
+        self.assertIn("Linker is always read-only", text)
 
     def test_verification_requirement_direction_is_not_evidence(self):
-        rules = normalized(section(read("keystone-linker"), "## Graph Interpretation Rules"))
-        self.assertIn("acceptance criterion or claim -> target", rules)
-        self.assertIn("review the requirement and verification plan", rules)
-        self.assertIn("test artifact or verification result -> target", rules)
-        self.assertIn("actual verification evidence", rules)
+        rules = normalized(section(read("keystone-linker"), "## Impact Output"))
+        self.assertIn("relation evidence", rules)
+        self.assertIn("Label inference explicitly", rules)
+        self.assertIn("mechanical findings separate from user or policy decisions", rules)
 
     def test_linker_keeps_graph_and_transaction_optional(self):
         text = read("keystone-linker")
-        self.assertIn("requires_verification_of", text)
-        readiness = section(text, "## Owner/Ref Index Readiness")
-        synchronization = section(text, "## Graph Synchronization Mode")
-        self.assertIn("typed graph projection", readiness)
-        self.assertIn("multiple source surfaces", synchronization)
+        source = section(text, "## Source of Truth")
+        synchronization = section(text, "## Graph Relevance")
+        self.assertIn("graph is reconstructed", source)
+        self.assertIn("canonical meaning across surfaces", synchronization)
         self.assertIn("stale_baseline", text)
-        self.assertIn("needs_revision", text)
-        self.assertIn("reconstruction_mismatch", text)
-        self.assertIn("transient_io", text)
-        self.assertIn("failure_reason", text)
-        self.assertIn("transaction scope", text)
-        self.assertIn("repository scope", text)
-        self.assertNotIn("automatically starts this mode", synchronization)
-        self.assertNotIn("single-surface change requires a transaction", synchronization)
+        self.assertIn("transaction-scope", text)
+        self.assertIn("repository-scope", text)
+        self.assertIn("Do not run a repository-wide graph pass", synchronization)
 
     def test_author_separates_state_and_invalidates_changed_scope(self):
         text = read("keystone-author")
         self.assertIn("requires_verification_of", text)
-        self.assertIn("declared metadata", text)
-        self.assertIn("effective metadata", text)
+        self.assertIn("source-document metadata", text)
         self.assertIn("document_lifecycle", text)
         self.assertIn("work_status", text)
         self.assertIn("approval.state", text)
-        self.assertIn("affected discovery scope", text)
+        self.assertIn("affected-scope reconstruction", text)
         self.assertIn("multiple source surfaces", text)
 
-    def test_coordinator_permission_does_not_cover_internal_linker_readiness(self):
+    def test_coordinator_uses_linker_only_when_graph_context_is_relevant(self):
         text = read("keystone-coordinator")
-        boundary = section(text, "## Permissionless Linker Boundary")
+        boundary = section(text, "## Workflow")
         for phrase in (
-            "does not require Coordinator permission",
-            "fresh Reader context token",
-            "lazy repository scope",
-            "affected discovery scope",
-            "coverage debt",
+            "Ask Linker for impact context only when graph",
+            "affected graph scope only when graph-relevant sources changed",
+            "update only durable Work/Progress/index/context sources whose state or meaning changed",
         ):
             self.assertIn(phrase, boundary)
-        self.assertNotIn("permission governs internal Linker", boundary)
-        self.assertNotIn("raw readiness payload to the user", boundary)
+        self.assertIn("Do not dump raw worker, Linker, Author", text)
 
     def test_init_and_clarify_do_not_turn_cache_management_into_user_work(self):
         init = read("keystone-init")

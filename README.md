@@ -27,8 +27,8 @@ Keystone consists of six independent, cooperating Codex skills:
 | `keystone-author` | Create and revise project standards, work orders, progress records, decisions, indexes, and Change Sets. |
 | `keystone-reader` | Read existing Keystone documents, recover active work, and prepare a focused context brief. |
 | `keystone-clarify` | Resolve one actual high-impact user decision at a time, then return control to the caller. |
-| `keystone-linker` | Read graph evidence without editing source surfaces, decide canonical graph mutations, and report exact owner-applied synchronization patches. |
-| `keystone-coordinator` | With scoped user permission, provide Keystone context, execute directly or orchestrate an external-skill worker, and supervise document, metadata, graph, verification, and finalization closure. |
+| `keystone-linker` | Reconstruct current graph context without editing source surfaces, decide canonical graph mutations, and validate owner-applied results. |
+| `keystone-coordinator` | With scoped user permission, execute directly or orchestrate a selected external-skill worker, then supervise proportional verification and durable Keystone closure. |
 
 Each installed skill package contains its own runtime contract. A consuming
 project does not need project-local `standards/skills/**` files. The documents
@@ -61,30 +61,23 @@ Restart Codex after installation so the updated skill definitions are loaded.
 
 ## Release Verification
 
-The repository release gate runs only from a clean checkout. The RC profile verifies package tests,
-readiness, full graph reconstruction, historical finalization compatibility, Coordinator actual-state
-closure, installer parity and rollback, and independently attested agent-behavior evidence. List the
-planned phases without executing them with:
+The repository release gate runs only from a clean checkout. Its canonical plan is preflight, package
+tests, shared skill tests, compileall, document and repository readiness, Work State, repository graph
+validation, installer staging/parity/rollback, and postflight. List the planned phases without executing
+them with:
 
 ```bash
 /bin/sh scripts/run_release_gate.sh --profile rc --list
 ```
 
-Use the shell launcher for authoritative release checks. It starts the gate with an isolated Python
-runtime and a minimal environment; direct invocation of the Python entrypoint is intended only for
-development tests and is not release evidence.
+Use the shell launcher for release checks. It starts the gate with an isolated Python runtime and a
+minimal environment. Neither RC nor production requires an external evidence directory, reviewer key,
+HMAC receipt, agent-evaluation result file, or current finalization manifest. Historical finalization,
+Coordinator v2/v3, and application-evidence adapters remain covered by their affected package tests;
+they are not separate current release gates.
 
-An actual RC run also requires an external evidence root, results manifest, reviewer key, trusted
-reviewer ID, and a separately configured key fingerprint. The 12 required scenarios are defined in
-[`scripts/agent_eval_scenarios.json`](scripts/agent_eval_scenarios.json); the validator fails closed when
-the evidence or trust material is absent, stale, malformed, symlinked, or not bound to the current
-commit and release-package bytes.
-
-Use the `production` profile only after Main acceptance and schema-v6 finalization have placed the
-Context Map in terminal `active_round: none` state. Production adds validation of the latest accepted
-Round's current finalization manifest. Reviewer HMAC proves possession of the configured key; release
-operators must still establish reviewer independence and that the recorded agent execution actually
-occurred.
+The RC and production profiles intentionally share the same mechanical plan. Promotion and Main
+acceptance remain repository/process decisions outside generated gate evidence.
 
 ## Starting a Project
 
@@ -151,15 +144,15 @@ reserved for the exceptional Project Foundation round before standards exist.
 - Source documents remain authoritative; internal handoff payloads are hidden
   unless they are needed for audit, debugging, or verification.
 - Stable source-owned IDs and refs provide the default lookup path. Reader starts
-  with docs-only context readiness; Linker lazily enriches repository artifact
-  context through a disposable external index. The typed graph remains optional
-  and is materialized only for semantic traversal that needs it.
+  with docs-only context readiness; Linker reconstructs repository artifact
+  context from current source when semantic traversal needs it. A disposable
+  cache is optional and never a permission prerequisite.
 - Freshness covers worktree identity, the sorted discovery path set, and raw file
   bytes. Cache loss, staleness, corruption, or contention falls back to source
   discovery and never makes the cache authoritative.
 - Linker is source-write-free and may be used without separate permission. It is the sole canonical
-  graph mutation decision owner; Author, Main, or a permitted Coordinator attest and apply patches only
-  on their own source surfaces.
+  graph mutation decision owner; Author, Main, or a permitted Coordinator recheck baselines and apply
+  patches only on their own source surfaces. Current apply does not use HMAC owner receipts.
 - Coordinator always requires user permission for its work scope. Directly
   invoking `keystone-coordinator` counts as that permission.
 - Without an external coding skill, Coordinator may execute bounded repository work directly. With an
@@ -168,13 +161,15 @@ reserved for the exceptional Project Foundation round before standards exist.
 - Keystone does not force a worktree, workspace, concurrency, or delegation
   strategy. The user, host, or injected worker contract chooses the execution
   environment.
-- Missing graph evidence produces a partial result, not an automatic failure.
+- Missing optional cache or historical trust material produces a source-backed partial/structural
+  result, not an external-folder permission request. It never becomes a fake authority pass.
 
 ## Repository Status and Sources
 
 The authoritative current round and acceptance state remain in the source documents so README status
-does not become a competing authority. Runtime packages include bounded acceptance finalization and
-Artifact Graph synchronization contracts; consult these sources for current status:
+does not become a competing authority. Runtime packages include lean current closure plus read-only
+historical compatibility adapters and Artifact Graph synchronization contracts; consult these sources
+for current status:
 
 - [`00_docs/key-context-map.md`](00_docs/key-context-map.md)
 - [`00_docs/standards/01_key-project-standard.md`](00_docs/standards/01_key-project-standard.md)

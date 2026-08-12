@@ -10,8 +10,8 @@ from .scanner import ReferenceScanner, ScanScope
 
 # keystone: id=key.code.linker.context-readiness kind=output_artifact artifact_kind=code refs=key.standard.skill.linker.reference-index-readiness locator.symbol=context_readiness
 def context_readiness(repository_root, cache_path, *, initiator, artifact_context=False,
-                      include_typed_graph=False, trace=None, document_root="00_docs",
-                      includes=(), excludes=()):
+                      include_typed_graph=False, include_source_views=False, trace=None,
+                      document_root="00_docs", includes=(), excludes=()):
     if initiator not in {"reader", "linker"}:
         raise ValueError("initiator must be reader or linker")
     current = trace if isinstance(trace, CallTrace) else CallTrace.from_json(trace) if trace else CallTrace()
@@ -26,6 +26,17 @@ def context_readiness(repository_root, cache_path, *, initiator, artifact_contex
     scanner = ReferenceScanner(repository_root, document_root=document_root,
                                includes=includes, excludes=excludes)
     discovery = scanner.discover(scope)
+    if include_source_views:
+        result = scanner.scan_discovery(
+            discovery,
+            include_typed_graph=materialize_graph,
+            include_source_views=True,
+        )
+        cache_status = (
+            "source_projection" if discovery.freshness.complete
+            else "source_fallback"
+        )
+        return ReadinessResult(result, cache_status, (), current)
     store = SQLiteIndexStore(cache_path, repository_root=repository_root)
     cache_diagnostics = []
     if not discovery.freshness.complete:

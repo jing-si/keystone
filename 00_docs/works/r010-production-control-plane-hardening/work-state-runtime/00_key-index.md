@@ -57,7 +57,8 @@ global_state:
   cross-skill 107 tests와 docs/repository/full graph validation이 통과했다.
 - Acceptance: Main이 2026-08-09 `R010/S04/main-acceptance`로 수락했고 schema-v6 Author
   finalization과 Coordinator post-acceptance closure를 완료했다.
-- Next action: R010/S05 Actual Agent Behavior Evaluation을 active recovery target으로 따른다.
+- Next action: `DEC-WORKS-029`에 따라 R010/S05 Product Direction Realignment를 active recovery
+  target으로 따르고 S04 current source를 retain/simplify inventory input으로 제공한다.
 
 Active steps: [R010/S05]
 

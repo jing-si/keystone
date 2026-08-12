@@ -202,6 +202,141 @@ key:
         self.assertEqual(("key.work.target",), source.structured_dependencies)
         self.assertEqual((), source.legacy_dependencies)
 
+    def test_child_round_step_keeps_local_gate_scope(self):
+        progress = parse_source(
+            """---
+doc_type: progress
+work_status: in_progress
+step_ref: R010-a/S01
+approval: {state: pending}
+key: {id: key.work.source.progress}
+---
+""",
+            "00_docs/works/r010-parent/r010-a/source/key-progress.md",
+            MarkdownAdapter(),
+        )
+        source = parse_source(
+            """---
+doc_type: work_order
+work_status: in_progress
+approval: {state: pending}
+key:
+  id: key.work.source
+  kind: work_order
+  depends_on: [key.work.target]
+  relations:
+    depends_on: [key.work.target]
+work_gates:
+  - dependency: key.work.target
+    applies_to: {steps: [S01], work_completion: false}
+    condition: {work_status: complete, approval_state: accepted}
+    optional: false
+---
+""",
+            "00_docs/works/r010-parent/r010-a/source/key-work-source.md",
+            MarkdownAdapter(),
+        )
+        target = parse_source(
+            """---
+doc_type: work_order
+work_status: complete
+approval: {state: accepted}
+key: {id: key.work.target, kind: work_order}
+---
+""",
+            "00_docs/works/r010-parent/r010-b/target/key-work-target.md",
+            MarkdownAdapter(),
+        )
+
+        result = evaluate_dependency_sources(
+            progress.dependency_sources
+            + source.dependency_sources
+            + target.dependency_sources
+        )
+
+        self.assertEqual((), result.diagnostics)
+        self.assertEqual(DependencyStatus.SATISFIED, result.evaluations[0].status)
+        self.assertEqual(("S01",), result.evaluations[0].steps)
+
+    def test_aggregate_progress_overrides_dependency_state_projections(self):
+        source = parse_source(
+            """---
+doc_type: work_order
+key:
+  id: key.work.source
+  kind: work_order
+  relations:
+    depends_on: [key.work.target]
+work_gates:
+  - dependency: key.work.target
+    applies_to: {steps: [S01]}
+    condition: {work_status: complete, approval_state: accepted}
+---
+""",
+            "00_docs/works/r010-active/source/key-work-source.md",
+            MarkdownAdapter(),
+        )
+        source_progress = parse_source(
+            """---
+doc_type: progress
+work_status: in_progress
+step_ref: R010/S01
+approval: {state: pending}
+key: {id: key.work.source.progress}
+---
+""",
+            "00_docs/works/r010-active/source/key-progress.md",
+            MarkdownAdapter(),
+        )
+        target = parse_source(
+            """---
+doc_type: work_order
+work_status: in_progress
+approval: {state: pending}
+key: {id: key.work.target, kind: work_order}
+---
+""",
+            "00_docs/works/r009-history/target/key-work-target.md",
+            MarkdownAdapter(),
+        )
+        target_index = parse_source(
+            """---
+doc_type: work
+work_status: in_progress
+approval: {state: pending}
+key: {id: key.work.target.index}
+---
+""",
+            "00_docs/works/r009-history/target/00_key-index.md",
+            MarkdownAdapter(),
+        )
+        target_progress = parse_source(
+            """---
+doc_type: progress
+work_status: complete
+approval: {state: accepted}
+key: {id: key.work.target.progress}
+---
+""",
+            "00_docs/works/r009-history/target/key-progress.md",
+            MarkdownAdapter(),
+        )
+
+        parsed = (
+            source.dependency_sources
+            + source_progress.dependency_sources
+            + target.dependency_sources
+            + target_index.dependency_sources
+            + target_progress.dependency_sources
+        )
+        result = evaluate_dependency_sources(parsed)
+
+        self.assertEqual(DependencyStatus.SATISFIED, result.evaluations[0].status)
+        self.assertIn(
+            "dependency_state_projection_stale",
+            {item.code for item in result.diagnostics},
+        )
+
     def test_optional_waiting_gate_is_not_blocking(self):
         result = evaluate_dependency_graph(
             (gate("key.work.source", "key.work.target", optional=True),),

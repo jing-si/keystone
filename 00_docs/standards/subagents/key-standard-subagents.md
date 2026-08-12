@@ -21,7 +21,8 @@ key:
 
 이 기준서는 Keystone helper/subagent의 공통 계약을 정의한다. 기본 실행자는 하나의
 bounded worker runtime이며, Main 또는 Coordinator가 승인한 bounded assignment를 수행한다.
-Worker는 원천 문서(2)의 권위나 Main acceptance를 대체하지 않는다.
+Worker는 원천 문서(2)의 권위나 Main acceptance를 대체하지 않는다. Subagent 사용은 선택 사항이며
+작고 명확한 변경의 core completion prerequisite가 아니다.
 
 <!-- key: id=key.standard.subagent.scope refs=key.role.subagent key.topic.work-execution key.topic.artifact-graph key.contract.output key.contract.report -->
 ## 적용 범위
@@ -95,6 +96,13 @@ Worker는 원천 문서(2)의 권위나 Main acceptance를 대체하지 않는�
 8. Worker는 context, scope, authority가 부족하면 추측하지 않고 report한다.
 9. Worker output은 원천 문서(2), 기준서(3), 작업서(4), 결정(6), Main decision을 대체하지
    않는다.
+10. Main이 직접 안전하게 처리할 수 있는 단일 범위 작업에는 worker assignment를 만들지 않아도 된다.
+11. Worker를 사용할 때도 assignment와 report는 Goal, scope, forbidden change, changed files,
+    verification과 residual risk 등 실제 판단에 필요한 필드만 포함한다.
+12. Metadata/relation, 여러 surface contract, Work State 또는 높은 변경 risk가 있을 때만 expanded
+    Context Pack, artifact delta와 document/metadata/graph disposition을 요구한다.
+13. Package/installer/historical adapter 또는 full repository 검증은 해당 surface 변경이나 명시적
+    release 요청이 있을 때만 worker verification에 포함한다.
 
 우선순위는 다음과 같다.
 
@@ -305,21 +313,19 @@ evidence일 뿐 Progress의 `work_status`, Main acceptance 또는 finalization s
 <!-- key: id=key.standard.subagent.context-and-closure-handoff refs=key.role.coordinator key.contract.output key.topic.keystone-metadata key.topic.artifact-graph -->
 ### Context Pack과 Keystone closure handoff
 
-Coordinator는 구현 전에 Main checkpoint와 relevant Keystone source를 합친 Context Pack을
-제공해야 한다. 최소한 current Work/Step, accepted decision, completion criteria, scope, forbidden
-change, verification, 관련 기준서·작업서·진행 기록과 필요한 Reader/Linker/Author evidence를
-포함한다. 전체 문서 corpus를 worker에게 재해석시키는 것은 Context Pack이 아니다.
+Coordinator가 위임을 선택하면 구현 전에 Main checkpoint와 relevant Keystone source를 합친
+Context Pack을 제공한다. Default Work에는 current Work/Step, goal, completion criteria, scope,
+forbidden change와 targeted verification이면 충분하다. Metadata/relation, 여러 surface contract,
+Work State 또는 높은 변경 risk가 있을 때만 Reader/Linker/Author evidence를 추가한다. 전체 문서
+corpus를 worker에게 재해석시키는 것은 Context Pack이 아니다.
 
 구현 뒤 direct 또는 delegated output은 같은 canonical worker report로 정규화한다.
-Coordinator schema-v3 actual-state closure에서는 worker report가 immutable assignment의 raw-byte
-digest와 Context Pack canonical digest를 함께 반환하고 `worker_phase`에만 결속된다. Assignment의
-T0 baseline은 package-owned capture가 만든 complete canonical snapshot schema v3여야 한다.
-Phase capture evidence는 assignment ID와 Context Pack digest를 함께 결속해 다른 assignment로의
-capture-chain replay를 막고, preceding evidence digest와 independently pinned Coordinator-host
-key HMAC을 검증한다. HMAC은 host key possession의 operational evidence이며 worker에게 capture나
-Main acceptance authority를 주지 않는다.
-`changed_files`와 artifact delta는 worker의 추정이나 최종 repository 전체 diff가 아니라
-`assignment_phase` result와 `worker_phase` result 사이의 actual source delta와 같아야 한다.
+Default report는 assignment identity, `changed_files`, scope check, verification과 residual risk만으로
+닫을 수 있다. Artifact delta, digest와 document/metadata/graph disposition은 해당 surface가 실제로
+바뀌거나 Escalated closure에 필요한 경우에만 추가한다. Coordinator는 fresh current repository
+diff를 직접 대조해 actual state를 확인한다. Current closure는 complete snapshot chain, external key,
+HMAC 또는 phase receipt를 요구하지 않는다. Historical schema-v3 assignment/phase evidence는 구
+기록을 읽고 진단할 때만 사용한다.
 
 ```yaml
 worker_report:
@@ -360,16 +366,16 @@ worker_report:
 `config_key`, `schema_name`만 포함하는 canonical locator object다. 사용하지 않는 optional
 field는 생략하고 plain string은 발행하지 않는다.
 
-각 worker-phase changed surface는 artifact delta를 가져야 한다. `not_applicable`도 구체적인
-reason과 evidence가 필요하다. Required 또는 deferred closure가 미완료이면 Coordinator는 worker
-success를 `accept_candidate`로 승격하지 않는다. Worker report는 후속 Author 문서 sync,
-repository-owner patch, Main acceptance 또는 Author finalization write를 자기 변경으로 주장하지
-않는다. Graph 의미는 Linker, source-document와 finalization은 Author가 소유하고 Coordinator는
-parent-linked `pre_acceptance_closure_phase`와 `post_acceptance_phase`에서 각 handoff를 감독한다.
-Main acceptance는 distinct pinned Main key로 pre snapshot과 acceptance ref/Steps를 결속한 event로
-pre/post capture 사이에 기록한다. Event runner는 같은 policy/expected absences로 live repository를
-재캡처해 exact pre snapshot과 같은 경우에만 event를 만든다. Linker는 source-write-free evidence
-owner이며 actor write delta를 가질 수 없다.
+Graph-relevant 또는 여러 surface contract를 바꾼 worker phase는 affected artifact delta를 가져야 한다.
+영향이 없는 sync는 report에서 생략하거나 짧은 `not_applicable` reason으로 닫을 수 있다. Required
+또는 deferred closure가 미완료이면 Coordinator는 worker success를 `accept_candidate`로 승격하지
+않는다. Worker report는 후속 Author 문서 sync,
+repository-owner patch, Main acceptance 또는 Author의 post-acceptance 문서 write를 자기 변경으로
+주장하지 않는다. Graph 의미는 Linker, source-document 동기화는 Author가 소유하고
+Coordinator는 document/metadata/graph disposition, Work State와 durable Progress를 통해 각 handoff를
+감독한다. Main acceptance는 Main이 확인한 completion/verification 결과로만 발생하며
+worker와 Linker에 acceptance authority를 주지 않는다. Linker는 source-write-free evidence owner이며
+repository write delta를 가질 수 없다.
 
 규칙은 다음과 같다.
 
@@ -511,10 +517,10 @@ worker_report:
 
 `document_sync_needed`와 `metadata_sync_needed`는 기존 report compatibility hint다. 새 report는
 구조화된 `document_sync`, `metadata_sync`, `graph_sync` disposition/state/reason/evidence를
-사용하며 Coordinator closure validator가 이를 fail-closed로 확인한다. Strict schema-v3 manifest의
-top-level worker report는 `worker_phase`의 adjacent-snapshot delta와 대조되며 worker 이후 actor
-phase의 changed path를 포함하지 않는다. Coordinator manifest v1/v2와 그 report projection은
-historical diagnostics로만 읽으며 새 acceptance 또는 closure authority를 만들 수 없다.
+필요한 경우에만 사용하고 Coordinator가 current repository에서 재확인한다. 사용하지 않는 optional
+field는 생략한다. Strict schema-v3 manifest의
+worker/actor phase projection과 Coordinator manifest v1/v2는 historical diagnostics로만 읽으며
+새 acceptance 또는 closure authority를 만들 수 없다.
 
 `NEEDS_CONTEXT` report는 가능하면 다음 reason code를 포함한다.
 
@@ -555,6 +561,7 @@ requested_scope_change:
 11. `source_authority_change`
 12. `acceptance_criteria_change`
 13. `status_semantics_change`
+14. `work_order_restructure`
 
 <!-- key: id=key.standard.subagent.common-boundary refs=key.role.subagent key.boundary.approval key.topic.work-execution key.topic.keystone-metadata -->
 ## 공통 경계
@@ -577,7 +584,7 @@ requested_scope_change:
 11. Self-review는 worker report의 일부일 수 있지만 independent review로 보지 않는다.
 12. Independent review가 필요하면 별도 `review` assignment를 만든다.
 
-<!-- key: id=key.standard.subagent.stop-condition refs=key.role.subagent key.boundary.stop-condition key.topic.work-execution -->
+<!-- key: id=key.standard.subagent.stop-condition refs=key.role.subagent key.boundary.stop-condition key.topic.work-execution key.claim.r011.depth-overflow-restructure -->
 ## Stop condition
 
 Worker는 다음 상황에서 멈추고 report한다.
@@ -597,6 +604,9 @@ Worker는 다음 상황에서 멈추고 report한다.
 12. Existing user change 또는 다른 agent change를 덮어써야만 진행할 수 있다.
 13. 주입된 외부 코딩 스킬의 필수 절차가 assignment의 authority, scope, verification,
     execution environment boundary와 충돌한다.
+14. Assignment를 완수하기 위해 parent→child를 넘는 3단계 이상 Round 계층이 필요하다.
+    Worker는 하위 Round를 생성하거나 작업서를 직접 재해석하지 않고,
+    `NEEDS_SCOPE_CHANGE` / `work_order_restructure`로 보고하여 작업서 개편을 요청한다.
 
 <!-- key: id=key.standard.subagent.verification refs=key.role.subagent key.topic.verification -->
 ## Verification
@@ -620,6 +630,17 @@ Subagent 기준은 다음 방법으로 검증한다.
 12. 외부 코딩 스킬은 Coordinator를 대체하지 않고 injected skill로만 사용되어야 한다.
 13. 외부 코딩 스킬이 요구하는 절차가 assignment boundary를 넘으면 worker가 멈추고 보고해야
     한다.
+14. Worker report와 Coordinator의 fresh repository check로 changed scope를 확인할 수 있고,
+    complete snapshot chain·external key·HMAC·receipt가 current 필수 조건이 아니어야 한다.
+15. Historical schema-v3 assignment/phase evidence는 구 기록 진단을 넘어 current acceptance·closure
+    authority를 만들지 않아야 한다.
+16. 작고 명확한 작업은 subagent 없이 Main direct로 완료할 수 있고 worker assignment가 core
+    completion prerequisite가 아니어야 한다.
+17. Default report는 changed files, scope, targeted verification과 residual risk만으로 닫을 수 있으며
+    artifact delta와 세 sync disposition은 실제 affected surface 또는 Escalated closure에서만
+    요구되어야 한다.
+18. Package/installer/historical/full repository 검증은 해당 surface 변경이나 명시적 release 요청이
+    있을 때만 worker verification에 포함되어야 한다.
 
 <!-- key: id=key.standard.subagent.permissionless-linker-exception refs=key.role.linker key.topic.artifact-graph key.boundary.read-only -->
 ## Permissionless Linker subagent 예외
@@ -631,7 +652,9 @@ Coordinator의 user-permission requirement는 file-changing worker delegation과
 
 1. 허용: source scan, owner/ref index readiness, optional typed graph projection, impact/stale/gap
    interpretation, transaction/repository validation과 internal handoff payload 생성.
-2. 허용되는 write: repository 밖의 disposable derived cache에 대한 single-writer 갱신뿐이다.
+2. 허용되는 write: 이미 사용할 수 있는 repository 밖 disposable derived cache에 대한 single-writer
+   갱신뿐이다. Cache가 없거나 접근할 수 없으면 외부 폴더 권한을 요청하지 않고 source scan으로
+   fallback한다.
 3. 금지: repository source 수정, scope 확장, worker/subagent 생성, project 의미 결정, patch acceptance,
    Main/user acceptance와 사용자 대신의 선택.
 4. Linker output은 기본적으로 내부 payload이며 사용자에게 관리 절차나 raw payload를 노출하지

@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from .readiness import context_readiness
+from .source_views import source_views_wire
 
 
 def _parser():
@@ -30,7 +31,8 @@ def _read_request(value):
     request = json.loads(raw)
     allowed = {
         "repository_root", "cache_path", "initiator", "artifact_context",
-        "include_typed_graph", "trace", "document_root", "includes", "excludes",
+        "include_typed_graph", "include_source_views", "trace", "document_root",
+        "includes", "excludes",
     }
     if not isinstance(request, dict) or set(request) - allowed:
         raise ValueError("request must be an object containing only supported fields")
@@ -119,6 +121,9 @@ def _response(readiness):
         "trace": [{"lane": item.lane, "operation": item.operation}
                   for item in readiness.trace.entries],
     }
+    if result.source_views is not None:
+        payload["schema_version"] = 3
+        payload["source_views"] = source_views_wire(result.source_views)
     return payload
 
 

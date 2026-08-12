@@ -2,8 +2,8 @@
 doc_type: work_round
 created_at: "2026-08-07"
 document_lifecycle: active
-approval: {state: pending}
-round_status: active
+approval: {state: accepted, accepted_at: "2026-08-11", accepted_by: main}
+round_status: accepted
 key:
   id: key.work.round.r010-production-control-plane-hardening.index
   refs:
@@ -14,130 +14,139 @@ key:
     - key.topic.finalization
     - key.role.coordinator
     - key.topic.verification
+    - key.work.decisions.dec-works-029
 global_state:
-  active_round: R010
-  latest_accepted_round: R009
-  active_steps: [R010/S05]
+  active_round: none
+  latest_accepted_round: R010
+  active_steps: []
 ---
 
-# R010 Production Control Plane Hardening 작업서 색인
+# R010 Standards-to-Product Alignment 작업서 색인
 
-R010은 zero-base review에서 확인된 cross-runtime 해석 차이와 manifest 자기신고 신뢰를 제거해,
-Keystone을 사람이 감독하는 actual-state control plane의 production candidate 수준으로 끌어올린다.
-S01의 correctness hardening에 이어 S02-S07은 phase-separated authority chain, graph/source
-correctness, shared work state, 실제 agent behavior, whole-flow와 independent release evidence를
-서로 다른 acceptance 단위로 결속해 평균 평가 8.5 이상의 종료 근거를 만든다.
+R010은 기준서·결정·작업서를 code, config, schema, API와 test에 연결하고 현재 작업 상태를
+문서에서 복구하는 Keystone의 제품 핵심을 강화한다. S01-S04의 correctness 결과와 당시 수락
+이력은 보존하되, R010/S05부터 `DEC-WORKS-029`에 따라 외부 키·HMAC 영수증·실제 agent 평가·독립
+reviewer·평균 8.5 점수를 core completion gate에서 분리한다.
+
+R010의 남은 목표는 더 강한 감사 인프라가 아니라 더 단순하고 설명 가능한 기준서 기반
+프로젝트 관리 흐름이다.
 
 <!-- key: id=key.work.round.r010.execution-order refs=key.topic.work-sequence key.topic.work-recovery -->
 ## 실행 순서
 
-Active steps: [R010/S05]
+Active steps: []
 
-| 순서 | Work | 경로 | 상태 | 목적 |
+| 순서 | Work | 경로 | 상태 | 현재 의미 |
 |---|---|---|---|---|
-| S01 | Production Control Plane Hardening | `production-control-plane-hardening/00_key-index.md` | complete, accepted | lifecycle·transaction·source/finalization·Coordinator actual-state closure와 release evidence를 fail-closed로 정합화했다 |
-| S02 | Authority Chain and Snapshot Closure | `authority-chain-snapshot-closure/00_key-index.md` | complete, accepted | complete snapshot과 phase-separated actor attribution을 actual-state evidence로 닫았다 |
-| S03 | Graph, Transaction and Source Correctness | `graph-transaction-source-correctness/00_key-index.md` | complete, accepted | package-owned classification, mutation-bearing optional 금지, SourceUnit/parser, lifecycle와 canonical mutation을 정합화했다 |
-| S04 | Deterministic Work State Runtime | `work-state-runtime/00_key-index.md` | complete, accepted | repository-derived global state와 네 consumer의 canonical runtime parity를 schema-v6 finalization으로 닫았다 |
-| S05 | Actual Agent Behavior Evaluation | `agent-behavior-evaluation/00_key-index.md` | in_progress | 실제 skill/model invocation으로 setting×repeat×12 scenario evidence와 negative control을 생성·검증한다 |
-| S06 | Whole-Flow Self-Host E2E | `whole-flow-self-host-e2e/00_key-index.md` | planned | 실제 Keystone source의 phase-separated 정상·adversarial·crash/resume workflow를 검증한다 |
-| S07 | Production Candidate 8.5 Closure | `production-candidate-85-closure/00_key-index.md` | planned | independent CI, objective scorecard, RC/terminal subject lineage와 R010 finalization을 결속한다 |
+| S01 | Production Control Plane Hardening | `production-control-plane-hardening/00_key-index.md` | complete, accepted | 당시 correctness·release 기반 구현 이력을 보존하며 S05의 현재 적합성 감사 대상이다 |
+| S02 | Authority Chain and Snapshot Closure | `authority-chain-snapshot-closure/00_key-index.md` | complete, accepted | snapshot·scope 검증은 유지 후보이고 외부 키·HMAC·과도한 phase chain은 단순화 후보다 |
+| S03 | Graph, Transaction and Source Correctness | `graph-transaction-source-correctness/00_key-index.md` | complete, accepted | SourceUnit·locator·lifecycle·mutation correctness는 핵심 유지 후보이고 HMAC receipt는 단순화 후보다 |
+| S04 | Deterministic Work State Runtime | `work-state-runtime/00_key-index.md` | complete, accepted | repository-derived work recovery는 핵심 유지 후보이며 release/finalization 결속은 필요 범위로 축소 검토한다 |
+| S05 | Product Direction Realignment | `agent-behavior-evaluation/00_key-index.md` | complete, accepted, finalized | main/frozen source와 consumer disposition 및 S06-A~E Change Set을 수락·최종화했다 |
+| S06 | Standards-to-Product Core Simplification | `whole-flow-self-host-e2e/00_key-index.md` | complete, accepted | Lean Core 계약으로 기준서와 runtime을 단순화하고 암호학적 감사·agent gate를 core에서 분리했다 |
+| S07 | Product Workflow Verification and Closure | `production-candidate-85-closure/00_key-index.md` | complete, accepted, finalized | 실제 기준서→영향→구현·검증→복구·수락 흐름과 terminal recovery로 R010을 닫았다 |
 
-### 평균 8.5 개선 목록
+기존 S05-S07 경로와 Work owner ID는 참조 안정성과 계획 이력을 위해 유지한다. 현재 권위 있는
+Goal과 criterion은 각 문서의 새 `product-alignment`, `core-simplification`, `product-workflow`
+claim이며, 과거 actual-agent·8.5 계획 claim은 `supersedes` 관계로 대체한다.
 
-| ID | Step | 개선 항목 |
-|---|---|---|
-| PC85-01 | S02 | Coordinator phase-separated actual-state closure |
-| PC85-02 | S02 | Assignment baseline snapshot completeness |
-| PC85-03 | S03 | Optional patch fail-closed control |
-| PC85-04 | S03 | Package-owned Linker classification |
-| PC85-05 | S03 | SourceUnit·source parser 해석 단일화 |
-| PC85-06 | S03 | Domain-aware lifecycle inheritance |
-| PC85-07 | S03 | Canonical mutation strict schema |
-| PC85-08 | S04 | Repository-derived global work state |
-| PC85-09 | S04 | Deterministic Work State Runtime |
-| PC85-10 | S05 | Actual agent behavior eval runner |
-| PC85-11 | S06 | R010 whole-flow self-host E2E |
-| PC85-12 | S07 | Independent RC CI와 R010 closure |
-| PC85-13 | S02-S07 | Step-start gate와 finalization prerequisite closure |
-| PC85-14 | S07 | RC candidate→terminal subject lineage |
-| PC85-15 | S07 | Versioned scoring rubric와 independent evaluation |
+<!-- key: id=key.work.round.r010.product-improvement-map refs=key.topic.work-sequence key.topic.verification -->
+## 제품 개선 목록
 
-S02의 Step start와 Work completion은 S01의 `complete + accepted`를 기다린다. S03과 S04는 S02의
-accepted complete snapshot/phase contract 뒤 병행할 수 있고, S05의 Step start/completion은
-S02-S04의 `complete + accepted`를 기다린다. S06은 S01-S05, S07은 S01-S06의
-`complete + accepted`와 아래 finalization prerequisite closure를 모두 소비한다. Dependency 평가는
-자동 status transition이나 Main acceptance를 만들지 않는다.
+| ID | Step | 개선 항목 | 기본 disposition |
+|---|---|---|---|
+| PM-01 | S05 | 기준서 기반 제품 목표와 기본 신뢰 경계 고정 | retain |
+| PM-02 | S05 | S01-S04 source·contract·runtime·test inventory 분류 | review |
+| PM-03 | S05 | Git/SHA freshness와 HMAC·외부 key 경계 분리 | simplify |
+| PM-04 | S05 | Actual agent/reviewer/redaction/score gate 분리 | retire from core |
+| PM-05 | S06 | Artifact Graph의 SourceUnit·locator·lifecycle correctness 보존 | retain |
+| PM-06 | S06 | Repository-derived Work State와 중단 복구 보존 | retain |
+| PM-07 | S06 | Closure·receipt·release consumer 최소화 | simplify |
+| PM-08 | S06 | audit/QA 확장의 core dependency 제거; 이번 R010에서는 모듈을 만들지 않음 | retire current |
+| PM-09 | S07 | 기준서→산출물 trace와 stale detection 검증 | verify |
+| PM-10 | S07 | 작업 발견·진행·중단·재개·수락 흐름 검증 | verify |
+| PM-11 | S07 | 설치·기본 CI·compatibility와 운영 복잡도 검증 | verify |
 
-S02는 `R010/S02/main-acceptance`로 complete and accepted됐고 schema-v5 finalization과 Coordinator
-post-acceptance closure를 commit `a201f410e03a4ffd80f6f7deb4573364067f1ace`에 고정했다. 그 뒤 별도
-source transition에서 S03/S04를 `in_progress`/Active로 활성화했다. S03은 candidate
-`ba47bc7833bfaa7988fd42e231a042bdd50528e0`의 implementation과 current-HEAD replay를 검토받아
-`R010/S03/main-acceptance`로 complete and accepted됐고 schema-v2 graph sync와 schema-v5
-finalization을 완료했다. S04도 canonical/runtime parity candidate와 repository closure를 검토받아
-`R010/S04/main-acceptance`로 complete and accepted됐고 schema-v6 finalization을 완료했다. 현재
-active Step은 S05 하나다.
+<!-- key: id=key.work.round.r010.realignment-boundary refs=key.work.decisions.dec-works-029 key.boundary.scope-control -->
+## 재정렬 경계
 
-<!-- key: id=key.work.round.r010.pre-gate-policy refs=key.topic.work-sequence key.topic.work-recovery -->
-### Pre-gate activity policy
+1. S01-S04의 과거 `complete + accepted`와 finalization evidence를 삭제하거나 실패로 바꾸지 않는다.
+2. 과거 수락은 당시 candidate의 이력이며 현재 제품 경계에서 모든 구현을 영구 유지한다는 뜻은 아니다.
+3. S05는 source를 수정하는 구현 단계가 아니라 현재 상태 inventory, 기준서 우선순위와 교정
+   Change Set을 확정하는 단계다.
+4. S06 구현은 먼저 수락 가능한 기준서 의미를 확정한 뒤 시작한다. Pending 기준을 구현이 앞서지 않는다.
+5. HMAC, 외부 key, 독립 reviewer와 실제 agent evidence는 별도 accepted threat model이나 제품 요구가
+   없으면 core completion/release gate가 될 수 없다.
+6. Git commit/tree와 scoped raw-byte SHA-256은 변경·freshness 확인에만 사용하며 암호화, 사람 신원
+   또는 조직적 독립 증명으로 설명하지 않는다.
+7. 삭제·호환성 중단·schema wire 제거는 S05 inventory와 consumer evidence 없이 추론하지 않는다.
 
-Required Step-start gate가 `waiting`인 동안 허용되는 것은 read-only 분석, interface 비교와 Work
-Order/Progress 안의 RED case matrix·fixture design뿐이다. Runtime/test/code/config/schema source write,
-`work_status: in_progress` 전이와 canonical wire/schema commitment는 금지한다. 실제 선작업이 발생한
-경우에만 해당 Progress에 원인, 완료 범위, 남은 범위와 `status_effect: none`을 `early_work`로
-기록하며, 이 기록은 Step 활성화나 implement authority를 만들지 않는다.
+<!-- key: id=key.work.round.r010.dependency-policy refs=key.topic.work-sequence key.topic.work-recovery -->
+## Dependency policy
 
-<!-- key: id=key.work.round.r010.prerequisite-closure refs=key.topic.finalization key.topic.work-sequence key.topic.verification -->
-### Integration prerequisite closure
+- S05는 S01-S04의 수락 이력을 input evidence로 사용하지만 그 구현을 현재 제품 경계에서 자동
+  승인하지 않는다.
+- S06은 S05가 `complete + accepted`이고 retain/simplify/optional/retire matrix, 대상 source,
+  compatibility와 verification을 포함한 Change Set을 가진 뒤 시작한다.
+- S07은 S06이 `complete + accepted`이고 실제 source 기준의 focused/package verification이 통과한
+  뒤 시작한다.
+- Dependency 결과는 status, 구현 권한이나 Main acceptance를 자동 생성하지 않는다.
 
-S06은 S01-S05, S07은 S01-S06 각각에 대해 `work_status: complete`, `approval.state: accepted`뿐 아니라
-required finalization이 `complete`이거나 Main이 명시적으로 수락한 `waived`임을 확인한다. Evidence는
-waiver reason/follow-up, acceptance ref, finalization manifest/envelope digest와 package-owned Author
-runner pass를 포함한다. 이 조건은 현재 WorkGate condition에 임의 field를 추가하지 않고 S04 Work
-State Runtime이 파생하고 S02 Coordinator actual-state verifier와 S06/S07 prerequisite criterion이
-검증한다.
+<!--
+key:
+  id: key.work.round.r010.product-value
+  supersedes:
+    - key.work.round.r010.quality-target
+-->
+## Product Value Gate
 
-<!-- key: id=key.work.round.r010.quality-target refs=key.topic.acceptance key.topic.verification -->
-## Quality Target
+R010은 점수표가 아니라 아래 사용자 가치로 판정한다.
 
-R010의 점수 목표는 구현량이 아니라 S07 Work Order의 stable Quality Target criterion과 실제
-evidence로 판정한다. 종료 시 unresolved P0/P1 finding은 0개여야 하고, residual risk candidate는
-severity·owner·follow-up Round/disposition·근거를 모두 가져야 한다. 모든
-authority-bearing success는 actual
-state 또는 package-owned runner evidence에 결속되어야 하며 정상·adversarial whole-flow가 모두
-통과해야 한다. Hard minimum은 평가 영역별 8.0 이상과 전체 평균 8.5 이상이다. Internal target은
-전체 평균 8.7 이상이며 역할·권한, Graph·Source, Transaction, Finalization, Coordinator closure와
-Release·운영의 critical floor는 8.5다. 점수는 평가 전에 고정된 versioned rubric/cap, mechanical
-evaluation과 independent reviewer evaluation 및 편차 adjudication evidence로만 확정한다.
+1. 기준서나 작업서에서 관련 코드·설정·스키마·API·테스트를 직접 또는 의미 관계로 찾을 수 있다.
+2. 산출물 변경에서 stale한 기준·작업·검증 후보를 설명 가능한 근거와 함께 찾을 수 있다.
+3. 새 세션이 active Work, Step, goal, completion criteria, 현재 증거와 다음 작업을 문서에서 복구한다.
+4. 문서 의미가 먼저 확정되고 implementation·verification·Progress가 그 의미를 추적한다.
+5. 일반 사용자가 외부 secret, reviewer 운영이나 증거 보관 인프라 없이 기본 흐름을 완료한다.
+6. 실패는 안정된 진단과 안전한 resume point를 제공하고 불필요한 새 schema·actor·key를 요구하지 않는다.
 
-Residual risk의 severity·owner·follow-up/disposition·evidence는 pre-acceptance에 완성하고, 실제
-acceptance ref 결속은 S07 post-acceptance finalization에서 수행한다.
+<!--
+key:
+  id: key.work.round.r010.product-subject-boundary
+  supersedes:
+    - key.work.round.r010.subject-lineage
+-->
+## Version and evidence boundary
 
-상세 판정 기준과 상태/evidence 소유자는 각각 S07 Work Order의 `R010-QT-*`와 S07 Progress다.
-
-<!-- key: id=key.work.round.r010.subject-lineage refs=key.topic.acceptance key.topic.finalization key.topic.verification -->
-## Release subject lineage
-
-S07은 runtime·test·contract와 `0.7.0-rc.1`이 고정된 `rc_candidate_subject`에서 S05/S06, independent
-CI와 RC gate를 다시 실행한다. Main acceptance 뒤 docs-only finalization이 만든 `terminal_subject`는
-parent candidate, package-tree parity, global-state/finalization digest를 기록한다. Terminal commit의
-agent/whole-flow evidence를 재사용하려면 subject scope와 package parity가 schema로 증명돼야 하며,
-그렇지 않으면 terminal subject에서 다시 실행한다.
+Git commit/tree와 package digest는 검증한 source generation을 식별하는 데 사용한다. R010 completion은
+고정 RC version, dual reviewer, candidate→terminal cryptographic lineage 또는 actual model evidence를
+요구하지 않는다. Version 변경이나 publication은 별도 release 요청이 있을 때만 다룬다.
 
 <!-- key: id=key.work.round.r010.boundaries refs=key.boundary.scope-control key.topic.verification -->
 ## Round 경계
 
-- Schema v1 read compatibility와 이미 accepted된 finalization history는 보존한다.
-- 새 transaction과 closure evidence는 strict canonical wire로 수렴한다.
 - Publication, push, merge, 외부 소비 프로젝트 변경과 dependency 추가는 범위 밖이다.
-- 성능 최적화와 repository-wide metadata migration은 correctness closure 뒤의 별도 후보로 남긴다.
+- R011 planned 문서와 사용자가 진행 중인 변경을 R010 교정의 부수 효과로 수정하지 않는다.
+- 성능 최적화는 측정된 병목이 있을 때만 별도 후보로 둔다. 현재는 schema·key·evidence 운영 복잡도
+  축소를 우선한다.
+- 선택적 audit/agent QA를 다시 도입하려면 독립 Goal, threat model, 비용과 non-blocking 소비 경계를
+  먼저 수락한다.
 
 <!-- key: id=key.work.round.r010.reading-rules refs=key.topic.work-recovery -->
 ## 복구 규칙
 
-1. R010의 현재 correctness hardening 목표·범위·완료 기준은 S01 Work Order를 읽는다.
-2. 평균 8.5 개선 목록과 Step 배치는 이 round index를 읽는다.
-3. 각 개선 항목의 구현·검증·완료 기준은 S02-S07 Work Order를 읽는다.
-4. 실제 실행 상태와 resume point는 각 Work의 Progress에서 복구한다.
-5. Graph 의미는 Linker가 분류하고, source document는 Author, repository source는 Main 또는
-   permitted Coordinator의 authority를 유지한다.
+1. R010의 현재 목표와 남은 실행 순서는 이 index를 읽는다.
+2. S01-S04 문서는 당시 수락된 구현과 evidence 이력으로 읽는다.
+3. 현재 교정 방향과 disposition은 `DEC-WORKS-029`와 S05 Work Order/Progress를 읽는다.
+4. S06은 수락된 교정 구현, S07은 제품 흐름 검증과 R010 closure만 소유한다.
+5. R010은 terminal accepted history다. 현재 active state와 latest accepted Round는 canonical
+   acceptance event, root index와 Context Map을 함께 확인한다.
+
+## Superseded Historical Round Claims
+
+다음 두 ID는 최초 R010 RC/점수 계획의 역사적 locator다. 현재 round gate가 아니며
+`DEC-WORKS-029`와 이 문서의 Product Value Gate 및 Product Subject Boundary가 대체한다.
+
+<!-- key: id=key.work.round.r010.quality-target kind=document_section refs=key.topic.acceptance key.topic.verification -->
+- 평균 8.5, critical-area floor와 reviewer 기반 `Quality Target` — superseded.
+<!-- key: id=key.work.round.r010.subject-lineage kind=document_section refs=key.topic.acceptance key.topic.finalization key.topic.verification -->
+- RC candidate→terminal digest lineage requirement — superseded.

@@ -1,7 +1,7 @@
 ---
 doc_type: standard
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: main}
+approval: {state: accepted, accepted_at: "2026-08-11", accepted_by: main}
 key:
   id: key.standard.skill.reader
   refs:
@@ -131,21 +131,63 @@ Reader는 mode와 무관하게 다음 순서를 따른다.
 2. `key-context-map.md`가 있으면 먼저 읽어 active standards와 active work를 파악한다.
 3. `standards/00_key-index.md` 또는 해당 project의 standards index를 읽는다.
 4. `works/00_key-index.md` 또는 해당 project의 root works index를 읽어 active round를 찾는다.
-5. Active round index를 읽어 round 내부 실행 순서와 active work node를 확인한다.
-6. Active work node의 index, 작업서(4), 진행 기록(5)을 읽어 `round_id`, `work_id`,
-   `active_steps`, `early_work`와 실행 가능 Step 후보를 함께 복구한다.
-7. 현재 요청과 관련된 child index만 따라 내려가며 관련 없는 하위 기준서를 읽지 않는다.
-8. 요청 또는 current work에 관련 키메타(9)가 있으면 같은 `key.id`를 참조하는
+5. Work State의 Work State 요약과 active round index로 round 내부 실행 순서와 active work node를
+   확인한다.
+6. 복수 active Work에서 사용자 요청이 특정 Work를 지목하지 않고 전체/cross-Work 비교도 요구하지
+   않으면 아래 session focus gate를 먼저 적용한다.
+7. Focus가 선택되거나 gate가 필요 없을 때 선택된 active Work node의 index, 작업서(4), 진행
+   기록(5)을 읽어 `round_id`, `work_id`, `active_steps`, `early_work`와 실행 가능 Step 후보를 함께
+   복구한다. 전체/cross-Work 요청일 때만 필요한 여러 Work를 읽는다.
+8. 현재 요청과 관련된 child index만 따라 내려가며 관련 없는 하위 기준서를 읽지 않는다.
+9. 요청 또는 current work에 관련 키메타(9)가 있으면 같은 `key.id`를 참조하는
    문서를 탐색 후보로 확인한다.
-9. 요청 또는 current work에 capability, code, config, schema, API, test 단서가 있으면 artifact graph가 필요한지
+10. 요청 또는 current work에 capability, code, config, schema, API, test 단서가 있으면 artifact graph가 필요한지
    판단하고, 깊은 후보 탐색이 필요하면 `keystone-linker`를 recommended next action으로 남긴다.
-10. Reader가 확인한 키메타(9), link, path, heading, keyword는 Linker handoff seed로만 사용하고
+11. Reader가 확인한 키메타(9), link, path, heading, keyword는 Linker handoff seed로만 사용하고
     artifact relation을 확정하지 않는다.
-11. 필요한 경우 shallow repository snapshot을 만든다.
-12. File-changing work가 필요하다고 판단하면 Reader가 직접 수정하지 않고 Init, Author,
+12. 필요한 경우 shallow repository snapshot을 만든다.
+13. File-changing work가 필요하다고 판단하면 Reader가 직접 수정하지 않고 Init, Author,
     Coordinator 또는 Main direct 중 적절한 next action을 남긴다.
-13. output에는 항상 `sources_read`, `assumptions`, `risks_and_gaps`,
+14. output에는 항상 `sources_read`, `assumptions`, `risks_and_gaps`,
    `recommended_next_action`을 포함한다.
+
+<!-- key: id=key.standard.skill.reader.revision-readiness kind=claim refs=key.role.reader key.topic.work-recovery key.topic.acceptance key.topic.verification -->
+## Pending revision readiness
+
+1. 기준서의 pending revision은 그 자체로 구조적 초기화 상태를 자동으로 `partial`로 낮추지 않는다.
+   초기화 상태와 해당 정책 범위의 구현 권위 readiness를 분리한다.
+2. 현재 source frontmatter의 `approval.state`가 `pending`이면 본문은 proposal과 탐색 evidence로
+   읽되 accepted authority로 사용하지 않는다.
+3. 현재 accepted source, decision, claim 또는 보존된 accepted version이 명시적으로 식별되고
+   복구될 때만 `pending_with_baseline`이다. Context Map이나 Index의 `accepted` projection은
+   pending source frontmatter를 덮지 않는다.
+4. 기존 승인 이력을 주장하지만 그 의미 source를 복구할 수 없으면
+   `pending_without_baseline`이다. Pending 본문이나 Git history를 암묵적인 baseline으로 만들지 않는다.
+5. `pending_with_baseline`은 accepted baseline 범위만 권위로 사용하고 pending delta를 비권위 검토
+   문맥으로 분리한다. `pending_without_baseline`은 영향을 받는 구현·수용만 멈추고 무관한 accepted
+   Work는 계속할 수 있다.
+6. `pending_without_baseline`은 Init repair가 아니라 Author 또는 Main에 baseline 복구, revision
+   검토나 acceptance action으로 전달한다.
+7. 복구 가능한 accepted 의미가 둘 이상 충돌하고 요청에 영향을 주면 `conflicted`로 보고한다.
+   실제 사용자 의미 결정이 남을 때만 Clarify로 넘긴다.
+8. View는 stable `key.id`, path, 현재 `approval.state`와 raw-byte digest에 결속된 source entry를
+   stable ID와 path 순서로 정렬·중복 제거해 deterministic하게 만든다. Accepted entry만 effective
+   authority를 구성하고 pending entry는 이를 대체하지 않는 review overlay다.
+9. 이 readiness는 session output이다. 별도 source, compatibility manifest, project status로
+   저장하지 않는다.
+
+<!-- key: id=key.standard.skill.reader.session-focus kind=claim refs=key.role.reader key.topic.work-recovery key.topic.work-preparation -->
+## Multi-active session focus
+
+1. Passing Work State에 active Work가 둘 이상이고 요청이 특정 Work를 지목하지 않으면 Reader는
+   Work State 요약의 Work ref, parent/local Round, status, active Step 또는 unresolved reason만
+   후보 목록으로 보여주고 이번 session focus를 한 번 질문한다.
+2. 사용자가 선택하기 전에는 각 후보의 Work Order와 Progress 본문을 상세 탐색하지 않는다.
+   Linker docs readiness를 시작하지 않는다.
+3. Active Work가 0개 또는 1개이거나, 요청이 특정 Work를 명시하거나, 전체 active Work 상태 또는
+   cross-Work 비교를 요구하면 질문을 생략한다.
+4. 선택은 비권위 세션 문맥이다. 선택된 Work로 같은 요청을 자동 resume하되 선택되지 않은 Work의
+   상태·우선순위를 변경하지 않는다. 선택을 canonical pointer나 project source에 기록하지 않는다.
 
 <!-- key: id=key.standard.skill.reader.mode-contract refs=key.role.reader key.contract.output key.topic.work-preparation -->
 ## Mode contract
@@ -289,6 +331,11 @@ keystone_context_brief:
   document_root:
   active_round:
   current_work:
+  session_focus:
+    state:
+    candidates:
+    selected_work:
+    authority: non_authoritative
   active_steps:
   early_work:
   current_work_status:
@@ -400,7 +447,9 @@ Reader 기준은 다음 방법으로 검증한다.
 8. File-changing next action은 필요한 실행 주체를 제안하되 모든 작은 작업에 별도 routing
    payload를 요구하지 않아야 한다.
 9. 프로젝트 로컬 Reader 기준서가 없어도 설치된 contract와 존재하는 문서만으로 동작해야 한다.
-10. Verification command:
+10. 복수 active Work의 대상 미지정 요청은 상세 탐색 전 한 번 focus를 질문하고, explicit/cross-Work
+    요청은 질문을 생략하며 어떤 경우에도 project status나 priority를 변경하지 않아야 한다.
+11. Verification command:
    - `rg --files 00_docs`
    - Reader 관련 기준서를 읽어 link와 scope consistency 확인
 
@@ -415,17 +464,27 @@ Reader 기준은 다음 방법으로 검증한다.
    gate, diagnostic과 complete source generation을 authoritative work-state projection으로 복구한
    뒤 root/round/work index와 active Progress를 narrative context로 읽는다. Runtime failure나
    incomplete generation을 서로 같은 pointer claim으로 대체하지 않는다.
-2. 첫 invocation은 docs discovery scope에 대해 permissionless Linker index-readiness를 요청한다.
+2. Passing envelope에 active Work가 둘 이상이고 요청이 특정 Work 또는 전체/cross-Work 범위를
+   명시하지 않으면 `Multi-active session focus`를 먼저 적용한다. Focus 선택 전에는 candidate의
+   Work Order와 Progress 본문을 상세 탐색하지 않고 Linker docs readiness를 시작하지 않는다.
+3. Focus가 선택되거나 gate가 필요 없으면 docs discovery scope에 대해 permissionless Linker
+   index-readiness를 요청한다.
    Scope token은 worktree identity, sorted path set과 각 file raw-byte digest를 포함한다.
-3. Code/config/schema/test scan은 artifact context가 요청되거나 downstream skill input에 실제로
+4. Code/config/schema/test scan은 artifact context가 요청되거나 downstream skill input에 실제로
    필요할 때만 lazy repository scope로 확장한다.
-4. Fresh external index가 있으면 재사용하고 stale/missing/corrupt이면 Linker refresh 또는 source
+5. Fresh external index가 있으면 재사용하고 stale/missing/corrupt이면 Linker refresh 또는 source
    직접 탐색으로 fail-soft fallback한다. Cache 문제 자체를 사용자 decision으로 올리지 않는다.
-5. Reader가 만든 context brief는 freshness token, discovery scope, source citations와 unresolved
+6. Reader가 만든 context brief는 freshness token, discovery scope, source citations와 unresolved
    gap을 포함한다. 다른 skill은 token이 fresh한 동안 이를 재사용하고 write 후에는 영향을 받은
    scope를 invalidation한다.
-6. Reader -> Linker 호출은 `initiator: reader` recursion guard를 전달한다. 해당 Linker execution은
+7. Reader -> Linker 호출은 `initiator: reader` recursion guard를 전달한다. 해당 Linker execution은
    같은 chain에서 Reader를 다시 호출하지 않는다. Linker가 Reader recovery를 시작한 chain도
    반대 방향으로 동일하게 제한한다.
-7. Permissionless Linker의 raw readiness/index payload는 agent-facing handoff다. 기본 사용자 응답은
+8. Permissionless Linker의 raw readiness/index payload는 agent-facing handoff다. 기본 사용자 응답은
    project state, relevant risk와 next action만 요약한다.
+9. 선택된 context에 criterion verification, effective Decision 또는 Work output/test summary가
+   필요할 때만 `include_source_views`를 요청한다. 이 결과는 Linker가 validator와 같은
+   reconstructed `GraphSnapshot`에서 계산한 source-bound session-only projection이며
+   `source_generation`과 unresolved diagnostic을 함께 보존한다.
+10. Output/test target이 필요하면 lazy repository scope를 사용한다. `verified` view를 automatic
+    acceptance나 approval로 해석하지 않고, default readiness에는 가벼운 owner/ref 결과만 유지한다.

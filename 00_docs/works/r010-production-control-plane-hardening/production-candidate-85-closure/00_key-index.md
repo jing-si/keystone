@@ -2,8 +2,8 @@
 doc_type: work
 created_at: "2026-08-07"
 document_lifecycle: active
-approval: {state: pending}
-work_status: planned
+approval: {state: accepted, accepted_at: "2026-08-11", accepted_by: main}
+work_status: complete
 key:
   id: key.work.production-candidate-85-closure.index
   refs:
@@ -11,16 +11,23 @@ key:
     - key.topic.work-sequence
     - key.topic.work-recovery
     - key.topic.finalization
-    - key.topic.acceptance
+    - key.topic.integration-verification
     - key.topic.verification
+    - key.work.decisions.dec-works-029
 work_id: production-candidate-85-closure
-title: Production Candidate 8.5 Closure
+title: Product Workflow Verification and R010 Closure
 owner_lane: main
 work_type: [integration, test, verification, release]
 risk_level: high
+global_state:
+  active_round: none
+  latest_accepted_round: R010
+  active_steps: []
 ---
 
-# Production Candidate 8.5 Closure
+# Product Workflow Verification and R010 Closure
+
+`85`가 포함된 path/Work ID는 기존 계획의 historical locator이며 현재 score criterion이 아니다.
 
 ## 문서
 
@@ -30,20 +37,16 @@ risk_level: high
 ## 현재 상태
 
 - Step: R010/S07
-- Work status: planned
-- Approval state: pending
+- Work status: complete
+- Approval state: accepted
 - Active: false
-- Finalization state: pending
-- Step-start dependency: waiting — S01-S06 각각의 `complete + accepted`가 `steps: [S07]`에
-  적용된다.
-- Work-completion dependency: waiting — 같은 S01-S06 조건이 Work completion에도 적용된다.
-- Finalization pre-gate: waiting — S01-S06 각각의 finalization `complete` 또는 Main-accepted
-  waiver, acceptance ref, finalization manifest/envelope digest와 package-owned Author runner pass가
-  필요하다.
-- Pre-gate boundary: waiting 중에는 read-only orientation, evidence inspection과 source-write-free
-  RED release-plan 설계만 허용한다. Repository source write, `in_progress` 전이,
-  version/schema/authority commitment와 acceptance는 금지하며 실행된 `early_work`는 주장하지 않는다.
-- Next action: Step-start gate와 finalization pre-gate가 모두 충족되면 version-bumped exact
-  `rc_candidate_subject`에서 S05/S06/required CI를 재실행하고 Quality Target을 평가한다.
+- Finalization state: complete — `R010/S07/main-acceptance`
+- Step-start dependency: satisfied — S06 Standards-to-Product Core Simplification이
+  `R010/S06/main-acceptance`로 `complete + accepted`됐다.
+- Completed gate: PWF-01~04, Product Value Criteria와 terminal Reader recovery
+- Next action: R011 planned 상태를 보존하고 별도 사용자 지시가 있을 때 활성화한다.
 
-현재 active Step의 권위 있는 목록은 R010 round index, root works index와 Context Map을 따른다.
+Active steps: []
+
+현재 active Step은 없고 latest accepted Round는 R010이다. 권위 있는 상태는 acceptance event,
+root works index와 Context Map을 함께 따른다.

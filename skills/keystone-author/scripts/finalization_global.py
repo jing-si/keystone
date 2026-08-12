@@ -19,6 +19,9 @@ GLOBAL_SOURCE_CATEGORIES = {
 }
 ROUND_PATTERN = re.compile(r"^R\d+$")
 STEP_PATTERN = re.compile(r"^(R\d+)/S\d+(?:-[A-Z0-9]+)*$")
+ACTIVE_STEP_PATTERN = re.compile(
+    r"^(R\d+)(?:-[a-z])?/S\d+(?:-[A-Z0-9]+)*$"
+)
 ACTIVE_WORK_STATUSES = {"planned", "in_progress", "blocked"}
 V5_SOURCE_TYPES = {
     "work_index": ("work", "event_round"),
@@ -41,18 +44,52 @@ def validate_global_state(root: Path, manifest: Dict[str, Any],
             "schema_version 4, 5, or 6 requires structured global_state.",
         )]
 
+    state_schema_version = state.get("schema_version", 1)
+    if type(state_schema_version) is not int or state_schema_version not in {1, 2}:
+        findings.append(diagnostic(
+            "global_state_schema_version_invalid",
+            "global_state.schema_version must be 1 or 2.",
+        ))
+        state_schema_version = 1
+    if state_schema_version == 2 and schema_version != 6:
+        findings.append(diagnostic(
+            "global_state_schema_version_unsupported",
+            "global_state schema_version 2 requires finalization schema_version 6.",
+        ))
+
     active_round = state.get("active_round")
+    active_rounds: List[str] = []
     latest_accepted = state.get("latest_accepted_round")
     active_steps = state.get("active_steps")
-    active_round_valid = (
-        isinstance(active_round, str)
-        and (bool(ROUND_PATTERN.fullmatch(active_round)) or active_round == "none")
-    )
-    if not active_round_valid:
-        findings.append(diagnostic(
-            "global_state_active_round_invalid",
-            "global_state.active_round must be a Round ref or none.",
-        ))
+    if state_schema_version == 2:
+        raw_active_rounds = state.get("active_rounds")
+        active_rounds_valid = (
+            isinstance(raw_active_rounds, list)
+            and all(
+                isinstance(ref, str) and bool(ROUND_PATTERN.fullmatch(ref))
+                for ref in raw_active_rounds
+            )
+            and raw_active_rounds == sorted(set(raw_active_rounds))
+        )
+        if not active_rounds_valid:
+            findings.append(diagnostic(
+                "global_state_active_rounds_invalid",
+                "global_state.active_rounds must be a sorted unique array of Round refs.",
+            ))
+        else:
+            active_rounds = raw_active_rounds
+    else:
+        active_round_valid = (
+            isinstance(active_round, str)
+            and (bool(ROUND_PATTERN.fullmatch(active_round)) or active_round == "none")
+        )
+        if not active_round_valid:
+            findings.append(diagnostic(
+                "global_state_active_round_invalid",
+                "global_state.active_round must be a Round ref or none.",
+            ))
+        elif active_round != "none":
+            active_rounds = [active_round]
     if (not isinstance(latest_accepted, str)
             or not ROUND_PATTERN.fullmatch(latest_accepted)):
         findings.append(diagnostic(
@@ -71,38 +108,35 @@ def validate_global_state(root: Path, manifest: Dict[str, Any],
             "global_state_active_steps_mismatch",
             "global_state.active_steps differs from manifest active_steps.",
         ))
-    if active_round == "none" and active_steps:
+    if not active_rounds and active_steps:
         findings.append(diagnostic(
             "global_state_active_round_mismatch",
-            "global_state.active_round may be none only when active_steps is empty.",
+            "Global state may have no active Rounds only when active_steps is empty.",
         ))
     if schema_version in {5, 6}:
         for ref in active_steps:
-            match = STEP_PATTERN.fullmatch(ref)
+            match = ACTIVE_STEP_PATTERN.fullmatch(ref)
             if match is None:
                 findings.append(diagnostic(
                     "active_step_ref_invalid",
                     f"Active Step ref is not canonical: {ref}.",
                 ))
-            elif match.group(1) != active_round:
+            elif match.group(1) not in active_rounds:
                 findings.append(diagnostic(
                     "active_step_round_mismatch",
-                    f"Active Step {ref} is outside active Round {active_round}.",
+                    f"Active Step {ref} is outside active Rounds {active_rounds}.",
                 ))
         event_round = _v5_event_round(manifest, findings)
-        if active_round == "none":
+        event_is_active = event_round in active_rounds
+        if not event_is_active:
             if event_round is not None and latest_accepted != event_round:
                 findings.append(diagnostic(
                     "latest_accepted_round_event_mismatch",
-                    "Terminal finalization must make the event Round latest accepted.",
+                    "Finalization of an inactive event Round must make it latest accepted.",
                 ))
-        elif event_round is not None and active_round != event_round:
-            findings.append(diagnostic(
-                "active_round_event_mismatch",
-                "A live finalization event must belong to the active Round.",
-            ))
     else:
         event_round = None
+        event_is_active = False
 
     sources = state.get("sources")
     if not isinstance(sources, list):
@@ -204,7 +238,7 @@ def validate_global_state(root: Path, manifest: Dict[str, Any],
                 root_index_path = resolved
             if category == "round_index":
                 expected_status = (
-                    "accepted" if active_round == "none" else "active"
+                    "active" if event_is_active else "accepted"
                 )
                 actual_status = scalar_from_text(text, "round_status")
                 if actual_status != expected_status:
@@ -214,30 +248,52 @@ def validate_global_state(root: Path, manifest: Dict[str, Any],
                         f"{actual_status}.",
                         source_path,
                     ))
-            if category == "work_index" and active_round == "none":
+            if category == "work_index" and not event_is_active:
                 actual_status = scalar_from_text(text, "work_status")
                 if actual_status != "complete":
                     findings.append(diagnostic(
                         "terminal_work_status_invalid",
-                        "Terminal active_round none requires the event Work to be complete.",
+                        "An inactive event Round requires the event Work to be complete.",
                         source_path,
                     ))
-        observed = {
-            "active_round": frontmatter_mapping_scalar(
-                text, "global_state", "active_round"
-            ),
-            "latest_accepted_round": frontmatter_mapping_scalar(
-                text, "global_state", "latest_accepted_round"
-            ),
-            "active_steps": frontmatter_mapping_list(
-                text, "global_state", "active_steps"
-            ),
-        }
-        expected = {
-            "active_round": active_round,
-            "latest_accepted_round": latest_accepted,
-            "active_steps": active_steps,
-        }
+        if state_schema_version == 2:
+            observed = {
+                "schema_version": frontmatter_mapping_scalar(
+                    text, "global_state", "schema_version"
+                ),
+                "active_rounds": frontmatter_mapping_list(
+                    text, "global_state", "active_rounds"
+                ),
+                "latest_accepted_round": frontmatter_mapping_scalar(
+                    text, "global_state", "latest_accepted_round"
+                ),
+                "active_steps": frontmatter_mapping_list(
+                    text, "global_state", "active_steps"
+                ),
+            }
+            expected = {
+                "schema_version": "2",
+                "active_rounds": active_rounds,
+                "latest_accepted_round": latest_accepted,
+                "active_steps": active_steps,
+            }
+        else:
+            observed = {
+                "active_round": frontmatter_mapping_scalar(
+                    text, "global_state", "active_round"
+                ),
+                "latest_accepted_round": frontmatter_mapping_scalar(
+                    text, "global_state", "latest_accepted_round"
+                ),
+                "active_steps": frontmatter_mapping_list(
+                    text, "global_state", "active_steps"
+                ),
+            }
+            expected = {
+                "active_round": active_round,
+                "latest_accepted_round": latest_accepted,
+                "active_steps": active_steps,
+            }
         if observed != expected:
             findings.append(diagnostic(
                 "global_state_source_mismatch",
@@ -253,7 +309,7 @@ def validate_global_state(root: Path, manifest: Dict[str, Any],
     if schema_version in {5, 6}:
         indexes = _v5_works_tree_indexes(root, root_index_path, findings)
         _validate_latest_accepted_round_index(latest_accepted, indexes, findings)
-        if active_round == "none":
+        if not active_rounds:
             _validate_terminal_work_indexes(indexes, findings)
     return findings
 

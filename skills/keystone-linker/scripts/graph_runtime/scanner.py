@@ -8,6 +8,8 @@ from typing import Iterable, Sequence, Tuple
 
 from .adapters import adapter_for_path
 from .dependency import evaluate_dependency_sources
+from .snapshot_validation import reconstruct
+from .source_views import source_views_from_snapshot
 from .index_model import (
     FreshnessEntry, FreshnessToken, IndexDiagnostic, IndexResult, OwnerRecord, ScanScope,
     RefRecord, TypedEdge, TypedGraph,
@@ -152,10 +154,16 @@ class ReferenceScanner:
         )
         return Discovery(scope, sources, token, tuple(diagnostics))
 
-    def scan(self, scope: ScanScope, *, include_typed_graph: bool = False) -> IndexResult:
-        return self.scan_discovery(self.discover(scope), include_typed_graph=include_typed_graph)
+    def scan(self, scope: ScanScope, *, include_typed_graph: bool = False,
+             include_source_views: bool = False) -> IndexResult:
+        return self.scan_discovery(
+            self.discover(scope),
+            include_typed_graph=include_typed_graph,
+            include_source_views=include_source_views,
+        )
 
-    def scan_discovery(self, discovery: Discovery, *, include_typed_graph: bool = False) -> IndexResult:
+    def scan_discovery(self, discovery: Discovery, *, include_typed_graph: bool = False,
+                       include_source_views: bool = False) -> IndexResult:
         owners = []
         owner_counts = {}
         refs = []
@@ -270,10 +278,35 @@ class ReferenceScanner:
         dependency_result = evaluate_dependency_sources(dependency_sources)
         diagnostics.extend(IndexDiagnostic(item.code, item.message)
                            for item in dependency_result.diagnostics)
+        source_views = None
+        if include_source_views:
+            snapshot, view_diagnostics = reconstruct(
+                self.root,
+                tuple(sorted(logical_paths)),
+                raw_by_path,
+            )
+            existing_diagnostics = {
+                (item.code, item.message, item.path) for item in diagnostics
+            }
+            for item in view_diagnostics:
+                identity = (item.code, item.message, item.path)
+                if identity in existing_diagnostics:
+                    continue
+                diagnostics.append(IndexDiagnostic(
+                    item.code,
+                    item.message,
+                    item.path,
+                    item.severity.value,
+                ))
+                existing_diagnostics.add(identity)
+            source_views = source_views_from_snapshot(
+                snapshot, discovery.freshness.digest
+            )
         ordered_diagnostics = tuple(sorted(diagnostics, key=lambda item: (
             item.code, item.path or "", item.message)))
         return IndexResult(discovery.scope, discovery.freshness, ordered_owners, ordered_refs,
-                           ordered_diagnostics, graph, dependency_result.evaluations)
+                           ordered_diagnostics, graph, dependency_result.evaluations,
+                           source_views)
 
     def _paths(self, base: Path, scope: ScanScope) -> Iterable[Path]:
         if not base.is_dir():

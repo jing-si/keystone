@@ -75,6 +75,7 @@ class DependencyGraphResult:
 class DependencySource:
     source_id: str
     path: str
+    doc_type: str = ""
     work_status: str = ""
     approval_state: str = ""
     step_ref: str = ""
@@ -332,6 +333,65 @@ def evaluate_dependency_graph(
     )
 
 
+def _dependency_target_states(
+    ordered: Sequence[DependencySource],
+) -> Tuple[Dict[str, DependencyTargetState], Tuple[DependencyDiagnostic, ...]]:
+    aggregate_by_directory: Dict[str, DependencySource] = {}
+    index_by_directory: Dict[str, DependencySource] = {}
+    for source in ordered:
+        directory, _separator, name = source.path.rpartition("/")
+        if source.doc_type == "progress" and name == "key-progress.md":
+            aggregate_by_directory[directory] = source
+        elif source.doc_type == "work" and name == "00_key-index.md":
+            index_by_directory[directory] = source
+
+    targets: Dict[str, DependencyTargetState] = {}
+    diagnostics = []
+    for source in ordered:
+        if not source.is_work:
+            continue
+        directory = source.path.rpartition("/")[0]
+        aggregate = aggregate_by_directory.get(directory)
+        index = index_by_directory.get(directory)
+        state_source = aggregate or index or source
+        candidate = DependencyTargetState(
+            state_source.work_status,
+            state_source.approval_state,
+        )
+        current = targets.get(source.source_id)
+        if current is None or (not current.work_status and candidate.work_status):
+            targets[source.source_id] = candidate
+        if aggregate is None:
+            continue
+        stale_surfaces = []
+        for projection in (index, source):
+            if projection is None:
+                continue
+            stale_fields = []
+            if (
+                projection.work_status
+                and projection.work_status != aggregate.work_status
+            ):
+                stale_fields.append("work_status")
+            if (
+                projection.approval_state
+                and projection.approval_state != aggregate.approval_state
+            ):
+                stale_fields.append("approval_state")
+            if stale_fields:
+                stale_surfaces.append(
+                    "%s (%s)" % (projection.path, ", ".join(stale_fields))
+                )
+        if stale_surfaces:
+            diagnostics.append(DependencyDiagnostic(
+                "dependency_state_projection_stale",
+                "dependency target projections differ from aggregate Progress "
+                "authority: %s" % "; ".join(stale_surfaces),
+                source.source_id,
+            ))
+    return targets, tuple(diagnostics)
+
+
 def evaluate_dependency_sources(sources: Sequence[DependencySource]) -> DependencyGraphResult:
     """Build the document-backed Work/Step registry and evaluate every recovered gate."""
     ordered = tuple(sorted(sources, key=lambda item: (item.path, item.source_id)))
@@ -344,7 +404,7 @@ def evaluate_dependency_sources(sources: Sequence[DependencySource]) -> Dependen
             )
 
     source_steps: Dict[str, Tuple[str, ...]] = {}
-    targets: Dict[str, DependencyTargetState] = {}
+    targets, state_diagnostics = _dependency_target_states(ordered)
     legacy_dependencies = {}
     structured_dependencies = {}
     gates = []
@@ -352,22 +412,23 @@ def evaluate_dependency_sources(sources: Sequence[DependencySource]) -> Dependen
         directory = source.path.rpartition("/")[0]
         if source.is_work:
             source_steps[source.source_id] = tuple(sorted(steps_by_directory.get(directory, ())))
-            current = targets.get(source.source_id)
-            candidate = DependencyTargetState(source.work_status, source.approval_state)
-            if current is None or (not current.work_status and candidate.work_status):
-                targets[source.source_id] = candidate
         if source.is_work and source.legacy_dependencies:
             legacy_dependencies[source.source_id] = source.legacy_dependencies
         if source.structured_dependencies:
             structured_dependencies[source.source_id] = source.structured_dependencies
         gates.extend(source.gates)
-    return evaluate_dependency_graph(
+    result = evaluate_dependency_graph(
         gates,
         targets,
         source_steps=source_steps,
         legacy_dependencies=legacy_dependencies,
         structured_dependencies=structured_dependencies,
     )
+    diagnostics = tuple(sorted(
+        result.diagnostics + state_diagnostics,
+        key=lambda item: (item.code, item.gate_id, item.message),
+    ))
+    return DependencyGraphResult(result.evaluations, diagnostics, result.cycles)
 
 
 def _evaluate_gate(gate: WorkGate, target: DependencyTargetState) -> DependencyEvaluation:

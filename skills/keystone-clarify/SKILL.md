@@ -68,6 +68,18 @@ meaning, policy, scope, or authority. Coverage debt alone is not permission to a
 In decision and edit-plan metadata, use `requires_verification_of` for a verification requirement; it
 does not promote to `verifies` before an actual test artifact or verification result supplies evidence.
 
+## Fixed Workflow Boundaries
+
+Do not ask the user to choose mechanics already fixed by accepted Keystone policy. Current source and
+diff verification, optional disposable caches, source-owner writes, the two-level Round maximum, and
+the absence of mandatory external evidence are operational boundaries rather than decision topics.
+
+If a plan would require a child below a child, return it to Author/Main as
+`NEEDS_SCOPE_CHANGE / work_order_restructure`. Ask one Clarify question only when the remaining choice
+among reducing the Goal, creating sibling children, or opening a separate parent Round materially
+changes user-owned scope or meaning. Never ask whether to recreate a retired manifest, key, receipt,
+snapshot, or external evidence directory for current work.
+
 ## Inputs and Evidence
 
 Use the current topic, user request, accepted decisions, relevant source documents and work context when

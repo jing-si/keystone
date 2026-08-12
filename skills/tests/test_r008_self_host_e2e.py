@@ -1,6 +1,5 @@
 import json
 import os
-import re
 import subprocess
 import sys
 import tempfile
@@ -67,12 +66,19 @@ class R008SelfHostE2ETest(unittest.TestCase):
         expected_runtime = {
             "key.code.linker.metadata-parser",
             "key.code.linker.context-readiness",
+            "key.code.linker.source-views",
             "key.code.linker.graph-transaction-validator",
             "key.code.author.finalization-validator",
         }
         expected_tests = {
             "key.test.linker.metadata-parser-contract",
+            "key.test.linker.source-views",
             "key.test.reader.linker-readiness-contract",
+            "key.test.r011.reader-session-focus",
+            "key.test.r011.progress-ownership",
+            "key.test.r011.reader-revision-readiness",
+            "key.test.r011.resumable-finalization",
+            "key.test.r011.derived-work-state-projection",
             "key.test.linker.graph-transaction-wire-contract",
             "key.test.author.finalization-validator-contract",
         }
@@ -88,6 +94,20 @@ class R008SelfHostE2ETest(unittest.TestCase):
                  "key.code.linker.metadata-parser"),
                 ("key.test.reader.linker-readiness-contract",
                  "key.code.linker.context-readiness"),
+                ("key.test.linker.source-views",
+                 "key.code.linker.source-views"),
+                ("key.test.linker.source-views",
+                 "key.standard.project.source-derived-semantic-views"),
+                ("key.test.r011.reader-session-focus",
+                 "key.standard.skill.reader.session-focus"),
+                ("key.test.r011.progress-ownership",
+                 "key.standard.skill.author.progress-ownership"),
+                ("key.test.r011.reader-revision-readiness",
+                 "key.standard.skill.reader.revision-readiness"),
+                ("key.test.r011.resumable-finalization",
+                 "key.standard.skill.author.resumable-finalization"),
+                ("key.test.r011.derived-work-state-projection",
+                 "key.standard.project.derived-work-state-projection"),
                 ("key.test.linker.graph-transaction-wire-contract",
                  "key.code.linker.graph-transaction-validator"),
                 ("key.test.author.finalization-validator-contract",
@@ -99,29 +119,25 @@ class R008SelfHostE2ETest(unittest.TestCase):
         context = (ROOT / "00_docs" / "key-context-map.md").read_text(
             encoding="utf-8"
         )
-        active_round_match = re.search(
-            r"^  active_round: (none|R\d+)$", context, re.MULTILINE
+        work_state_process = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "work_state_runtime.py"),
+             "--root", str(ROOT)],
+            cwd=str(ROOT), capture_output=True, text=True, check=False,
         )
-        active_steps_match = re.search(
-            r"^  active_steps: \[(.*?)\]$", context, re.MULTILINE
+        self.assertEqual(
+            0, work_state_process.returncode,
+            work_state_process.stdout + work_state_process.stderr,
         )
-        self.assertIsNotNone(active_round_match)
-        self.assertIsNotNone(active_steps_match)
-        active_round = active_round_match.group(1)
-        active_steps = [
-            item.strip() for item in active_steps_match.group(1).split(",")
-            if item.strip()
-        ]
-        if active_round == "none":
-            self.assertEqual([], active_steps)
-        else:
-            self.assertTrue(active_steps)
-            self.assertTrue(all(
-                step.startswith(active_round + "/S") for step in active_steps
-            ))
-        self.assertIn(
-            "Active steps: [%s]" % ", ".join(active_steps), context
-        )
+        work_state = json.loads(work_state_process.stdout)
+        self.assertEqual("pass", work_state["status"])
+        self.assertEqual([], work_state["state"]["pointer_claims"])
+        self.assertEqual([], work_state["state"]["active_steps"])
+        self.assertEqual("R011", work_state["state"]["latest_accepted_round"])
+        self.assertTrue(all(
+            item["state_source"]["mode"] == "aggregate_progress"
+            for item in work_state["state"]["active_works"]
+        ))
+        self.assertIn("scripts/work_state_runtime.py --root .", context)
 
         graph = subprocess.run(
             [sys.executable, str(GRAPH_VALIDATOR), "--root", str(ROOT),
@@ -153,6 +169,7 @@ class R008SelfHostE2ETest(unittest.TestCase):
                 self.assertTrue(payload["diagnostics"])
                 self.assertTrue(all(
                     item["code"] in {
+                        "active_steps_source_missing",
                         "active_steps_source_mismatch",
                         "global_state_source_mismatch",
                     }

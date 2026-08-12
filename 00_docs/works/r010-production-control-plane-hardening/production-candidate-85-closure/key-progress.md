@@ -2,236 +2,150 @@
 doc_type: progress
 created_at: "2026-08-07"
 document_lifecycle: active
-approval: {state: pending}
-work_status: planned
+approval: {state: accepted, accepted_at: "2026-08-11", accepted_by: main}
+work_status: complete
 step_ref: R010/S07
 work_ref: R010/production-candidate-85-closure
-finalization: {state: pending}
+finalization: {state: complete, acceptance_ref: R010/S07/main-acceptance}
 key:
   id: key.work.production-candidate-85-closure.progress
   refs:
     - key.topic.progress-update
     - key.topic.work-recovery
     - key.topic.finalization
-    - key.topic.acceptance
+    - key.topic.integration-verification
     - key.topic.verification
-    - key.acceptance.production-candidate.prerequisites-accepted
-    - key.acceptance.production-candidate.current-agent-evidence
-    - key.acceptance.production-candidate.independent-ci
-    - key.acceptance.production-candidate.installer-parity
-    - key.acceptance.production-candidate.rc-version
-    - key.acceptance.production-candidate.quality-target-pass
-    - key.acceptance.production-candidate.subject-binding
-    - key.acceptance.production-candidate.acceptance-packet-ready
-    - key.acceptance.production-candidate.rc-subject-rerun
-    - key.acceptance.production-candidate.release-documentation-pack
-    - key.acceptance.production-candidate.unresolved-p0-zero
-    - key.acceptance.production-candidate.unresolved-p1-zero
-    - key.acceptance.production-candidate.residual-risk-recorded
-    - key.acceptance.production-candidate.authority-evidence-bound
-    - key.acceptance.production-candidate.normal-flow-pass
-    - key.acceptance.production-candidate.adversarial-flow-pass
-    - key.acceptance.production-candidate.minimum-area-score
-    - key.acceptance.production-candidate.weighted-average-score
-    - key.acceptance.production-candidate.rubric-frozen
-    - key.acceptance.production-candidate.mechanical-independent-review
-    - key.acceptance.production-candidate.score-adjudication
-    - key.acceptance.production-candidate.critical-area-floor
-    - key.acceptance.production-candidate.internal-average-target
-    - key.acceptance.production-finalization.main-acceptance
-    - key.acceptance.production-finalization.author-finalization
-    - key.acceptance.production-finalization.terminal-global-state
-    - key.acceptance.production-finalization.reader-production-parity
-    - key.acceptance.production-finalization.residual-risk-acceptance-binding
-    - key.acceptance.production-finalization.terminal-subject-lineage
-    - key.acceptance.production-score.architecture
-    - key.acceptance.production-score.authority
-    - key.acceptance.production-score.contract-alignment
-    - key.acceptance.production-score.reader-work-state
-    - key.acceptance.production-score.dependency
-    - key.acceptance.production-score.graph-source
-    - key.acceptance.production-score.transaction
-    - key.acceptance.production-score.finalization
-    - key.acceptance.production-score.coordinator-closure
-    - key.acceptance.production-score.agent-behavior
-    - key.acceptance.production-score.release-operations
+    - key.acceptance.product-workflow.prerequisites
+    - key.acceptance.product-workflow.standard-to-implementation
+    - key.acceptance.product-workflow.reverse-stale
+    - key.acceptance.product-workflow.recovery
+    - key.acceptance.product-workflow.default-local
+    - key.acceptance.product-workflow.release-baseline
+    - key.acceptance.product-workflow.value-gate
+    - key.acceptance.product-workflow.documentation
+    - key.acceptance.product-workflow.compatibility
+    - key.acceptance.product-workflow.scope-discipline
+    - key.acceptance.product-workflow.main-acceptance
+    - key.acceptance.product-workflow.author-finalization
+    - key.acceptance.product-workflow.terminal-recovery
 ---
 
-# Production Candidate 8.5 Closure 진행 기록
+# Product Workflow Verification and R010 Closure 진행 기록
 
 ## 현재 상태
 
 - Step: R010/S07
-- Work status: planned
-- Approval state: pending
+- Work status: complete
+- Approval state: accepted
 - Active: false
-- Finalization state: pending
-- Step-start dependency evaluation: waiting — S01-S06 각각의 `complete + accepted`가
-  `steps: [S07]`에 적용된다.
-- Work-completion dependency evaluation: waiting — 같은 S01-S06 조건이 Work completion에도
-  적용된다.
-- Finalization pre-gate: waiting — S01-S06 exact closure evidence와 package-owned Author runner
-  pass가 아직 결속되지 않았다.
-- Pre-gate boundary: read-only orientation, evidence inspection과 source-write-free RED release-plan
-  설계만 허용한다. Repository source write, `in_progress` 전이, version/schema/authority commitment와
-  acceptance는 금지하며 실행된 `early_work`는 주장하지 않는다.
-- Resume point: Step-start gate와 finalization pre-gate가 모두 충족되면 version-bumped exact
-  `rc_candidate_subject`에서 S05/S06/required CI를 재실행하고 Quality Target을 평가한다.
-
-## 계획 기준선
-
-- PC85-12: Independent RC CI와 R010 closure
-- 상태 경계: 계획 수립만 완료했으며 RC, Quality Target pass, Main acceptance 또는 terminal
-  finalization을 주장하지 않는다.
+- Finalization state: complete — `R010/S07/main-acceptance`
+- Step-start dependency: satisfied — S06이 2026-08-11 `R010/S06/main-acceptance`로
+  `complete + accepted`됐다.
+- Activation: 2026-08-11 S06 acceptance와 repository-local finalization 뒤 R010의 유일 active
+  Step으로 전환했다.
+- Activation verification: Work State와 14개 current projection test가 `R010/S07`을 복구했고,
+  docs/repository readiness 191/191·307/307 및 repository graph 307/307, error 0으로 통과했다.
+- Product workflow: `skills/tests/test_product_workflow.py`의 disposable fixture에서 PWF-01~04
+  success와 bounded failure 흐름 4개를 구현하고 통과했다.
+- Terminal blocker repair: planned R011을 변경하지 않고 보존할 수 있도록 Work State terminal
+  검증을 좁혔다. `planned` Round 아래의 `planned` Work만 미래 계획으로 허용하고, accepted·누락
+  Round의 잔여 `planned` 및 모든 `in_progress|blocked` Work는 계속 fail-closed한다. YAML
+  `active_round: none`은 runtime의 canonical `"none"` 상태로 정규화한다.
+- Verification: Author 96, Coordinator 34, Linker 367, Reader 2, shared 46, 총 545 tests가
+  통과했다. Canonical Work State와 fresh Reader runtime은 `active_round: none`,
+  `latest_accepted_round: R010`, `active_steps: []`, diagnostics 0을 동일하게 복구했다.
+  Generated runtime parity, external-cache compileall, docs/repository readiness 191/191·308/308,
+  repository graph 308/308 error 0 warning 0이 통과했다.
+- Installer/release boundary: temporary clean repository의 staging/parity/rollback test는 통과했다.
+  현재 의도적으로 dirty인 candidate root에 release-only installer check를 적용하면 manifest의
+  `source_dirty:true`가 clean-release 기대값과 달라 종료된다. Full release는 요청되지 않았으므로
+  clean checkout에서 실행하지 않았다.
+- Acceptance: Main이 2026-08-11 PWF evidence, Product Value Criteria, scope와 residual risk를
+  검토하고 `R010/S07/main-acceptance`로 수락했다.
+- Finalization: Lean Core repository-local 상태 전이와 canonical acceptance event만 사용했다.
+  HMAC, external key, finalization manifest, receipt와 외부 evidence 폴더는 생성하지 않았다.
+- Resume point: R010은 terminal accepted 상태다. 다음 planned Round는 R011이며 별도 사용자
+  지시 없이 활성화하지 않는다. Full release도 별도 요청 범위다.
 
 ## Criterion Status
 
-| Criterion ID | State | Evidence ref | Subject | Generation/result digest |
-|---|---|---|---|---|
-| `key.acceptance.production-candidate.prerequisites-accepted` | pending | S01-S06 acceptance/finalization 대기 | — | — |
-| `key.acceptance.production-candidate.current-agent-evidence` | pending | — | — | — |
-| `key.acceptance.production-candidate.independent-ci` | pending | — | — | — |
-| `key.acceptance.production-candidate.installer-parity` | pending | — | — | — |
-| `key.acceptance.production-candidate.rc-version` | pending | — | — | — |
-| `key.acceptance.production-candidate.quality-target-pass` | pending | Hard `R010-QT-01`~`12`, non-gating `QT-13` outcome 대기 | — | — |
-| `key.acceptance.production-candidate.subject-binding` | pending | — | — | — |
-| `key.acceptance.production-candidate.acceptance-packet-ready` | pending | — | — | — |
-| `key.acceptance.production-candidate.rc-subject-rerun` | pending | Version-bumped S05/S06/CI rerun 대기 | — | — |
-| `key.acceptance.production-candidate.release-documentation-pack` | pending | Release documentation pack 대기 | — | — |
-
-## Prerequisite Finalization Closure Evidence
-
-각 선행 Work는 finalization `complete` 또는 Main-accepted `waived`여야 한다. `waived`이면 waiver
-reason과 follow-up을 모두 기록하고, 어느 경우든 acceptance ref, finalization manifest/envelope
-digest와 package-owned Author runner pass를 같은 subject에 결속한다.
-
-| Prerequisite Work | Work/approval | Finalization state | Accepted waiver reason/follow-up | Acceptance ref | Finalization manifest digest | Envelope digest | Author runner pass | Evidence subject |
-|---|---|---|---|---|---|---|---|---|
-| R010/S01 production-control-plane-hardening | pending | pending | — | — | — | — | pending | — |
-| R010/S02 authority-chain-snapshot-closure | pending | pending | — | — | — | — | pending | — |
-| R010/S03 graph-transaction-source-correctness | pending | pending | — | — | — | — | pending | — |
-| R010/S04 work-state-runtime | pending | pending | — | — | — | — | pending | — |
-| R010/S05 agent-behavior-evaluation | pending | pending | — | — | — | — | pending | — |
-| R010/S06 whole-flow-self-host-e2e | pending | pending | — | — | — | — | pending | — |
-
-## Release Subject Lineage
-
-| Subject | State | Exact commit/tree digest | Parent candidate | Version | Package tree digest | Finalization path-set digest | Attestation/evidence |
-|---|---|---|---|---|---|---|---|
-| `rc_candidate_subject` | pending | — | — | `0.7.0-rc.1` pending | — | not_applicable | — |
-| `terminal_subject` | pending | — | Exact `rc_candidate_subject` pending | — | — | pending | — |
-
-## Subject Rerun Evidence
-
-| Subject | S05 agent eval | S06 whole-flow | Required CI | Package/installer | Docs/finalization/Reader gate | Reuse or rerun disposition | Evidence digest |
-|---|---|---|---|---|---|---|---|
-| Version-bumped `rc_candidate_subject` | pending | pending | pending | pending | pre-acceptance pending | Full candidate rerun required | — |
-| `terminal_subject` | inherited only if exact lineage/parity | inherited only if exact lineage/parity | inherited only if exact lineage/parity | parity pending | terminal rerun pending | Docs-only + package parity, else full new candidate rerun | — |
-
-## Quality Target Status
-
-| Criterion ID | State | Evidence ref | Subject | Generation/result digest |
-|---|---|---|---|---|
-| `key.acceptance.production-candidate.unresolved-p0-zero` | pending | — | — | — |
-| `key.acceptance.production-candidate.unresolved-p1-zero` | pending | — | — | — |
-| `key.acceptance.production-candidate.residual-risk-recorded` | pending | — | — | — |
-| `key.acceptance.production-candidate.authority-evidence-bound` | pending | — | — | — |
-| `key.acceptance.production-candidate.normal-flow-pass` | pending | — | — | — |
-| `key.acceptance.production-candidate.adversarial-flow-pass` | pending | — | — | — |
-| `key.acceptance.production-candidate.minimum-area-score` | pending | — | — | — |
-| `key.acceptance.production-candidate.weighted-average-score` | pending | — | — | — |
-| `key.acceptance.production-candidate.rubric-frozen` | pending | `R010-QS-v1` rubric/cap/subject freeze 대기 | — | — |
-| `key.acceptance.production-candidate.mechanical-independent-review` | pending | Mechanical evidence와 dual-review 분리 대기 | — | — |
-| `key.acceptance.production-candidate.score-adjudication` | pending | Reviewer 편차 계산/adjudication evidence 대기 | — | — |
-| `key.acceptance.production-candidate.critical-area-floor` | pending | 역할·권한 포함 critical six 8.5 floor 대기 | — | — |
-| `key.acceptance.production-candidate.internal-average-target` | pending | Non-gating 8.7 outcome 대기 | — | — |
-
-## Quality Score Evidence
-
-Reviewer cell은 evaluator identity와 score를 함께 기록한다. Final score는 reviewer 평균 또는
-adjudicated score와 applicable mechanical cap 중 낮은 값이며, 모든 행은 exact subject를 attestation한다.
-
-| Area ID | 평가 영역 | Weight | State | Rubric | Mechanical result/cap | Reviewer A identity/score | Reviewer B identity/score | Delta | Adjudicator identity/score | Final score | Evidence digest | Subject attestation |
-|---|---|---:|---|---|---|---|---|---:|---|---:|---|---|
-| `key.acceptance.production-score.architecture` | 아키텍처 | 1.0 | pending | `R010-QS-v1` | pending | — | — | — | — | — | — | — |
-| `key.acceptance.production-score.authority` | 역할·권한 | 1.0 | pending | `R010-QS-v1` | pending | — | — | — | — | — | — | — |
-| `key.acceptance.production-score.contract-alignment` | 기준서·스킬 정합성 | 1.0 | pending | `R010-QS-v1` | pending | — | — | — | — | — | — | — |
-| `key.acceptance.production-score.reader-work-state` | Reader·Work State | 1.0 | pending | `R010-QS-v1` | pending | — | — | — | — | — | — | — |
-| `key.acceptance.production-score.dependency` | Dependency | 1.0 | pending | `R010-QS-v1` | pending | — | — | — | — | — | — | — |
-| `key.acceptance.production-score.graph-source` | Graph·Source | 1.0 | pending | `R010-QS-v1` | pending | — | — | — | — | — | — | — |
-| `key.acceptance.production-score.transaction` | Transaction | 1.0 | pending | `R010-QS-v1` | pending | — | — | — | — | — | — | — |
-| `key.acceptance.production-score.finalization` | Finalization | 1.0 | pending | `R010-QS-v1` | pending | — | — | — | — | — | — | — |
-| `key.acceptance.production-score.coordinator-closure` | Coordinator closure | 1.0 | pending | `R010-QS-v1` | pending | — | — | — | — | — | — | — |
-| `key.acceptance.production-score.agent-behavior` | Agent behavior | 1.0 | pending | `R010-QS-v1` | pending | — | — | — | — | — | — | — |
-| `key.acceptance.production-score.release-operations` | Release·운영 | 1.0 | pending | `R010-QS-v1` | pending | — | — | — | — | — | — | — |
-
-## Mechanical Quality Gate Evidence
-
-| Gate/cap input | State | Count/result | Applicable area/cap | Runner evidence digest | Subject attestation |
-|---|---|---|---|---|---|
-| Unresolved P0 | pending | — | Affected area max 5.0; hard fail | — | — |
-| Unresolved P1 | pending | — | Affected area max 7.9; hard fail | — | — |
-| S06 normal/adversarial E2E | pending | — | Five listed correctness areas max 7.9 on missing/fail | — | — |
-| Required independent CI | pending | — | Release·운영 max 7.9 on missing/fail | — | — |
-| External pilot | not_required | Excluded from R010 | 모든 영역 max 8.9 | — | — |
-
-## Residual Risk Register
-
-Complete finding inventory와 residual risk candidate를 아래 exact evidence columns에 결속한다.
-현재는 inventory/disposition 전이며, empty register pass에도 explicit audit evidence가 필요하다.
-
-| Risk ID | Severity | Owner | Follow-up Round | Proposed disposition | Evidence | Finding inventory digest |
-|---|---|---|---|---|---|---|
-
-## Release Documentation Evidence
-
-| Output | State | Evidence ref | Subject/digest |
+| Criterion ID | State | Evidence ref | 비고 |
 |---|---|---|---|
-| RC support matrix | pending | — | — |
-| Threat model | pending | — | — |
-| Compatibility matrix | pending | — | — |
-| Evidence retention policy | pending | — | — |
-| Operator recovery guide | pending | — | — |
-| Diagnostic code reference | pending | — | — |
+| `key.acceptance.product-workflow.prerequisites` | verified | S05/S06 complete + accepted | start gate satisfied |
+| `key.acceptance.product-workflow.standard-to-implementation` | verified | PWF-01 fixture | standard/criterion→code/test→verification→Progress 연결 |
+| `key.acceptance.product-workflow.reverse-stale` | verified | PWF-02 fixture | reverse impact, locator stale와 unowned-source gap 구분 |
+| `key.acceptance.product-workflow.recovery` | verified | PWF-03 fixture; Work State | active Step/goal/criteria/evidence/next action 복구와 digest drift 감지 |
+| `key.acceptance.product-workflow.default-local` | verified | PWF-04 fixture | secret·reviewer·model·evidence root 없이 Reader/Linker 실행 |
+| `key.acceptance.product-workflow.release-baseline` | verified | package/shared suites; readiness/graph; clean installer fixture | actual full release는 별도 요청까지 보류 |
+| `key.acceptance.product-workflow.value-gate` | verified | Product Value Evaluation | 7개 value pass, residual risk 기록 |
+| `key.acceptance.product-workflow.documentation` | verified | README Operating Boundaries/Release Verification; this Progress | 현재 동작과 일치해 README no-change |
+| `key.acceptance.product-workflow.compatibility` | verified | package/shared tests; installer parity | historical read/current-write 회귀 통과 |
+| `key.acceptance.product-workflow.scope-discipline` | verified | S07 test/runtime/Progress delta; diff check | R011·과거 Step·installed tree 미수정 |
+| `key.acceptance.product-workflow.main-acceptance` | verified | `R010/S07/main-acceptance` | Main accepted 2026-08-11 |
+| `key.acceptance.product-workflow.author-finalization` | verified | accepted S07 sources; acceptance event | Lean Core repository-local closure |
+| `key.acceptance.product-workflow.terminal-recovery` | verified | Work State; fresh Reader runtime | R010 latest accepted, no active Step, R011 planned |
 
-## Post-Acceptance Finalization Status
+## Product Value Evaluation
 
-| Criterion ID | State | Evidence ref | Subject | Generation/result digest |
-|---|---|---|---|---|
-| `key.acceptance.production-finalization.main-acceptance` | pending | Main acceptance event 없음 | — | — |
-| `key.acceptance.production-finalization.author-finalization` | pending | — | — | — |
-| `key.acceptance.production-finalization.terminal-global-state` | pending | — | — | — |
-| `key.acceptance.production-finalization.reader-production-parity` | pending | — | — | — |
-| `key.acceptance.production-finalization.residual-risk-acceptance-binding` | pending | — | — | — |
-| `key.acceptance.production-finalization.terminal-subject-lineage` | pending | Parent candidate/parity 또는 full rerun 대기 | — | — |
+| Value | Result | Evidence |
+|---|---|---|
+| Traceability | pass | PWF-01 typed relations와 PWF-02 reverse impact candidates |
+| Recoverability | pass | PWF-03 fresh Reader Work State와 Progress resume point |
+| Standards-first | pass | pending standard revision을 먼저 만들고 bounded code/test/Progress를 정렬 |
+| Scope safety | pass | locator stale와 unowned source를 자동 수정·수락하지 않고 별도 분류 |
+| Simplicity | pass | PWF-04와 current package path가 external trust input 없이 통과 |
+| Compatibility | pass | Author/Coordinator/Linker/Reader/shared suites와 clean installer parity |
+| Operability | pass | deterministic diagnostics, source-generation drift, readiness/graph와 resume evidence |
 
-## Post-Acceptance Residual Risk Binding
+## Residual Risk
 
-| Risk ID | Accepted disposition | Acceptance ref | Author finalization evidence |
-|---|---|---|---|
+1. PWF-01~04는 disposable local fixture의 대표 제품 흐름이며 external consuming-project pilot을
+   대체하지 않는다. External pilot은 S07 scope에서 명시적으로 제외됐다.
+2. 현재 candidate worktree는 S06/S07 변경이 아직 commit되지 않아 release-only clean manifest
+   검증과 full postflight 대상이 아니다. Temporary clean repository의 installer
+   staging/parity/rollback은 통과했으며 실제 release 요청 시 clean checkout에서 full plan을 실행한다.
+3. Readiness는 error 0, skipped 0으로 통과했지만 기존 source의 `locator_gap` 124건과 docs-scope
+   `out_of_scope_ref` 5건은 coverage debt로 남는다. Full repository graph는 error/warning 0이며 이
+   debt는 S07 제품 흐름이나 현재 변경 범위를 막지 않는다.
+
+## 기존 S07 계획 disposition
+
+- 평균 8.5/8.7, 11개 score 영역, dual reviewer, adjudicator와 mechanical score cap은 폐기한다.
+- Actual agent repeated evidence와 independent reviewer/CI attestation은 completion prerequisite가 아니다.
+- 강제 `0.7.0-rc.1`, candidate→terminal cryptographic lineage와 full rerun 정책은 제거한다.
+- 일반 package/readiness/graph/installer 검증과 Main acceptance/finalization은 제품 흐름에 필요한
+  범위로 유지한다.
 
 ## 진행 로그
 
-1. 2026-08-07: PC85-11 whole-flow를 S06으로 분리하고 S07은 independent CI/RC, Quality Target,
-   live Main acceptance와 post-acceptance terminal finalization만 소유하게 했다.
-2. 2026-08-07: Pre-acceptance completion과 post-acceptance finalization criterion을 분리해 acceptance
-   순환을 제거했다.
-3. 2026-08-07: P0/P1 zero, residual risk, authority evidence, normal/adversarial E2E와 고정 score
-   calculation을 stable Quality Target criterion으로 기록했다.
-4. 2026-08-08: S01-S06 dependency를 S07 Step-start와 Work-completion gate로 분리하고 exact
-   finalization closure preflight를 추가했다.
-5. 2026-08-08: Version-bumped `rc_candidate_subject`와 descendant `terminal_subject`의 rerun/parity
-   경계, `R010-QS-v1` independent scoring/adjudication 및 RC documentation evidence contract를
-   기록했다.
+1. 2026-08-07~08: 기존 Production Candidate 8.5, independent review와 RC lineage 계획을 작성했다.
+2. 2026-08-10: `DEC-WORKS-029`에 따라 S07을 Product Workflow Verification and R010 Closure로
+   개편하고 PWF-01~04와 Product Value Criteria로 교체했다.
+3. 2026-08-11: S06이 `R010/S06/main-acceptance`로 complete + accepted되어 start gate가 열렸고
+   S07을 `in_progress`/Active로 활성화했다.
+4. 2026-08-11: Work State, current repository projection test, docs/repository readiness와 full
+   repository graph로 S07 activation pointer와 dependency satisfaction을 확인했다.
+5. 2026-08-11: disposable fixture 하나에서 PWF-01 standard→implementation, PWF-02 reverse
+   stale/gap, PWF-03 interrupt/recovery와 PWF-04 default local operation을 구현했고 4개 scenario가
+   통과했다. Fixture와 cache는 test 종료 시 제거된다.
+6. 2026-08-11: Author 96, Coordinator 34, Linker 367, Reader 2, shared 45 tests, external-cache
+   compileall, Work State, docs/repository readiness, full repository graph, clean installer
+   staging/parity/rollback과 diff check를 통과했다.
+7. 2026-08-11: release-only installer check를 dirty candidate root에 적용했을 때
+   `source_dirty:true` manifest가 clean-release expectation과 달라지는 경계를 확인했다. 기능
+   blocker로 숨기거나 우회하지 않고 clean-checkout full release 전제와 함께 residual risk로 기록했다.
+8. 2026-08-11: Main이 결과를 `R010/S07/main-acceptance`로 수락했다. Terminal recovery에서 발견된
+   planned R011 호환성 blocker는 planned Round 아래 planned Work만 허용하는 좁은 Work State
+   policy와 회귀 test로 수정했다.
+9. 2026-08-11: S07과 R010을 complete + accepted로 전이하고 sequence 1 acceptance event, root/
+   Context Map terminal pointer와 generated Work State parity를 repository-local 방식으로 정합화했다.
+10. 2026-08-11: Author 96, Coordinator 34, Linker 367, Reader 2, shared 46 tests와 canonical/fresh
+    Reader Work State, generated parity, compileall, docs/repository readiness 191/191·308/308 및
+    full repository graph 308/308을 재검증했다. Readiness의 기존 coverage debt 129/124 warnings는
+    residual risk로 유지하고 error/skipped/omitted는 0이다.
 
 ## 다음 작업
 
-1. S01-S06 finalization closure table을 exact accepted evidence로 채우고 package-owned Author runner
-   pass를 확인한다.
-2. Step-start gate가 충족된 뒤 version-bumped `rc_candidate_subject`에서 S05/S06, independent CI,
-   installer와 RC gate를 재실행한다.
-3. 평가 전에 supported OS/Python matrix를 동결하고 `R010-QS-v1` mechanical result와 independent
-   reviewer/adjudication evidence, finding/risk 및 release documentation pack을 exact candidate에
-   결속한다.
-4. Pre-acceptance packet을 Main에 제출하고, 수락 후에만 Author finalization과 terminal lineage/parity
-   또는 full rerun 정책을 적용한다.
+1. R010은 accepted history로 보존한다.
+2. R011은 planned 상태로 유지하며 별도 사용자 지시가 있을 때만 활성화한다.
+3. Release 요청이 별도로 들어오면 clean checkout에서 canonical release plan을 실행한다.

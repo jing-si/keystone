@@ -55,7 +55,7 @@ test, generated file, 문서 산출물처럼 여러 surface를 가질 수 있지
    `STD-KEYSTONE-044`, `STD-KEYSTONE-046`
 3. 관련 스킬 기준서: `../skills/linker/key-standard-linker.md`
 4. 관련 결정(6): `00_docs/works/key-decisions.md`의 `DEC-WORKS-009`, `DEC-WORKS-010`,
-   `DEC-WORKS-013`, `DEC-WORKS-024`
+   `DEC-WORKS-013`, `DEC-WORKS-024`, `DEC-WORKS-029`
 5. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 parent 기준서를 임시 우선 기준으로 삼는다.
 
@@ -164,11 +164,11 @@ change_delta:
 `config_key`, `schema_name`만 포함하는 canonical locator object다. Canonical emission은 사용하지
 않는 optional field를 생략하며 plain string locator를 허용하지 않는다.
 
-Coordinator schema-v3의 phase/actor provenance는 이 canonical delta를 감싸는 closure evidence다.
-그 provenance를 `change_delta` 또는 graph transaction `input_deltas`의 새 field로 섞지 않는다.
-Worker, Author와 repository surface owner는 자기 phase의 source delta만 소유하고, source-write-free
-Linker는 classification, transaction과 validation evidence만 제공한다. 이 outer closure contract는
-canonical graph snapshot/transaction wire v2의 version을 바꾸지 않는다.
+Coordinator closure는 assignment scope, current diff, verification 결과와 durable Progress를 통해
+이 canonical delta의 출처와 처리 결과를 추적한다. Worker, Author와 repository surface owner는
+자기 surface의 source delta만 소유하고, source-write-free Linker는 classification, transaction과
+validation evidence만 제공한다. Historical Coordinator schema-v3 phase/actor provenance는 구 evidence를
+진단할 때만 읽으며 current graph success의 필수 조건이 아니다.
 
 Stable ID owner와 `refs`가 문서와 구현 사이의 기본 직접 탐색 계약이다. Capability node와 typed
 relation은 multi-hop 탐색, semantic role, dependency, verification evidence 또는 reuse 분석이
@@ -372,171 +372,45 @@ missing target 또는 removed node를 가리키는 active relation은 validator 
 history/provenance가 참조하는 것은 허용하지만 active semantic relation은 replacement를 명시하거나
 제거해야 한다.
 
+<!-- key: id=key.standard.artifact.graph.current-application-authority refs=key.role.linker key.role.author key.role.coordinator key.topic.verification -->
+## Current source-owner application and validation
+
+Current core/default graph synchronization은 secret이나 외부 증거 인프라를 요구하지 않는다.
+
+1. Linker는 canonical transaction, mutation과 surface별 exact patch를 결정하지만 source를 쓰지 않는다.
+2. 각 surface owner는 자기 patch를 `confirm | reject | needs_revision`하고, write 직전 raw-byte
+   baseline을 재검사한 뒤 자기 write lane에서 적용한다.
+3. Apply 결과는 `applied | failed | stale_baseline`, resulting digest와 실행한 verification으로
+   기록한다. SHA-256은 bytes와 generation 동일성을 확인하는 freshness/integrity 표시자이며
+   암호화, 사람 신원, 독립 실행 또는 조직적 승인을 증명하지 않는다.
+4. Current success는 required patch의 owner confirmation·apply 결과, current source에서의 graph
+   reconstruction, canonical transaction equality와 transaction-scope graph validation으로 판정한다.
+   Repository-scope validation은 repository coverage가 바뀌거나 release 검증이 요청된 경우에만
+   추가한다.
+5. External owner key, HMAC receipt, disjoint evidence root, phase receipt chain이 없어도 current
+   transaction은 검증·완료될 수 있다.
+6. Transaction wire v2와 source reconstruction은 유지하되, application-evidence wire는 historical
+   input을 읽고 진단하기 위한 compatibility 경로로만 남는다.
+7. 단일 surface의 ID/ref/locator 변경은 owner direct apply와 targeted reconstruction으로 닫는다.
+8. 여러 surface의 canonical meaning이 함께 바뀌는 경우에만 synchronization transaction과
+   affected-scope validation을 요구한다.
+9. Package, installer, historical adapter 또는 release surface가 바뀌지 않은 일반 작업에는
+   package-wide, repository-wide, installer, historical fixture 검증을 요구하지 않는다.
+10. Graph metadata나 relation이 바뀌지 않은 작업은 scope/diff와 해당 기능의 targeted verification만으로
+    닫을 수 있으며, graph 산출물을 새로 만들지 않는다.
+
 <!-- key: id=key.standard.artifact.graph.application-evidence-wire refs=key.role.linker key.role.author key.role.coordinator key.topic.verification -->
-## External application authority and receipt wire
+### Historical external application evidence wire
 
-Canonical graph transaction schema v2는 위 wire 그대로 유지한다. Standalone `transaction` 또는
-schema-v1 graph-validation manifest 검증은 transaction shape, replay, recorded result와 current
-after-state를 확인하는 structural/current-state evidence일 뿐 새 apply authority success가 아니다.
-새 authority-bearing graph sync는 canonical raw-byte graph-validation manifest schema v2와 아래
-external package-owned application evidence가 모두 통과해야 한다. Manifest v2의 exact required
-field는 `schema_version`, `sources`, `transaction`, `application_evidence`이고 `scope`, `coverage`만
-optional이다. `application_evidence`는 external evidence root 아래 aggregate의 exact
-`{path, digest}` reference다. Manifest schema v1은 historical/structural validation에 계속 읽히지만
-Coordinator schema v3의 새 `required` graph-sync success를 authorize할 수 없다.
+이 절의 schema-v2 manifest, application evidence, owner receipt, external key와 HMAC 세부는
+기존 evidence를 구조적으로 읽고 진단하는 historical compatibility 자료다. 새 producer,
+key, receipt를 만들거나 current apply·completion·release success를 authorize하지 않는다.
 
-`transaction_digest`는 apply 뒤 변하는 transaction field를 포함하지 않는다. 다음 exact immutable
-plan projection의 canonical JSON SHA-256이다.
-
-```yaml
-application_plan:
-  schema_version:
-  transaction_id:
-  scope_ref:
-  input_deltas:
-  canonical_mutations:
-  surface_patches:
-```
-
-Aggregate application evidence schema v1의 exact field set은 다음과 같다. `receipts`는 transaction의
-`apply_results`에서 `result: applied`인 항목 순서와 같고 각 항목은 exact `{path, digest}`다.
-
-```yaml
-application_evidence:
-  schema_version: 1
-  transaction_id:
-  transaction_digest:
-  repository_root_digest:
-  assignment_id:
-  assignment_digest:
-  receipts:
-    - path:
-      digest:
-```
-
-Applied required patch와 applied optional patch는 각각 정확히 한 owner `confirm`, 한 apply result와
-한 authenticated receipt를 가져야 한다. Applied patch나 receipt를 더 넣거나 순서를 바꾸거나 같은
-patch/receipt/nonce를 재사용할 수 없다. Omitted ancillary optional patch는 applied result와 receipt를
-각각 0개 가지며 success를 막지 않는다. Receipt chain의 첫 `prior_receipt_digest`는 `absent`, 이후
-값은 직전 receipt canonical raw bytes의 digest다.
-
-각 owner runner는 external evidence root 안의 다음 exact canonical request schema v1을 한 번에
-검사하고 target을 쓰고 receipt를 만든다. Request는 normalized descendant의 canonical JSON
-single-link regular file이고 no-follow path로 읽는다. Output도 evidence root 안의 normalized
-descendant이며 기존 path를 덮지 않고 owner-private O_EXCL single-link file로 reserve한다.
-`scope`는 sorted unique normalized selector의 exact `{allowed, excluded}`이며 `allowed`는 비어
-있지 않다. `patch`는 transaction v2
-`surface_patches` 항목의 full exact projection이다.
-
-```yaml
-owner_apply_request:
-  schema_version: 1
-  transaction_id:
-  transaction_digest:
-  assignment_id:
-  assignment_digest:
-  phase_id:
-  phase_baseline_snapshot_digest:
-  phase_parent_evidence_digest:
-  repository_root_digest:
-  owner: author | main | coordinator
-  scope:
-    allowed: []
-    excluded: []
-  scope_digest:
-  prior_receipt_digest:
-  patch:
-    patch_id:
-    owner:
-    surface:
-    target_path:
-    baseline_digest:
-    baseline_content:
-    exact_patch:
-    patch_format:
-    patch_body:
-    expected_after_digest:
-    required:
-```
-
-Owner receipt envelope schema v1의 exact wire는 다음과 같다.
-
-```yaml
-schema_version: 1
-producer: keystone-owned-surface-apply
-status: applied
-subject:
-  transaction_id:
-  transaction_digest:
-  assignment_id:
-  assignment_digest:
-  phase_id:
-  phase_baseline_snapshot_digest:
-  phase_parent_evidence_digest:
-  repository_root_digest:
-  owner:
-  scope_digest:
-receipt:
-  schema_version: 1
-  trust_model: trusted-host-hmac-sha256
-  command_id: keystone-owned-surface-apply-v1
-  runner_executable_digest:
-  runtime_digest:
-  evidence_root_digest:
-  request_digest:
-  prior_receipt_digest:
-  nonce:
-  authority_key_fingerprint:
-  patch_receipt:
-    patch: <full exact transaction-v2 patch projection>
-    result: applied
-    resulting_digest:
-  mac:
-```
-
-Author package entrypoint는 `owner: author`만 받으며 `.md | .markdown`의 `document_metadata`와 그
-document의 `companion_metadata`만 쓴다. Coordinator package entrypoint는
-`owner: main | coordinator`만 받으며 `code_anchor | config_anchor | schema_anchor | api_anchor |
-test_anchor`와 non-document source의 `companion_metadata`만 쓴다. Receipt의
-`runner_executable_digest`와 `runtime_digest`는 해당 owner lane의 현재 package bytes와 같아야 한다.
-
-Runner는 target의 observed presence/raw-byte digest가 planned baseline과 같은지 write 직전에
-확인하고, exact patch를 replay해 expected bytes를 계산한다. Target의 모든 path component는
-no-follow로 열고 present leaf는 single-link regular file이어야 한다. Held parent identity와 live
-root-relative parent를 publish 전후에 비교한다. Existing target은 same-directory atomic exchange로
-publication 시점의 displaced entry를 보존하고 그 exact bytes/type/identity가 planned baseline인지
-검증하며, 해당 OS/filesystem primitive가 없으면 `atomic_exchange_unavailable`로 fail-closed한다.
-Absent target은 no-clobber publication을 사용한다. Target을 다시 읽어
-`receipt resulting_digest == patch expected_after_digest`를 확인한 뒤에만 O_EXCL receipt를
-완성한다. Publish 뒤 target 또는 경로 generation이 달라지거나 receipt write가 실패하면 안전한
-rollback을 시도하고 receipt를 남기지 않는다. Rollback과 receipt cleanup은 public name을 바로
-unlink하지 않고 same-directory high-entropy quarantine으로 atomic no-replace 이동한다. 이동된 entry가
-기록된 runner-owned identity/bytes/mode와 일치할 때만 private name을 삭제하며, 불일치는 public name으로
-복구하거나 recovery artifact로 보존하고 `rollback_failed`로 fail-closed한다. Linker는
-receipt/HMAC/package identity와 current
-target equality를 read-only로 재검증하며 어떤 source나 receipt도 쓰지 않는다.
-
-Graph-validation manifest schema v2에서 Linker는 검증된 receipt의 full patch
-`baseline_content`와 `baseline_digest`로 applied physical surface의 pre-application bytes를 복원한다.
-같은 SourceUnit 선택 정책으로 baseline GraphSnapshot을 재구성하고 transaction
-`reconstruction.baseline`과 일치하는지 확인한 뒤, node와 relation mutation의 `before`를 순서대로
-그 baseline에 적용한다. Receipt-bound baseline이 없는 standalone transaction-v2 검증은
-structural/current-after evidence일 뿐 pre-application graph authority를 증명하지 않는다.
-
-Linker layer는 signed phase/scope/request field의 shape와 HMAC을 확인하지만 그 값의 authoritative
-source를 추정하지 않는다. Coordinator schema v3는 immutable assignment, allowed/excluded actor
-scope, pre/post phase baseline과 parent evidence, same-phase graph-relevant actor delta에서 full request를
-재구성해 `request_digest`, subject와 aggregate assignment를 비교한다. Linker pass만으로 이
-Coordinator binding을 대신할 수 없다.
-
-Applied owner마다 외부에서 pinned한 서로 다른 HMAC key가 필요하다. Key는 repository와 evidence
-root 밖의 absolute path에 있고 path component에 symlink가 없으며 OS current user 소유의
-single-link regular file, owner-only mode, raw 32 bytes 이상이어야 한다. Receipt MAC은 exact unsigned
-envelope/body와 full patch, request/phase/scope/assignment/root/transaction bindings, nonce, prior
-receipt, evidence-root digest, owner key fingerprint와 package runner/runtime byte digests를
-authenticate한다. 이 trusted-host model은 protected-key possession과 exact signed bytes를 증명하지만
-독립 binary 실행, 외부 clock, OS-user 또는 조직 identity, receipt 이후의 별도 authorized write까지
-증명하지 않는다.
+Historical adapter는 보존된 manifest의 구조, recorded result와 current after-state를 fail-soft로
+진단할 수 있다. External key, producer executable 또는 evidence root가 없으면
+`historical_structure_only` 성격의 진단을 반환하고 추가 파일 생성이나 외부 경로 권한을 요구하지
+않는다. Historical wire의 세부 schema는 adapter fixture가 소유하며 이 기준서의 current normative
+contract가 아니다.
 
 <!-- key: id=key.standard.artifact.graph.change-lifecycle refs=key.topic.artifact-graph key.topic.keystone-metadata key.topic.verification -->
 ## Rename, removal, compatibility and coverage
@@ -552,10 +426,12 @@ authenticate한다. 이 trusted-host model은 protected-key possession과 exact 
    baseline, apply, reconstruction, validation으로 판정한다. Project graph coverage는 별도 debt
    지표이며 transaction 밖 legacy gap만으로 current transaction의 `verified`를 차단하지 않는다.
 
-Acceptance finalization은 graph relevance와 `required | not_applicable | deferred` disposition을
-기록한다. Required이면 verified transaction evidence가 finalization evidence에 포함되어야 한다.
-미완료 required graph sync는 finalization `complete`만 차단하고 Main acceptance를 취소하거나
-R004 accepted 기록을 소급 변경하지 않는다.
+Main acceptance 후 graph-relevant 문서 동기화는 필요한 경우 `required | not_applicable | deferred`
+disposition을 Progress에 기록한다. `required`이면 current source reconstruction과 affected-scope graph
+validation이 통과해야 다음 같은 Work 구현으로 넘어간다. 영향이 없는 disposition은 생략할 수 있다.
+새 finalization manifest, external receipt 또는 owner key는 current success prerequisite가 아니다.
+구 finalization/application evidence는 historical read/diagnostic으로 보존하며 과거 acceptance를
+소급 변경하지 않는다.
 
 <!-- key: id=key.standard.artifact.graph.record-model refs=key.topic.artifact-graph key.contract.output -->
 ## Graph record model
@@ -1040,13 +916,14 @@ authority를 따르고, 위임이 필요하면 사용자 허락을 받은 Coordi
 Generated reverse index나 graph cache는 source of truth가 아니다.
 
 1. Source of truth는 source document, 키메타(9), 코드 앵커(18), repository evidence다.
-2. Linker는 repository 밖의 disposable cache에 owner/ref reverse index와 선택적 typed graph
-   projection을 생성하거나 갱신할 수 있다. Repository source와 `00_docs/**`에는 쓰지 않는다.
+2. Linker는 이미 사용 가능한 repository 밖 disposable cache에 owner/ref reverse index와 선택적
+   typed graph projection을 생성하거나 갱신할 수 있다. Cache는 optional이며 repository source와
+   `00_docs/**`에는 쓰지 않는다.
 3. Generated index의 freshness는 worktree identity, discovery scope path set과 각 source의
    raw-byte digest로 판정한다. Git HEAD, mtime 또는 timestamp만으로 fresh를 선언하지 않는다.
-4. Routine external disposable index refresh에는 별도 결정을 요구하지 않는다. 새 persistent
-   storage, repository write surface 또는 user-facing runtime interface를 도입할 때만 별도
-   결정(6)과 bounded workflow를 먼저 둔다.
+4. Cache 경로가 없거나 접근할 수 없으면 외부 폴더 권한을 요청하지 않고 raw source scan으로
+   fail-soft fallback한다. 새 persistent storage, repository write surface 또는 user-facing runtime
+   interface를 도입할 때만 별도 결정(6)과 bounded workflow를 먼저 둔다.
 5. Generated index가 source document, code anchor, repository evidence와 충돌하면 source
    surface를 우선하고 generated index는 stale candidate로 보고한다.
 
@@ -1129,3 +1006,11 @@ Artifact Graph 기준은 다음 방법으로 검증한다.
    - `rg --files 00_docs`
    - `rg -n "key.capability|key.code|key.config|key.schema|key.api|key.test|keystone-linker" 00_docs/standards`
    - `rg -n "Artifact Graph ownership boundary|Document item metadata|Metadata gap|Relation direction|Generated graph index" 00_docs/standards/artifacts/key-standard-artifact-graph.md`
+15. Current transaction success는 source-owner baseline check/apply 결과, source reconstruction과
+    transaction-scope graph validation으로 판정할 수 있어야 한다.
+16. External key·HMAC·receipt/application-evidence wire는 historical compatibility로 읽히지만
+    current apply·completion·release authority가 아니어야 한다.
+17. 일반 단일-surface 변경, graph-relevant 다중-surface 변경, release/package 변경에 서로 다른
+    검증 범위를 적용하고 repository-wide 검증을 일반 작업의 기본값으로 요구하지 않아야 한다.
+18. Disposable cache가 없거나 외부 경로를 사용할 수 없어도 권한 요청 없이 source scan으로
+    readiness와 impact context를 복구할 수 있어야 한다.

@@ -8,10 +8,6 @@ key:
     - key.topic.work-sequence
     - key.topic.document-system
     - key.doc.source
-global_state:
-  active_round: R010
-  latest_accepted_round: R009
-  active_steps: [R010/S05]
 ---
 
 # 작업서(4) round 색인
@@ -34,7 +30,8 @@ global_state:
 | R007 | Contract Execution Reconciliation | `r007-contract-execution-reconciliation/00_key-index.md` | accepted | 문서 계약 실행 정합화와 Python convention·점진적 리팩터링을 완료했다 |
 | R008 | Skill Graph and Self-Host Runtime Closure | `r008-skill-graph-traceability/00_key-index.md` | accepted | readiness부터 dependency·transaction·finalization까지 self-host workflow를 정합화하고 검증했다 |
 | R009 | Coordinator Keystone Closure | `r009-coordinator-keystone-closure/00_key-index.md` | accepted | Coordinator context provisioning, closure gate, local installation parity를 complete and accepted로 기록한다 |
-| R010 | Production Control Plane Hardening | `r010-production-control-plane-hardening/00_key-index.md` | active | cross-runtime correctness와 actual-state production gate를 구현·검증한다 |
+| R010 | Standards-to-Product Alignment | `r010-production-control-plane-hardening/00_key-index.md` | accepted | accepted correctness 이력을 보존하고 기준서↔산출물 trace, work recovery와 단순한 제품 흐름으로 재정렬했다 |
+| R011 | Parallel Work State and Hierarchical Rounds | `r011-work-model-evolution/00_key-index.md` | accepted | 병렬 Work·2단계 Round·signal triage와 source-derived projection 경계를 구현·검증하고 terminal acceptance로 닫았다 |
 
 <!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work key.topic.work-round -->
 ## 공통 결정
@@ -46,14 +43,14 @@ global_state:
 
 1. 프로젝트 전체 방향은 `00_docs/key-context-map.md`를 먼저 읽는다.
 2. 공통 기준과 용어는 `00_docs/standards/01_key-project-standard.md`를 따른다.
-3. 현재 active round가 있으면 이 파일의 `Work rounds` 표를 권위로 삼는다. 현재 active round는
-   R010이며 active Step은 R010/S05다. 최신 accepted round는 R009다. S03과 S04는 S02 closure
-   commit `a201f410e03a4ffd80f6f7deb4573364067f1ace` 뒤 활성화됐고, S03은 이후
-   `R010/S03/main-acceptance`와 `R010/S04/main-acceptance`로 각각 complete and accepted되어
-   active set에서 제외됐다. S05는 S02-S04 gate를 충족해 활성화됐다.
+3. `Work rounds` 표는 Round navigation과 사람이 작성한 목적 요약이다. Current active/latest
+   상태는 `scripts/work_state_runtime.py --root .`의 source-derived 결과에서 복구하며 이 Index에
+   별도 `global_state` pointer를 수동 유지하지 않는다.
 4. Round 내부 실행 순서는 해당 round의 `00_key-index.md`에서 확인한다.
 5. 각 work의 세부 목표와 검증은 해당 work node의 `key-work-{slug}.md`에서 확인한다.
 6. 각 work의 진행 상태는 해당 work node의 `key-progress.md`에서 확인한다.
+7. R011의 실행 이력과 다음 범위는 `r011-work-model-evolution/00_key-index.md`, 각 Work Progress와
+   canonical Work State 결과를 함께 확인한다.
 
 <!-- key: id=key.work.index.round-creation-rules refs=key.doc.work key.topic.document-system key.topic.work-round -->
 ## Work round 생성 규칙
@@ -66,3 +63,11 @@ global_state:
    일반 step은 `S01`부터 시작한다.
 5. Round 안의 work node는 하나의 reviewable goal을 가져야 한다.
 6. 너무 작은 작업은 별도 work node로 만들지 않고 관련 work의 step으로 흡수한다.
+7. `DEC-WORKS-030`에 따라 계층형 Round의 supported depth는 parent→child 총 2단계로
+   제한한다. Exact ref·folder grammar와 상태 파생은 R011/S02에서 검증·수락됐으며 기존 flat
+   `R{number}` Round와 함께 Work State schema v3의 실행 권위다.
+8. 3단계 이상 Round가 필요해지면 생성을 멈추고 과도한 플랜 복잡도로 보고한 뒤
+   Goal 축소, 동급 child 분리 또는 별도 parent Round를 통한 작업서 개편을 요청한다.
+9. `DEC-WORKS-031`에 따라 Root/Context의 전역 Round pointer와 latest-accepted ordering은
+   parent ref만 사용한다. Child ref는 parent index의 ordered `child_rounds`, child-local
+   Work·Step·Progress와 Work State child 집계에서 복구한다.

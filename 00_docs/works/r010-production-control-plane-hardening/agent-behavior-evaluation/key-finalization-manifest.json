@@ -1,0 +1,182 @@
+{
+  "schema_version": 4,
+  "acceptance_ref": "R010/S05/main-acceptance",
+  "steps": [
+    {
+      "ref": "R010/S05",
+      "work_ref": "R010/agent-behavior-evaluation",
+      "status": "complete",
+      "approval_state": "accepted",
+      "finalization_state": "complete",
+      "finalization_acceptance_ref": "R010/S05/main-acceptance",
+      "progress_path": "00_docs/works/r010-production-control-plane-hardening/agent-behavior-evaluation/key-progress.md"
+    },
+    {
+      "ref": "R010/S06",
+      "work_ref": "R010/whole-flow-self-host-e2e",
+      "status": "in_progress",
+      "approval_state": "pending",
+      "finalization_state": "pending",
+      "progress_path": "00_docs/works/r010-production-control-plane-hardening/whole-flow-self-host-e2e/key-progress.md"
+    }
+  ],
+  "accepted_steps": ["R010/S05"],
+  "execution_transitions": [
+    {"ref": "R010/S05", "from": "in_progress", "to": "complete"}
+  ],
+  "approval_transitions": [
+    {
+      "ref": "R010/S05",
+      "from": "pending",
+      "to": "accepted",
+      "evidence": "Main accepted the verified Product Direction Realignment result on 2026-08-10."
+    }
+  ],
+  "active_steps": ["R010/S06"],
+  "active_step_sources": [
+    {
+      "category": "work_index",
+      "path": "00_docs/works/r010-production-control-plane-hardening/agent-behavior-evaluation/00_key-index.md"
+    },
+    {
+      "category": "round_index",
+      "path": "00_docs/works/r010-production-control-plane-hardening/00_key-index.md"
+    },
+    {"category": "context_map", "path": "00_docs/key-context-map.md"}
+  ],
+  "global_state": {
+    "active_round": "R010",
+    "latest_accepted_round": "R009",
+    "active_steps": ["R010/S06"],
+    "sources": [
+      {
+        "category": "work_index",
+        "path": "00_docs/works/r010-production-control-plane-hardening/agent-behavior-evaluation/00_key-index.md",
+        "key_id": "key.work.agent-behavior-evaluation.index"
+      },
+      {
+        "category": "round_index",
+        "path": "00_docs/works/r010-production-control-plane-hardening/00_key-index.md",
+        "key_id": "key.work.round.r010-production-control-plane-hardening.index"
+      },
+      {
+        "category": "root_index",
+        "path": "00_docs/works/00_key-index.md",
+        "key_id": "key.work.index"
+      },
+      {
+        "category": "context_map",
+        "path": "00_docs/key-context-map.md",
+        "key_id": "key.context-map"
+      }
+    ]
+  },
+  "early_work": [
+    {
+      "target_step": "R010/S06",
+      "cause": "S05 prepared the exact S06 Change Set before acceptance.",
+      "completed_scope": ["S06-A through S06-E paths, compatibility boundaries, rollback gates and verification order were documented."],
+      "remaining_scope": ["Activate S06 after S05 finalization, revise standards, obtain implementation approval, then change code and tests."],
+      "status_effect": "none"
+    }
+  ],
+  "finalization": {
+    "required": true,
+    "state": "complete",
+    "progress_path": "00_docs/works/r010-production-control-plane-hardening/agent-behavior-evaluation/key-progress.md",
+    "evidence": ["main_acceptance", "impact_dispositions", "source_updates", "semantic_review", "core_validator_exit_0", "post_edit_verification"]
+  },
+  "graph_sync": {
+    "required": false,
+    "disposition": "not_applicable",
+    "reason": "Only approval, work-state and active-step recovery projections changed; no typed graph node, relation, locator or lifecycle mutation was introduced."
+  },
+  "impact_candidates": [
+    {
+      "category": "progress",
+      "artifact": "R010/S05 progress",
+      "path": "00_docs/works/r010-production-control-plane-hardening/agent-behavior-evaluation/key-progress.md",
+      "disposition": "updated",
+      "reason": "Records Main acceptance and resumable finalization state."
+    },
+    {
+      "category": "work_order_change_set",
+      "artifact": "R010/S05 Work Order and Change Set",
+      "path": "00_docs/works/r010-production-control-plane-hardening/agent-behavior-evaluation/key-work-agent-behavior-evaluation.md",
+      "disposition": "updated",
+      "reason": "Records complete and accepted authority state without changing the accepted Change Set."
+    },
+    {
+      "category": "work_index",
+      "artifact": "R010/S05 work index",
+      "path": "00_docs/works/r010-production-control-plane-hardening/agent-behavior-evaluation/00_key-index.md",
+      "disposition": "updated",
+      "reason": "Closes S05 and projects S06 as the active Step."
+    },
+    {
+      "category": "round_index",
+      "artifact": "R010 round index",
+      "path": "00_docs/works/r010-production-control-plane-hardening/00_key-index.md",
+      "disposition": "updated",
+      "reason": "Records completed S05 finalization and active S06."
+    },
+    {
+      "category": "root_index",
+      "artifact": "root works index",
+      "path": "00_docs/works/00_key-index.md",
+      "disposition": "updated",
+      "reason": "Synchronizes the repository-global active Step set."
+    },
+    {
+      "category": "context_map",
+      "artifact": "Context Map",
+      "path": "00_docs/key-context-map.md",
+      "disposition": "updated",
+      "reason": "Updates recovery to completed S05 finalization and active S06."
+    },
+    {
+      "category": "standard_decision_plan",
+      "artifact": "DEC-WORKS-029 and accepted S05 direction",
+      "path": "00_docs/works/key-decisions.md",
+      "disposition": "no_change",
+      "reason": "The accepted decision already defines the no-secret, no-agent-gate product boundary."
+    },
+    {
+      "category": "recovery",
+      "artifact": "R010/S06 recovery index",
+      "path": "00_docs/works/r010-production-control-plane-hardening/whole-flow-self-host-e2e/00_key-index.md",
+      "disposition": "updated",
+      "reason": "S06 is active after S05 finalization completed."
+    },
+    {
+      "category": "implementation_gate",
+      "artifact": "R010/S06 Step-start gate",
+      "path": "00_docs/works/r010-production-control-plane-hardening/whole-flow-self-host-e2e/key-work-whole-flow-self-host-e2e.md",
+      "disposition": "updated",
+      "reason": "The declared S05 complete and accepted dependency and scoped Author finalization hard gate are satisfied.",
+      "gate_state": "resolved",
+      "gate_scope": "R010/S06 declared dependency"
+    },
+    {
+      "category": "residual_risk",
+      "artifact": "R010/S05 residual risks",
+      "path": "00_docs/works/r010-production-control-plane-hardening/agent-behavior-evaluation/key-progress.md",
+      "disposition": "no_change",
+      "reason": "No unresolved S05 product-direction decision remains; code execution belongs to S06.",
+      "risk_state": "none",
+      "risk_items": []
+    },
+    {
+      "category": "namespace",
+      "artifact": "R010/S05 namespaces",
+      "path": "00_docs/works/r010-production-control-plane-hardening/00_key-index.md",
+      "disposition": "no_change",
+      "reason": "Step, Work and acceptance references are unique in the bounded R010 scope.",
+      "namespace_state": "checked"
+    }
+  ],
+  "namespace_entries": [
+    {"namespace": "work_step", "value": "R010/S05", "owner": "R010 Product Direction Realignment"},
+    {"namespace": "acceptance_ref", "value": "R010/S05/main-acceptance", "owner": "R010/S05 Main acceptance"}
+  ]
+}

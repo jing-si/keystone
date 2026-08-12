@@ -110,6 +110,19 @@ Do not invent project-specific `depends_on` targets or `work_gates` in the fixed
 repair, report missing or conflicting dependency targets as recovery risks without creating future IDs,
 rewriting relations, or changing work status. Dependency gaps alone do not change initialization state.
 
+## Lean Bootstrap Boundary
+
+Create only the source documents needed to make project meaning recoverable.
+
+1. Keep R000 and scaffold state in their owning source documents. Do not add duplicated current-state
+   pointers, generated projections, or compatibility artifacts as initialization prerequisites.
+2. Do not create a graph cache, finalization manifest, acceptance event, external evidence directory,
+   key, receipt, or snapshot to prove initialization occurred.
+3. Let Reader derive session context and let Author/Main establish and accept project meaning after the
+   scaffold exists. Init never turns file creation into acceptance.
+4. Preserve historical or project-specific material already present, but do not recreate a retired
+   producer merely because an old record names it.
+
 ## Handoff and Output
 
 Keep detailed state and handoff payloads agent-facing. They may contain:

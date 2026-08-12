@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Optional, Tuple
 
 from .dependency import DependencyEvaluation
+from .source_views import SourceViews
 
 
 class ScanScope(str, Enum):
@@ -87,6 +88,7 @@ class IndexResult:
     diagnostics: Tuple[IndexDiagnostic, ...] = ()
     typed_graph: Optional[TypedGraph] = None
     dependency_evaluations: Tuple[DependencyEvaluation, ...] = ()
+    source_views: Optional[SourceViews] = None
 
 
 @dataclass(frozen=True)

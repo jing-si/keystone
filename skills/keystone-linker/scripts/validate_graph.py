@@ -253,6 +253,7 @@ def main():
     coverage_payload = None
     captured_sources = None
     absent_sources = set()
+    historical_full_context = False
     try:
         if args.manifest:
             manifest, manifest_raw = load_json_bytes(
@@ -344,10 +345,26 @@ def main():
                 "application_evidence_context_unexpected",
                 "application-evidence options require manifest schema_version 2",
             ))
-        if manifest_schema == 2 and not args.evidence_root:
-            raise RuntimeError((
-                "application_evidence_context_missing",
-                "schema-v2 manifest validation requires --evidence-root",
+        historical_producers = (
+            SCRIPT_ROOT.parents[1] / "keystone-author" / "scripts" / "run_owned_surface_apply.py",
+            SCRIPT_ROOT.parents[1] / "keystone-author" / "scripts" / "owned_surface_apply_runtime.py",
+            SCRIPT_ROOT.parents[1] / "keystone-coordinator" / "scripts" / "run_owned_surface_apply.py",
+            SCRIPT_ROOT.parents[1] / "keystone-coordinator" / "scripts" / "owned_surface_apply_runtime.py",
+        )
+        historical_full_context = bool(
+            manifest_schema == 2
+            and args.evidence_root
+            and owner_keys
+            and set(owner_keys) == set(owner_key_digests)
+            and all(path.is_file() for path in historical_producers)
+        )
+        if manifest_schema == 2 and not historical_full_context:
+            findings.append(diagnostic(
+                "historical_structure_only",
+                "Historical schema-v2 application evidence was validated only against "
+                "readable structure and current source; retired external trust material "
+                "was not required.",
+                severity=Severity.WARNING,
             ))
         if (isinstance(transaction, dict)
                 and type(transaction.get("schema_version")) is not int
@@ -436,7 +453,11 @@ def main():
         return 2
     findings.extend(validate_snapshot(root, snapshot, parse_findings))
     baseline_snapshot = None
-    if manifest_schema == 2 and isinstance(transaction, dict):
+    if (
+        manifest_schema == 2
+        and isinstance(transaction, dict)
+        and historical_full_context
+    ):
         application_result = validate_application_evidence(
             transaction=transaction,
             application_evidence=application_reference,
@@ -477,8 +498,6 @@ def main():
     execution_error_codes = {
         "application_evidence_context_invalid",
         "application_evidence_unreadable",
-        "application_owner_key_missing",
-        "application_owner_key_digest_missing",
         "application_owner_key_invalid",
         "application_owner_key_mismatch",
         "application_owner_key_separation_required",

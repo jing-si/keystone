@@ -15,6 +15,8 @@ from graph_runtime.readiness import context_readiness
 from graph_runtime.readiness_cli import _response
 from graph_runtime.scanner import ScanScope
 from graph_runtime.scanner import ReferenceScanner
+from graph_runtime.snapshot_validation import reconstruct
+from graph_runtime.source_views import source_views_from_snapshot
 
 
 READINESS_CLI = Path(__file__).parents[1] / "scripts" / "graph_runtime" / "readiness_cli.py"
@@ -74,6 +76,88 @@ class ContextReadinessTests(unittest.TestCase):
         self.assertIsNotNone(typed.result.typed_graph)
         self.assertIsNone(plain.result.typed_graph)
         self.assertEqual("reused", plain.cache_status)
+
+    def test_source_views_are_opt_in_source_bound_and_not_cached(self):
+        work = self.root / "00_docs" / "works" / "release"
+        work.mkdir(parents=True)
+        (work / "key-work-release.md").write_text(
+            """---
+doc_type: work_order
+approval: {state: pending}
+key:
+  id: key.work.release.order
+  relations:
+    produces: [key.code.release, key.test.release]
+---
+# Release
+
+<!-- key: id=key.acceptance.release.ready kind=claim requires_verification_of=key.code.release -->
+- Release behavior is verified.
+""",
+            encoding="utf-8",
+        )
+        (self.root / "00_docs" / "decisions.md").write_text(
+            """---
+doc_type: decision_record
+document_lifecycle: active
+approval: {state: accepted}
+key: {id: key.work.decisions}
+---
+<!-- key: id=key.claim.release.old kind=claim lifecycle=superseded -->
+## Old
+
+<!-- key: id=key.claim.release.current kind=claim lifecycle=active supersedes=key.claim.release.old -->
+## Current
+""",
+            encoding="utf-8",
+        )
+        (self.root / "src").mkdir()
+        (self.root / "src" / "release.py").write_text(
+            "# keystone: id=key.code.release kind=output_artifact "
+            "artifact_kind=code locator.symbol=release\n",
+            encoding="utf-8",
+        )
+        (self.root / "tests").mkdir()
+        (self.root / "tests" / "test_release.py").write_text(
+            "# keystone: id=key.test.release kind=output_artifact "
+            "artifact_kind=test verifies=key.code.release "
+            "locator.test_name=test_release\n",
+            encoding="utf-8",
+        )
+
+        readiness = context_readiness(
+            self.root,
+            self.cache,
+            initiator="reader",
+            artifact_context=True,
+            include_source_views=True,
+        )
+        payload = _response(readiness)
+        paths = tuple(
+            path.relative_to(self.root).as_posix()
+            for path in self.root.rglob("*")
+            if path.is_file() and ".git" not in path.parts
+        )
+        snapshot, diagnostics = reconstruct(self.root, paths)
+        direct = source_views_from_snapshot(
+            snapshot, readiness.result.freshness.digest
+        )
+
+        self.assertEqual((), diagnostics)
+        self.assertEqual(direct, readiness.result.source_views)
+        self.assertEqual("source_projection", readiness.cache_status)
+        self.assertFalse(self.cache.exists())
+        self.assertEqual(3, payload["schema_version"])
+        self.assertEqual("verified", payload["source_views"]["criteria"][0]["status"])
+        self.assertEqual(
+            ["key.claim.release.current"],
+            [item["decision_id"]
+             for item in payload["source_views"]["effective_decisions"]],
+        )
+        self.assertEqual(
+            ["key.code.release", "key.test.release"],
+            payload["source_views"]["work_artifacts"][0]["output_ids"],
+        )
 
     def test_fresh_cache_is_reused(self):
         first = context_readiness(self.root, self.cache, initiator="reader")
@@ -325,6 +409,8 @@ class ContextReadinessTests(unittest.TestCase):
         payload = json.loads(process.stdout)
 
         self.assertEqual(0, process.returncode, process.stderr)
+        self.assertEqual(2, payload["schema_version"])
+        self.assertNotIn("source_views", payload)
         self.assertEqual("pass", payload["status"])
         self.assertEqual("docs", payload["scope"])
         self.assertTrue(payload["complete"])

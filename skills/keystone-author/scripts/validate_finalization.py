@@ -175,16 +175,30 @@ def _validate_work_state_runtime(
     state = runtime["state"]
     manifest_state = manifest.get("global_state")
     if isinstance(manifest_state, dict):
-        observed = {
-            "active_round": manifest_state.get("active_round"),
-            "latest_accepted_round": manifest_state.get("latest_accepted_round"),
-            "active_steps": manifest_state.get("active_steps"),
-        }
-        expected_state = {
-            "active_round": state["active_round"],
-            "latest_accepted_round": state["latest_accepted_round"],
-            "active_steps": state["active_steps"],
-        }
+        if manifest_state.get("schema_version", 1) == 2:
+            observed = {
+                "schema_version": manifest_state.get("schema_version"),
+                "active_rounds": manifest_state.get("active_rounds"),
+                "latest_accepted_round": manifest_state.get("latest_accepted_round"),
+                "active_steps": manifest_state.get("active_steps"),
+            }
+            expected_state = {
+                "schema_version": manifest_state.get("schema_version"),
+                "active_rounds": state["active_rounds"],
+                "latest_accepted_round": state["latest_accepted_round"],
+                "active_steps": state["active_steps"],
+            }
+        else:
+            observed = {
+                "active_round": manifest_state.get("active_round"),
+                "latest_accepted_round": manifest_state.get("latest_accepted_round"),
+                "active_steps": manifest_state.get("active_steps"),
+            }
+            expected_state = {
+                "active_round": state["active_round"],
+                "latest_accepted_round": state["latest_accepted_round"],
+                "active_steps": state["active_steps"],
+            }
         if observed != expected_state:
             findings.append(diagnostic(
                 "work_state_runtime_global_state_mismatch",

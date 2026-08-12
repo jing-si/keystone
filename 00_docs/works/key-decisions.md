@@ -665,3 +665,107 @@ key:
   재사용하되 Work State 의미와 API는 S04가 별도 canonical runtime으로 소유한다.
 - 이유: 하나의 policy authority와 네 consumer parity를 유지하면서도 installed package
   self-containment를 보존하는 유일한 기존 검증 패턴이기 때문이다.
+
+<!-- key: id=key.work.decisions.dec-works-029 refs=key.doc.decision key.topic.artifact-graph key.topic.work-recovery key.topic.verification key.boundary.scope-control -->
+## DEC-WORKS-029: R010은 기준서 기반 제품관리 핵심으로 재정렬한다
+
+- 관련 work: R010/S05 Product Direction Realignment
+- 결정일: 2026-08-10
+- 상태: accepted
+<!-- key: id=key.claim.r010.product-management-core refs=key.topic.artifact-graph key.topic.work-recovery -->
+- 결정: Keystone의 기본 제품 목표는 기준서·결정·작업서의 사람 의도를 code, config, schema,
+  API와 test 산출물에 연결하고, 그 관계와 현재 작업 상태를 문서에서 복구하여 프로젝트를
+  지속적으로 관리할 수 있게 하는 것이다.
+<!-- key: id=key.claim.r010.default-trust-boundary refs=key.boundary.scope-control key.topic.verification -->
+- 결정: 기본 신뢰 경계는 한 repository 안에서 사용자가 감독하는 작업 흐름이다. 서로 불신하는
+  조직, host 또는 reviewer를 전제로 한 외부 키·독립 attestation·감사 보관 체계는 별도로 수락된
+  위협 모델이나 규제 요구가 있을 때만 독립 확장으로 다룬다.
+<!-- key: id=key.claim.r010.scoped-integrity-mechanisms refs=key.topic.verification key.topic.artifact-graph -->
+- 결정: 기본 변경 탐지와 freshness에는 Git commit/tree identity, source path set과 필요한 범위의
+  raw-byte SHA-256을 사용한다. SHA-256은 암호화나 행위자 신원 증명이 아니며, HMAC은 기본 완료
+  조건이 아니다. HMAC·서명·외부 trust root를 도입하려면 보호할 자산, 공격자, 키 소유자,
+  검증자, 운영 비용과 실패 시 동작을 별도 결정으로 먼저 확정한다.
+<!--
+key:
+  id: key.claim.r010.agent-evaluation-optional
+  refs:
+    - key.acceptance.product-alignment.boundary
+    - key.acceptance.product-alignment.agent-eval-disposition
+-->
+- 결정: 실제 model invocation, transcript, reviewer HMAC, hidden control, 가격·token 예산과 반복
+  matrix는 Keystone core 또는 R010 release prerequisite가 아니다. 향후 실제 사용 가치가 확인되면
+  일반적인 선택적 QA 도구로 별도 기획하며 기본 Work completion이나 release를 차단하지 않는다.
+<!-- key: id=key.claim.r010.audit-runtime-current-disposition refs=key.claim.r010.agent-evaluation-optional key.claim.r010.scoped-integrity-mechanisms key.acceptance.product-alignment.agent-eval-disposition -->
+- 결정: R010에서는 HMAC·external key·actual-agent evaluation producer와 그 mandatory consumer를
+  current core 및 기본 설치·release 경로에서 제거하고 별도 optional audit 모듈도 만들지 않는다.
+  기존 closure/finalization/application-evidence wire는 과거 산출물의 최소 읽기 호환에만 사용하며
+  current success authority를 만들지 않는다. Frozen S05 branch는 병합하지 않는다. 실제 사용자와
+  위협 모델이 생기면 별도 Round와 결정으로 다시 평가한다.
+<!--
+key:
+  id: key.claim.r010.product-value-criteria
+  refs:
+    - key.work.round.r010.product-value
+    - key.work.round.r010.product-subject-boundary
+-->
+- 결정: R010의 가치는 임의의 평균 8.5 점수, 이중 reviewer나 RC candidate→terminal 증거 계보가
+  아니라 기준서→영향 분석→구현·검증→진행 기록→재개·수락 흐름의 정확성, 설명 가능성,
+  단순성과 운영 비용으로 판정한다.
+<!-- key: id=key.claim.r010.history-preserving-realignment refs=key.topic.work-sequence key.topic.acceptance -->
+- 결정: R010/S01-S04의 당시 수락 이력과 evidence는 소급 삭제하거나 실패로 재작성하지 않는다.
+  S05가 현재 source를 `retain | simplify | optional_extension | retire`로 분류하고, S06이 수락된
+  교정 Change Set을 구현하며, S07이 실제 제품관리 흐름과 compatibility를 검증해 R010을 닫는다.
+- 이유: 암호학적 감사 체계를 제품 핵심과 혼합하지 않고, 이미 확보한 graph/source/work-state
+  correctness는 보존하면서 Keystone의 원래 목표와 기준서 우선 순서를 회복하기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-030 refs=key.doc.decision key.topic.work-round key.topic.work-sequence key.boundary.scope-control key.standard.subagent key.role.coordinator -->
+## DEC-WORKS-030: Round 계층은 parent와 child의 2단계로 제한한다
+
+- 관련 work: R011/S02 Hierarchical Rounds
+- 결정일: 2026-08-11
+- 상태: accepted
+<!-- key: id=key.claim.r011.round-hierarchy-two-level-limit refs=key.topic.work-round key.boundary.scope-control -->
+- 결정: Round 계층은 parent Round와 그 직접 child Round의 총 2단계까지만 허용한다.
+  `R010`→`R010-a`는 허용하지만 `R010-a`→`R010-a-a`처럼 child 아래에 더 하위
+  Round를 두는 3단계 이상 문법은 지원하지 않는다.
+<!-- key: id=key.claim.r011.depth-overflow-restructure refs=key.topic.work-round key.topic.work-execution key.boundary.scope-control key.standard.subagent key.role.coordinator -->
+- 결정: 현재 Goal을 완수하려면 3단계 이상이 필요하다는 판단이 드는 순간, 이를 신규
+  Round 생성 요구가 아니라 작업 플랜이 과도하게 복잡해졌다는 신호로 판정한다.
+  Worker는 생성을 중단하고 `NEEDS_SCOPE_CHANGE` / `work_order_restructure`로 보고하며,
+  Coordinator는 Author/Main에게 작업서 또는 작업 플랜 개편을 요청한다. Worker report가
+  원천 작업서를 직접 바꾸는 권한은 만들지 않는다.
+- 결정: 개편은 Goal 범위 축소, 동급 child Round 분리, 별도 parent Round 분리를
+  우선한다. 이미 수락된 Round·Step ID 재번호화와 재귀적 하위 Round 생성은 허용하지
+  않는다.
+- 이유: 2단계 제한은 대규모 Goal을 나누는 장점은 유지하면서 Round·Step·Work 복구, 경로
+  문법, 상태 집계와 worker planning이 재귀적으로 복잡해지는 것을 막는 최소 규칙이기
+  때문이다.
+
+<!-- key: id=key.work.decisions.dec-works-031 refs=key.doc.decision key.topic.work-round key.topic.work-recovery key.topic.acceptance key.boundary.scope-control -->
+## DEC-WORKS-031: Parent Round만 전역 상태와 수락 권위를 가진다
+
+- 관련 work: R011/S02 Hierarchical Rounds
+- 결정일: 2026-08-11
+- 상태: accepted
+<!-- key: id=key.claim.r011.parent-global-round-authority refs=key.topic.work-round key.topic.work-recovery key.topic.acceptance -->
+- 결정: Parent Round만 Root Works Index와 Context Map의 전역 `active_rounds`,
+  `accepted_rounds`, `active_round`, `latest_accepted_round` 식별자가 될 수 있다. Child Round가
+  하나 이상 active여도 전역 active Round는 parent로 복구하며, child ref는 전역
+  latest-accepted ordering을 전이하지 않는다.
+<!-- key: id=key.claim.r011.child-local-execution-authority refs=key.topic.work-round key.topic.work-recovery key.topic.work-sequence -->
+- 결정: Parent Round Index는 ordered `child_rounds`와 umbrella Goal·Scope·Boundary를 소유한다.
+  각 child Round Index는 자기 local `round_status`, Work nodes, `R010-a/S01` 형식 Step과
+  Progress를 소유한다. Child를 선언한 parent는 같은 상세 Work를 직접 중복 소유하지
+  않는다.
+<!-- key: id=key.claim.r011.parent-child-aggregate-gate refs=key.topic.work-round key.topic.work-recovery key.topic.acceptance key.boundary.scope-control -->
+- 결정: Work State는 parent와 직접 child의 관계, child local status와 unresolved child를
+  source-derived projection으로 복구한다. Parent의 전역 `round_status`는 원천 parent index가
+  소유하고 child 집계가 이를 자동 전이하지 않는다. Parent는 선언한 모든 child가
+  accepted이고 active·blocked·planned·unresolved child가 없을 때만 Main 수락 후 accepted로
+  전이할 수 있다.
+- 결정: Child local acceptance는 parent acceptance의 gate evidence이지만 자체로 전역 acceptance
+  event, `latest_accepted_round`, 새 finalization manifest 또는 historical Coordinator closure wire를
+  만들지 않는다.
+- 이유: Parent를 전역 식별자로 유지하면 sibling child를 관련 없는 복수 active Round로
+  오해하지 않고 기존 flat Round pointer와 latest-accepted 의미를 보존할 수 있다. Child에는
+  필요한 실행 상태만 두고 수락·집계·history 권위의 중복을 막기 위해서다.

@@ -13,17 +13,12 @@ key:
     - key.topic.bootstrap
     - key.topic.initialization
     - key.topic.runtime-independence
-global_state:
-  active_round: R010
-  latest_accepted_round: R009
-  active_steps: [R010/S05]
 ---
 
 # 프로젝트 컨텍스트 맵
 
-활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 active work round는
-`00_docs/works/r010-production-control-plane-hardening/`이며, 최신 accepted round는
-`00_docs/works/r009-coordinator-keystone-closure/`이다.
+활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 Work/Round/Step과 latest accepted Round는
+수동 pointer가 아니라 `scripts/work_state_runtime.py --root .`의 source-derived 결과에서 복구한다.
 
 <!-- key: id=key.context-map.project refs=key.doc.source key.topic.skill-contract key.topic.bootstrap -->
 ## 프로젝트
@@ -87,7 +82,8 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
 | R007 Contract Execution Reconciliation | `00_docs/works/r007-contract-execution-reconciliation/00_key-index.md` | accepted | 문서 계약 실행 정합화와 Python convention·점진적 리팩터링 완료 |
 | R008 Skill Graph and Self-Host Runtime Closure | `00_docs/works/r008-skill-graph-traceability/00_key-index.md` | accepted | readiness부터 dependency·transaction·finalization까지 self-host workflow 정합화·검증 완료 |
 | R009 Coordinator Keystone Closure | `00_docs/works/r009-coordinator-keystone-closure/00_key-index.md` | accepted | Coordinator context provisioning, closure gate와 local installation parity를 complete and accepted로 기록 |
-| R010 Production Control Plane Hardening | `00_docs/works/r010-production-control-plane-hardening/00_key-index.md` | active | correctness hardening에 phase-separated authority, shared work state와 actual agent/RC evidence를 결속 |
+| R010 Standards-to-Product Alignment | `00_docs/works/r010-production-control-plane-hardening/00_key-index.md` | accepted | accepted correctness 이력을 보존하면서 기준서↔산출물 trace, work recovery와 단순한 기본 신뢰 경계로 재정렬 완료 |
+| R011 Parallel Work State and Hierarchical Rounds | `00_docs/works/r011-work-model-evolution/00_key-index.md` | accepted | 병렬 상태·Round hierarchy·triage와 projection/snapshot 경계를 구현·검증하고 닫음 |
 | Document Tree Setup | `00_docs/works/r001-bootstrap-keystone/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
 | Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | accepted | 전체 공통 기준서 |
 | Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서 |
@@ -184,7 +180,9 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 <!-- key: id=key.context-map.section refs=key.topic.work-sequence key.topic.document-system key.topic.work-round -->
 ## 현재 작업 단계
 
-현재 active round는 R010 Production Control Plane Hardening이며 active Step은 R010/S05다.
+현재 active Round/Work/Step과 latest accepted Round는 canonical Work State Runtime에서 복구한다.
+이 section의 나머지 설명은 accepted history와 작업 목적을 위한 사람이 작성한 기록이며 current
+pointer 권위를 갖지 않는다.
 R010/S01은 complete and accepted이며 schema-v5 Author finalization을 별도 parent commit에
 고정했다. R010/S02도 complete snapshot과 phase-separated actor attribution을 actual-state
 authority chain으로 검증해 complete and accepted로 닫고 closure commit
@@ -194,9 +192,22 @@ authority chain으로 검증해 complete and accepted로 닫고 closure commit
 `R010/S03/main-acceptance`에서 complete and accepted됐고 graph sync와 finalization을 완료했다.
 S04는 canonical Work State Runtime, R009 migration genesis, four-consumer parity와 schema-v6
 finalization을 `R010/S04/main-acceptance`로 complete and accepted했다. S05는 S02-S04 start gate를
-충족해 별도 post-acceptance source generation에서 `in_progress`/Active로 활성화됐으며 S06-S07은
-이후 dependency gate를 기다린다.
-최신 accepted round는 R009 Coordinator Keystone Closure다. R009/S01은
+충족해 `in_progress`/Active로 활성화된 뒤, `DEC-WORKS-029`에 따라 Actual Agent Behavior
+Evaluation에서 Product Direction Realignment로 개편됐다. S05는 S01-S04/main과 frozen S05 branch를
+`retain | simplify | optional_extension | retire`로 분류하고 S06-A~E exact Change Set을 작성했으며
+code를 수정하지 않았다. Main은 2026-08-10 결과를 수락했고 Author finalization을
+완료했다. S06은 accepted S05 Change Set을 standards-first로 구현하고 retained graph/work-state와
+no-secret current path를 검증해 2026-08-11 `R010/S06/main-acceptance`로 complete + accepted됐다.
+S07은 실제 기준서→영향→구현·검증→복구·수락 제품 흐름, terminal Work State와 fresh Reader
+recovery를 검증해 2026-08-11 `R010/S07/main-acceptance`로 complete + accepted/finalized됐고
+R010을 닫았다. R011 Parallel Work State and Hierarchical Rounds는 2026-08-11 사용자 진행 지시로
+active가 됐고 S01-S04를 각각 Main acceptance로 complete + accepted했다. R011은 병렬 활성 상태
+모델, `R010-a` 같은 하위 Round 문법과
+프로젝트 중간 발견사항을 프로젝트 문서 수정과 Keystone 스킬 계약 수정으로 분류하는 절차를
+다룬다. 같은 live/effective 의미의 반복은 source-derived projection으로 정규화하고 immutable
+event/audit/history는 provenance-bound snapshot으로 보존하는 공통 경계도 독립 Work로 다뤘다.
+R011 terminal acceptance event가 R010 event를 이어 latest accepted Round를 R011로 전이했으며
+현재 active Step은 없다. R009/S01은
 사용자 independent-first direction으로 R008과 독립적으로 먼저 수락됐고, 이후 R008/S01-S07도
 complete and accepted로 닫혔다. R001 S00-S07은 accepted 이력으로 보존되고, 미수락
 S08 Skill Creation과 S09 Integration Verification은 superseded다. R002의
@@ -217,7 +228,8 @@ companion/repository validation, transaction/finalization, graph lifecycle과 wi
 순서대로 정합화하고, 마지막에 핵심 skill runtime traceability와 self-host E2E로 전체 경로를
 검증한다.
 
-Active steps: [R010/S05]
+Current `active_steps`는 Work State Runtime 결과를 사용한다. 아래 표는 작업 이력과 navigation
+요약이며 active pointer source가 아니다.
 
 | Step | 제목 | 목적 |
 |---|---|---|
@@ -232,9 +244,13 @@ Active steps: [R010/S05]
 | R010/S02 | Authority Chain and Snapshot Closure | complete, accepted — complete snapshot과 phase-separated actor attribution을 actual-state evidence로 검증하고 finalization했다 |
 | R010/S03 | Graph, Transaction and Source Correctness | complete, accepted — package-owned classification, optional patch, SourceUnit, lifecycle와 canonical mutation을 정합화하고 finalization했다 |
 | R010/S04 | Deterministic Work State Runtime | complete, accepted — repository-derived state와 Reader·Coordinator·Author·release parity를 schema-v6 finalization으로 닫았다 |
-| R010/S05 | Actual Agent Behavior Evaluation | in_progress — actual skill/model invocation으로 12개 scenario evidence를 생성·검증한다 |
-| R010/S06 | Whole-Flow Self-Host E2E | planned — phase-separated 실제 Keystone 정상·adversarial workflow를 검증한다 |
-| R010/S07 | Production Candidate 8.5 Closure | planned — independent RC CI, Main acceptance와 R010 terminal finalization을 결속한다 |
+| R010/S05 | Product Direction Realignment | complete, accepted, finalized — main/frozen source와 consumer disposition 및 S06-A~E Change Set을 수락·최종화했다 |
+| R010/S06 | Standards-to-Product Core Simplification | complete, accepted — graph/work-state 핵심을 보존하고 HMAC·external key·agent gate를 기본 경로에서 분리했다 |
+| R010/S07 | Product Workflow Verification and Closure | complete, accepted, finalized — 기준서→영향→구현·검증→Progress→복구·수락 흐름과 terminal recovery로 R010을 닫았다 |
+| R011/S01 | Parallel Active State | complete, accepted — Lean Core 경계에서 복수 활성 Work/Round와 unresolved active Step을 손실 없이 복구했다 |
+| R011/S02 | Hierarchical Rounds | complete, accepted — `R010-a` 형식 child Round와 parent umbrella 상태·수락 권위를 구현·검증했다 |
+| R011/S03 | Project Signal and Contract Triage | complete, accepted — four-way triage, 4개 lean contract와 외부 project-repair handoff를 수용했다 |
+| R011/S04 | Derived Projections and Document Normalization | complete, accepted, finalized — live projection을 source owner에서 파생하고 immutable audit snapshot은 기존 binding으로 보존했다 |
 
 <!-- key: id=key.context-map.planned-keystone-skills refs=key.topic.skill-contract key.topic.bootstrap -->
 ## Keystone 스킬 구현 상태
