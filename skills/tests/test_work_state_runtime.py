@@ -353,12 +353,78 @@ class WorkStateRuntimeTest(unittest.TestCase):
         result = RUNTIME.derive_work_state(base_sources())
 
         self.assertEqual("pass", result["status"])
+        self.assertEqual(5, result["state"]["schema_version"])
         self.assertEqual("R010", result["state"]["active_round"])
         self.assertEqual(["R010/S04"], result["state"]["active_steps"])
-        self.assertEqual("R009", result["state"]["latest_accepted_round"])
+        self.assertNotIn("latest_accepted_round", result["state"])
+        self.assertNotIn("acceptance_event_head", result["state"])
+        compatibility = result["state"]["historical_acceptance"]
+        self.assertEqual("valid", compatibility["status"])
+        self.assertEqual("R009", compatibility["latest_accepted_round"])
+        self.assertEqual("R009", compatibility["acceptance_event_head"]["round_ref"])
+        self.assertEqual([], compatibility["diagnostics"])
         self.assertEqual(1, len(result["state"]["active_works"]))
         self.assertTrue(result["generation"]["complete"])
         self.assertRegex(result["generation"]["source_generation"], r"^sha256:[0-9a-f]{64}$")
+
+    def test_initialized_repository_without_acceptance_events_recovers_current_state(self):
+        sources = base_sources()
+        sources.pop(RUNTIME.ACCEPTANCE_EVENT_PATH)
+
+        result = RUNTIME.derive_work_state(sources)
+
+        self.assertEqual("pass", result["status"], result["diagnostics"])
+        self.assertEqual(["R010"], result["state"]["active_rounds"])
+        self.assertEqual(["R010/S04"], result["state"]["active_steps"])
+        self.assertNotIn("historical_acceptance", result["state"])
+
+    def test_legacy_latest_pointer_does_not_participate_in_current_freshness(self):
+        sources = base_sources()
+        for path, raw in tuple(sources.items()):
+            if path.endswith(".md"):
+                sources[path] = raw.replace(
+                    b"latest_accepted_round: R009",
+                    b"latest_accepted_round: R001",
+                )
+
+        result = RUNTIME.derive_work_state(sources)
+
+        self.assertEqual("pass", result["status"], result["diagnostics"])
+        self.assertNotIn("work_state_pointer_stale", self.codes(result))
+        self.assertTrue(all(
+            claim.get("latest_accepted_round") == "R001"
+            for claim in result["state"]["pointer_claims"]
+        ))
+
+    def test_invalid_historical_event_does_not_block_current_recovery(self):
+        sources = base_sources()
+        events = json.loads(sources[RUNTIME.ACCEPTANCE_EVENT_PATH])
+        events["schema_version"] = 2
+        sources[RUNTIME.ACCEPTANCE_EVENT_PATH] = RUNTIME.canonical_json_bytes(events)
+
+        result = RUNTIME.derive_work_state(sources)
+
+        self.assertEqual("pass", result["status"], result["diagnostics"])
+        compatibility = result["state"]["historical_acceptance"]
+        self.assertEqual("invalid", compatibility["status"])
+        self.assertIn(
+            "acceptance_event_source_invalid",
+            {item["code"] for item in compatibility["diagnostics"]},
+        )
+
+    def test_malformed_historical_event_is_isolated_from_current_recovery(self):
+        sources = base_sources()
+        sources[RUNTIME.ACCEPTANCE_EVENT_PATH] = b"{"
+
+        result = RUNTIME.derive_work_state(sources)
+
+        self.assertEqual("pass", result["status"], result["diagnostics"])
+        compatibility = result["state"]["historical_acceptance"]
+        self.assertEqual("invalid", compatibility["status"])
+        self.assertIn(
+            "acceptance_event_source_invalid",
+            {item["code"] for item in compatibility["diagnostics"]},
+        )
 
     def test_early_work_is_projected_from_finalization_sources(self):
         sources = base_sources()
@@ -419,9 +485,10 @@ class WorkStateRuntimeTest(unittest.TestCase):
         result = RUNTIME.evaluate_repository(ROOT)
 
         self.assertEqual("pass", result["status"], result["diagnostics"])
-        self.assertEqual("none", result["state"]["active_round"])
-        self.assertEqual([], result["state"]["active_steps"])
-        self.assertEqual("R011", result["state"]["latest_accepted_round"])
+        self.assertEqual(5, result["state"]["schema_version"])
+        self.assertIsInstance(result["state"]["active_rounds"], list)
+        self.assertIsInstance(result["state"]["active_steps"], list)
+        self.assertNotIn("latest_accepted_round", result["state"])
 
     def test_multiple_active_rounds_are_recovered_without_implicit_priority(self):
         sources = multi_active_sources()
@@ -429,7 +496,7 @@ class WorkStateRuntimeTest(unittest.TestCase):
         result = RUNTIME.derive_work_state(sources)
 
         self.assertEqual("pass", result["status"], result["diagnostics"])
-        self.assertEqual(4, result["state"]["schema_version"])
+        self.assertEqual(5, result["state"]["schema_version"])
         self.assertIsNone(result["state"]["active_round"])
         self.assertEqual(["R010", "R011"], result["state"]["active_rounds"])
         self.assertEqual(["R010/S04", "R011/S01"], result["state"]["active_steps"])
@@ -446,7 +513,7 @@ class WorkStateRuntimeTest(unittest.TestCase):
         result = RUNTIME.derive_work_state(hierarchical_sources())
 
         self.assertEqual("pass", result["status"], result["diagnostics"])
-        self.assertEqual(4, result["state"]["schema_version"])
+        self.assertEqual(5, result["state"]["schema_version"])
         self.assertEqual("R010", result["state"]["active_round"])
         self.assertEqual(["R010"], result["state"]["active_rounds"])
         self.assertEqual(["R010-a"], result["state"]["active_child_rounds"])
@@ -544,7 +611,10 @@ key: {id: key.work.r010-b.other.progress}
 
         self.assertEqual("pass", result["status"], result["diagnostics"])
         self.assertEqual(["R009"], result["state"]["accepted_rounds"])
-        self.assertEqual("R009", result["state"]["latest_accepted_round"])
+        self.assertEqual(
+            "R009",
+            result["state"]["historical_acceptance"]["latest_accepted_round"],
+        )
 
     def test_parent_acceptance_requires_every_declared_child_to_be_accepted(self):
         sources = hierarchical_sources()
@@ -922,7 +992,9 @@ key: {id: key.work.future.index}
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             fixture = base / "fixture"
-            write_sources(fixture, base_sources())
+            sources = base_sources()
+            sources.pop(RUNTIME.ACCEPTANCE_EVENT_PATH)
+            write_sources(fixture, sources)
             for index, runtime in enumerate(PACKAGE_RUNTIMES):
                 isolated = base / ("package-%d" % index)
                 isolated.mkdir()
@@ -933,7 +1005,9 @@ key: {id: key.work.future.index}
                     cwd=str(isolated), capture_output=True, text=True, check=False,
                 )
                 self.assertEqual(0, process.returncode, process.stderr)
-                self.assertEqual("pass", json.loads(process.stdout)["status"])
+                result = json.loads(process.stdout)
+                self.assertEqual("pass", result["status"])
+                self.assertNotIn("historical_acceptance", result["state"])
 
     def test_four_consumer_entry_points_use_the_canonical_projection(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -1132,7 +1206,10 @@ key: {id: key.work.future.index}
             runtime = RUNTIME.evaluate_repository(fixture)
             self.assertEqual("pass", runtime["status"], runtime["diagnostics"])
             self.assertEqual(["R011"], runtime["state"]["active_rounds"])
-            self.assertEqual("R010", runtime["state"]["latest_accepted_round"])
+            self.assertEqual(
+                "R010",
+                runtime["state"]["historical_acceptance"]["latest_accepted_round"],
+            )
 
             author = load_script(
                 ROOT / "skills" / "keystone-author" / "scripts" / "validate_finalization.py",

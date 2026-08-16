@@ -2,7 +2,7 @@
 doc_type: standard
 created_at: "2026-05-31"
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-11", accepted_by: main}
+approval: {state: accepted, accepted_at: "2026-08-17", accepted_by: main}
 key:
   id: key.standard.project
   refs:
@@ -228,6 +228,14 @@ runtime output
 - 의미: changed files, changed artifact IDs, tests run, verification result, scope check,
   document sync need, metadata sync need, residual risk를 담는 실행 결과 보고다.
 - 사용 규칙: progress status나 Main acceptance를 대체하지 않는다.
+
+(21) 명확화 로그(clarification log): 하나의 큰 검토 주제에서 실제로 진행한 질문과 답변을
+Work node에 보존하는 기억 복구용 attachment
+
+- 의미: AI가 대화 맥락을 잃어도 대주제, 수정 범위별 그룹과 실제 질문·답변을 다시 찾기 위한
+  추적 가능한 Markdown log
+- 사용 규칙: 원천 문서(2), 결정(6), 진행 기록(5), 평가 자료 또는 completion evidence가 아니다.
+  내용이 원천 문서와 충돌하면 원천 문서가 우선한다.
 
 <!-- key: id=key.standard.project.core-rules refs=key.doc.source key.topic.document-system key.topic.skill-contract key.topic.key-prefix key.topic.bootstrap -->
 ## 핵심 규칙
@@ -655,13 +663,13 @@ Generated reverse index나 cache는 source of truth가 아니라 탐색 최적�
 9. 세부 날짜 형식, 선택적 효력·대체 날짜와 기존 문서 호환 규칙은
    `standards/bootstrap/key-standard-bootstrap.md`를 따른다.
 
-<!-- key: id=key.standard.project.std-keystone-020 refs=key.doc.source key.topic.document-system -->
+<!-- key: id=key.standard.project.std-keystone-020 refs=key.doc.source key.topic.document-system key.claim.r012.current-round-authority key.claim.r012.round-session-focus key.claim.r012.worker-step-selection -->
 ### STD-KEYSTONE-020: 작업은 문서에서 복구 가능해야 한다
 
 사용자가 "run the next step"이라고 말하면 main은 설정된 document root(1)에서 다음 정보를
 복구할 수 있어야 한다.
 
-1. active work round
+1. 0개 이상의 active parent work round와 관련 active child Round
 2. 0개 이상의 활성 step과 각 status source
 3. goal
 4. completion criteria
@@ -670,11 +678,20 @@ Generated reverse index나 cache는 source of truth가 아니라 탐색 최적�
 7. risks
 8. verification
 
-`active_steps`는 Step 상태를 복제하지 않는 참조 목록이며 우선순위나 대표 Step을 강제하지 않는다.
-정식 상태 전이 없이 미래 Step 일부가 먼저 처리되면 대상 Step에 `early_work`로 원인, 처리 범위,
-남은 범위와 `status_effect: none`을 기록한다.
+`active_steps`는 Step 상태를 복제하지 않는 참조 목록이며 목록 순서 자체가 우선순위나 대표 Step을
+강제하지 않는다. Active parent Round가 둘 이상이고 요청이 대상 Round를 지정하지 않았으며 전체
+또는 cross-Round 조회도 아니면 각 Round와 그 아래 현재 진행 중인 Step을 알린 뒤
+`해당 세션에서 어떤 라운드를 작업할까요?`라고 한 번 묻는다. 선택은 session-only이며 source,
+cache 또는 pointer에 저장하지 않는다.
 
-<!-- key: id=key.standard.project.derived-work-state-projection kind=claim refs=key.doc.progress key.topic.work-recovery key.topic.document-system key.topic.verification -->
+Round가 선택되면 현재 진행 중인 Step 목록을 알리되 Step 선택 자체는 사용자 질문으로 만들지
+않는다. 별도 사용자 지정이 없으면 dependency와 `work_gates`를 만족하는 active Step 중 번호가
+가장 낮은 Step을 기본 대상으로 삼고, 그 Step이 blocked이면 이유를 알린 뒤 다음 실행 가능 Step을
+선택한다. 이 기본 선택은 Step 상태나 priority를 자동 변경하지 않는다. 정식 상태 전이 없이 미래
+Step 일부가 먼저 처리되면 대상 Step에 `early_work`로 원인, 처리 범위, 남은 범위와
+`status_effect: none`을 기록한다.
+
+<!-- key: id=key.standard.project.derived-work-state-projection kind=claim refs=key.doc.progress key.topic.work-recovery key.topic.document-system key.topic.verification key.claim.r012.current-round-authority -->
 #### Source-derived Work State projection
 
 1. Work 전체의 현재 실행·승인 상태는 `key-progress.md`의 aggregate Progress authority가 소유하고,
@@ -692,6 +709,12 @@ Generated reverse index나 cache는 source of truth가 아니라 탐색 최적�
 6. Dependency evaluator도 같은 effective Work state resolver를 사용한다. `depends_on`은 target
    identity를, `work_gates`는 적용 범위와 condition을 소유하며 gate 결과나 target current state를
    Progress·Index에 새 권위로 복제하지 않는다.
+7. Current 전역 실행 상태는 parent-only `active_rounds`와 Progress에서 파생한 `active_steps`가
+   소유한다. `active_round`과 `latest_accepted_round`은 기존 corpus를 읽기 위한 optional
+   compatibility projection이며 current 실행 대상, 성공 여부 또는 pointer freshness를 정하지 않는다.
+8. Accepted history는 각 parent Round의 `round_status`, approval과 관련 Progress에서 확인한다.
+   Current recovery를 위해 accepted Round를 하나의 latest ordering으로 다시 계산하거나 별도
+   timestamp·event source를 생성하지 않는다.
 
 <!-- key: id=key.standard.project.source-derived-semantic-views kind=claim refs=key.topic.artifact-graph key.topic.work-recovery key.topic.verification key.topic.acceptance -->
 #### Source-derived semantic views
@@ -710,9 +733,10 @@ Generated reverse index나 cache는 source of truth가 아니라 탐색 최적�
    default readiness와 disposable owner/ref cache에는 추가하지 않는다.
 5. Missing target, incomplete generation과 relation diagnostic은 숨기지 않는다. View 또는 cache는
    source를 수정하거나 acceptance, approval, work status의 새 authority가 될 수 없다.
-6. Historical acceptance event의 subject digest와 finalization manifest/envelope binding은 현재
-   projection과 분리된 기존 snapshot 계약을 재사용한다. Semantic view를 위해 새 evidence root,
-   manifest, key 또는 HMAC 체계를 만들지 않는다.
+6. 기존 historical acceptance event의 subject digest와 finalization manifest/envelope binding은
+   현재 projection과 분리된 compatibility snapshot으로만 읽는다. Event source가 없다는 이유로
+   current recovery를 실패시키거나 새 event를 만들지 않으며, semantic view를 위해 새 evidence
+   root, manifest, key 또는 HMAC 체계를 만들지 않는다.
 
 <!-- key: id=key.standard.project.std-keystone-021 refs=key.topic.document-system key.topic.skill-contract -->
 ### STD-KEYSTONE-021: 작업서는 goal assignment를 위해 작업을 나눈다
@@ -790,13 +814,13 @@ Subagent report status 값과 의미는 `standards/subagents/key-standard-subage
    validation을 verification 후보로 포함한다.
 5. 필요하면 verifier subagent에게 별도 verification Goal을 배정한다.
 
-<!-- key: id=key.standard.project.std-keystone-026 refs=key.topic.document-system key.doc.work key.topic.work-round key.claim.r011.round-hierarchy-two-level-limit key.claim.r011.depth-overflow-restructure key.claim.r011.parent-global-round-authority key.claim.r011.child-local-execution-authority key.claim.r011.parent-child-aggregate-gate -->
+<!-- key: id=key.standard.project.std-keystone-026 refs=key.topic.document-system key.doc.work key.topic.work-round key.claim.r011.round-hierarchy-two-level-limit key.claim.r011.depth-overflow-restructure key.claim.r012.current-round-authority key.claim.r011.child-local-execution-authority key.claim.r011.parent-child-aggregate-gate -->
 ### STD-KEYSTONE-026: 작업서는 round 단위로 묶는다
 
 작업서(4)는 기준서(3)와 달리 하나의 영구 통합 문서가 아니라 특정 시점의 기준서와 목표를
 바탕으로 실행되는 작업 round(13)에 속한다.
 
-1. `works/00_key-index.md`는 전체 작업 round(13) 목록과 active round를 관리한다.
+1. `works/00_key-index.md`는 전체 작업 round(13) 목록과 active parent Round 탐색을 관리한다.
 2. 각 작업 round(13)는 `works/r{number}-{slug}/` 아래에 둔다.
 3. `r`은 round를 뜻하며, version이나 revision 번호가 아니라 작업 차수 번호다.
 4. 각 작업 round(13)는 자기 `00_key-index.md`를 가지고, round 안의 실행 순서를 `S01`부터
@@ -824,11 +848,12 @@ Subagent report status 값과 의미는 `standards/subagents/key-standard-subage
     분리하는 방법을 우선한다. 이미 수락된 Round·Step ID를 재번호화하거나 재귀적
     하위 Round 생성으로 복잡도를 숨기지 않는다.
 16. Parent Round Index는 ordered `child_rounds`, umbrella Goal·Scope·Boundary와 전역
-    `round_status`를 소유한다. Root Works Index, Context Map과 Work State의 전역
-    `active_rounds`, `accepted_rounds`, `active_round`, `latest_accepted_round`에는 parent ref만 쓴다.
+    `round_status`를 소유한다. Work State의 current `active_rounds`와 historical
+    `accepted_rounds`에는 parent ref만 쓴다. Root Works Index와 Context Map은 이를 찾기 위한
+    navigation source일 수 있지만 별도 current pointer를 소유하지 않는다.
 17. Child Round Index는 local `round_status`, Work nodes, Step과 Progress를 소유한다.
     Child ref는 `active_steps`, active Work의 local Round 소유권과 child 집계에는 나타나지만
-    전역 latest-accepted ordering을 전이하지 않는다.
+    parent-only `active_rounds`를 별도 전역 Round로 늘리지 않는다.
 18. Child를 선언한 parent는 같은 상세 Work를 직접 중복 소유하지 않는다. Work State는
     parent-child 관계, child local status와 unresolved child를 파생하지만 parent 상태를
     자동 전이하거나 작업 권한을 만들지 않는다.
@@ -1305,6 +1330,33 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
    포함한다. Git HEAD, mtime 또는 cache timestamp만으로 fresh를 선언하지 않는다.
 5. Reader -> Linker와 Linker -> Reader handoff는 serialized recursion guard를 전달한다. 호출된
    lane은 initiating lane을 다시 호출하지 않는다.
+
+<!-- key: id=key.standard.project.std-keystone-060 kind=claim refs=key.role.clarify key.role.author key.topic.question-flow key.topic.document-authoring key.topic.work-recovery -->
+### STD-KEYSTONE-060: Clarification log는 대주제별 기억 복구용 Work attachment다
+
+1. 큰 검토에서 나온 여러 수정 후보를 Clarify로 순차 처리하고 Work node가 존재하거나 함께
+   생성되는 경우에만 명확화 로그(21)를 사용한다. 로그 자체를 만들기 위해 Work를 새로 만들지
+   않는다.
+2. 파일은 그룹별이 아니라 대주제별로 하나만 만들며 Work node 아래
+   `clarify/{YYYYMMDDTHHmmssZ}-{topic-slug}.md`에 둔다. Timestamp는 UTC, topic slug는 lower-case
+   kebab-case를 사용한다. 이 파일은 원천 문서가 아니므로 key prefix(11)를 붙이지 않는다.
+3. 파일의 `#` heading은 대주제, `## G01 - {수정 범위}`는 함께 반영할 문서 수정 범위,
+   `### Q01 - {질문 요약}`은 실제로 한 번에 진행한 질문을 나타낸다. Group과 question 번호는
+   파일 안에서 출현 순서대로 증가한다.
+4. 각 질문에는 `질문`, `답변`, `답변일시`만 기본 기록한다. 답변을 받으면 caller가 Author의
+   lightweight log append를 사용해 해당 답변과 시간을 기록한다. 빈 답변은 미응답을 뜻하므로
+   별도 remaining-question 목록을 만들지 않는다.
+5. 로그에는 `Group Decision`, `Author Application`, 질문 충분성, 평가, 점수, 그룹 완료나 작업
+   상태를 기록하지 않는다. 로그 내용이나 날짜로 decision, priority, acceptance 또는 completion을
+   판단하지 않는다.
+6. 실제 원천 문서에 영향을 준 질문은 heading 바로 앞에 선택적 키메타(9)를 둘 수 있다. 이는
+   탐색용 relation evidence일 뿐 source authority, edit permission 또는 평가 근거가 아니다.
+7. 작업서(4)는 해당 Q&A가 scope·criterion·결정에 실질적으로 영향을 준 경우에만 로그를
+   선택적으로 링크한다. 모든 로그를 index나 작업서에 의무적으로 등록하지 않는다.
+8. Clarify가 원천 문서를 수정하지 않는 경계는 유지한다. Caller는 그룹 질문이 모두 끝났을 때
+   그 그룹의 통합 edit plan을 Author에 한 번 적용하고 다음 그룹으로 이동한다.
+9. 답변별 log append는 대상 파일과 질문 entry 확인으로 닫는다. 이것만으로 Work State, graph
+   reconstruction, package/repository 검증 또는 source-document application을 실행하지 않는다.
 
 <!-- key: id=key.standard.project.active-work refs=key.topic.document-system key.topic.work-round -->
 ## 관련 active work

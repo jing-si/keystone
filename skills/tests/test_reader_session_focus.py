@@ -21,42 +21,28 @@ def normalized(text):
 
 
 class ReaderSessionFocusContractTest(unittest.TestCase):
-    def test_reader_selects_session_focus_before_multi_work_deep_readiness(self):
+    def test_historical_work_focus_claim_is_preserved_as_compatibility(self):
+        standard = normalized(
+            read("00_docs/standards/skills/reader/key-standard-reader.md")
+        )
+
+        for phrase in (
+            "key.standard.skill.reader.session-focus",
+            "historical compatibility claim",
+            "key.standard.skill.reader.round-session-focus",
+            "새 Work 선택 질문을 만들지 않는다",
+        ):
+            self.assertIn(phrase, standard)
+
+    def test_current_reader_contract_does_not_retain_work_selection_question(self):
         readiness = normalized(section(
             read("skills/keystone-reader/SKILL.md"),
             "## Session Context Readiness",
         ))
 
-        work_state = readiness.index("work_state_runtime.py")
-        focus_gate = readiness.index("session focus")
-        linker_readiness = readiness.index("permissionless Linker readiness")
-
-        self.assertLess(work_state, focus_gate)
-        self.assertLess(focus_gate, linker_readiness)
-        for phrase in (
-            "two or more active Works",
-            "does not identify one Work",
-            "exactly one focused question",
-            "Do not read every candidate Work order or Progress",
-            "Do not start Linker docs readiness",
-            "non-authoritative session context",
-        ):
-            self.assertIn(phrase, readiness)
-
-    def test_reader_skips_focus_question_when_scope_is_already_clear(self):
-        readiness = normalized(section(
-            read("skills/keystone-reader/SKILL.md"),
-            "## Session Context Readiness",
-        ))
-
-        for phrase in (
-            "zero or one active Work",
-            "explicitly identifies a Work",
-            "all active Works or a cross-Work comparison",
-            "resume automatically with the selected Work",
-            "Never mark unselected Works inactive or lower priority",
-        ):
-            self.assertIn(phrase, readiness)
+        self.assertIn("active parent Rounds", readiness)
+        self.assertNotIn("which Work to handle in this session", readiness)
+        self.assertNotIn("resume automatically with the selected Work", readiness)
 
     def test_reader_standard_owns_the_same_session_focus_boundary(self):
         standard = normalized(

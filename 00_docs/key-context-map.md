@@ -17,8 +17,9 @@ key:
 
 # 프로젝트 컨텍스트 맵
 
-활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 Work/Round/Step과 latest accepted Round는
-수동 pointer가 아니라 `scripts/work_state_runtime.py --root .`의 source-derived 결과에서 복구한다.
+활성 Keystone 계획 문서는 `00_docs/` 아래에 둔다. 현재 Work/Round/Step은 수동 pointer가 아니라
+`scripts/work_state_runtime.py --root .`의 source-derived 결과에서 복구하고 accepted history는 각
+Round source에서 확인한다.
 
 <!-- key: id=key.context-map.project refs=key.doc.source key.topic.skill-contract key.topic.bootstrap -->
 ## 프로젝트
@@ -32,9 +33,10 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
    흐름을 시작한다.
 2. `keystone-reader`: 세션 시작에 기준서(3), 작업서(4)를 읽고 docs-first context readiness와
    context brief를 준비하며 repository artifact scope는 필요할 때 lazy하게 요청한다.
-3. `keystone-clarify`: 실제 사용자 결정(6)을 한 topic씩 정리하고 호출자에게 반환한다.
-4. `keystone-author`: 기준서, 작업서, 진행 기록, 결정 기록, Change Set(17)을 작성하거나
-   승인된 범위에서 수정한다.
+3. `keystone-clarify`: 큰 검토 결과를 문서 수정 범위로 그룹화하고 실제 사용자 결정(6)을 한
+   topic씩 정리해 질문별 log와 그룹별 Author handoff를 호출자에게 반환한다.
+4. `keystone-author`: 기준서, 작업서, 진행 기록, 결정 기록, Change Set(17)을 작성·수정하고,
+   Clarify 답변별 log append와 그룹 종료별 원천 문서 적용을 분리한다.
 5. `keystone-linker`: Source-write-free internal role로 owner/ref external index readiness와 선택적
    Artifact Graph 해석, impact/stale/gap 및 validation을 수행하고 multi-surface change에서 exact
    graph mutation을 결정하되 repository source surface를 직접 수정하지 않는다.
@@ -62,8 +64,8 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
 | 스킬별 | `00_docs/standards/skills/00_key-index.md` | 개별 Keystone 스킬의 상세 기준서를 찾을 때 읽는다 |
 | Init | `00_docs/standards/skills/init/key-standard-init.md` | `keystone-init` 개발 계약, scaffold write authority와 통합 시나리오를 확인할 때 읽는다 |
 | Reader | `00_docs/standards/skills/reader/key-standard-reader.md` | session orientation, docs-first context readiness, lazy repository scope와 read-only boundary를 확인할 때 읽는다 |
-| Author | `00_docs/standards/skills/author/key-standard-author.md` | `keystone-author`의 기준서(3), 작업서(4), progress update boundary를 확인할 때 읽는다 |
-| Clarify | `00_docs/standards/skills/clarify/key-standard-clarify.md` | `keystone-clarify`의 decision collection, reflection, Author handoff를 확인할 때 읽는다 |
+| Author | `00_docs/standards/skills/author/key-standard-author.md` | `keystone-author`의 문서 작성, clarification log, 그룹별 application과 progress update boundary를 확인할 때 읽는다 |
+| Clarify | `00_docs/standards/skills/clarify/key-standard-clarify.md` | `keystone-clarify`의 수정 그룹, one-question flow, Q&A log와 Author handoff를 확인할 때 읽는다 |
 | Linker | `00_docs/standards/skills/linker/key-standard-linker.md` | permissionless owner/ref index readiness, optional graph interpretation, validation과 source surface handoff를 확인할 때 읽는다 |
 | Coordinator | `00_docs/standards/skills/coordinator/key-standard-coordinator.md` | `keystone-coordinator`의 worker assignment/report, bounded worker routing, report, review, verification, acceptance flow를 확인할 때 읽는다 |
 
@@ -84,6 +86,8 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
 | R009 Coordinator Keystone Closure | `00_docs/works/r009-coordinator-keystone-closure/00_key-index.md` | accepted | Coordinator context provisioning, closure gate와 local installation parity를 complete and accepted로 기록 |
 | R010 Standards-to-Product Alignment | `00_docs/works/r010-production-control-plane-hardening/00_key-index.md` | accepted | accepted correctness 이력을 보존하면서 기준서↔산출물 trace, work recovery와 단순한 기본 신뢰 경계로 재정렬 완료 |
 | R011 Parallel Work State and Hierarchical Rounds | `00_docs/works/r011-work-model-evolution/00_key-index.md` | accepted | 병렬 상태·Round hierarchy·triage와 projection/snapshot 경계를 구현·검증하고 닫음 |
+| R012 Current Work State and Session Focus Simplification | `00_docs/works/r012-current-work-state-simplification/00_key-index.md` | accepted | active parent Round 중심 Work State, Round session focus와 실행자 Step 선택 계약을 구현·검증하고 닫음 |
+| R013 Author Terminal Status Reconciliation | `00_docs/works/r013-author-terminal-status-reconciliation/00_key-index.md` | accepted | 상태 전이별 bounded projection 대조와 Clarify 그룹 종료별 문서 적용·Q&A log 경계를 구현·검증함 |
 | Document Tree Setup | `00_docs/works/r001-bootstrap-keystone/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
 | Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | accepted | 전체 공통 기준서 |
 | Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서 |
@@ -180,9 +184,23 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 <!-- key: id=key.context-map.section refs=key.topic.work-sequence key.topic.document-system key.topic.work-round -->
 ## 현재 작업 단계
 
-현재 active Round/Work/Step과 latest accepted Round는 canonical Work State Runtime에서 복구한다.
-이 section의 나머지 설명은 accepted history와 작업 목적을 위한 사람이 작성한 기록이며 current
-pointer 권위를 갖지 않는다.
+현재 active parent Round/Work/Step은 canonical Work State Runtime의 `active_rounds`와
+`active_steps`에서 복구한다. Accepted Round history는 각 Round source에서 확인하며
+`latest_accepted_round`은 current pointer 권위를 갖지 않는다. 이 section의 나머지 설명은 accepted
+history와 작업 목적을 위한 사람이 작성한 기록이다.
+R013 Author Terminal Status Reconciliation은 상태 전이 때만 owning Round subtree, root works
+index와 Context Map의 exact Round/Step ref를 bounded하게 확인하는 Author 종료 계약과 Clarify의
+관련성 기반 그룹·Q&A log·그룹 종료별 Author 적용 계약을 구현하고 complete + accepted로 닫았다.
+R013/S03은 R012/S02-S04 navigation 상태를 authoritative source와 일치시켰으며 active Step은 없다.
+R012 Current Work State and Session Focus Simplification은 2026-08-12 사용자 결정으로 시작해
+S01-S04를 모두 complete + accepted로 닫았다. R012/S01은 active parent Round authority, Round별 진행 중 Step 안내와 session focus,
+lowest executable Step 선택을 Project·Reader·Coordinator 기준에 반영하고 complete + accepted로
+닫혔다. R012/S02는 Work State schema v5에서 acceptance event를 optional historical
+compatibility로 격리하고 latest-accepted ordering을 current state와 pointer freshness에서 제거해
+complete + accepted로 닫혔다. R012/S03은 Reader에 parent Round별 active Step 안내, 정확한
+session-only Round 질문과 worker lowest-executable Step 선택을 구현하고 complete + accepted로
+닫혔다. R012/S04는 event 없는 Uptendo형 병렬 Round 회귀와 package·repository·installer
+production release gate를 통과하고 complete + accepted로 닫혔다. 현재 active Round와 Step은 없다.
 R010/S01은 complete and accepted이며 schema-v5 Author finalization을 별도 parent commit에
 고정했다. R010/S02도 complete snapshot과 phase-separated actor attribution을 actual-state
 authority chain으로 검증해 complete and accepted로 닫고 closure commit
@@ -206,8 +224,8 @@ active가 됐고 S01-S04를 각각 Main acceptance로 complete + accepted했다.
 프로젝트 중간 발견사항을 프로젝트 문서 수정과 Keystone 스킬 계약 수정으로 분류하는 절차를
 다룬다. 같은 live/effective 의미의 반복은 source-derived projection으로 정규화하고 immutable
 event/audit/history는 provenance-bound snapshot으로 보존하는 공통 경계도 독립 Work로 다뤘다.
-R011 terminal acceptance event가 R010 event를 이어 latest accepted Round를 R011로 전이했으며
-현재 active Step은 없다. R009/S01은
+R011 terminal acceptance event는 R010 event를 잇는 historical compatibility head로 보존한다.
+R012 acceptance는 Round source에서 복구하며 새 event를 만들지 않았다. R009/S01은
 사용자 independent-first direction으로 R008과 독립적으로 먼저 수락됐고, 이후 R008/S01-S07도
 complete and accepted로 닫혔다. R001 S00-S07은 accepted 이력으로 보존되고, 미수락
 S08 Skill Creation과 S09 Integration Verification은 superseded다. R002의
@@ -251,6 +269,10 @@ Current `active_steps`는 Work State Runtime 결과를 사용한다. 아래 표�
 | R011/S02 | Hierarchical Rounds | complete, accepted — `R010-a` 형식 child Round와 parent umbrella 상태·수락 권위를 구현·검증했다 |
 | R011/S03 | Project Signal and Contract Triage | complete, accepted — four-way triage, 4개 lean contract와 외부 project-repair handoff를 수용했다 |
 | R011/S04 | Derived Projections and Document Normalization | complete, accepted, finalized — live projection을 source owner에서 파생하고 immutable audit snapshot은 기존 binding으로 보존했다 |
+| R012/S01 | Current State Authority and Decision Alignment | complete, accepted — active parent Round 집합, Round session focus와 실행자 Step 선택을 current 기준에 반영했다 |
+| R012/S02 | Work State Runtime Simplification | complete, accepted — event 없는 저장소를 정상 처리하고 latest-accepted ordering을 current 상태 권위에서 제거했다 |
+| R012/S03 | Round Session Focus and Step Selection | complete, accepted — Round 후보·진행 중 Step 안내, session-only 질문과 실행자 기본 Step 선택을 구현했다 |
+| R012/S04 | Integration Verification and Rollout Readiness | complete, accepted — no-event·multi-Round·legacy compatibility와 생성 사본·설치 경로를 검증했다 |
 
 <!-- key: id=key.context-map.planned-keystone-skills refs=key.topic.skill-contract key.topic.bootstrap -->
 ## Keystone 스킬 구현 상태

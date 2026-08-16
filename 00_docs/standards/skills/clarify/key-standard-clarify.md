@@ -1,13 +1,15 @@
 ---
 doc_type: standard
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-06", accepted_by: main}
+approval: {state: accepted, accepted_at: "2026-08-17", accepted_by: main}
 key:
   id: key.standard.skill.clarify
   refs:
     - key.role.clarify
     - key.doc.decision
     - key.topic.question-flow
+    - key.topic.document-authoring
+    - key.topic.work-recovery
     - key.output.edit-plan
     - key.topic.impact-review
     - key.topic.keystone-metadata
@@ -22,7 +24,9 @@ key:
 
 이 기준서는 `keystone-clarify`의 상세 계약을 정의한다. `keystone-clarify`는 원천 문서(2)
 또는 스킬 계약에 영향을 주는 high-impact topic을 하나씩 명확히 하고, 수락된 결정(6)과
-문서 update plan을 `keystone-author`가 안전하게 적용할 수 있게 만든다.
+문서 update plan을 `keystone-author`가 안전하게 적용할 수 있게 만든다. 큰 검토 결과가 여러
+topic을 포함하면 먼저 실제 문서 수정 관련성으로 그룹화하고, 그룹별 질문과 Author 적용을
+순차적으로 닫는다.
 
 <!-- key: id=key.standard.skill.clarify.scope refs=key.role.clarify key.doc.decision key.topic.question-flow key.output.edit-plan -->
 ## 적용 범위
@@ -32,6 +36,7 @@ key:
 3. Reflection, decision summary, edit plan
 4. Init 또는 Author로의 handoff와 resume
 5. Impact update 대상과 stop condition
+6. 대주제별 수정 그룹 구성, 질문별 Q&A log handoff와 그룹 종료별 Author 적용
 
 <!-- key: id=key.standard.skill.clarify.out-of-scope refs=key.role.clarify key.topic.skill-contract key.topic.external-assist -->
 ## 적용하지 않는 범위
@@ -91,6 +96,8 @@ Clarify는 다음 input을 사용할 수 있어야 한다.
    risk context
 7. Modularization topic인 경우 Linker report, reuse candidate, worker report, reviewer
    finding, 또는 사용자가 제시한 유사 capability나 reusable artifact 근거
+8. 큰 검토 결과를 처리하는 경우 대주제, 수정 후보 목록, Work node locator와 기존
+   명확화 로그(21) locator
 
 Input이 부족하면 Clarify는 high-impact decision을 추정하지 않고 incomplete result,
 open question, stop condition으로 보고한다.
@@ -132,18 +139,29 @@ open question, stop condition으로 보고한다.
 9. 기존 기준서(3), 작업서(4), 또는 Coordinator assignment scope가 reuse/extend 방향을 이미
    명확히 정했고 worker가 local implementation detail로 안전하게 처리할 수 있다.
 
-<!-- key: id=key.standard.skill.clarify.topic-boundary refs=key.role.clarify key.doc.decision key.topic.question-flow -->
-## Topic boundary
+<!-- key: id=key.standard.skill.clarify.topic-boundary kind=claim refs=key.role.clarify key.doc.decision key.topic.question-flow key.topic.document-authoring key.topic.work-recovery -->
+## 대주제, 그룹과 topic 경계
 
-Clarify는 한 번에 하나의 topic을 다룬다.
+Clarify는 대주제 안의 여러 수정 후보를 처리할 수 있지만 질문은 언제나 한 번에 하나의
+high-impact decision topic만 다룬다.
 
-1. 좋은 topic: document root policy, tracking policy, Reader trigger boundary,
-   output language policy, skill-specific non-trigger condition, modularization decision topic
-2. 나쁜 topic: "Keystone 전체를 어떻게 할까요"처럼 여러 정책을 한 번에 묶은 질문
-3. Topic이 너무 크면 main은 하위 topic으로 나누어 질문한다.
-4. 같은 topic 안에서는 충분한 정보가 모일 때까지 필요한 follow-up을 이어갈 수 있다.
-5. Topic이 충분히 결정되면 다음 topic으로 넘어가기 전에 reflection과 update plan을
-   요약한다.
+1. 대주제는 "Keystone 개선 사항 검토"처럼 하나의 검토 요청과 그 결과로 나온 수정 후보 전체를
+   뜻한다. 대주제 하나는 명확화 로그(21) 파일 하나에 대응한다.
+2. 그룹은 질문 묶음이나 별도 결정이 아니라, 답변 뒤 한 번에 반영할 원천 문서 수정 범위다.
+   Group에는 `G01`, `G02`처럼 파일 안의 순서 식별자와 짧은 수정 범위 제목만 둔다.
+3. 질문을 시작하기 전에 AI가 수정 후보를 그룹화한다. 같은 원천 문서·section을 바꾸는지,
+   답변들을 함께 해석해야 하는지, 하나만 먼저 반영하면 모순·재작업이 생기는지, 하나의 검증
+   경계로 닫을 수 있는지를 우선 판단한다.
+4. 대상 문서, acceptance/verification 경계와 적용 시점이 서로 독립적이면 별도 그룹으로 나눈다.
+   단순 번호 인접성, 질문 개수나 표시 순서만으로 묶지 않는다.
+5. 사용자가 그룹 판단을 AI에 위임하면 위 기준과 현재 evidence로 가장 작은 일관된 수정 범위를
+   선택한다. 그룹화가 사용자 소유 scope나 의미를 새로 바꾸는 경우에만 별도 질문한다.
+6. 하나의 그룹을 선택한 뒤 그 그룹에 필요한 topic을 한 번에 하나씩 질문한다. 같은 topic의
+   targeted follow-up은 허용하지만 다음 topic을 같은 질문에 합치지 않는다.
+7. 현재 그룹에 문서 적용을 막는 material question이 더 없으면 caller에 통합 edit plan을
+   반환한다. 별도 `Group Decision`, 그룹 평가나 완료 상태 artifact를 만들지 않는다.
+8. Caller가 그룹 범위를 Author로 한 번 반영한 뒤 다음 그룹을 선택한다. 모든 그룹이 끝나면
+   Clarify를 시작하기 전 원래 작업을 자동으로 resume한다.
 
 <!-- key: id=key.standard.skill.clarify.modularization-decision-topic refs=key.role.clarify key.topic.impact-review key.topic.artifact-graph -->
 ## Modularization decision topic
@@ -221,6 +239,12 @@ modularization_question:
 7. 충분하면 decision summary, working assumptions, `decision_completeness_check`,
    `decision_recording_hint`, Author handoff용 edit plan을 만든다.
 8. Clarify는 원천 문서(2)를 직접 수정하지 않는다.
+9. 답변을 받을 때마다 현재 질문, 답변과 답변일시를 caller에 전달한다. Caller는 Author의
+   lightweight log append로 대주제별 명확화 로그(21)에 기록한 뒤 사용자 재호출을 요구하지 않고
+   같은 그룹 질문을 계속한다.
+10. 답변별 log handoff에는 평가, 질문 충분성, `Group Decision`, `Author Application` 또는 작업
+    상태를 넣지 않는다. 원천 문서용 edit plan은 현재 그룹의 material question이 모두 끝날 때만
+    통합한다.
 
 <!-- key: id=key.standard.skill.clarify.handoff-resume refs=key.role.clarify key.output.edit-plan key.topic.handoff -->
 ## Handoff와 resume
@@ -231,6 +255,10 @@ modularization_question:
    stop condition을 포함한다.
 4. 문서 반영은 Author가, 구현 또는 위임은 Main이나 허락된 Coordinator가 담당한다.
 5. Clarify result는 edit authority나 acceptance를 자동으로 만들지 않는다.
+6. 답변별 handoff는 명확화 로그(21) append만 요청한다. Source-document handoff는 현재 그룹의
+   질문이 모두 끝난 뒤 한 번만 만들고, caller가 적용 결과를 확인한 뒤 다음 그룹으로 이동한다.
+7. 모든 그룹이 끝나면 caller는 별도 사용자 재호출 없이 Clarify 이전의 원래 task와 resume point로
+   돌아간다.
 
 <!-- key: id=key.standard.skill.clarify.reflection-edit-plan refs=key.role.clarify key.output.edit-plan key.doc.decision -->
 ## Reflection and edit plan
@@ -268,6 +296,10 @@ User Decision이 없는 작업은 Clarify의 non-trigger이며 이 output 계약
 
 결정(6)을 만들거나 바꾸는 non-trivial Clarify result는 `decision_recording_hint`를 포함해야
 한다. 영구 결정 기록이 필요하지 않으면 Clarify는 기록이 필요하지 않은 이유를 보고한다.
+
+Grouped clarification에서 각 topic의 `clarify_result`는 caller가 현재 그룹 안에서만 누적한다.
+현재 그룹의 material question이 모두 끝났을 때만 affected document와 edit plan을 하나의 Author
+handoff로 합친다. 이 agent-facing 누적 상태는 명확화 로그(21)에 평가·상태 field로 복제하지 않는다.
 
 Affected documents는 다음 shape을 우선 사용한다.
 
@@ -478,6 +510,8 @@ Clarify는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한�
    확정해야만 진행할 수 있다.
 9. Modularization 선택이 shared architecture, API/schema/test scope, acceptance criteria를 바꾸지만
    사용자 또는 main decision이 없다.
+10. 수정 후보 사이의 문서·section 관계를 판단할 evidence가 없어 일관된 그룹 경계를 만들 수
+    없다. 이 경우 먼저 Linker 또는 bounded repository investigation을 요청한다.
 
 <!-- key: id=key.standard.skill.clarify.verification refs=key.role.clarify key.topic.verification key.output.edit-plan -->
 ## Verification
@@ -505,6 +539,14 @@ Clarify 기준은 다음 방법으로 검증한다.
    - Clarify 관련 기준서를 읽어 link와 scope consistency 확인
 12. 프로젝트 로컬 Clarify 기준서가 없어도 설치된 contract로 한 topic 질문과 resume 결과를
     제공할 수 있어야 한다.
+13. 큰 검토 결과를 질문 전에 관련성 기반 수정 그룹으로 나누고, 그룹 안에서도 한 번에 하나의
+    질문만 진행해야 한다.
+14. 명확화 로그(21)는 대주제별 파일 하나, `G01`/`Q01`, 질문·답변·답변일시의 최소 구조를
+    사용하고 decision·evaluation·status authority를 만들지 않아야 한다.
+15. 답변별 log append와 그룹 종료별 source-document application이 분리되고, log 기록만으로
+    Work State, graph 또는 package-wide verification을 실행하지 않아야 한다.
+16. 현재 그룹 적용 뒤 다음 그룹으로, 모든 그룹 뒤 원래 작업으로 사용자 재호출 없이 resume할
+    수 있어야 한다.
 
 <!-- key: id=key.standard.skill.clarify.internal-management-boundary refs=key.role.clarify key.role.linker key.topic.question-flow key.boundary.scope-control -->
 ## 내부 index/graph 관리와 사용자 결정 경계

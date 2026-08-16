@@ -1,4 +1,4 @@
-# keystone: id=key.test.r011.progress-ownership kind=output_artifact artifact_kind=test verifies=key.standard.skill.author.progress-ownership
+# keystone: id=key.test.r011.progress-ownership kind=output_artifact artifact_kind=test verifies=key.standard.skill.author.progress-ownership key.standard.skill.author.terminal-status-reconciliation
 import unittest
 from pathlib import Path
 
@@ -128,6 +128,34 @@ key: {id: key.work.runtime.progress.s04}
             "key-progress-{step-slug}.md",
         ):
             self.assertIn(phrase, standard)
+            self.assertIn(phrase, skill)
+
+    def test_author_terminal_reconciliation_is_transition_only_and_bounded(self):
+        standard = read(
+            "00_docs/standards/skills/author/key-standard-author.md"
+        )
+        skill = read("skills/keystone-author/SKILL.md")
+
+        for phrase in (
+            "## Terminal status reconciliation",
+            "실제 상태 전이",
+            "owning Round subtree",
+            "Optional projection이 없으면 정상",
+            "stale conflict",
+            "Historical Progress",
+            "exact-ref 검색",
+        ):
+            self.assertIn(phrase, standard)
+
+        for phrase in (
+            "## Terminal Status Reconciliation",
+            "actually changes",
+            "owning Round subtree",
+            "missing optional projection is valid",
+            "stale conflict",
+            "Preserve historical Progress",
+            "exact-ref search",
+        ):
             self.assertIn(phrase, skill)
 
 

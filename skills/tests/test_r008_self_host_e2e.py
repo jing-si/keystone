@@ -75,10 +75,13 @@ class R008SelfHostE2ETest(unittest.TestCase):
             "key.test.linker.source-views",
             "key.test.reader.linker-readiness-contract",
             "key.test.r011.reader-session-focus",
+            "key.test.r012.reader-round-session-focus",
+            "key.test.r012.uptendo-no-event-work-state",
             "key.test.r011.progress-ownership",
             "key.test.r011.reader-revision-readiness",
             "key.test.r011.resumable-finalization",
             "key.test.r011.derived-work-state-projection",
+            "key.test.r013.clarify-group-application",
             "key.test.linker.graph-transaction-wire-contract",
             "key.test.author.finalization-validator-contract",
         }
@@ -100,14 +103,26 @@ class R008SelfHostE2ETest(unittest.TestCase):
                  "key.standard.project.source-derived-semantic-views"),
                 ("key.test.r011.reader-session-focus",
                  "key.standard.skill.reader.session-focus"),
+                ("key.test.r012.reader-round-session-focus",
+                 "key.standard.skill.reader.round-session-focus"),
+                ("key.test.r012.uptendo-no-event-work-state",
+                 "key.claim.current-work-state.uptendo-no-event-recovery"),
                 ("key.test.r011.progress-ownership",
                  "key.standard.skill.author.progress-ownership"),
+                ("key.test.r011.progress-ownership",
+                 "key.standard.skill.author.terminal-status-reconciliation"),
                 ("key.test.r011.reader-revision-readiness",
                  "key.standard.skill.reader.revision-readiness"),
                 ("key.test.r011.resumable-finalization",
                  "key.standard.skill.author.resumable-finalization"),
                 ("key.test.r011.derived-work-state-projection",
                  "key.standard.project.derived-work-state-projection"),
+                ("key.test.r013.clarify-group-application",
+                 "key.standard.project.std-keystone-060"),
+                ("key.test.r013.clarify-group-application",
+                 "key.standard.skill.clarify.topic-boundary"),
+                ("key.test.r013.clarify-group-application",
+                 "key.standard.skill.author.clarification-log-application"),
                 ("key.test.linker.graph-transaction-wire-contract",
                  "key.code.linker.graph-transaction-validator"),
                 ("key.test.author.finalization-validator-contract",
@@ -131,8 +146,10 @@ class R008SelfHostE2ETest(unittest.TestCase):
         work_state = json.loads(work_state_process.stdout)
         self.assertEqual("pass", work_state["status"])
         self.assertEqual([], work_state["state"]["pointer_claims"])
-        self.assertEqual([], work_state["state"]["active_steps"])
-        self.assertEqual("R011", work_state["state"]["latest_accepted_round"])
+        self.assertIsInstance(work_state["state"]["active_rounds"], list)
+        self.assertIsInstance(work_state["state"]["active_steps"], list)
+        self.assertNotIn("latest_accepted_round", work_state["state"])
+        self.assertIn("R011", work_state["state"]["accepted_rounds"])
         self.assertTrue(all(
             item["state_source"]["mode"] == "aggregate_progress"
             for item in work_state["state"]["active_works"]

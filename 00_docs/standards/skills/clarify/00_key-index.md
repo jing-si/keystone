@@ -17,7 +17,8 @@ key:
 ## 기준서
 
 1. `key-standard-clarify.md`
-   - `keystone-clarify`의 목적, trigger/non-trigger, 한 topic 질문 수집,
+   - `keystone-clarify`의 목적, trigger/non-trigger, 대주제의 관련성 기반 수정 그룹과 한 topic
+     질문 수집, 질문별 clarification log handoff와 그룹별 Author application,
      decision completeness check, decision recording hint, incomplete result,
      affected document/artifact 후보, Init 질문 경계, handoff/resume, impact update와
      내부 index 관리와 실제 사용자 결정 경계, stop condition을 정의한다. 소비 프로젝트 로컬
@@ -34,7 +35,7 @@ key:
 ## 읽기 규칙
 
 1. Clarify 관련 작업을 준비할 때는 `../../01_key-project-standard.md`의
-   `STD-KEYSTONE-041`을 먼저 확인한다.
+   `STD-KEYSTONE-041`, `STD-KEYSTONE-060`을 먼저 확인한다.
 2. Clarify 구현 또는 상세 계약 검토가 필요하면 `key-standard-clarify.md`를 읽는다.
 3. Clarify 기준서가 전체 공통 기준서와 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 전체 공통 기준서를 임시 우선 기준으로 삼는다.

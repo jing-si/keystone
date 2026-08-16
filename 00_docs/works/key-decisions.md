@@ -769,3 +769,49 @@ key:
 - 이유: Parent를 전역 식별자로 유지하면 sibling child를 관련 없는 복수 active Round로
   오해하지 않고 기존 flat Round pointer와 latest-accepted 의미를 보존할 수 있다. Child에는
   필요한 실행 상태만 두고 수락·집계·history 권위의 중복을 막기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-032 refs=key.doc.decision key.topic.work-recovery key.topic.work-round key.topic.work-sequence key.topic.skill-contract key.topic.acceptance -->
+## DEC-WORKS-032: Current Work State는 active parent Round 집합을 권위로 하고 세션 선택은 Round 단위로 한다
+
+- 관련 work: R012/S01-S04 Current Work State and Session Focus Simplification
+- 결정일: 2026-08-12
+- 상태: accepted
+<!--
+key:
+  id: key.claim.r012.current-round-authority
+  refs:
+    - key.topic.work-recovery
+    - key.topic.work-round
+    - key.topic.acceptance
+  supersedes:
+    - key.claim.work-state.latest-accepted-round-chain
+    - key.claim.r011.parent-global-round-authority
+-->
+- 결정: Current Work State의 전역 실행 권위는 parent ref로 구성된 `active_rounds`와 그 Round에
+  속한 Work·Step Progress에서 파생한 `active_steps`다. 단수 `active_round`은 legacy 호환
+  projection일 뿐 복수 활성 상태를 축소하거나 실행 우선순위를 정하지 않는다.
+- 결정: `latest_accepted_round`은 current 상태 권위와 필수 Work State 출력에서 폐기한다. Accepted
+  history는 각 parent Round의 `round_status`, approval과 관련 Progress에서 확인하며, 현재 실행
+  대상을 정하기 위한 accepted Round 단일 ordering을 새 날짜나 번호 규칙으로 대체하지 않는다.
+- 결정: `DEC-WORKS-031`의 parent-only 전역 Round identity, child-local 실행 상태와 parent acceptance
+  gate는 유지한다. 대체되는 부분은 `latest_accepted_round`을 전역 current 식별자로 둔 의미뿐이다.
+- 결정: `DEC-WORKS-027`의 R009 migration genesis와 이미 기록된 event chain은 당시 accepted
+  history snapshot으로 보존한다. Acceptance-event 파일은 새 초기화·현재 완료·상태 복구의 필수
+  source가 아니며, 파일이 없다는 이유로 current Work State를 실패시키거나 새 파일을 만들지 않는다.
+  기존 파일이 있으면 historical compatibility 범위에서만 읽고 검증한다.
+<!-- key: id=key.claim.r012.round-session-focus refs=key.role.reader key.topic.work-recovery key.topic.work-preparation key.topic.work-round -->
+- 결정: Active parent Round가 둘 이상이고 현재 요청이 대상 Round를 지정하지 않았으며 전체 또는
+  cross-Round 조회도 아니라면 Reader는 각 후보 Round와 그 아래 현재 진행 중인 Step을 먼저
+  요약하고 사용자에게 정확히 한 번 `해당 세션에서 어떤 라운드를 작업할까요?`라고 묻는다.
+  선택 전에는 후보별 Work Order와 Progress 본문을 모두 상세 탐색하지 않는다.
+- 결정: Round 선택은 비권위 세션 문맥이며 문서, cache, pointer나 프로젝트 상태에 저장하지 않는다.
+  요청이 이미 Round를 지정했거나 active parent Round가 0개 또는 1개면 질문하지 않는다.
+<!-- key: id=key.claim.r012.worker-step-selection refs=key.topic.work-sequence key.topic.work-execution key.boundary.scope-control -->
+- 결정: 선택된 Round 안의 Step 선택은 사용자 질문 항목이 아니다. 실행자는 현재 진행 중인 Step
+  목록을 사용자에게 알리고, 별도 사용자 지정이 없으면 dependency와 `work_gates`를 만족하는
+  실행 가능 active Step 중 번호가 가장 낮은 Step을 기본 대상으로 삼는다. 가장 낮은 Step이
+  blocked이면 그 이유를 알리고 다음 실행 가능 Step을 선택하며 상태나 priority를 자동 변경하지
+  않는다.
+- 이유: 현재 실행 복구에 필요하지 않은 accepted ordering과 event producer를 제거하면서도 병렬
+  Round를 숨기지 않고, 사용자에게는 세션 범위만 맡기고 세부 Step 선택 비용은 실행자가
+  책임지게 해 Keystone 문서 운영 비용을 줄이기 위해서다.

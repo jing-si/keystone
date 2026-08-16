@@ -14,7 +14,7 @@ description: "Create or revise Keystone source documents, standards, work orders
 
 Create and revise human-readable Keystone source documents within the user's request and accepted
 decisions. Own standards, work orders, progress records, decision records, source-document metadata,
-indexes, and Change Sets. Edit source documents only; Main verifies and accepts the result.
+indexes, Change Sets, and approved Work-attached clarification logs. Main verifies and accepts the result.
 
 Use this installed package as the complete Author runtime contract. Do not require a consuming project
 to contain a project-local Author standard. Project documents define project meaning, while this
@@ -40,6 +40,7 @@ Use Author to create or revise:
 2. Source-document metadata and independently addressable document-item metadata.
 3. Accepted Clarify results and Main-accepted Step state.
 4. A bounded Change Set when a large document-to-code/test change needs traceability.
+5. A lightweight Q&A append to an approved Work-attached clarification log.
 
 Do not use Author for code, config, schema, API, test, generated-file, skill-source edits, worker
 orchestration, deep graph interpretation, or unresolved user decisions.
@@ -51,6 +52,8 @@ Select the smallest mode that fits the approved document change:
 - `create`: create a new source document and its required index entry.
 - `revise`: change existing accepted or pending meaning without rewriting unrelated history.
 - `clarify_apply`: record one resolved Clarify decision and resume the interrupted document task.
+- `clarify_log_append`: record one actual Clarify question, answer, and answer timestamp without source
+  application or workflow-state interpretation.
 - `normalize`: align structure or metadata while preserving current meaning and authority.
 - `progress_update`: record actual execution, evidence, blocker, or resume-point changes.
 - `acceptance_finalize`: synchronize only the state and aggregate sources changed by Main acceptance.
@@ -75,8 +78,8 @@ a prerequisite for a small explicit document edit.
 ## Workflow
 
 1. Resolve initialization state and one document root.
-2. Classify the request as `create | revise | clarify_apply | normalize | progress_update |
-   acceptance_finalize`.
+2. Classify the request as `create | revise | clarify_apply | clarify_log_append | normalize |
+   progress_update | acceptance_finalize`.
 3. Read only the relevant project sources and preserve unrelated changes.
 4. Use an Author Edit Contract only for a large or ambiguous multi-document change.
 5. Edit the approved source documents.
@@ -106,6 +109,57 @@ Current completion does not require a new finalization manifest, external eviden
 HMAC receipt, snapshot chain, or acceptance-event artifact. Existing `finalization.state` may remain a
 recoverable Progress substate, but its current evidence is the synchronized source, Work State when
 applicable, targeted verification, and Main post-edit review.
+
+## Terminal Status Reconciliation
+
+Run a bounded terminal reconciliation only after `work_status`, `approval.state`, `round_status`, or
+`active_steps` actually changes. Ordinary document edits with no state transition skip this check.
+
+1. Resolve the changed state from owning Aggregate/Step Progress and the Round Index before inspecting
+   projections. Work/round indexes and Context Map summaries never override those sources.
+2. Search only the owning Round subtree, root works index, and Context Map locations containing the
+   exact changed Round/Step ref. Do not scan-and-rewrite the document root or require a generic Markdown
+   table updater.
+3. A missing optional projection is valid. An existing non-historical current/navigation projection
+   that disagrees with owning source is a stale conflict.
+4. Preserve historical Progress, acceptance evidence, as-of snapshots, and past-tense narrative. If
+   current and historical meaning cannot be separated safely, report the location and residual action
+   instead of rewriting it.
+5. Reconcile a Step only with its Step Progress and actually affected aggregate/navigation sources;
+   reconcile a Work with Aggregate Progress and its existing Work/Round projections.
+6. Keep child Round closure local, then reevaluate only the parent's declared child gate. Transition a
+   parent Round and its root/Context summaries only after every declared Step and child is resolved and
+   accepted.
+7. Do not report closure complete while a non-historical projection conflict remains. Fix it inside the
+   approved boundary or record the conflict and next action in Progress.
+8. Verify with exact-ref search, source comparison, Work State when state changed, and focused contract
+   tests. Do not make full graph, package, repository, or installer verification the default.
+
+## Clarification Log and Group Application
+
+Treat per-answer log persistence and per-group source application as separate write boundaries.
+
+1. For an existing or concurrently approved Work node, create the first broad-subject log at
+   `<work-node>/clarify/{YYYYMMDDTHHmmssZ}-{topic-slug}.md`. Use UTC and lower-case kebab-case. Reuse the
+   same file for every group in that broad subject.
+2. Treat the log as a tracked, non-authoritative Work attachment. It needs no key prefix, lifecycle,
+   approval, decision, work-status, or completion metadata.
+3. Use `# {broad subject}`, `## G01 - {edit scope}`, and `### Q01 - {question summary}`. Record only
+   `질문`, `답변`, and `답변일시`; a blank answer means unanswered.
+4. On each answer, recheck the current file and group/question locator, then append or fill only that
+   question, answer, and timestamp. Do not duplicate answers or add a remaining-question section.
+5. Add optional question-level key metadata only when the answer actually affects a source document.
+   Treat it as navigation evidence, never source authority, edit permission, evaluation, or acceptance.
+6. Do not add `Group Decision`, `Author Application`, sufficiency, evaluation, score, group-completion,
+   or work-status fields. Link the log from a Work Order only when it materially informs scope,
+   criteria, or a recorded decision.
+7. Close `clarify_log_append` by rereading the target entry. Do not run Progress updates, Work State,
+   graph reconstruction, package/repository tests, or source-document application for the append alone.
+8. Apply source documents only after all material questions in the current group are resolved and the
+   consolidated handoff is Author-ready. Apply that group's affected source scope exactly once; do not
+   include another group or a future edit plan.
+9. Return the apply result to the caller so it can continue the next group or resume the original task.
+   Clarify never writes either the log or source documents, and the user need not reinvoke either skill.
 
 ## Resumable Finalization
 
@@ -187,6 +241,8 @@ does not trigger a new producer run or external-folder permission request.
   separate.
 - Use Change Sets only for large changes or document-to-code/test impact that materially benefits from
   a durable trace.
+- Keep clarification logs under the owning Work's `clarify/` directory. They are explicit non-source
+  attachments and therefore do not use the Keystone source-document key prefix.
 - Use `key.refs` for navigation and typed relations for semantic relationships. A relation is an impact
   candidate, not automatic edit permission.
 - Do not add or update a document merely to report that it was unaffected.
@@ -258,3 +314,7 @@ Verify that:
 7. Default, Escalated, and Release verification are selected from the changed surface.
 8. Child acceptance remains local, parent acceptance is gated by all declared children, and no child
    completion creates a new historical finalization or acceptance-event artifact.
+9. Terminal reconciliation runs only on an actual state transition, preserves absent optional and
+   historical projections, and cannot close over a stale current/navigation projection.
+10. Clarification logging uses one minimal file per broad subject, preserves the one-question flow, and
+    separates lightweight per-answer append from one source-document application per completed group.

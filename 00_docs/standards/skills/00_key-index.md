@@ -22,19 +22,22 @@ key:
 1. `init/00_key-index.md`
    - `keystone-init`의 inspect/initialize/repair와 R000 bootstrap 계약을 정의한다.
 2. `clarify/00_key-index.md`
-   - `keystone-clarify`의 topic-scoped decision collection과 document update flow를
-     정의한다.
+   - `keystone-clarify`의 수정 범위별 그룹 queue, one-question decision collection,
+     clarification log와 그룹별 document update flow를 정의한다.
 3. `author/00_key-index.md`
-   - `keystone-author`의 기준서(3)와 작업서(4) creation/revision contract를 정의한다.
+   - `keystone-author`의 기준서(3)와 작업서(4) creation/revision, clarification log append와
+     그룹별 source application contract를 정의한다.
 4. `reader/00_key-index.md`
-   - `keystone-reader`의 session orientation, docs-first context readiness, lazy repository scope,
-     recursion guard, read-only boundary와 output contract를 정의한다.
+   - `keystone-reader`의 active parent Round session focus, 진행 중 Step 안내, session orientation,
+     docs-first context readiness, lazy repository scope, recursion guard, read-only boundary와 output
+     contract를 정의한다.
 5. `linker/00_key-index.md`
    - `keystone-linker`의 permissionless owner/ref index readiness, optional graph projection,
      artifact discovery, impact/stale/gap review와 source surface handoff를 정의한다.
 6. `coordinator/00_key-index.md`
-   - `keystone-coordinator`의 Context Pack, direct/orchestration mode, bounded execution routing,
-     report, Keystone closure, review, verification과 acceptance flow를 정의한다.
+   - `keystone-coordinator`의 selected Round와 실행자 Step 선택, Context Pack,
+     direct/orchestration mode, bounded execution routing, report, Keystone closure, review,
+     verification과 acceptance flow를 정의한다.
 
 <!-- key: id=key.standard.skills.index.planned-skill-standards refs=key.topic.skill-contract key.doc.standard -->
 ## 계획된 스킬별 기준서

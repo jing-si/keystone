@@ -4,7 +4,7 @@ created_at: "2026-06-10"
 document_lifecycle: active
 approval:
   state: accepted
-  accepted_at: "2026-08-11"
+  accepted_at: "2026-08-17"
   accepted_by: main
 key:
   id: key.standard.skill.author
@@ -16,6 +16,10 @@ key:
     - key.topic.work-creation
     - key.topic.impact-review
     - key.topic.progress-update
+    - key.topic.acceptance
+    - key.topic.verification
+    - key.topic.work-recovery
+    - key.topic.question-flow
     - key.topic.artifact-graph
     - key.topic.temporal-metadata
 ---
@@ -27,7 +31,8 @@ key:
 
 이 기준서는 `keystone-author`의 상세 계약을 정의한다. `keystone-author`는 수락된
 요청과 결정(6)을 바탕으로 사람이 읽을 수 있는 기준서(3), 작업서(4), 진행 기록(5),
-결정(6) 기록, Change Set(17)을 만들거나 수정한다.
+결정(6) 기록, Change Set(17)을 만들거나 수정한다. Clarify가 여러 수정 그룹을 진행할 때는
+대주제별 명확화 로그(21)를 가볍게 유지하고 그룹 질문이 끝난 시점에만 원천 문서를 반영한다.
 
 <!-- key: id=key.standard.skill.author.scope refs=key.role.author key.topic.document-authoring key.topic.work-creation key.topic.impact-review key.topic.artifact-graph -->
 ## 적용 범위
@@ -42,7 +47,9 @@ key:
 8. Linker report 또는 Linker handoff seed를 바탕으로 source document metadata 변경,
    Change Set(17), document sync candidate를 반영
 9. 새 문서, 현재 의미의 승인과 결정 기록에 temporal metadata를 적용
-10. 문서 작성 후 verification과 report contract
+10. 실제 상태 전이 뒤 bounded terminal status reconciliation
+11. Clarify 답변별 명확화 로그(21) append와 그룹별 원천 문서 적용 경계
+12. 문서 작성 후 verification과 report contract
 
 <!-- key: id=key.standard.skill.author.out-of-scope refs=key.role.author key.topic.document-authoring key.topic.skill-contract key.topic.formal-workflow key.topic.external-assist -->
 ## 적용하지 않는 범위
@@ -68,7 +75,7 @@ key:
    `STD-KEYSTONE-020`, `STD-KEYSTONE-021`, `STD-KEYSTONE-022`,
    `STD-KEYSTONE-023`, `STD-KEYSTONE-024`, `STD-KEYSTONE-025`,
    `STD-KEYSTONE-027`, `STD-KEYSTONE-030`, `STD-KEYSTONE-032`, `STD-KEYSTONE-042`,
-   `STD-KEYSTONE-043`, `STD-KEYSTONE-045`, `STD-KEYSTONE-052`
+   `STD-KEYSTONE-043`, `STD-KEYSTONE-045`, `STD-KEYSTONE-052`, `STD-KEYSTONE-060`
 3. 관련 기준서: `../../subagents/key-standard-subagents.md`
 4. 관련 결정(6): `00_docs/works/key-decisions.md`
 5. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
@@ -118,6 +125,8 @@ resume한다. 같은 대화와 범위에서 이미 동의했다면 반복 확인
 10. 기존 문서 구조가 너무 크거나 흩어져 있어 수락된 범위 안에서 정리해야 한다.
 11. 큰 문서 변경, code 영향이 있는 문서 변경, 여러 artifact에 걸친 변경을 추적 가능한 Change
     Set(17)으로 정리해야 한다.
+12. Clarify 답변을 Work node의 대주제별 명확화 로그(21)에 기록하거나, 현재 그룹의 질문이 모두
+    끝난 뒤 통합 edit plan을 관련 원천 문서(2)에 한 번 적용해야 한다.
 
 <!-- key: id=key.standard.skill.author.non-trigger-condition refs=key.role.author key.topic.skill-contract -->
 ## Non-trigger condition
@@ -150,6 +159,8 @@ Author는 다음 input을 사용할 수 있어야 한다.
 9. 필요한 경우 `keystone-linker` report 또는 Linker handoff seed
 10. 위임이 필요한 경우 사용자 허락과 실행 환경이 제공하는 isolation/concurrency 조건
 11. 복수 surface나 권한 경계가 있어 명시적으로 남긴 경우 routing context
+12. 명확화 로그(21)를 갱신하는 경우 Work node, 대주제 log path, group/question ref, 실제 질문,
+    답변과 답변일시
 
 Input이 부족하고 잘못된 문서 변경으로 이어질 위험이 있으면 Author는 수정하지 않고
 main/user에게 결정(6)을 요청하거나 `keystone-clarify`가 다룰 topic으로 보고해야 한다.
@@ -163,9 +174,9 @@ Author는 작업 mode와 무관하게 다음 순서를 따른다.
    동의를 한 번 확인하고 Init handoff 뒤 이 workflow로 resume한다.
 2. 관련 parent 기준서와 child 기준서를 읽어 적용 규칙을 확인한다.
 3. 요청이 create, revise, clarify-apply, normalize, progress update 중 무엇인지 정한다.
-4. 변경 대상 원천 문서(2)와 section을 식별한다.
-5. 대상이 원천 문서인지 확인한다. 복수 surface나 권한 경계가 있으면 필요한 routing context를
-   명시적으로 남긴다.
+4. 변경 대상 원천 문서(2)와 section 또는 승인된 명확화 로그(21) entry를 식별한다.
+5. 대상이 원천 문서인지 비권위 Work attachment인지 구분한다. 복수 surface나 권한 경계가 있으면
+   필요한 routing context를 명시적으로 남긴다.
 6. 승인 범위와 impact update 대상이 명확한지 확인한다.
 7. High-impact 결정(6)이 부족하면 문서 수정을 멈추고 main/user에게 결정(6)을 요청하거나
    `keystone-clarify`가 다룰 topic으로 보고한다.
@@ -282,12 +293,13 @@ Revise Mode는 기존 원천 문서(2)를 수정한다.
 
 Clarify-Apply Mode는 수락된 Clarify result를 문서에 반영한다.
 
-1. Decision summary, rationale, working assumptions, affected documents,
+1. 그룹 범위의 원천 문서를 적용하려면 decision summary, rationale, working assumptions, affected documents,
    affected_artifact_candidates, decision_completeness_check, decision_recording_hint, edit plan이
    충분해야 한다.
 2. Author는 Clarify result를 새 decision으로 확정하지 않는다.
-3. `decision_completeness_check.author_edit_ready`가 `false`이면 Author는 적용하지 않고
-   Clarify 또는 main/user 결정(6) 보강을 요청한다.
+3. `decision_completeness_check.author_edit_ready`가 `false`이면 Author는 원천 문서를 적용하지
+   않고 Clarify 또는 main/user 결정(6) 보강을 요청한다. 이미 받은 답변의 lightweight log append는
+   source application과 분리해 수행할 수 있다.
 4. Edit plan 밖의 scope나 acceptance criteria는 바꾸지 않는다.
 5. 적용 중 충돌이 발견되면 중단하고 main/user 결정(6)을 요청한다.
 6. 적용 후 필요한 경우 결정(6) 기록과 진행 기록(5)을 갱신한다.
@@ -301,6 +313,37 @@ Clarify-Apply Mode는 수락된 Clarify result를 문서에 반영한다.
 10. Modularization decision이 `investigate_first` 또는 `needs_linker_report`이면 Author는
     code/config/schema/API/test 수정 지시를 만들지 않고 필요한 Linker 또는 Coordinator
     investigation을 next action으로 남긴다.
+
+<!-- key: id=key.standard.skill.author.clarification-log-application kind=claim refs=key.role.author key.role.clarify key.topic.question-flow key.topic.document-authoring key.topic.work-recovery -->
+## Clarification log와 그룹 적용
+
+Author는 답변별 log append와 그룹 종료별 원천 문서 적용을 서로 다른 write boundary로 처리한다.
+
+1. Work node가 존재하거나 승인 범위에서 함께 만들어지는 경우, 첫 질문을 기록할 때
+   `<work-node>/clarify/{YYYYMMDDTHHmmssZ}-{topic-slug}.md`를 만든다. Timestamp는 UTC를 사용하고
+   같은 대주제의 이후 그룹은 같은 파일에 추가한다.
+2. 명확화 로그(21)는 원천 문서가 아닌 추적되는 Work attachment다. Key prefix, lifecycle,
+   approval, work status, decision 또는 completion metadata를 요구하지 않는다.
+3. 기본 구조는 대주제 `#`, 수정 범위 `## G01 - {제목}`, 질문 `### Q01 - {요약}`과 `질문`,
+   `답변`, `답변일시`다. 빈 답변은 미응답을 뜻한다.
+4. 질문 답변을 받을 때마다 현재 파일 bytes와 group/question locator를 확인하고 질문, 답변,
+   답변일시만 append 또는 fill한다. 같은 답변을 중복 기록하거나 별도 remaining-question 목록을
+   만들지 않는다.
+5. 실제 원천 문서에 영향을 준 질문에만 heading 바로 앞의 선택적 키메타(9)를 둘 수 있다.
+   키메타는 탐색 후보이며 source authority, edit permission, 평가 또는 acceptance evidence가 아니다.
+6. `Group Decision`, `Author Application`, 질문 충분성, 평가, 점수, 그룹 완료와 작업 상태 field를
+   추가하지 않는다. 작업서에는 Q&A가 scope·criterion·결정에 실질적으로 영향을 준 경우에만
+   log link를 추가한다.
+7. Lightweight log append는 대상 path와 해당 question entry를 다시 읽는 것으로 검증한다. 이것만
+   수행했을 때 Progress, Work State, graph reconstruction, package/repository test 또는 원천 문서
+   application을 실행하지 않는다.
+8. 현재 그룹의 material question이 모두 끝나고 통합 `author_edit_ready: true` handoff가 오면
+   그 그룹의 affected source document 범위만 한 번 적용한다. 다른 그룹의 질문이나 미래 edit
+   plan을 함께 반영하지 않는다.
+9. Group source application은 일반 Clarify-Apply 검증과 impact review를 따른다. 적용 결과를
+   caller에 반환하면 caller가 다음 그룹 또는 모든 그룹 뒤의 원래 작업을 resume한다.
+10. Clarify는 log나 원천 문서를 직접 수정하지 않는다. Caller가 Author를 호출하며 사용자에게
+    매 답변이나 그룹마다 스킬 재호출을 요구하지 않는다.
 
 <!-- key: id=key.standard.skill.author.normalize-mode refs=key.role.author key.topic.document-system -->
 ### Normalize Mode
@@ -443,6 +486,37 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
     review, graph synchronization 또는 recovery 검증을 추가한다.
 12. Package/installer/historical adapter 검증은 해당 surface가 바뀌거나 release 검증이 명시된
     경우에만 실행한다.
+
+<!-- key: id=key.standard.skill.author.terminal-status-reconciliation kind=claim refs=key.role.author key.topic.acceptance key.topic.progress-update key.topic.work-recovery key.topic.verification -->
+## Terminal status reconciliation
+
+Author는 실제 상태 전이로 closure 후보가 생긴 경우에만 권위 source와 기존 current/navigation
+projection을 bounded하게 대조한다.
+
+1. Trigger는 `work_status`, `approval.state`, `round_status` 또는 `active_steps`의 실제 변경이다.
+   상태가 바뀌지 않은 일반 문서 작성·수정에는 이 절차를 실행하지 않는다.
+2. 먼저 owning Aggregate/Step Progress와 Round Index에서 전이된 상태와 실행 단위를 확인한다.
+   Work Index, root works index와 Context Map은 존재할 때만 current/navigation projection 후보로
+   취급하며 권위 source를 덮어쓰지 않는다.
+3. 후보 탐색은 owning Round subtree, root works index, Context Map에서 전이된 Round/Step의 exact
+   ref가 있는 부분으로 제한한다. Document root 전체를 전수 수정하거나 범용 Markdown table
+   parser를 만들지 않는다.
+4. Optional projection이 없으면 정상이다. 다만 존재하는 비역사적 current/navigation 요약이
+   owning Progress·Round 상태와 다르면 stale conflict로 처리한다.
+5. Historical Progress, acceptance evidence, as-of snapshot과 과거 진행 서술은 소급 수정하지
+   않는다. 현재 요약과 historical 기록이 구분되지 않으면 자동 수정하지 않고 residual action으로
+   남긴다.
+6. Step 종료는 해당 Step Progress와 실제로 바뀐 aggregate/current projection만, Work 종료는
+   Aggregate Progress와 존재하는 Work/Round projection만 대조한다.
+7. Child Round 종료는 child-local Work·Progress·Index를 먼저 닫고 parent의 declared child gate만
+   다시 평가한다. Child 종료만으로 root/Context의 parent Round 상태를 전이하지 않는다.
+8. Parent Round 종료는 선언된 Step과 child Round가 모두 resolved + accepted인 경우에만 Round,
+   root works index와 Context Map의 current/navigation 요약을 동기화한다.
+9. 비역사적 projection conflict가 남으면 closure를 complete로 보고하지 않는다. 승인 범위 안에서
+   고치거나 충돌 위치와 다음 action을 Progress에 남긴다.
+10. 기본 검증은 exact-ref 검색, 변경 상태의 source 대조, 상태가 바뀐 경우의 Work State와 관련
+    focused contract test다. 일반 종료에 full graph, package, repository 또는 installer 검증을
+    강제하지 않는다.
 
 <!-- key: id=key.standard.skill.author.resumable-finalization kind=claim refs=key.role.author key.role.reader key.topic.finalization key.topic.work-recovery key.topic.verification -->
 ## Resumable finalization
@@ -776,6 +850,11 @@ Author 기준은 다음 방법으로 검증한다.
     변경에서 새 Change Set·manifest·receipt·snapshot을 만들지 않아야 한다.
 22. Default, escalated, release 검증을 변경 surface로 구분하고 package/installer/historical 검증을
     일반 문서 변경의 기본값으로 실행하지 않아야 한다.
+23. Terminal status reconciliation은 실제 상태 전이 때만 bounded exact-ref 후보를 확인하고,
+    optional projection 부재와 historical 기록을 정상으로 보존하며 stale current/navigation
+    conflict가 남은 closure를 complete로 보고하지 않아야 한다.
+24. Clarify 답변별 lightweight log append와 그룹 종료별 원천 문서 application을 분리하고,
+    대주제별 log 하나의 최소 `G01`/`Q01` 구조와 비권위·비평가 경계를 유지해야 한다.
 
 <!-- key: id=key.standard.skill.author.reference-index-contract refs=key.role.author key.role.linker key.topic.keystone-metadata key.topic.artifact-graph -->
 ## Owner/ref authoring과 context invalidation

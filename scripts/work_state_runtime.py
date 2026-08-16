@@ -14,8 +14,8 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 
 SCHEMA_VERSION = 1
-STATE_SCHEMA_VERSION = 4
-POLICY_VERSION = "keystone-work-state-v4"
+STATE_SCHEMA_VERSION = 5
+POLICY_VERSION = "keystone-work-state-v5"
 ACCEPTANCE_EVENT_PATH = "00_docs/works/key-acceptance-events.json"
 ACTIVE_WORK_STATUSES = frozenset({"in_progress", "blocked"})
 TERMINAL_RESIDUAL_STATUSES = frozenset({"planned", "in_progress", "blocked"})
@@ -88,6 +88,7 @@ class SourceRecord:
     kind: str
     frontmatter: Mapping[str, Any]
     json_value: Optional[Any] = None
+    source_error: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -130,7 +131,7 @@ def policy_digest() -> str:
             "accepted_steps", "acceptance_ref", "subject_digest",
             "accepted_at", "accepted_by",
         ],
-        "ordering": "unique-forward-chain-with-sequence-zero-genesis",
+        "historical_acceptance_ordering": "unique-forward-chain-with-sequence-zero-genesis",
         "migration_genesis": "R009",
         "historical_projection": "accepted-round-step-semantic-v1",
         "early_work_projection": "finalization-manifest-path-order-v1",
@@ -144,7 +145,9 @@ def policy_digest() -> str:
         "active_step_resolution": "resolved-or-unresolved-with-source-candidates",
         "progress_ownership": "aggregate-progress-authority-with-legacy-work-index-projection-v2",
         "dependency_target_state": "aggregate-progress-owner-with-legacy-work-index-fallback-v1",
-        "pointer_compatibility": "optional-derived-legacy-v1-or-multi-active-v2-v3-v4",
+        "current_state_authority": "parent-active-rounds-and-progress-active-steps-v1",
+        "historical_acceptance_compatibility": "optional-non-authoritative-event-chain-v1",
+        "pointer_compatibility": "latest-accepted-ignored-v1-to-v5",
         "progress_body_consistency": "current-state-work-status-step-active-v1",
         "prerequisite_closure_fields": [
             "work_ref", "result", "waiver_reason", "follow_up",
@@ -454,8 +457,16 @@ def _records_from_sources(
         kind = _source_kind(path)
         if kind is None:
             continue
+        source_error: Optional[str] = None
         try:
-            if kind in {"acceptance_events", "finalization_manifest"}:
+            if kind == "acceptance_events":
+                try:
+                    json_value = _strict_json(raw, path)
+                except WorkStateError as error:
+                    json_value = None
+                    source_error = str(error)
+                frontmatter = {}
+            elif kind == "finalization_manifest":
                 json_value = _strict_json(raw, path)
                 frontmatter: Mapping[str, Any] = {}
             else:
@@ -477,7 +488,8 @@ def _records_from_sources(
             }
             digest_bytes = canonical_json_bytes(normalized)
         records.append(SourceRecord(
-            path, raw, _digest_bytes(digest_bytes), kind, frontmatter, json_value
+            path, raw, _digest_bytes(digest_bytes), kind, frontmatter, json_value,
+            source_error,
         ))
     return tuple(records)
 
@@ -903,7 +915,7 @@ def _pointer_claim(record: SourceRecord) -> Optional[Dict[str, Any]]:
     if not isinstance(state, Mapping):
         return None
     schema_version = state.get("schema_version", 1)
-    if schema_version in {2, 3, STATE_SCHEMA_VERSION}:
+    if schema_version in {2, 3, 4, STATE_SCHEMA_VERSION}:
         return {
             "path": record.path,
             "schema_version": schema_version,
@@ -1391,25 +1403,25 @@ def derive_work_state(
                     record.path,
                 ))
 
-    historical_digest = _digest_bytes(canonical_json_bytes(
-        _historical_projection(records, "R009")
-    ))
     event_record = next((item for item in records if item.kind == "acceptance_events"), None)
-    if initialization == "uninitialized":
-        event_head = None
-        event_findings: List[Dict[str, str]] = []
-    elif event_record is None:
-        event_head = None
-        event_findings = [_diagnostic(
-            "acceptance_event_source_missing",
-            "Initialized state requires the canonical acceptance event source.",
-            ACCEPTANCE_EVENT_PATH,
-        )]
-    else:
-        event_head, event_findings = validate_acceptance_event_chain(
-            event_record.json_value, historical_digest
-        )
-    diagnostics.extend(event_findings)
+    historical_acceptance: Optional[Dict[str, Any]] = None
+    event_head: Optional[Dict[str, Any]] = None
+    event_findings: List[Dict[str, str]] = []
+    historical_digest: Optional[str] = None
+    if event_record is not None:
+        historical_digest = _digest_bytes(canonical_json_bytes(
+            _historical_projection(records, "R009")
+        ))
+        if event_record.source_error is not None:
+            event_findings.append(_diagnostic(
+                "acceptance_event_source_invalid",
+                event_record.source_error,
+                ACCEPTANCE_EVENT_PATH,
+            ))
+        else:
+            event_head, event_findings = validate_acceptance_event_chain(
+                event_record.json_value, historical_digest
+            )
     latest_accepted = event_head.get("round_ref") if event_head is not None else None
     progress_by_step = {
         _state_scalar(record, "step_ref"): record
@@ -1429,7 +1441,7 @@ def derive_work_state(
                             or _approval(progress) != "accepted"
                             or _finalization(progress).get("state") != "complete"
                             or _finalization(progress).get("acceptance_ref") != event.get("acceptance_ref")):
-                        diagnostics.append(_diagnostic(
+                        event_findings.append(_diagnostic(
                             "acceptance_event_step_source_mismatch",
                             "Accepted event Step must resolve to matching complete, accepted, finalized Progress.",
                             str(step_ref),
@@ -1437,10 +1449,18 @@ def derive_work_state(
     if latest_accepted is not None:
         latest_index = rounds.get(str(latest_accepted))
         if latest_index is None or _state_scalar(latest_index, "round_status") != "accepted":
-            diagnostics.append(_diagnostic(
+            event_findings.append(_diagnostic(
                 "work_state_latest_accepted_unresolved",
                 "Acceptance chain head must resolve to one accepted Round index.",
             ))
+    if event_record is not None:
+        historical_acceptance = {
+            "status": "invalid" if event_findings else "valid",
+            "latest_accepted_round": latest_accepted,
+            "acceptance_event_head": event_head,
+            "historical_projection_digest": historical_digest,
+            "diagnostics": event_findings,
+        }
 
     pointer_sources: List[SourceRecord] = []
     if root_index is not None:
@@ -1454,11 +1474,10 @@ def derive_work_state(
     pointer_sources.extend(record for record in all_work_records if record.path.rsplit("/", 1)[0] in active_work_directories)
     claims = [claim for claim in (_pointer_claim(item) for item in pointer_sources) if claim]
     for claim in claims:
-        if claim.get("schema_version") in {2, 3, STATE_SCHEMA_VERSION}:
+        if claim.get("schema_version") in {2, 3, 4, STATE_SCHEMA_VERSION}:
             expected_claim = {
                 "schema_version": claim.get("schema_version"),
                 "active_rounds": active_rounds,
-                "latest_accepted_round": latest_accepted,
                 "active_steps": active_steps,
             }
         elif claim.get("schema_version") == 1:
@@ -1472,7 +1491,6 @@ def derive_work_state(
             expected_claim = {
                 "schema_version": 1,
                 "active_round": active_round,
-                "latest_accepted_round": latest_accepted,
                 "active_steps": active_steps,
             }
         else:
@@ -1546,9 +1564,6 @@ def derive_work_state(
         "round_hierarchy": round_hierarchy,
         "active_works": sorted(active_works, key=lambda item: item["path"]),
         "active_steps": active_steps,
-        "latest_accepted_round": latest_accepted,
-        "acceptance_event_head": event_head,
-        "historical_projection_digest": historical_digest,
         "pointer_claims": sorted(claims, key=lambda item: str(item["path"])),
         "dependency_evaluations": dependencies,
         "finalization_gates": [
@@ -1558,6 +1573,8 @@ def derive_work_state(
         "prerequisite_closures": closures,
         "early_work": _early_work_projection(records),
     }
+    if historical_acceptance is not None:
+        state["historical_acceptance"] = historical_acceptance
     envelope_subject = {
         "policy_digest": policy_digest(),
         "generation": generation,

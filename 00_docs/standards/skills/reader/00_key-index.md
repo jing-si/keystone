@@ -17,9 +17,10 @@ key:
 ## 기준서
 
 1. `key-standard-reader.md`
-   - `keystone-reader`의 목적, session orientation, docs-first context readiness, lazy repository
-     scope, recursion guard, context brief output contract, Linker handoff와 verification을
-     정의한다. 소비 프로젝트 로컬 Reader 기준서는 runtime 선행 조건이 아니다.
+   - `keystone-reader`의 목적, active parent Round session focus, 진행 중 Step 안내와 실행자 기본
+     Step 선택, session orientation, docs-first context readiness, lazy repository scope, recursion
+     guard, context brief output contract, Linker handoff와 verification을 정의한다. 소비 프로젝트
+     로컬 Reader 기준서는 runtime 선행 조건이 아니다.
 
 <!-- key: id=key.standard.skill.reader.index.parent-standard refs=key.role.reader key.doc.standard key.topic.document-system -->
 ## 상위 기준서

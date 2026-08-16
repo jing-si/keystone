@@ -38,20 +38,22 @@ key:
 6. Init 기준서: `skills/init/key-standard-init.md`
    - `keystone-init`의 inspect/initialize/repair, 고정 scaffold, R000과 resume 계약을 정의한다.
 7. Reader 기준서: `skills/reader/key-standard-reader.md`
-   - `keystone-reader`의 session orientation, docs-first context readiness, lazy repository scope,
-     read-only boundary와 output contract를 정의한다.
+   - `keystone-reader`의 active parent Round session focus, 진행 중 Step 안내, session orientation,
+     docs-first context readiness, lazy repository scope, read-only boundary와 output contract를 정의한다.
 8. Author 기준서: `skills/author/key-standard-author.md`
    - `keystone-author`의 기준서(3)와 작업서(4) creation/revision, clarify result 적용,
-     progress update boundary를 정의한다.
+     답변별 clarification log append, 그룹별 source application과 progress update boundary를
+     정의한다.
 9. Clarify 기준서: `skills/clarify/key-standard-clarify.md`
-   - `keystone-clarify`의 topic-scoped decision collection, reflection, edit plan,
-     Author handoff를 정의한다.
+   - `keystone-clarify`의 관련성 기반 수정 그룹, one-question decision collection, Q&A log,
+     reflection, 그룹별 edit plan과 Author handoff를 정의한다.
 10. Linker 기준서: `skills/linker/key-standard-linker.md`
    - `keystone-linker`의 permissionless owner/ref index readiness, optional graph interpretation,
      artifact discovery, impact/stale/gap review와 source surface handoff를 정의한다.
 11. Coordinator 기준서: `skills/coordinator/key-standard-coordinator.md`
-   - `keystone-coordinator`의 Context Pack, direct/orchestration mode, worker report와
-     document·metadata·graph·verification·finalization closure flow를 정의한다.
+   - `keystone-coordinator`의 selected Round와 실행자 Step 선택, Context Pack,
+     direct/orchestration mode, worker report와 document·metadata·graph·verification·finalization
+     closure flow를 정의한다.
 
 <!-- key: id=key.standard.index.reading-rules refs=key.doc.source key.doc.standard key.topic.document-system key.standard.subagent key.topic.work-round -->
 ## 읽기 규칙
@@ -65,7 +67,7 @@ key:
 4. 문서와 code/config/schema/API/test artifact 연결, graph ownership boundary, impact candidate,
    stale/gap 판단이 필요하면 `artifacts/00_key-index.md`를 읽는다.
 5. 스킬별 개발 명세가 필요하면 `skills/00_key-index.md`에서 해당 child 기준서로 내려간다.
-6. 현재 active work round는 `00_docs/works/00_key-index.md`에서 찾고, round 내부 실행 순서는
-   해당 round의 `00_key-index.md`에서 찾는다.
+6. 현재 active parent Round 집합은 canonical Work State와 `00_docs/works/00_key-index.md`에서
+   찾고, session-selected Round 내부 실행 순서는 해당 Round의 `00_key-index.md`에서 찾는다.
 7. 전체 공통 기준서와 child 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
    결정(6)을 받는다. 결정 전까지는 전체 공통 기준서를 임시 우선 기준으로 삼는다.

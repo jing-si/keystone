@@ -160,7 +160,7 @@ Coordinator는 다음 input을 사용할 수 있어야 한다.
 1. 사용자 요청 또는 main의 current task
 2. 설정된 document root(1)
 3. 관련 기준서(3), 작업서(4), 진행 기록(5), 결정(6) 기록
-4. Active steps 또는 이를 복구하기 위한 active round와 active work state
+4. Active steps 또는 이를 복구하기 위한 parent-only active Round 집합과 active Work state
 5. Completion criteria와 verification expectation
 6. Included, excluded, conditional work scope
 7. Stop conditions와 escalation conditions
@@ -225,33 +225,41 @@ Coordinator는 다음 순서를 따른다.
 
 1. 사용자 허락, 설정된 document root(1)와 root works index를 확인한다.
 2. 복수 surface나 권한 경계가 있으면 필요한 routing context를 확인한다.
-3. Active round index와 active work node index를 따라 `round_id`, `work_id`, `active_steps`와
-   workflow state를 복구한다.
-4. 작업서(4)에서 Goal, Scope, Source Context, Completion Criteria, Stop Conditions,
+3. Work State의 parent-only `active_rounds`와 active Step 요약을 복구한다. Active parent Round가
+   둘 이상인데 요청이나 session context가 Round를 지정하지 않았으면 임의로 대표 Round를 고르지
+   않고 후보별 진행 중 Step과 함께 `selection_required`를 반환해 사용자에게
+   `해당 세션에서 어떤 라운드를 작업할까요?`라고 한 번 묻는다. 선택은 session-only이며 source,
+   cache 또는 project priority에 기록하지 않는다.
+4. 선택된 parent Round index와 active Work node index를 따라 `round_id`, `work_id`,
+   `active_steps`와 workflow state를 복구한다.
+5. 작업서(4)에서 Goal, Scope, Source Context, Completion Criteria, Stop Conditions,
    Verification, Expected Output을 추출한다.
-5. 관련 기준서(3)에서 verification expectation과 forbidden change를 추출한다.
-6. 존재하는 Reader context brief와 Author Change Set(17)을 확인한다.
-7. 아티팩트 그래프(14) 후보가 있으면 Linker report를 요구하거나 기존 Linker report에서 impact
+6. 관련 기준서(3)에서 verification expectation과 forbidden change를 추출한다.
+7. 존재하는 Reader context brief와 Author Change Set(17)을 확인한다.
+8. 아티팩트 그래프(14) 후보가 있으면 Linker report를 요구하거나 기존 Linker report에서 impact
    seed, required/optional/excluded candidates를 확인한다.
-8. Work unit을 bounded execution context로 만들 수 있는지 판단한다.
-9. 외부 코딩 스킬이 있으면 `orchestration`, 없으면 `direct_execution` mode를 선택한다.
-10. Subagent 기준서에 따라 purpose preset, authority, injected skill contract를 선택한다.
-11. Orchestration이면 외부 스킬을 worker에게 주입하고, direct execution이면
+9. Work unit을 bounded execution context로 만들 수 있는지 판단한다.
+10. 외부 코딩 스킬이 있으면 `orchestration`, 없으면 `direct_execution` mode를 선택한다.
+11. Subagent 기준서에 따라 purpose preset, authority, injected skill contract를 선택한다.
+12. Orchestration이면 외부 스킬을 worker에게 주입하고, direct execution이면
     `keystone-default-bounded-worker` contract를 Coordinator 자기 실행에 적용한다.
-12. 여러 coding skill 후보가 있고 선택에 따라 workflow, verification, risk가 달라질 때만
+13. 여러 coding skill 후보가 있고 선택에 따라 workflow, verification, risk가 달라질 때만
     main/user 선택을 요청한다.
-13. 위임 실행의 isolation, worktree, branch, concurrency는 사용자 지시, 주입된 skill과 host
+14. 위임 실행의 isolation, worktree, branch, concurrency는 사용자 지시, 주입된 skill과 host
     환경의 계약을 따른다.
-14. 선택한 Step의 Step Brief와 Context Pack을 만들고 mode에 따라 직접 실행하거나 worker
+15. 현재 진행 중인 Step을 사용자에게 알린다. 사용자가 Step을 지정하지 않았으면 dependency와
+    `work_gates`를 만족하는 active Step 중 번호가 가장 낮은 Step을 기본 대상으로 삼고 Step 선택
+    자체는 질문하지 않는다. 가장 낮은 Step이 blocked이면 이유와 다음 실행 가능 Step을 보고한다.
+16. 선택한 Step의 Step Brief와 Context Pack을 만들고 mode에 따라 직접 실행하거나 worker
     assignment를 전달한다.
-15. Worker handoff boundary 또는 reviewer focus를 구성한다.
-16. Direct 또는 delegated output을 canonical worker report(20)로 정규화하고 actual state를 확인한다.
-17. 필요하면 별도 review 또는 verify assignment를 배정한다.
-18. Graph-relevant 또는 Escalated changed surface의 affected artifact delta만 Linker에 전달하고
+17. Worker handoff boundary 또는 reviewer focus를 구성한다.
+18. Direct 또는 delegated output을 canonical worker report(20)로 정규화하고 actual state를 확인한다.
+19. 필요하면 별도 review 또는 verify assignment를 배정한다.
+20. Graph-relevant 또는 Escalated changed surface의 affected artifact delta만 Linker에 전달하고
     required document/metadata 변경은 Author로 routing한다.
-19. Assignment scope, current diff, targeted verification과 필요한 document/graph disposition을
+21. Assignment scope, current diff, targeted verification과 필요한 document/graph disposition을
     확인한 결과만 accept candidate로 처리한다.
-20. Main acceptance 뒤 실제 상태·증거·resume point가 바뀐 경우에만 진행 기록(5)을 갱신하고,
+22. Main acceptance 뒤 실제 상태·증거·resume point가 바뀐 경우에만 진행 기록(5)을 갱신하고,
     Author 문서·상태 동기화와 변경 성격상 필요한 Work State/graph 검증까지 closure를 감독한다.
 
 <!-- key: id=key.standard.skill.coordinator.runtime-output-contract refs=key.role.coordinator key.contract.output key.topic.work-execution key.topic.work-round key.topic.artifact-graph key.standard.subagent -->

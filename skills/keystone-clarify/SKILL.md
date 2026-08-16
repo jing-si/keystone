@@ -1,6 +1,6 @@
 ---
 name: keystone-clarify
-description: "Use for exactly one actual high-impact Keystone user decision at a time when project meaning, policy, scope, document authority, conflicting valid choices, or evidence-backed modularization cannot be resolved safely. Return a decision and author-ready handoff to the caller. Do not use for built-in setup defaults, routine edits, document authoring, implementation, repository investigation, or worker orchestration."
+description: "Use for actual high-impact Keystone user decisions when project meaning, policy, scope, document authority, conflicting valid choices, or evidence-backed modularization cannot be resolved safely. When one broad review yields multiple changes, group them by coherent document-application scope and still ask exactly one question at a time. Return lightweight Q&A-log and group-ready Author handoffs to the caller. Do not use for built-in setup defaults, routine edits, document authoring, implementation, repository investigation, or worker orchestration."
 ---
 
 <!-- keystone: id=key.skill.clarify kind=output_artifact artifact_kind=skill_source -->
@@ -11,8 +11,10 @@ description: "Use for exactly one actual high-impact Keystone user decision at a
 
 ## Purpose
 
-Clarify exactly one high-impact user decision topic, then return the accepted decision and a bounded
-handoff so the caller can resume the interrupted Init, Author, Coordinator, or Main flow.
+Clarify exactly one high-impact user decision topic at a time, then return the accepted decision and a
+bounded handoff so the caller can resume the interrupted Init, Author, Coordinator, or Main flow. When
+one broad review contains several changes, group them by shared document-application scope and close one
+group before moving to the next.
 
 This installed contract is self-contained. Do not require a consuming-project Clarify standard or
 `standards/skills/clarify/**`. Project source documents and accepted decisions define project meaning
@@ -105,10 +107,41 @@ return it as unresolved rather than inventing project meaning or an Author-ready
    one choice, make the bounded recommendation and state its basis.
 7. Once sufficient, summarize the decision, rationale, assumptions, affected documents/artifacts, and
    any recording or edit handoff.
-8. Return to the caller so the interrupted work resumes.
+8. After every user answer, give the caller only the actual question, answer, answer timestamp, and
+   group/question locator needed for a lightweight Author log append. Do not add evaluation or status.
+9. Return to the caller so the interrupted work resumes.
 
 Do not combine unrelated decisions merely to shorten the conversation. Finish reflection and handoff for
 the current topic before moving to another.
+
+## Broad Subject and Group Queue
+
+When the caller supplies several findings from one broad review, organize them before asking questions.
+
+1. Keep one broad subject for the complete review. It maps to one Work-attached clarification log.
+2. Define a group as one coherent source-document application boundary, not as a decision or status.
+   Assign only an ordered locator and a short edit-scope title such as `G01`.
+3. Group findings when they affect the same documents or sections, their answers must be interpreted
+   together, applying one early could create inconsistency or rework, or one verification boundary can
+   close them together.
+4. Split findings when their target documents, acceptance meaning, application timing, and verification
+   are independent. Do not group merely by adjacent numbering, presentation order, or question count.
+5. If the user delegates grouping, choose the smallest coherent application boundary from accepted
+   sources and evidence. Ask the user only if grouping would change user-owned scope or meaning.
+6. Select one group and ask exactly one decision question. Continue only that topic's targeted follow-up
+   until sufficient, then proceed to the next topic in the same group.
+7. When no material question blocks the group, consolidate its topic results into one Author-ready edit
+   plan. Do not create a `Group Decision`, group score, evaluation, or completion artifact.
+8. Let the caller invoke Author once for that group's source changes, then continue with the next group.
+   After every group is handled, resume the task that originally requested Clarify.
+
+The caller owns persistence. For a known Work node, have it create or update
+`clarify/{YYYYMMDDTHHmmssZ}-{topic-slug}.md` through Author. Keep all groups for the broad subject in that
+one file using `# {broad subject}`, `## G01 - {edit scope}`, and `### Q01 - {question summary}`. Record only
+`질문`, `답변`, and `답변일시`. A blank answer already means unanswered; do not add a remaining-question
+section. Do not put `Group Decision`, `Author Application`, sufficiency, evaluation, score, group status,
+or work status in the log. Add optional question-level key metadata only when the answer actually affects
+a source document; it remains a navigation hint, not authority or evaluation evidence.
 
 ## Modularization Decision
 
@@ -191,6 +224,10 @@ For a resolved non-trivial topic, include the completeness check and a recording
 grant write authority. Record cross-round decisions in the project's shared decision record and narrower
 decisions near their round/work when such locations exist. Do not create those records directly.
 
+During grouped clarification, let the caller accumulate topic results only inside the current group.
+Create the source-document edit handoff once, after every material question in that group is resolved.
+Keep this agent-facing queue and completeness state out of the clarification log.
+
 Only include routing context when multiple surfaces, authority boundaries, or audit needs make it useful.
 Document edits go to Author, implementation may remain Main direct, and delegated work goes to
 Coordinator only when the user has permitted Coordinator for that work scope.
@@ -230,3 +267,9 @@ Check that Clarify:
 7. Never edits files and hides structured payloads by default.
 8. Preserves affected item/claim IDs and represents partial supersession without retiring unaffected
    meaning.
+9. Groups a broad review by coherent source-application scope before questioning while preserving the
+   exactly-one-question invariant.
+10. Separates per-answer lightweight log handoff from per-group source-document application and resumes
+    the original task after all groups.
+11. Keeps one minimal, non-authoritative clarification log per broad subject without decision,
+    evaluation, or status fields.

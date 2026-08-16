@@ -176,7 +176,9 @@ key: {id: key.work.accepted.order}
     def test_current_source_changes_do_not_rewrite_historical_acceptance_binding(self):
         sources = fixtures.base_sources()
         before = RUNTIME.derive_work_state(sources)
-        event_digest = before["state"]["acceptance_event_head"]["subject_digest"]
+        event_digest = before["state"]["historical_acceptance"][
+            "acceptance_event_head"
+        ]["subject_digest"]
         current_progress = "00_docs/works/r010-active/runtime/key-progress.md"
         sources[current_progress] += b"\n# Current-only narrative change\n"
 
@@ -188,7 +190,9 @@ key: {id: key.work.accepted.order}
         )
         self.assertEqual(
             event_digest,
-            after["state"]["acceptance_event_head"]["subject_digest"],
+            after["state"]["historical_acceptance"][
+                "acceptance_event_head"
+            ]["subject_digest"],
         )
         self.assertEqual("pass", after["status"], after["diagnostics"])
 

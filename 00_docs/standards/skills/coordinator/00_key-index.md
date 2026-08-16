@@ -22,6 +22,7 @@ key:
 1. `key-standard-coordinator.md`
    - `keystone-coordinator`의 목적, trigger/non-trigger, Goal assignment, Context Pack,
      direct/orchestration mode, worker assignment/report, bounded execution routing,
+     selected Round와 실행자 기본 Step 선택,
      외부 코딩 스킬 injected skill 선택과 구현 ownership,
      사용자 허락, permissionless Linker 예외, context freshness/invalidation, 실행 환경 경계,
      report handling, document·metadata·graph closure, review, verification, acceptance flow를
