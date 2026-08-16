@@ -45,6 +45,27 @@ Use the smallest reliable input set:
 A Work Order, Change Set, external evidence root, HMAC key, assignment snapshot, acceptance-event file,
 or raw internal routing payload is not a prerequisite for ordinary implementation.
 
+## Round Session Focus and Step Selection
+
+Use Work State schema v5 to recover parent-only `active_rounds`, `round_hierarchy`,
+`active_child_rounds`, active Works, active Steps, dependency evaluations, and `work_gates`.
+
+1. When two or more active parent Rounds exist and neither the request nor existing session context
+   selects one, return `selection_required` with a compact candidate list containing each parent Round
+   and its in-progress Step refs. Ask exactly once `해당 세션에서 어떤 라운드를 작업할까요?` before
+   deep-reading every candidate Round.
+2. Keep the selected Round session-only. Never persist it in source, a cache, a canonical pointer, or
+   project priority, and leave unselected Rounds unchanged.
+3. Skip the Round question when there are zero or one active parent Round, the request names a parent
+   Round, or the request explicitly asks for a cross-Round view.
+4. After Round focus is resolved or skipped, inform the user of the current in-progress Steps in the
+   selected or sole active Round. Do not ask the user to choose a Step.
+5. Without an explicit Step request, select the lowest-numbered executable active Step using dependency
+   evaluations and `work_gates`. If the lowest-numbered Step is blocked, explain the blocker and select
+   the next executable Step.
+6. The session selection never changes Step status or priority. When no active Step exists, do not invent
+   one; continue only within an otherwise explicit, approved implementation scope.
+
 ## Operating Modes
 
 ### Direct execution
@@ -82,17 +103,19 @@ change Work status, approval, finalization, or Main acceptance by themselves.
 
 1. Confirm implementation approval, initialization readiness, project conventions, and current diff.
 2. Resolve the smallest relevant Keystone source set and implementation surface. For Work State schema
-   v3, keep global Round identity on the parent and use `round_hierarchy`, `active_child_rounds`, and
+   v5, keep global Round identity on the parent and use `round_hierarchy`, `active_child_rounds`, and
    child Work/Step refs for the actual execution owner.
-3. Ask Linker for impact context only when graph or cross-surface reasoning is relevant.
-4. Evaluate Step gates separately from Work-completion gates, then choose direct execution or one
+3. Apply the Round session-focus gate, report in-progress Steps, and select the lowest executable Step
+   according to the rules above without mutating status or priority.
+4. Ask Linker for impact context only when graph or cross-surface reasoning is relevant.
+5. Evaluate Step gates separately from Work-completion gates, then choose direct execution or one
    bounded worker assignment.
-5. Build the Context Pack and apply the smallest effective change without overwriting unrelated work.
-6. Re-read the changed surfaces, inspect the current diff, and normalize the execution result.
-7. Run verification selected by the changed surface and classify failures honestly.
-8. Ask Linker to reconstruct and validate affected graph scope only when graph-relevant sources changed.
-9. Ask Author to update only durable Work/Progress/index/context sources whose state or meaning changed.
-10. Return evidence and residual risk to Main for acceptance, including the scope check and
+6. Build the Context Pack and apply the smallest effective change without overwriting unrelated work.
+7. Re-read the changed surfaces, inspect the current diff, and normalize the execution result.
+8. Run verification selected by the changed surface and classify failures honestly.
+9. Ask Linker to reconstruct and validate affected graph scope only when graph-relevant sources changed.
+10. Ask Author to update only durable Work/Progress/index/context sources whose state or meaning changed.
+11. Return evidence and residual risk to Main for acceptance, including the scope check and
     synchronization result.
 
 ## Dependency and Persistence Boundary
@@ -215,3 +238,5 @@ Verify that:
 7. Verification tier follows the changed surface and release gates run only on explicit release work.
 8. Parent/child recovery preserves parent-only global status and acceptance, child-local execution, and
    the two-level maximum without inventing a deeper Round.
+9. Multi-active Round focus is session-only, uses the exact one-question gate, and selects the lowest
+   executable active Step without asking the user to choose or changing Step status or priority.

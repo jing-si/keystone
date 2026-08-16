@@ -53,6 +53,33 @@ class CoordinatorKeystoneClosureContractTest(unittest.TestCase):
         self.assertIn("Main retains scope control", skill)
         self.assertIn("Return evidence and residual risk to Main for acceptance", skill)
 
+    def test_current_work_state_round_and_step_selection(self):
+        standard = read("00_docs/standards/01_key-project-standard.md")
+        skill = read("skills/keystone-coordinator/SKILL.md")
+
+        for phrase in (
+            "해당 세션에서 어떤 라운드를 작업할까요?",
+            "선택은 session-only",
+            "Step 선택 자체는 사용자 질문으로 만들지\n않는다",
+            "active Step 중 번호가\n가장 낮은 Step",
+            "다음 실행 가능 Step",
+        ):
+            self.assertIn(phrase, standard)
+
+        for phrase in (
+            "Work State schema v5",
+            "`selection_required`",
+            "해당 세션에서 어떤 라운드를 작업할까요?",
+            "session-only",
+            "Do not ask the user to choose a Step",
+            "lowest-numbered executable active Step",
+            "next executable Step",
+            "status or priority",
+        ):
+            self.assertIn(phrase, skill)
+
+        self.assertNotIn("For Work State schema\n   v3", skill)
+
 
 if __name__ == "__main__":
     unittest.main()
