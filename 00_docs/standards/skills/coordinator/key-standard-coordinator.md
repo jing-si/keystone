@@ -246,7 +246,8 @@ Coordinator는 다음 순서를 따른다.
 13. 여러 coding skill 후보가 있고 선택에 따라 workflow, verification, risk가 달라질 때만
     main/user 선택을 요청한다.
 14. 위임 실행의 isolation, worktree, branch, concurrency는 사용자 지시, 주입된 skill과 host
-    환경의 계약을 따른다.
+    환경의 계약을 따른다. Linked worktree를 생성하거나 선택하면 setup phase에서 멈추고
+    `Worktree setup과 locator gate`를 완료한 뒤 구현 edit를 시작한다.
 15. 현재 진행 중인 Step을 사용자에게 알린다. 사용자가 Step을 지정하지 않았으면 dependency와
     `work_gates`를 만족하는 active Step 중 번호가 가장 낮은 Step을 기본 대상으로 삼고 Step 선택
     자체는 질문하지 않는다. 가장 낮은 Step이 blocked이면 이유와 다음 실행 가능 Step을 보고한다.
@@ -617,6 +618,24 @@ Keystone은 single workspace, worktree, branch, 병렬 worker 수나 integration
 
 Read-only 작업의 병렬 여부와 file-writing 작업의 isolation은 사용자 지시, 주입된 skill,
 host capability와 실제 conflict risk를 바탕으로 정한다.
+
+<!-- key: id=key.standard.skill.coordinator.worktree-locator-gate refs=key.role.coordinator key.role.author key.topic.work-execution key.topic.work-recovery key.topic.keystone-metadata -->
+## Worktree setup과 locator gate
+
+1. Coordinator는 current diff와 existing-change risk를 확인한 뒤 worktree 사용 여부를 정한다.
+   Keystone은 linked worktree 사용을 강제하지 않는다.
+2. Linked worktree를 생성하거나 선택하면 target의 canonical absolute root와 현재 repository의 Git
+   common directory가 같은지 확인한다. 이 단계는 implementation이 아니라 setup이다.
+3. Injected skill이 worktree를 만든 경우 exact path를 setup result로 회수하고 worker가 substantive
+   repository edit를 시작하기 전에 멈춘다.
+4. Coordinator는 exact path와 common-directory 확인 결과를 Author에 전달한다. Author가 canonical
+   Work Order의 `key.worktree.path`를 기록한 뒤 Coordinator는 fresh source에서 같은 값을 다시 읽는다.
+5. Recorded locator와 actual target이 정확히 일치한 뒤에만 direct execution 또는 external-skill
+   worker의 code/config/schema/API/test/skill-source edit를 시작한다.
+6. Locator가 missing, inaccessible 또는 다른 Git common directory면 stale/mismatch로 보고하고
+   전체 worktree registry나 sibling directory를 탐색해 다른 후보를 고르지 않는다.
+7. Worktree를 선택하지 않은 Work는 current worktree에서 계속하며 locator를 만들지 않는다. 이
+   gate는 atomic claim, lock registry, duplicate-execution prevention 또는 integration 전략이 아니다.
 
 <!-- key: id=key.standard.skill.coordinator.report-handling-contract refs=key.role.coordinator key.topic.report key.role.subagent key.standard.subagent -->
 ## Report handling contract

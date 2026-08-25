@@ -1,3 +1,5 @@
+import ntpath
+import posixpath
 import re
 import shlex
 from typing import Any, Dict, List, Mapping, Optional, Tuple
@@ -190,11 +192,28 @@ def _artifact_kind(value: Any, kind: NodeKind, surface: str) -> ArtifactKind:
 
 _KNOWN_METADATA = {
     "id", "kind", "artifact_kind", "refs", "lifecycle", "produced_from", "governed_by",
-    "legacy_terms", "aliases", "locator", "_document_lifecycle", "_approval_state",
+    "legacy_terms", "aliases", "locator", "worktree", "_document_lifecycle", "_approval_state",
     "_source_authority", "_work_gates", "_relation_conflicts", "_doc_type",
     "_work_status", "_step_ref", "_work_ref", "_legacy_dependencies",
     "_structured_dependencies",
 } | set(RELATION_TYPES)
+
+
+def _validate_worktree(data: Mapping[str, Any], construct: Optional[str]) -> None:
+    raw = data.get("worktree")
+    if raw is None:
+        return
+    if construct != "document" or data.get("_doc_type") != "work_order":
+        raise MetadataError("key.worktree is only valid on a Work Order document")
+    if not isinstance(raw, dict):
+        raise MetadataError("key.worktree must be a mapping")
+    if set(raw) != {"path"}:
+        raise MetadataError("key.worktree must contain only path")
+    path = raw.get("path")
+    if not isinstance(path, str) or not path or path != path.strip():
+        raise MetadataError("key.worktree.path must be a non-empty absolute path")
+    if not (posixpath.isabs(path) or ntpath.isabs(path)):
+        raise MetadataError("key.worktree.path must be an absolute path")
 
 
 def _declared_locator(data: Mapping[str, Any], path: str, construct: Optional[str],
@@ -297,6 +316,7 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
             node_id = str(data.get("id", "")).strip()
             if not node_id:
                 raise MetadataError("metadata id is required")
+            _validate_worktree(data, construct)
             kind = _kind(data.get("kind"), construct, markdown)
             locator, locator_diagnostics = _declared_locator(data, path, construct, label)
             diagnostics.extend(locator_diagnostics)

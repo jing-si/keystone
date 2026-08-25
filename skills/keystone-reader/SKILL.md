@@ -12,8 +12,9 @@ description: "Use for read-only orientation and work recovery from existing Keys
 
 ## Purpose
 
-Read existing Keystone source documents to orient the main agent, find relevant standards and work
-records, recover active work, and prepare a concise context brief. Remain read-only.
+Read existing Keystone source documents to orient the main agent, prepare a concise project brief,
+find relevant standards and work records, recover active work, and prepare a proportional context
+brief. Remain read-only.
 
 This installed contract is self-contained. A consuming project does not need a project-local Reader
 standard or `standards/skills/reader/**`. Project source documents and accepted decisions define project
@@ -26,8 +27,9 @@ meaning when they exist; Reader output does not replace them or Main acceptance.
 3. Finding relevant project standards, work orders, progress records, and decisions.
 4. Preparing read-only context before document or implementation work.
 5. Reporting mismatch between Keystone documents and repository evidence.
-6. Starting docs-first context readiness and determining whether deeper owner/ref or Artifact Graph
-   interpretation should pass to `keystone-linker`.
+6. Starting progressive context readiness from the Context Map and accepted top-level project standard.
+7. Determining whether selected-Work artifact context needs bounded owner/ref or Artifact Graph
+   interpretation from `keystone-linker`.
 
 Do not use Reader to edit any file, create standards or work records, collect high-impact decisions,
 assign workers, review worker reports, or accept results. Deep artifact impact, stale, reuse, and
@@ -142,25 +144,34 @@ Reader may return one read-only resume candidate.
 
 1. Detect initialization state and resolve or narrow the document-root candidates.
 2. If present, read `key-context-map.md` first.
-3. Follow the project standards and works indexes that actually exist.
-4. For work recovery, read each active parent Round index and use the passing Work State projection to
-   identify active children and Works. Apply the multi-active Round session-focus gate before opening
-   the Work order/Progress for every candidate Round. After focus is known, follow the selected Round's
-   ordered `child_rounds`, active Work orders, and Progress unless the request explicitly needs a
-   cross-Round view. A flat parent without `child_rounds` keeps the existing direct-Work flow. Treat a
+3. Read the accepted top-level project standard in full. If the current standard is pending, apply
+   Pending Revision Readiness and keep the accepted baseline separate from the proposal.
+4. Follow a child-standard index only for a concrete gap in project purpose, scope, document structure,
+   or authority. Do not load the child tree for completeness.
+5. Prepare `project_brief` with purpose, scope, document structure, authority, and important unknowns.
+6. Run the package-local Work State runtime and use its passing projection to identify active parent
+   Rounds, active children, Works, and Steps. Apply the multi-active Round session-focus gate before
+   opening the Work order/Progress for every candidate Round. After focus is known, follow the selected
+   Round's ordered `child_rounds`, active Work orders, and Progress unless the request explicitly needs
+   a cross-Round view. A flat parent without `child_rounds` keeps the existing direct-Work flow. Treat a
    singular `current_step` claim as stale/conflicting evidence, not authority.
-5. Use Work State schema v5 `round_hierarchy` and `active_child_rounds` for child navigation. Keep
+7. Use Work State schema v5 `round_hierarchy` and `active_child_rounds` for child navigation. Keep
    `active_rounds` and `accepted_rounds` parent-only. Treat singular `active_round` and historical
    acceptance data as compatibility context that cannot select current work or reinterpret a child
    acceptance as a global Round transition.
-6. Treat document, section, and item-level `key.id`, `key.refs`, typed relations, visible row labels,
+8. When no parent Round is active, report the empty active set and next actor without opening detailed
+   Work sources, repository scope, or Linker readiness. For a selected or sole Round, read its Work
+   order first. Apply Worktree Targeted Navigation before reading the selected Work's Progress,
+   applicable standards, feature documents, or repository artifacts.
+9. Treat document, section, and item-level `key.id`, `key.refs`, typed relations, visible row labels,
    paths, headings, and keywords as navigation evidence, not edit authority or automatic impact
    propagation. Item IDs may narrow a matched section, decision claim, acceptance criterion, or table row.
-7. When code/config/schema/API/test impact, stale, reuse, or gap analysis must go beyond navigation,
-   recommend Linker and pass the observed document/item IDs and locators as handoff seeds without
-   confirming graph conclusions, supersession closure, legacy-term status, or inheritance validity.
-8. Report source conflicts; do not silently prefer documents over operative code or vice versa.
-9. Recommend the next responsible actor without editing or requiring a routing ceremony for a small,
+10. Only when the selected Work needs artifact context, owner/ref resolution, implementation/test
+    candidates, or graph-relevant impact, recommend permissionless Linker readiness with the Work or
+    document ID as its bounded anchor. Do not invoke Linker merely because Reader was invoked for initial
+    orientation. Use a full graph only for an explicit graph audit, release verification, or scope conflict.
+11. Report source conflicts; do not silently prefer documents over operative code or vice versa.
+12. Recommend the next responsible actor without editing or requiring a routing ceremony for a small,
    already-scoped task.
 
 For work recovery, read structured `key.relations.depends_on` and `work_gates` before legacy HTML
@@ -175,45 +186,63 @@ evaluation.
 When the user explicitly invokes Reader at the start of a Codex session, Reader is the orientation and
 context-readiness entry point, not the cache owner.
 
-1. Run the package-local `scripts/work_state_runtime.py --root ROOT` first and recover initialization,
+1. Resolve the document root and minimum initialization evidence. Read `key-context-map.md`, then read
+   the accepted top-level project standard in full. Follow child-standard indexes only for concrete
+   gaps in project purpose, scope, document structure, or authority. Prepare `project_brief` with those
+   four fields and important unknowns before recovering current Work State.
+2. Run the package-local `scripts/work_state_runtime.py --root ROOT` and recover initialization,
    active parent Rounds, child hierarchy, active child Rounds/Works/Steps, accepted parent Round history,
    dependency/finalization gates, diagnostics, and source generation from its passing envelope. Do not
    replace a failed or incomplete envelope with manual pointer agreement. Use the cited
    parent/child/work indexes and active Progress for narrative context after the canonical projection
    succeeds.
-2. Apply the session focus gate immediately after a passing Work State projection. When there are two
+3. Apply the session focus gate immediately after a passing Work State projection. When there are two
    or more active parent Rounds and the user's request does not identify one parent Round or ask for a
    cross-Round view, show only a compact candidate list: parent Round ref, status, and active Step refs
    or unresolved reason derived from `round_hierarchy` and `active_works`. Ask exactly once
    `해당 세션에서 어떤 라운드를 작업할까요?` Do not read every candidate Round's Work order or Progress
-   before the answer. Do not start Linker docs readiness before the answer.
-3. Treat the selection as non-authoritative session context. When the user answers, resume automatically
+   before the answer. Do not start conditional Linker readiness before the answer.
+4. Treat the selection as non-authoritative session context. When the user answers, resume automatically
    with the selected Round. Keep unselected Rounds unchanged and never persist the selection in project
    source, a cache, or a canonical pointer.
-4. Skip the focus question when there are zero or one active parent Round, the request explicitly
+5. Skip the focus question when there are zero or one active parent Round, the request explicitly
    identifies a parent Round, or the request asks for all active parent Rounds or a cross-Round
-   comparison.
-5. After the Round focus gate is resolved or skipped, inform the user of the current in-progress Steps
+   comparison. With zero active parent Rounds, report the empty set and next actor without detailed Work
+   reading or Linker. With one, use that Round as session focus.
+6. After the Round focus gate is resolved or skipped, inform the user of the current in-progress Steps
    in the selected or sole active Round. Do not ask the user to choose a Step. Without an explicit Step
    request, select the lowest-numbered executable active Step using dependency evaluations and
    `work_gates`. If the lowest-numbered Step is blocked, explain the blocker and select the next
    executable Step. Do not change Step status or priority through this session choice.
-6. Request permissionless Linker readiness for the selected docs discovery scope.
-   Pass the worktree identity, sorted path set, and each file's raw-byte SHA-256 digest.
-7. Request a lazy repository scope only when code/config/schema/test artifact context is actually needed.
-8. Reuse a fresh external index. If it is missing, stale, corrupt, or cannot be locked or written, fall
+7. Read the selected Work order first. When its document-level `key.worktree.path` is present, confirm
+   that the exact path exists, is accessible, and belongs to the same Git common directory as the current
+   repository. Restrict subsequent selected-Work navigation to that exact path. When the field is absent,
+   use the current worktree. A missing, inaccessible, or different-common-directory value is `stale` or
+   `mismatch`: report it and stop targeted navigation. Never enumerate registered worktrees or traverse
+   sibling directories as fallback.
+8. After resolving the execution location, read the selected Work order, Progress, applicable standards, and feature documents
+   before artifact discovery. Do not treat initial orientation as an artifact-context trigger.
+9. Request permissionless Linker readiness only when selected-Work artifact context, owner/ref resolution,
+   implementation/test candidates, graph-relevant impact, or an explicit graph audit is needed. Anchor
+   the bounded scope at the selected Work or document ID and pass the worktree identity, sorted path set,
+   and each file's raw-byte SHA-256 digest. Use a full graph only for an explicit graph audit, release
+   verification, or scope conflict.
+10. Request a lazy repository scope only when code/config/schema/test artifact context is actually needed.
+   If bounded search finds no linked implementation, report `implementation unavailable` or `possibly
+   unimplemented`. Report a metadata gap only when a code candidate exists but its relation is missing.
+11. Reuse a fresh external index. If it is missing, stale, corrupt, or cannot be locked or written, fall
    back fail-soft to source discovery; a cache problem is not a user decision.
-9. Include the freshness token, discovery scope, source citations, and unresolved gaps in the internal
+12. Include the freshness token, discovery scope, source citations, and unresolved gaps in the internal
    context brief. Downstream skills may reuse a fresh token; after a source write they invalidate the
    affected discovery scope.
-10. Request `include_source_views` only when the selected context needs criterion verification,
+13. Request `include_source_views` only when the selected context needs criterion verification,
    effective Decision, or Work output/test summaries. This is a source-bound, session-only projection
    from Linker's same reconstructed `GraphSnapshot`; request repository scope when output/test targets
    are needed. Preserve its `source_generation` and unresolved diagnostics, and never treat a
    `verified` view as automatic acceptance. Default readiness remains the lighter owner/ref result.
-11. Pass a serialized recursion guard with `initiator: reader`. The called Linker must not call Reader
+14. Pass a serialized recursion guard with `initiator: reader`. The called Linker must not call Reader
    again in the same chain; a Linker-initiated Reader chain applies the inverse rule.
-12. Keep raw readiness and index payloads agent-facing and hidden from the user by default.
+15. Keep raw readiness and index payloads agent-facing and hidden from the user by default.
 
 ## Result Contract
 
@@ -224,12 +253,22 @@ reader_output:
   initialization_state:
   document_root:
   request_summary:
+  project_brief:
+    purpose:
+    scope:
+    document_structure:
+    authority:
+    important_unknowns: []
   project_summary:
   active_rounds: []
   active_child_rounds: []
   round_hierarchy: []
   active_works: []
   active_steps: []
+  execution_location:
+    source: current_worktree | work_order
+    path:
+    status: current | recorded | stale | mismatch
   session_focus:
     state: not_required | selection_required | selected
     candidates: []
@@ -270,6 +309,8 @@ reader_output:
   assumptions:
   context_readiness:
     discovery_scope:
+    linker_trigger:
+    anchor:
     freshness_token:
     cache_status:
     recursion_guard:
@@ -301,7 +342,9 @@ changing the underlying risks or recommendation.
 4. Never make a high-impact project decision for the user.
 5. Stop and report when conflicting valid roots prevent safe reading.
 6. Stop and report when source conflict or sensitive/local-only access could change the task direction.
-7. Do not stop merely because work records, progress records, graph evidence, or local skill standards
+7. Stop targeted Work navigation when a recorded worktree path is stale, inaccessible, or belongs to a
+   different Git common directory. Do not search other worktrees to repair the record implicitly.
+8. Do not stop merely because work records, progress records, graph evidence, or local skill standards
    are absent; return the useful partial result instead.
 
 ## Verification
@@ -318,7 +361,8 @@ Check that Reader:
    partial supersession, inheritance, legacy-term stale status, or metadata gaps.
 8. Hides structured payloads by default.
 9. Recovers structured and legacy dependencies with explicit evaluation and scope without changing work state.
-10. Starts docs-scope readiness, expands to repository scope lazily, and never becomes cache owner.
+10. Builds a project brief from the Context Map and accepted top-level project standard before Work
+    State, and reads child standards only for concrete project-understanding gaps.
 11. Treats a downstream source-owner write as invalidating the affected Reader context token and
     prevents Reader-Linker recursion in one call chain; Reader itself remains source read-only.
 12. Keeps global Round identity on the parent while preserving child-local status, Work ownership,
@@ -327,3 +371,9 @@ Check that Reader:
     skips it for an explicit or cross-Round request, and never persists the selected Round.
 14. Informs the user of in-progress Steps, selects the lowest executable Step without asking, and
     explains a blocked-lowest fallback without changing Step status or priority.
+15. Defers Linker during initial orientation, invokes bounded permissionless readiness only from a
+    selected Work or document anchor, and expands to lazy repository scope only for artifact context.
+16. Distinguishes a missing linked implementation from a relation metadata gap and uses full graph only
+    for explicit audit, release verification, or scope conflict.
+17. Uses a selected Work's recorded exact worktree path before artifact discovery, falls back only to the
+    current worktree when the field is absent, and reports stale/mismatch without global worktree search.

@@ -815,3 +815,30 @@ key:
 - 이유: 현재 실행 복구에 필요하지 않은 accepted ordering과 event producer를 제거하면서도 병렬
   Round를 숨기지 않고, 사용자에게는 세션 범위만 맡기고 세부 Step 선택 비용은 실행자가
   책임지게 해 Keystone 문서 운영 비용을 줄이기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-033 refs=key.doc.decision key.doc.work key.topic.work-recovery key.topic.work-execution key.topic.keystone-metadata key.role.coordinator key.role.author key.role.reader key.boundary.scope-control -->
+## DEC-WORKS-033: Worktree를 선택한 Work는 canonical Work Order locator로 직접 탐색한다
+
+- 관련 work: R016 Worktree Locator and Targeted Work Discovery
+- 결정일: 2026-08-25
+- 상태: accepted
+<!-- key: id=key.claim.r016.worktree-locator-recording refs=key.topic.work-execution key.topic.keystone-metadata key.role.coordinator key.role.author -->
+- 결정: 구현 환경으로 Git linked worktree를 선택한 경우 Coordinator 또는 Main은 worktree를
+  생성·선택하고 exact target root를 확인한다. Substantive repository edit 전에 Author가 세션
+  시작점에서 읽을 수 있는 canonical Work Order의 `key.worktree.path`에 그 경로를 기록하고,
+  실행자는 fresh source에서 같은 locator를 다시 확인한다.
+- 결정: External injected skill이 worktree를 생성하더라도 Coordinator가 setup 결과를 회수하고
+  Author 기록과 fresh confirmation 전에는 구현 edit로 넘어가지 않는다.
+<!-- key: id=key.claim.r016.targeted-worktree-discovery refs=key.topic.work-recovery key.role.reader key.role.coordinator -->
+- 결정: Reader와 Coordinator는 selected Work Order에 `key.worktree.path`가 있으면 그 exact path만
+  직접 확인한다. Missing, inaccessible 또는 다른 Git common directory를 가리키는 locator는
+  stale/mismatch로 보고하고 전체 worktree 열거 또는 다른 worktree 탐색으로 우회하지 않는다.
+<!-- key: id=key.claim.r016.worktree-omission-risk refs=key.boundary.scope-control key.topic.work-recovery -->
+- 결정: Worktree를 사용하지 않는 Work에는 locator를 요구하지 않는다. Locator가 없으면 current
+  worktree를 사용하며, 기록되지 않은 별도 worktree를 발견하지 못하는 위험은 사용자 기억에
+  의존하는 운영 경계로 수용한다. Atomic claim, lock registry와 자동 중복 실행 차단은 도입하지
+  않는다.
+- 결정: `DEC-WORKS-018`의 Worktree·branch·writer·integration 전략 비강제 의미는 유지한다.
+  Worktree 전략을 이미 선택한 경우에만 locator 기록과 owner handoff를 요구한다.
+- 이유: Work와 실제 실행 위치를 source에서 직접 복구하면서도 매 세션 모든 worktree를 훑는
+  탐색 비용과 별도 locking control plane을 만들지 않기 위해서다.

@@ -815,6 +815,32 @@ Capability node는 code symbol보다 안정적인 기능 단위가 필요할 때
 3. 한 번 쓰고 폐기될 prototype behavior다.
 4. Formatting, adapter, trivial wrapper 수준이다.
 
+<!-- key: id=key.standard.artifact.graph.worktree-navigation-metadata refs=key.topic.keystone-metadata key.topic.work-recovery key.topic.work-execution -->
+## Worktree navigation metadata
+
+`key.worktree`는 Work와 실제 Git linked worktree 사이를 복구하기 위한 operational navigation
+metadata다. Artifact `locator`, typed relation, repository registry 또는 execution claim이 아니다.
+
+```yaml
+doc_type: work_order
+key:
+  id: key.work.example.order
+  worktree:
+    path: /absolute/path/to/target-worktree
+```
+
+1. Document-level Work Order frontmatter에만 선언한다. Section, item, 다른 `doc_type`, code anchor와
+   companion metadata에는 선언하지 않으며 child node로 상속하지 않는다.
+2. `worktree`는 `path` 하나만 가진 mapping이고 `path`는 비어 있지 않은 canonical absolute path다.
+   Branch와 HEAD는 target에서 확인하며 metadata에 복제하지 않는다.
+3. Parser는 field 이름, document kind, mapping shape와 absolute-path 형식을 기계적으로 검증한다.
+   Source parse 단계에서는 filesystem 존재 여부나 Git common directory 일치를 추측하지 않는다.
+4. Runtime Reader/Coordinator가 selected Work를 사용할 때 path의 존재·접근 가능성과 Git common
+   directory를 확인한다. 실패하면 stale/mismatch로 보고하며 global worktree scan으로 우회하지 않는다.
+5. Worktree를 선택하지 않은 Work Order에는 이 field를 쓰지 않는다. 완료된 Work의 값은 당시 실행
+   위치 이력으로 보존하되 current navigation에는 active 또는 사용자가 명시한 Work만 사용한다.
+6. Absolute local path 공개가 project privacy 정책과 충돌하면 기록 전에 중단하고 별도 결정을 받는다.
+
 <!-- key: id=key.standard.artifact.graph.locator refs=key.topic.artifact-graph key.topic.code-anchor -->
 ## Locator
 

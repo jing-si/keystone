@@ -27,10 +27,16 @@ class ReaderRoundSessionFocusContractTest(unittest.TestCase):
             "## Session Context Readiness",
         ))
 
+        context_map = readiness.index("key-context-map.md")
+        project_standard = readiness.index("accepted top-level project standard")
+        project_brief = readiness.index("project_brief")
         work_state = readiness.index("work_state_runtime.py")
         focus_gate = readiness.index("session focus")
         linker_readiness = readiness.index("permissionless Linker readiness")
 
+        self.assertLess(context_map, project_standard)
+        self.assertLess(project_standard, project_brief)
+        self.assertLess(project_brief, work_state)
         self.assertLess(work_state, focus_gate)
         self.assertLess(focus_gate, linker_readiness)
         for phrase in (
@@ -38,7 +44,7 @@ class ReaderRoundSessionFocusContractTest(unittest.TestCase):
             "active Step refs or unresolved reason",
             "해당 세션에서 어떤 라운드를 작업할까요?",
             "Do not read every candidate Round's Work order or Progress",
-            "Do not start Linker docs readiness",
+            "Do not start conditional Linker readiness",
             "non-authoritative session context",
         ):
             self.assertIn(phrase, readiness)

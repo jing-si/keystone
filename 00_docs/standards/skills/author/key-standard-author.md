@@ -4,7 +4,7 @@ created_at: "2026-06-10"
 document_lifecycle: active
 approval:
   state: accepted
-  accepted_at: "2026-08-17"
+  accepted_at: "2026-08-25"
   accepted_by: main
 key:
   id: key.standard.skill.author
@@ -689,6 +689,22 @@ source surface의 코드 앵커(18)는 Author가 직접 수정하지 않는다.
 14. Capability(16)가 바뀌면 provider, consumer, verifier 후보 탐색이 필요한지 보고한다.
 15. 실제 문서 수정은 승인 범위와 의미 영향이 명확할 때만 수행한다.
 16. Code, config, schema, API, test artifact와 코드 앵커 수정은 Author가 직접 수행하지 않는다.
+
+<!-- key: id=key.standard.skill.author.worktree-locator-writing refs=key.role.author key.role.coordinator key.topic.keystone-metadata key.topic.work-execution key.topic.work-recovery -->
+## Worktree locator 작성
+
+1. Coordinator 또는 직접 실행하는 Main이 linked worktree를 생성·선택하고 canonical absolute root와
+   같은 Git common directory 확인 결과를 전달한 경우에만 Work Order locator를 기록한다.
+2. Author는 substantive repository edit가 시작되기 전에 세션 시작점에서 읽을 수 있는 canonical
+   Work Order document의 `key.worktree.path`에 exact root를 기록한다. Target branch에만 존재하는
+   사본이나 Progress, Round index에는 locator를 대신 기록하지 않는다.
+3. `key.worktree`는 `doc_type: work_order`의 document-level `key` mapping에만 쓰며 `path` 이외의
+   child field, relative path, branch와 HEAD를 추가하지 않는다.
+4. Worktree를 선택하지 않은 Work에는 field를 만들지 않는다. Existing field의 교체, 삭제 또는
+   privacy-sensitive absolute path 기록은 accepted instruction 없이 추측하지 않는다.
+5. 적용 뒤 Author는 current source를 다시 읽어 exact path를 확인하고 Coordinator/Main에 반환한다.
+   Fresh source confirmation과 target runtime 검증은 Coordinator/Main 책임이며 Author는 구현 edit를
+   시작하거나 worktree를 생성하지 않는다.
 
 <!-- key: id=key.standard.skill.author.dependency-writing refs=key.role.author key.topic.artifact-graph key.topic.work-sequence key.topic.verification -->
 ## Dependency and work gate 작성

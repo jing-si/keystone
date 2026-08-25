@@ -636,6 +636,57 @@ key:
         self.assertTrue(any(d.code == "duplicate_id" for d in result.diagnostics))
         self.assertTrue(any(d.code == "unknown_metadata_field" for d in result.diagnostics))
 
+    def test_work_order_worktree_path_is_admitted(self):
+        source = """---
+doc_type: work_order
+key:
+  id: key.work.example.order
+  worktree:
+    path: /workspace/project/.worktrees/example
+---
+# Example
+"""
+
+        result = parse_source(source, "00_docs/works/example.md", MarkdownAdapter())
+
+        self.assertEqual(["key.work.example.order"], [node.id for node in result.snapshot.nodes])
+        self.assertFalse(any(item.code in {"malformed_metadata", "unknown_metadata_field"}
+                             for item in result.diagnostics))
+
+    def test_worktree_metadata_rejects_invalid_shape_and_document_kind(self):
+        cases = {
+            "missing_path": """doc_type: work_order
+key:
+  id: key.work.example.order
+  worktree: {}
+""",
+            "relative_path": """doc_type: work_order
+key:
+  id: key.work.example.order
+  worktree:
+    path: .worktrees/example
+""",
+            "unknown_child": """doc_type: work_order
+key:
+  id: key.work.example.order
+  worktree:
+    path: /workspace/example
+    branch: feature/example
+""",
+            "non_work_order": """doc_type: standard
+key:
+  id: key.standard.example
+  worktree:
+    path: /workspace/example
+""",
+        }
+
+        for name, frontmatter in cases.items():
+            with self.subTest(name=name):
+                source = "---\n" + frontmatter + "---\n# Example\n"
+                result = parse_source(source, "00_docs/example.md", MarkdownAdapter())
+                self.assertIn("malformed_metadata", {item.code for item in result.diagnostics})
+
     def test_declared_locator_is_normalized_and_conflicts_are_diagnosed(self):
         source = """---
 key: {id: key.config.x, kind: output_artifact, artifact_kind: config}

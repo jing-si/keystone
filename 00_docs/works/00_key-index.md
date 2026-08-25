@@ -34,6 +34,9 @@ key:
 | R011 | Parallel Work State and Hierarchical Rounds | `r011-work-model-evolution/00_key-index.md` | accepted | 병렬 Work·2단계 Round·signal triage와 source-derived projection 경계를 구현·검증하고 terminal acceptance로 닫았다 |
 | R012 | Current Work State and Session Focus Simplification | `r012-current-work-state-simplification/00_key-index.md` | accepted | active parent Round 집합 중심 Work State, Round session focus와 실행자 Step 선택을 단순화하고 production gate로 검증했다 |
 | R013 | Author Terminal Status Reconciliation | `r013-author-terminal-status-reconciliation/00_key-index.md` | accepted | 상태 전이별 bounded projection 대조와 Clarify 그룹 종료별 문서 적용·Q&A log 경계를 구현·검증했다 |
+| R014 | Reader Progressive Context Loading | `r014-reader-progressive-context-loading/00_key-index.md` | accepted | progressive orientation, selected-Work bounded Linker와 contract parity를 구현·검증하고 닫았다 |
+| R015 | Keystone Consumer Goal Effectiveness Review | `r015-keystone-consumer-goal-effectiveness-review/00_key-index.md` | active | Uptendo 소비 프로젝트 evidence로 Keystone 목표 달성 효과와 비용을 검토하고 개선 Work Order 최종본을 작성한다 |
+| R016 | Worktree Locator and Targeted Work Discovery | `r016-worktree-locator-navigation/00_key-index.md` | accepted | Worktree 선택 시 canonical Work Order에 exact locator를 기록하고 대상 경로만 탐색하는 계약을 구현·검증했다 |
 
 <!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work key.topic.work-round -->
 ## 공통 결정
@@ -53,6 +56,13 @@ key:
 6. 각 work의 진행 상태는 해당 work node의 `key-progress.md`에서 확인한다.
 7. R013의 수락된 범위와 실행 이력은 `r013-author-terminal-status-reconciliation/00_key-index.md`,
    Work Order와 Progress에서 확인한다.
+8. R014의 수락된 범위와 실행 이력은 `r014-reader-progressive-context-loading/00_key-index.md`,
+   Work Order와 Progress에서 확인한다.
+9. R015의 작성 중인 개선 Work Order와 review resume point는
+   `r015-keystone-consumer-goal-effectiveness-review/00_key-index.md`, Work Order와 Progress에서
+   확인한다.
+10. R016의 수락된 worktree locator 계약과 검증 이력은
+    `r016-worktree-locator-navigation/00_key-index.md`, Work Order와 Progress에서 확인한다.
 
 <!-- key: id=key.work.index.round-creation-rules refs=key.doc.work key.topic.document-system key.topic.work-round -->
 ## Work round 생성 규칙

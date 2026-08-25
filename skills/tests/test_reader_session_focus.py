@@ -53,7 +53,7 @@ class ReaderSessionFocusContractTest(unittest.TestCase):
             "session focus",
             "Work State 요약",
             "Work Order와 Progress 본문을 상세 탐색하지 않는다",
-            "Linker docs readiness를 시작하지 않는다",
+            "조건부 Linker handoff를 시작하지 않는다",
             "비권위 세션 문맥",
             "상태·우선순위를 변경하지 않는다",
         ):

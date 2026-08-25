@@ -1,7 +1,7 @@
 ---
 doc_type: standard
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-12", accepted_by: user}
+approval: {state: accepted, accepted_at: "2026-08-25", accepted_by: main}
 key:
   id: key.standard.skill.reader
   refs:
@@ -30,10 +30,11 @@ impact/stale/gap 해석은 `keystone-linker`로 넘긴다.
 
 1. `keystone-reader`의 trigger와 non-trigger condition
 2. Orientation, Navigator, Work Prep mode의 workflow와 output
-3. 문서 root, standards/works tree, active parent Round 집합과 active Work 탐색 방식
-4. Artifact graph 필요 여부 판단과 `keystone-linker` handoff cue
-5. Repository snapshot과 document-to-repository mismatch reporting
-6. Reader의 read-only boundary, stop condition, verification 기준
+3. 문서 root, Context Map, accepted top-level 프로젝트 기준서부터 시작하는 progressive context loading
+4. Project brief, standards/works tree, active parent Round 집합과 active Work 탐색 방식
+5. Selected-Work docs-first 준비, Artifact graph 필요 여부 판단과 bounded `keystone-linker` handoff cue
+6. Lazy repository snapshot과 document-to-repository mismatch reporting
+7. Reader의 read-only boundary, stop condition, verification 기준
 
 <!-- key: id=key.standard.skill.reader.out-of-scope refs=key.role.reader key.boundary.read-only -->
 ## 적용하지 않는 범위
@@ -129,25 +130,36 @@ Reader는 mode와 무관하게 다음 순서를 따른다.
    `uninitialized` 또는 `partial`이면 존재하는 문서만 읽고 partial result와 Init 제안을
    제공한 뒤, 존재하지 않는 index/work 탐색 step은 건너뛴다.
 2. `key-context-map.md`가 있으면 먼저 읽어 active standards와 active work를 파악한다.
-3. `standards/00_key-index.md` 또는 해당 project의 standards index를 읽는다.
-4. `works/00_key-index.md` 또는 해당 project의 root works index를 읽고 Work State에서 active
-   parent Round 집합을 찾는다.
-5. Active parent Round가 둘 이상이면 Work State 요약의 Round별 진행 중 Step까지만 확인하고
+3. Context Map이 가리키는 accepted top-level 프로젝트 기준서 전체를 읽어 프로젝트 목적, 범위,
+   문서 구조와 권위를 파악한다. Project 기준서 의미가 pending이면 `Pending revision readiness`에
+   따라 복구 가능한 accepted baseline과 proposal을 분리한다.
+4. 프로젝트 목적, 범위, 문서 구조 또는 권위 해석에 구체적인 공백이 있을 때만 standards index를
+   따라 관련 child 기준서를 제한적으로 읽는다. 막연한 완전성을 위해 child tree 전체를 읽지 않는다.
+5. 지금까지 읽은 source로 목적, 범위, 문서 구조, 권위와 중요한 미해결 사항을 담은 간결한
+   `project_brief`를 만든다.
+6. Installed Reader package의 Work State runtime을 실행하고 passing envelope를 root/round/work
+   index와 active Progress narrative에 결합해 active parent Round 집합을 찾는다.
+7. Active parent Round가 둘 이상이면 Work State 요약의 Round별 진행 중 Step까지만 확인하고
    아래 Round session focus gate를 적용한다.
-6. Focus가 선택되거나 gate가 필요 없을 때 선택된 Round의 index와 active Work node index, 작업서(4), 진행
-   기록(5)을 읽어 `round_id`, `work_id`, `active_steps`, `early_work`와 실행 가능 Step 후보를 함께
-   복구한다. 전체/cross-Round 요청일 때만 필요한 여러 Round와 Work를 읽는다.
-7. 현재 요청과 관련된 child index만 따라 내려가며 관련 없는 하위 기준서를 읽지 않는다.
-8. 요청 또는 current work에 관련 키메타(9)가 있으면 같은 `key.id`를 참조하는
+8. Active parent Round가 0개이면 빈 상태와 다음 actor를 보고하고 상세 Work 문서, repository 또는
+   Linker 범위로 확장하지 않는다. 하나이면 해당 Round를 사용하며, focus가 선택되거나 gate가 필요
+   없을 때 선택된 Round의 index와 active Work node index, 작업서(4), 진행 기록(5)을 읽어
+   `round_id`, `work_id`, `active_steps`, `early_work`와 실행 가능 Step 후보를 함께 복구한다.
+   전체/cross-Round 요청일 때만 필요한 여러 Round와 Work를 읽는다.
+9. 선택된 Work를 준비할 때는 Work Order, Progress, 적용 기준서와 feature 문서를 먼저 읽는다.
+   현재 요청과 관련된 child index만 따라 내려가며 관련 없는 하위 기준서를 읽지 않는다.
+10. 요청 또는 current work에 관련 키메타(9)가 있으면 같은 `key.id`를 참조하는
    문서를 탐색 후보로 확인한다.
-9. 요청 또는 current work에 capability, code, config, schema, API, test 단서가 있으면 artifact graph가 필요한지
-   판단하고, 깊은 후보 탐색이 필요하면 `keystone-linker`를 recommended next action으로 남긴다.
-10. Reader가 확인한 키메타(9), link, path, heading, keyword는 Linker handoff seed로만 사용하고
+11. Artifact context, owner/ref, 구현·테스트 후보가 실제로 필요할 때만 선택된 Work 또는 문서 ID를
+   anchor로 permissionless `keystone-linker`의 bounded handoff를 요청한다. 초기 orientation에서는
+   Linker를 기본 호출하지 않고, full graph는 명시적 graph audit, release verification 또는 scope
+   conflict 조사에만 사용한다.
+12. Reader가 확인한 키메타(9), link, path, heading, keyword는 Linker handoff seed로만 사용하고
     artifact relation을 확정하지 않는다.
-11. 필요한 경우 shallow repository snapshot을 만든다.
-12. File-changing work가 필요하다고 판단하면 Reader가 직접 수정하지 않고 Init, Author,
+13. Artifact context가 필요한 경우에만 bounded shallow repository snapshot을 만든다.
+14. File-changing work가 필요하다고 판단하면 Reader가 직접 수정하지 않고 Init, Author,
     Coordinator 또는 Main direct 중 적절한 next action을 남긴다.
-13. output에는 항상 `sources_read`, `assumptions`, `risks_and_gaps`,
+15. output에는 항상 `sources_read`, `assumptions`, `risks_and_gaps`,
    `recommended_next_action`을 포함한다.
 
 <!-- key: id=key.standard.skill.reader.revision-readiness kind=claim refs=key.role.reader key.topic.work-recovery key.topic.acceptance key.topic.verification -->
@@ -199,7 +211,7 @@ key:
    Reader는 각 parent Round ref, status, 현재 진행 중인 Step 또는 unresolved reason만 후보 목록으로
    보여준 뒤 사용자에게 정확히 한 번 `해당 세션에서 어떤 라운드를 작업할까요?`라고 묻는다.
 2. 사용자가 선택하기 전에는 각 후보 Round의 Work Order와 Progress 본문을 상세 탐색하지 않는다.
-   Linker docs readiness를 시작하지 않는다.
+   조건부 Linker handoff를 시작하지 않는다.
 3. Active parent Round가 0개 또는 1개이거나, 요청이 특정 Round를 명시하거나, 전체 active Round
    상태 또는 cross-Round 비교를 요구하면 질문을 생략한다.
 4. 선택은 비권위 세션 문맥이다. 선택된 Round로 같은 요청을 자동 resume하되 선택되지 않은
@@ -218,8 +230,8 @@ key:
 
 Orientation Mode는 project-level overview를 만든다.
 
-1. 읽기 범위: instruction, 설정된 document root(1), context map, standards index, root works
-   index, active parent Round index, active work, shallow repository snapshot
+1. 읽기 범위: instruction, 설정된 document root(1), context map, accepted top-level 프로젝트 기준서,
+   구체적 공백에 필요한 child 기준서, project brief, Work State, selected parent Round index와 active work
 2. 금지: document, code, config, 진행 기록(5), 결정(6), generated file 수정
 3. Repository snapshot 제한:
    - repository root
@@ -230,6 +242,7 @@ Orientation Mode는 project-level overview를 만든다.
    - 명백한 document-to-repository mismatch signal
 4. Output field:
    - `document_root`
+   - `project_brief`
    - `project_summary`
    - `repository_snapshot`
    - `active_document_map`
@@ -259,8 +272,8 @@ Orientation Mode는 project-level overview를 만든다.
 Navigator Mode는 현재 요청과 관련된 원천 문서(2)를 찾는다.
 
 1. Input: 사용자 요청, current task, known document root
-2. 읽기 범위: standards index, root works index, active parent Round index, parent 기준서, 관련 child
-   기준서, active work, 관련 아티팩트 그래프(14) 후보
+2. 읽기 범위: accepted parent 기준서, 구체적 공백에 필요한 child 기준서, root works index,
+   selected parent Round index, active work, 조건을 충족한 bounded 아티팩트 그래프(14) 후보
 3. Output field:
    - `request_summary`
    - `key_ref_queries`
@@ -292,9 +305,9 @@ Work Prep Mode는 main이 다음 작업을 실행하거나 subagent handoff를 �
 단, final handoff를 확정하지 않는다.
 
 1. Input: current task 또는 active work step
-2. 읽기 범위: 관련 기준서(3), root works index, selected parent Round index, work node index,
-   작업서(4), 진행 기록(5), completion criteria, verification note, related
-   capability/code/config/schema/API/test artifact 후보
+2. 읽기 범위: root works index, selected parent Round index, work node index, 작업서(4), 진행 기록(5),
+   적용 기준서(3)와 feature 문서, completion criteria, verification note, 필요한 경우 selected Work
+   또는 문서 ID로 제한한 capability/code/config/schema/API/test artifact 후보
 3. Output field:
    - `active_rounds`
    - `selected_round`
@@ -353,9 +366,19 @@ Reader는 필요한 경우 다음 fields를 가진 `keystone_context_brief`를 �
 ```yaml
 keystone_context_brief:
   document_root:
+  project_brief:
+    purpose:
+    scope:
+    document_structure:
+    authority:
+    important_unknowns: []
   active_rounds: []
   selected_round:
   current_work:
+  execution_location:
+    source: current_worktree | work_order
+    path:
+    status: current | recorded | stale | mismatch
   session_focus:
     state:
     candidates:
@@ -380,14 +403,19 @@ keystone_context_brief:
   accepted_decisions:
   relevant_work_orders:
   artifact_graph_needed:
+  context_readiness:
+    linker_trigger:
+    anchor:
+    scope:
   artifact_seed_candidates:
   recommended_next_skill:
   risks_and_gaps:
   final_handoff_ready: false
 ```
 
-`artifact_graph_needed`가 true이면 Reader는 artifact 후보를 확정하지 않고 `keystone-linker`를
-recommended next skill로 제안한다.
+`artifact_graph_needed`가 true이면 Reader는 selected Work 또는 문서 ID anchor와 필요한 bounded
+scope를 기록하고 artifact 후보를 확정하지 않은 채 `keystone-linker`를 recommended next skill로
+제안한다. 초기 orientation만으로 이 값을 true로 만들지 않는다.
 
 <!-- key: id=key.standard.skill.reader.user-response refs=key.role.reader key.contract.output key.topic.skill-contract -->
 ## 기본 사용자 응답
@@ -426,6 +454,13 @@ Reader는 키메타(9)와 코드 앵커(18)를 관련 문서와 Linker handoff s
 5. Artifact relation, impact candidate, stale candidate, metadata gap 등급화는
    `keystone-linker`가 담당한다.
 6. Reader가 발견한 inferred relation은 Linker seed candidate이며 자동 수정 근거가 아니다.
+7. Bounded repository 탐색에서 연결된 구현을 찾지 못하면 `구현 확인 불가` 또는 `미구현 가능`으로
+   보고한다. Code candidate가 존재하지만 relation만 없을 때에만 metadata gap 후보로 넘긴다.
+8. Selected Work Order의 document-level `key.worktree.path`가 있으면 그 exact absolute path를
+   execution location으로 사용한다. 존재·접근 가능성과 현재 repository의 Git common directory
+   일치를 read-only로 확인하며 다른 registered worktree나 sibling directory를 fallback 탐색하지 않는다.
+9. `key.worktree`가 없으면 current worktree를 사용한다. Recorded path가 missing, inaccessible 또는
+   다른 Git common directory면 `stale | mismatch`로 보고하고 대상 repository 탐색을 중단한다.
 
 <!-- key: id=key.standard.skill.reader.stop-condition refs=key.role.reader key.boundary.read-only key.topic.work-preparation -->
 ## Stop condition
@@ -437,6 +472,7 @@ Reader는 다음 상황에서 중단하거나 main/user 결정(6)을 요청한�
    current task 방향을 정할 수 없다.
 3. 원천 문서(2)가 현재 사용자 방향과 충돌한다.
 4. 문서 변경이 필요한데 Reader mode가 read-only라 처리할 수 없다.
+5. Selected Work의 recorded worktree path가 stale/mismatch라 대상 source를 안전하게 정할 수 없다.
 5. 민감한 원천 문서(2)나 local-only path를 읽어야 하지만 권한 또는 policy가 불명확하다.
 6. document-to-repository 또는 아티팩트 그래프(14) mismatch가 current task의 방향을 바꿀 수 있다.
 
@@ -477,44 +513,63 @@ Reader 기준은 다음 방법으로 검증한다.
     Round focus 질문을 한 번 하고, explicit/cross-Round 요청은 질문을 생략해야 한다. 선택 뒤
     Step은 질문 없이 lowest executable 기본 규칙으로 정하되 project status나 priority를 변경하지
     않아야 한다.
-11. Verification command:
+11. 초기 orientation은 Context Map과 accepted top-level 프로젝트 기준서를 읽어 project brief를
+    만든 뒤 Work State를 결합하며, active Round 0/1/multi 경계를 각각 지켜야 한다.
+12. Child 기준서와 repository 탐색은 구체적 공백 또는 selected-Work artifact context에만 제한하고,
+    초기 orientation에서 Linker를 기본 호출하거나 full graph로 확장하지 않아야 한다.
+13. 연결된 구현 부재와 code candidate의 relation metadata gap을 구분하고, cache 불가 시 source 직접
+    탐색으로 fail-soft해야 한다.
+14. Verification command:
    - `rg --files 00_docs`
    - Reader 관련 기준서를 읽어 link와 scope consistency 확인
 
-<!-- key: id=key.standard.skill.reader.context-readiness refs=key.role.reader key.role.linker key.topic.work-recovery key.boundary.read-only -->
+<!-- key: id=key.standard.skill.reader.context-readiness kind=claim refs=key.role.reader key.role.linker key.topic.work-recovery key.boundary.read-only -->
 ## Session context readiness
 
 사용자가 Codex 세션 시작에 Reader를 명시 호출하면 Reader는 project orientation과 context readiness의
 진입점이 된다. Reader는 cache owner가 아니며 repository source read-only를 유지한다.
 
-1. Installed Reader package의 `scripts/work_state_runtime.py --root ROOT`를 먼저 실행한다. Passing
+1. Document root와 최소 초기화 상태를 확인하고 `key-context-map.md`, Context Map이 가리키는
+   accepted top-level 프로젝트 기준서 전체를 읽는다. 프로젝트 의미의 구체적인 공백에만 관련 child
+   index를 제한적으로 따라가고 목적, 범위, 문서 구조, 권위와 중요한 미해결 사항을 담은
+   `project_brief`를 만든다.
+2. 그 다음 Installed Reader package의 `scripts/work_state_runtime.py --root ROOT`를 실행한다. Passing
    envelope의 initialization, active parent Round/Works/Steps, dependency/finalization gate,
    diagnostic과 complete source generation을 authoritative current work-state projection으로
    복구한 뒤 root/round/work index와 active Progress를 narrative context로 읽는다. Acceptance-event와
    `latest_accepted_round`은 current passing 조건이나 필수 context field가 아니다. Runtime failure나
    incomplete generation을 서로 같은 pointer claim으로 대체하지 않는다.
-2. Passing envelope에 active parent Round가 둘 이상이고 요청이 특정 Round 또는
+3. Passing envelope에 active parent Round가 둘 이상이고 요청이 특정 Round 또는
    전체/cross-Round 범위를 명시하지 않으면 `Multi-active Round session focus`를 먼저 적용한다.
    Focus 선택 전에는 candidate Round별 현재 진행 중 Step만 요약하고 Work Order와 Progress 본문을
-   상세 탐색하거나 Linker docs readiness를 시작하지 않는다.
-3. Focus가 선택되거나 gate가 필요 없으면 docs discovery scope에 대해 permissionless Linker
-   index-readiness를 요청한다.
+   상세 탐색하거나 조건부 Linker handoff를 시작하지 않는다. Active Round가 0이면 빈 상태와 다음
+   actor를 보고하고, 하나이면 해당 Round를 사용한다.
+4. Focus가 선택되거나 gate가 필요 없으면 selected Work의 Work Order, Progress, 적용 기준서와
+   feature 문서를 먼저 읽는다. Artifact context, owner/ref, 구현·테스트 후보가 필요한 경우에만
+   Work 또는 문서 ID를 anchor로 permissionless Linker readiness를 bounded scope로 요청한다.
    Scope token은 worktree identity, sorted path set과 각 file raw-byte digest를 포함한다.
-4. Code/config/schema/test scan은 artifact context가 요청되거나 downstream skill input에 실제로
-   필요할 때만 lazy repository scope로 확장한다.
-5. Fresh external index가 있으면 재사용하고 stale/missing/corrupt이면 Linker refresh 또는 source
+5. Selected Work Order에 `key.worktree.path`가 있으면 그 exact absolute path의 존재·접근 가능성과
+   현재 repository의 Git common directory 일치를 확인하고 이후 selected-Work navigation을 그
+   경로로 제한한다. Field가 없으면 current worktree를 사용한다. Stale/mismatch면 보고하고 다른
+   registered worktree나 sibling directory를 fallback으로 열거·탐색하지 않는다.
+6. Code/config/schema/test scan은 artifact context가 요청되거나 downstream skill input에 실제로
+   필요할 때만 lazy repository scope로 확장한다. Full graph는 명시적 graph audit, release
+   verification 또는 scope conflict 조사에만 사용한다.
+7. 연결된 구현을 찾지 못하면 bounded search evidence와 함께 `구현 확인 불가` 또는 `미구현 가능`으로
+   보고한다. Code candidate가 존재하지만 문서 relation만 없을 때에만 metadata gap 후보로 분류한다.
+8. Fresh external index가 있으면 재사용하고 stale/missing/corrupt이면 Linker refresh 또는 source
    직접 탐색으로 fail-soft fallback한다. Cache 문제 자체를 사용자 decision으로 올리지 않는다.
-6. Reader가 만든 context brief는 freshness token, discovery scope, source citations와 unresolved
+9. Reader가 만든 context brief는 freshness token, discovery scope, source citations와 unresolved
    gap을 포함한다. 다른 skill은 token이 fresh한 동안 이를 재사용하고 write 후에는 영향을 받은
    scope를 invalidation한다.
-7. Reader -> Linker 호출은 `initiator: reader` recursion guard를 전달한다. 해당 Linker execution은
+10. Reader -> Linker 호출은 `initiator: reader` recursion guard를 전달한다. 해당 Linker execution은
    같은 chain에서 Reader를 다시 호출하지 않는다. Linker가 Reader recovery를 시작한 chain도
    반대 방향으로 동일하게 제한한다.
-8. Permissionless Linker의 raw readiness/index payload는 agent-facing handoff다. 기본 사용자 응답은
+11. Permissionless Linker의 raw readiness/index payload는 agent-facing handoff다. 기본 사용자 응답은
    project state, relevant risk와 next action만 요약한다.
-9. 선택된 context에 criterion verification, effective Decision 또는 Work output/test summary가
+12. 선택된 context에 criterion verification, effective Decision 또는 Work output/test summary가
    필요할 때만 `include_source_views`를 요청한다. 이 결과는 Linker가 validator와 같은
    reconstructed `GraphSnapshot`에서 계산한 source-bound session-only projection이며
    `source_generation`과 unresolved diagnostic을 함께 보존한다.
-10. Output/test target이 필요하면 lazy repository scope를 사용한다. `verified` view를 automatic
-    acceptance나 approval로 해석하지 않고, default readiness에는 가벼운 owner/ref 결과만 유지한다.
+13. Output/test target이 필요하면 lazy repository scope를 사용한다. `verified` view를 automatic
+   acceptance나 approval로 해석하지 않고, default readiness에는 가벼운 owner/ref 결과만 유지한다.

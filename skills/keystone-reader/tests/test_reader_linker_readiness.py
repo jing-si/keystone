@@ -5,10 +5,17 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parents[3]
+READER_SKILL = ROOT / "skills" / "keystone-reader" / "SKILL.md"
 sys.path.insert(0, str(ROOT / "skills" / "keystone-linker" / "scripts"))
 
 from graph_runtime.index_model import CallTrace  # noqa: E402
 from graph_runtime.readiness import context_readiness  # noqa: E402
+
+
+def section(text, heading):
+    start = text.index(heading)
+    next_heading = text.find("\n## ", start + len(heading))
+    return text[start:] if next_heading == -1 else text[start:next_heading]
 
 
 class ReaderLinkerReadinessTests(unittest.TestCase):
@@ -26,8 +33,26 @@ class ReaderLinkerReadinessTests(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
-    # keystone: id=key.test.reader.linker-readiness-contract kind=output_artifact artifact_kind=test verifies=key.code.linker.context-readiness locator.test_name=test_first_reader_invocation_records_one_way_linker_handoff
-    def test_first_reader_invocation_records_one_way_linker_handoff(self):
+    def test_initial_orientation_defers_linker_until_artifact_context_is_needed(self):
+        readiness = section(
+            READER_SKILL.read_text(encoding="utf-8"),
+            "## Session Context Readiness",
+        )
+
+        context_map = readiness.index("`key-context-map.md`")
+        project_standard = readiness.index("accepted top-level project standard")
+        project_brief = readiness.index("`project_brief`")
+        work_state = readiness.index("work_state_runtime.py")
+        linker = readiness.index("Request permissionless Linker readiness only when")
+
+        self.assertLess(context_map, project_standard)
+        self.assertLess(project_standard, project_brief)
+        self.assertLess(project_brief, work_state)
+        self.assertLess(work_state, linker)
+        self.assertIn("Do not treat initial orientation as an artifact-context trigger", readiness)
+
+    # keystone: id=key.test.reader.linker-readiness-contract kind=output_artifact artifact_kind=test verifies=key.code.linker.context-readiness locator.test_name=test_selected_work_artifact_trigger_records_one_way_linker_handoff
+    def test_selected_work_artifact_trigger_records_one_way_linker_handoff(self):
         readiness = context_readiness(self.root, self.cache, initiator="reader")
 
         self.assertEqual(("reader", "linker"), tuple(item.lane for item in readiness.trace.entries))

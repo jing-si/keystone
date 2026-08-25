@@ -20,11 +20,15 @@ def normalized(text):
 
 
 class R006ContextReadinessContractTest(unittest.TestCase):
-    def test_reader_starts_docs_first_readiness_and_expands_repository_lazily(self):
+    def test_reader_defers_linker_until_selected_work_needs_artifact_context(self):
         text = read("keystone-reader")
         readiness = section(text, "## Session Context Readiness")
         for phrase in (
-            "docs discovery scope",
+            "accepted top-level project standard",
+            "`project_brief`",
+            "selected Work order, Progress, applicable standards, and feature documents",
+            "only when selected-Work artifact context",
+            "selected Work or document ID",
             "permissionless Linker",
             "lazy repository scope",
             "worktree identity",
@@ -34,7 +38,8 @@ class R006ContextReadinessContractTest(unittest.TestCase):
             "hidden from the user",
         ):
             self.assertIn(phrase, readiness)
-        self.assertNotIn("repository scope on the first invocation", readiness)
+        self.assertIn("Do not treat initial orientation as an artifact-context trigger", readiness)
+        self.assertNotIn("Request permissionless Linker readiness for the selected docs discovery scope", readiness)
         self.assertNotIn("Reader writes", readiness)
 
     def test_linker_uses_optional_cache_without_source_authority(self):

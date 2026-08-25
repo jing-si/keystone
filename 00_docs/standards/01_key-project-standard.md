@@ -2,7 +2,7 @@
 doc_type: standard
 created_at: "2026-05-31"
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-17", accepted_by: main}
+approval: {state: accepted, accepted_at: "2026-08-25", accepted_by: main}
 key:
   id: key.standard.project
   refs:
@@ -951,6 +951,18 @@ work preparation, context brief 생성을 지원한다. Reader는 아티팩트 �
 판단할 수 있지만, 깊은 artifact impact/stale/gap 해석은 `keystone-linker`로 넘긴다. Reader는
 원천 문서(2), code, config, 진행 기록(5), 결정(6)을 수정하지 않는다.
 
+초기 orientation은 progressive context loading을 따른다. Reader는 설정된 document root(1)와
+최소 초기화 상태를 확인한 뒤 `key-context-map.md`, accepted top-level 프로젝트 기준서(3) 전체를
+순서대로 읽는다. Child 기준서는 프로젝트 목적, 범위, 문서 구조 또는 권위 해석에 구체적인 공백이
+있을 때만 관련 index를 따라 제한적으로 읽는다. 그 결과로 목적, 범위, 문서 구조, 권위와 중요한
+미해결 사항을 담은 간결한 project brief를 먼저 만들고, 그 다음 canonical Work State를 결합한다.
+
+Active parent Round가 없으면 빈 상태와 다음 actor만 보고하고 상세 Work 문서나 Linker를 확장하지
+않는다. 하나이면 해당 Round를 세션 focus로 사용하고, 둘 이상이면 current Step 요약까지만 보여준
+뒤 기존 Round focus gate를 적용한다. 선택된 Work를 준비할 때는 Work Order, Progress, 적용 기준서와
+feature 문서를 먼저 읽는다. Artifact context, owner/ref, 구현·테스트 후보가 실제로 필요할 때만
+선택된 Work 또는 문서 ID를 anchor로 `keystone-linker`에 bounded handoff한다.
+
 Reader의 mode, workflow, output field, stop condition의 상세 계약은
 `skills/reader/key-standard-reader.md`를 따른다.
 
@@ -1175,12 +1187,15 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
    - 초기화 전 repository 조사는 Main의 일반 능력에 맡기며 Reader를 선행 조건으로 요구하지
      않는다.
 2. Project orientation
-   - Main agent는 `key-context-map.md`를 확인해 active standards와 active work를 찾는다.
-   - 현재 active work round는 `00_docs/works/00_key-index.md`에서 찾고, round 내부 실행
-     순서는 해당 round의 `00_key-index.md`에서 찾는다.
+   - Reader는 document root와 최소 초기화 상태, `key-context-map.md`, accepted top-level 프로젝트
+     기준서(3)를 순서대로 읽고 필요한 child 기준서만 제한적으로 확장한다.
+   - 목적, 범위, 문서 구조, 권위와 중요한 미해결 사항을 담은 project brief를 만든 뒤 canonical
+     Work State와 결합해 active parent Round와 current Step을 복구한다.
 3. Document reading
-   - Reader는 관련 기준서와 작업서만 읽고, 관련 없는 하위 기준서를 불러오지 않으며, 필요한
-     context brief를 만든다.
+   - Reader는 선택된 Work의 Work Order, Progress, 적용 기준서와 feature 문서를 먼저 읽고,
+     관련 없는 하위 기준서를 불러오지 않으며, 필요한 context brief를 만든다.
+   - 초기 orientation에서는 Linker를 기본 호출하지 않는다. Artifact context가 필요한 selected
+     Work 또는 명시적 graph audit 범위에서만 bounded Linker 탐색을 사용한다.
 4. Document authoring
    - Author는 승인된 범위 안에서 원천 문서(2)와 Change Set(17)을 작성하거나 수정한다.
 5. Clarification
@@ -1319,16 +1334,24 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
 <!-- key: id=key.standard.project.std-keystone-059 refs=key.role.reader key.role.linker key.topic.work-recovery key.boundary.read-only -->
 ### STD-KEYSTONE-059: Reader context readiness와 permissionless Linker를 내부 관리 경계로 둔다
 
-1. 사용자가 세션 시작에 Reader를 명시 호출하면 Reader는 document root와 active work를 읽고
-   docs discovery scope의 index readiness를 확인한다.
-2. Reader는 source read-only다. Source-write authority가 없는 Linker subagent는 별도 사용자나
-   Coordinator 허락 없이 scan, external index/cache refresh, graph interpretation과 validation을
-   수행할 수 있다. Source 수정, scope 확장, worker 생성, 의미 결정과 acceptance는 금지한다.
-3. Repository source scan은 code/artifact context가 실제로 필요한 때 lazy하게 수행한다.
-   Cache 실패나 miss는 source 직접 탐색으로 fail-soft fallback하며 사용자 작업을 막지 않는다.
-4. Freshness token은 worktree identity, discovery scope의 path set과 각 source raw-byte digest를
+1. 사용자가 세션 시작에 Reader를 명시 호출하면 Reader는 document root와 최소 초기화 상태,
+   Context Map, accepted top-level 프로젝트 기준서(3) 순서로 project brief를 만든 뒤 canonical
+   Work State를 결합한다. 초기 orientation만으로 Linker를 기본 호출하지 않는다.
+2. 선택된 Work를 계획할 때는 Work Order, Progress, 적용 기준서와 feature 문서를 먼저 읽는다.
+   Artifact context, owner/ref, 구현·테스트 후보가 필요한 경우에만 Work 또는 문서 ID를 anchor로
+   permissionless Linker의 bounded docs/repository scope를 요청한다. Full graph는 명시적 graph
+   audit, release verification 또는 scope conflict 조사에만 사용한다.
+3. Reader는 source read-only다. Source-write authority가 없는 Linker는 별도 사용자나 Coordinator
+   허락 없이 해당 bounded scope의 scan, external index/cache refresh, graph interpretation과
+   validation을 수행할 수 있다. Source 수정, scope 확장, worker 생성, 의미 결정과 acceptance는
+   금지한다.
+4. Repository source scan은 code/artifact context가 실제로 필요한 때 lazy하게 수행한다. Bounded
+   탐색에서 연결된 구현을 찾지 못하면 `구현 확인 불가` 또는 `미구현 가능`으로 보고한다. Code
+   candidate가 존재하지만 문서 relation만 없을 때에만 metadata gap 후보로 분류한다.
+5. Cache 실패나 miss는 source 직접 탐색으로 fail-soft fallback하며 사용자 작업을 막지 않는다.
+   Freshness token은 worktree identity, discovery scope의 path set과 각 source raw-byte digest를
    포함한다. Git HEAD, mtime 또는 cache timestamp만으로 fresh를 선언하지 않는다.
-5. Reader -> Linker와 Linker -> Reader handoff는 serialized recursion guard를 전달한다. 호출된
+6. Reader -> Linker와 Linker -> Reader handoff는 serialized recursion guard를 전달한다. 호출된
    lane은 initiating lane을 다시 호출하지 않는다.
 
 <!-- key: id=key.standard.project.std-keystone-060 kind=claim refs=key.role.clarify key.role.author key.topic.question-flow key.topic.document-authoring key.topic.work-recovery -->
@@ -1358,11 +1381,33 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
 9. 답변별 log append는 대상 파일과 질문 entry 확인으로 닫는다. 이것만으로 Work State, graph
    reconstruction, package/repository 검증 또는 source-document application을 실행하지 않는다.
 
+<!-- key: id=key.standard.project.std-keystone-061 kind=claim refs=key.topic.work-execution key.topic.work-recovery key.topic.keystone-metadata key.role.coordinator key.role.author key.role.reader -->
+### STD-KEYSTONE-061: 선택된 linked worktree는 Work Order locator로 먼저 고정한다
+
+1. Keystone은 worktree, branch, writer 수와 integration 전략을 강제하지 않는다. 다만 구현
+   환경으로 Git linked worktree를 생성하거나 선택한 Work에는 이 규칙을 적용한다.
+2. Coordinator 또는 직접 실행하는 Main은 substantive code/config/schema/API/test/skill-source
+   수정 전에 target worktree의 canonical absolute root와 현재 repository의 Git common directory가
+   같은지 확인한다.
+3. Author는 전달받은 exact root를 세션 시작점에서 읽을 수 있는 canonical Work Order document의
+   `key.worktree.path`에 기록한다. Target branch에만 보이는 기록은 이 gate를 충족하지 않는다.
+4. Coordinator 또는 Main은 fresh Work Order source에서 같은 locator를 다시 읽고 실제 target과
+   일치하는지 확인한 뒤에만 구현 edit를 시작한다. Injected skill이 worktree를 만든 경우에도
+   setup 결과를 먼저 회수하고 이 순서를 지킨다.
+5. Reader와 실행자는 selected Work에 locator가 있으면 그 exact path만 확인한다. Locator가 없으면
+   current worktree를 사용하며 등록된 모든 worktree나 sibling directory를 fallback으로 탐색하지
+   않는다.
+6. Recorded path가 missing, inaccessible 또는 다른 Git common directory를 가리키면
+   stale/mismatch로 보고하고 자동으로 다른 worktree를 찾지 않는다.
+7. 이 locator는 operational navigation metadata이며 atomic claim, lock, shared registry 또는
+   중복 실행 방지를 보장하지 않는다. 기록되지 않은 별도 worktree 누락은 사용자 기억에 의존하는
+   residual risk다.
+
 <!-- key: id=key.standard.project.active-work refs=key.topic.document-system key.topic.work-round -->
 ## 관련 active work
 
 - `00_docs/works/00_key-index.md`
-- `00_docs/works/r008-skill-graph-traceability/00_key-index.md`
+- `00_docs/works/r015-keystone-consumer-goal-effectiveness-review/00_key-index.md`
 
 <!-- key: id=key.standard.project.child-standards refs=key.topic.skill-contract key.topic.document-system -->
 ## 관련 child 기준서

@@ -87,6 +87,23 @@ a prerequisite for a small explicit document edit.
 7. Use Linker for graph interpretation; hand repository-output edits to Main or a permitted Coordinator.
 8. Run verification proportional to the changed surface and report residual risk.
 
+## Worktree Locator Metadata
+
+When Coordinator or Main has created or selected a linked worktree, Author owns the canonical Work
+Order metadata write before substantive repository edits.
+
+1. Accept only an exact canonical absolute root that Coordinator or Main verified against the same Git
+   common directory as the current repository.
+2. Write the value as document-level `key.worktree.path` on the canonical Work Order that is readable
+   from the session control plane. Do not substitute a target-branch-only copy, Progress, or an index.
+3. The metadata is valid only for `doc_type: work_order`; `worktree` contains only `path`. Do not add a
+   branch, HEAD, claim, lock, or registry field.
+4. When no linked worktree was selected, do not add the field. Do not infer a replacement or remove a
+   historical value without an accepted instruction.
+5. Re-read the current Work Order after applying the edit and return the exact recorded path to
+   Coordinator or Main for fresh confirmation. Author does not create or select worktrees and does not
+   begin implementation edits.
+
 ## Current Acceptance and Progress Synchronization
 
 After Main acceptance, synchronize only sources whose meaning or state changed:
@@ -245,6 +262,8 @@ does not trigger a new producer run or external-folder permission request.
   attachments and therefore do not use the Keystone source-document key prefix.
 - Use `key.refs` for navigation and typed relations for semantic relationships. A relation is an impact
   candidate, not automatic edit permission.
+- Use `key.worktree.path` only as Work Order operational navigation metadata under the Worktree Locator
+  Metadata contract. It is not a typed relation or Artifact Graph locator.
 - Do not add or update a document merely to report that it was unaffected.
 
 ## Document Item Metadata
@@ -318,3 +337,5 @@ Verify that:
    historical projections, and cannot close over a stale current/navigation projection.
 10. Clarification logging uses one minimal file per broad subject, preserves the one-question flow, and
     separates lightweight per-answer append from one source-document application per completed group.
+11. A linked-worktree handoff writes only the exact canonical Work Order path before implementation and
+    returns it for fresh Coordinator/Main confirmation without taking execution ownership.

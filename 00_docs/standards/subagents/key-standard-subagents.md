@@ -445,6 +445,12 @@ Keystone은 single workspace, worktree, branch, 병렬 writer 수나 integration
    authority, scope, verification과 report contract를 지킨다.
 6. Worker report에는 changed files, scope check, forbidden change check와 발견한 conflict가
    포함되어야 한다.
+7. Injected skill이 linked worktree를 생성하거나 선택하면 exact canonical root를 setup result로
+   Coordinator에 반환하고 substantive repository edit 전에 멈춘다.
+8. Coordinator가 Author의 canonical Work Order locator write와 fresh confirmation 완료를 알리기
+   전에는 해당 worktree에서 implementation edit를 시작하지 않는다.
+9. Worker는 missing/stale locator를 보완하려고 다른 registered worktree나 sibling directory를
+   탐색하지 않으며 worktree claim, lock 또는 shared registry를 만들지 않는다.
 
 <!-- key: id=key.standard.subagent.report-status refs=key.role.subagent key.topic.report key.contract.output -->
 ## Report status

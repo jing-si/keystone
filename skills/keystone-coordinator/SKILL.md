@@ -99,6 +99,24 @@ check, verification, source conflicts, document/graph synchronization needs, and
 Treat worker `DONE`, review-clean, commit-ready, or branch-ready as report evidence only. They never
 change Work status, approval, finalization, or Main acceptance by themselves.
 
+## Worktree Setup and Locator Gate
+
+Keystone does not require a worktree strategy. When Coordinator or an external implementation skill
+does create or select a linked worktree, complete this setup gate before implementation begins.
+
+1. Inspect the current diff and existing-change risk, then create or select the target worktree.
+2. Resolve its canonical absolute root and confirm that it belongs to the same Git common directory as
+   the current repository.
+3. If an external implementation skill created the worktree, collect the exact path as setup output and
+   pause it before implementation begins.
+4. Ask Author to write the exact path to document-level `key.worktree.path` on the canonical Work Order.
+5. Re-read the fresh canonical Work Order and confirm that its recorded path exactly matches the target.
+6. Only then begin direct execution or allow the worker to make substantive repository edits.
+7. If the recorded path is missing, inaccessible, or points to another Git common directory, report
+   `stale` or `mismatch` and do not search other worktrees or sibling directories as fallback.
+8. If no linked worktree is selected, use the current worktree and do not add locator metadata. This
+   gate is not an atomic claim, lock registry, duplicate-execution guarantee, or integration strategy.
+
 ## Workflow
 
 1. Confirm implementation approval, initialization readiness, project conventions, and current diff.
@@ -110,7 +128,8 @@ change Work status, approval, finalization, or Main acceptance by themselves.
 4. Ask Linker for impact context only when graph or cross-surface reasoning is relevant.
 5. Evaluate Step gates separately from Work-completion gates, then choose direct execution or one
    bounded worker assignment.
-6. Build the Context Pack and apply the smallest effective change without overwriting unrelated work.
+6. Build the Context Pack. When a linked worktree is selected, complete the Worktree Setup and Locator
+   Gate before applying the smallest effective change without overwriting unrelated work.
 7. Re-read the changed surfaces, inspect the current diff, and normalize the execution result.
 8. Run verification selected by the changed surface and classify failures honestly.
 9. Ask Linker to reconstruct and validate affected graph scope only when graph-relevant sources changed.
@@ -200,6 +219,7 @@ Classify a failure as:
 - `historical_structure_only`: a legacy record can be inspected structurally but its retired trust
   material or producer is unavailable;
 - `scope_blocked`: completion requires an unapproved surface.
+- `stale_worktree_locator`: the selected Work's recorded path cannot safely identify the target.
 - `work_order_restructure`: the plan would require a third Round depth and must return
   `NEEDS_SCOPE_CHANGE` for Author/Main plan simplification instead of creating deeper hierarchy.
 
@@ -240,3 +260,5 @@ Verify that:
    the two-level maximum without inventing a deeper Round.
 9. Multi-active Round focus is session-only, uses the exact one-question gate, and selects the lowest
    executable active Step without asking the user to choose or changing Step status or priority.
+10. Linked-worktree setup pauses before implementation, records the exact path through Author, confirms
+    it from fresh canonical source, and never falls back to global worktree discovery.

@@ -88,6 +88,9 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
 | R011 Parallel Work State and Hierarchical Rounds | `00_docs/works/r011-work-model-evolution/00_key-index.md` | accepted | 병렬 상태·Round hierarchy·triage와 projection/snapshot 경계를 구현·검증하고 닫음 |
 | R012 Current Work State and Session Focus Simplification | `00_docs/works/r012-current-work-state-simplification/00_key-index.md` | accepted | active parent Round 중심 Work State, Round session focus와 실행자 Step 선택 계약을 구현·검증하고 닫음 |
 | R013 Author Terminal Status Reconciliation | `00_docs/works/r013-author-terminal-status-reconciliation/00_key-index.md` | accepted | 상태 전이별 bounded projection 대조와 Clarify 그룹 종료별 문서 적용·Q&A log 경계를 구현·검증함 |
+| R014 Reader Progressive Context Loading | `00_docs/works/r014-reader-progressive-context-loading/00_key-index.md` | accepted | progressive orientation, selected-Work bounded Linker와 contract parity 구현·검증 완료 |
+| R015 Keystone Consumer Goal Effectiveness Review | `00_docs/works/r015-keystone-consumer-goal-effectiveness-review/00_key-index.md` | active | Uptendo 소비 프로젝트 evidence로 Keystone 목표 달성 효과·운영 비용을 검토하고 개선 Work Order 최종본을 작성 중 |
+| R016 Worktree Locator and Targeted Work Discovery | `00_docs/works/r016-worktree-locator-navigation/00_key-index.md` | accepted | Worktree 선택 시 canonical Work Order에 exact path를 기록하고 locator 기반으로 대상 worktree만 탐색하는 계약을 구현·검증함 |
 | Document Tree Setup | `00_docs/works/r001-bootstrap-keystone/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
 | Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | accepted | 전체 공통 기준서 |
 | Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서 |
@@ -188,6 +191,16 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 `active_steps`에서 복구한다. Accepted Round history는 각 Round source에서 확인하며
 `latest_accepted_round`은 current pointer 권위를 갖지 않는다. 이 section의 나머지 설명은 accepted
 history와 작업 목적을 위한 사람이 작성한 기록이다.
+R015 Keystone Consumer Goal Effectiveness Review는 Uptendo 실제 운영 검토를 Keystone 제품 목표,
+문제 소유권과 후속 개선 기준으로 재구성하는 `active / in_progress` Work다. 현재 `R015/S01`에서
+Work Order 초안을 검토·교정하며 Keystone 구현과 Uptendo repair는 시작하지 않았다.
+R016 Worktree Locator and Targeted Work Discovery는 Coordinator가 선택한 linked worktree를
+canonical Work Order의 `key.worktree.path`로 기록하고 Reader·실행자가 그 경로만 직접 탐색하는
+계약을 standards, skill runtime, metadata parser와 regression에 구현·검증하고 `complete + accepted`로
+닫혔다. R015의 상태와 우선순위는 변경하지 않았다.
+R014 Reader Progressive Context Loading은 초기 Reader가 Context Map과 최상위 프로젝트 기준서를
+중심으로 project brief를 준비하고, 선택된 작업에 따라 상세 기준서와 Linker를 점진적으로 읽도록
+경량화했다. S01~S03, focused/shared regression과 graph 검증을 통과해 `complete + accepted`로 닫혔다.
 R013 Author Terminal Status Reconciliation은 상태 전이 때만 owning Round subtree, root works
 index와 Context Map의 exact Round/Step ref를 bounded하게 확인하는 Author 종료 계약과 Clarify의
 관련성 기반 그룹·Q&A log·그룹 종료별 Author 적용 계약을 구현하고 complete + accepted로 닫았다.
@@ -200,7 +213,7 @@ compatibility로 격리하고 latest-accepted ordering을 current state와 point
 complete + accepted로 닫혔다. R012/S03은 Reader에 parent Round별 active Step 안내, 정확한
 session-only Round 질문과 worker lowest-executable Step 선택을 구현하고 complete + accepted로
 닫혔다. R012/S04는 event 없는 Uptendo형 병렬 Round 회귀와 package·repository·installer
-production release gate를 통과하고 complete + accepted로 닫혔다. 현재 active Round와 Step은 없다.
+production release gate를 통과하고 complete + accepted로 닫혔다. R012 자체의 active Step은 없다.
 R010/S01은 complete and accepted이며 schema-v5 Author finalization을 별도 parent commit에
 고정했다. R010/S02도 complete snapshot과 phase-separated actor attribution을 actual-state
 authority chain으로 검증해 complete and accepted로 닫고 closure commit
