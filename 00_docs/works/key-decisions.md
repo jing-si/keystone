@@ -842,3 +842,43 @@ key:
   Worktree 전략을 이미 선택한 경우에만 locator 기록과 owner handoff를 요구한다.
 - 이유: Work와 실제 실행 위치를 source에서 직접 복구하면서도 매 세션 모든 worktree를 훑는
   탐색 비용과 별도 locking control plane을 만들지 않기 위해서다.
+
+<!-- key: id=key.work.decisions.dec-works-034 refs=key.doc.decision key.doc.work key.topic.work-round key.topic.work-sequence key.topic.document-authoring key.topic.verification key.role.author key.boundary.scope-control -->
+## DEC-WORKS-034: Author Round 생성은 실행 승인과 분리하고 production 구현을 standards-first로 구성한다
+
+- 관련 work: R017 Standards-First Round Construction
+- 결정일: 2026-08-26
+- 상태: accepted
+<!-- key: id=key.claim.r017.round-creation-execution-boundary refs=key.topic.work-round key.topic.work-sequence key.role.author key.boundary.scope-control -->
+- 결정: Round 생성 요청만 있으면 Author는 Round Index, Work Order, Progress와 필요한 navigation
+  source를 `planned / pending`, Active Step 없음으로 만들고 중단한다. 계획 승인, 생성 결과 확인,
+  추가 문서 수정과 단순한 긍정을 Step 실행 승인으로 확대 해석하지 않는다.
+<!-- key: id=key.claim.r017.combined-create-and-run-request refs=key.topic.work-round key.topic.work-sequence key.role.author -->
+- 결정: 같은 요청에 `작업서 생성 이후 작업을 바로 진행해주세요`처럼 Round 생성과 실행이 함께
+  명시되면 생성 뒤 첫 실행 가능 Step을 이어서 진행할 수 있다. 후속 메시지의 명시적 Round 또는
+  Step 진행 요청도 같은 실행 승인으로 본다.
+<!-- key: id=key.claim.r017.standards-first-production-boundary refs=key.topic.work-sequence key.topic.document-authoring key.topic.verification key.boundary.scope-control -->
+- 결정: Round에 유지될 production code, config, schema, API, generated/codegen 또는 skill source
+  구현이 있으면 첫 production 구현 전에 기준서 정합화를 수행한다. Accepted 기준서가 이미
+  충분하면 의미 없는 문구를 수정하지 않고 근거 있는 `no_change`로 닫는다. Round 완료 전에는
+  accepted 기준서 의미, 실제 구현과 필요한 verification evidence의 정합성을 확인한다.
+<!-- key: id=key.claim.r017.flexible-round-topology refs=key.topic.work-round key.topic.work-sequence key.topic.verification -->
+- 결정: 공통 제약은 생성-실행 분리, production standards-first와 closure verification로 제한한다.
+  이를 만족하면 Step 이름·개수, 구현·검증 분할, 독립 Step 병행과 production·문서·조사 Round의
+  topology는 Goal에 맞게 구성한다. 모든 Round를 하나의 고정 pipeline으로 만들지 않는다.
+<!-- key: id=key.claim.r017.child-session-identifier-boundary refs=key.topic.work-round key.topic.work-sequence key.boundary.scope-control -->
+- 결정: `-`는 직전 Round 또는 Step의 직접 하위 세션 경계다. 새 child Round ref는 `R015-A`,
+  새 child Step ref는 `R015/S01-A` 형식을 사용한다. Child Round의 Step은 기존처럼
+  `R015-A/S01`이며 그 Step의 child는 `R015-A/S01-A`로 표기할 수 있다.
+<!-- key: id=key.claim.r017.child-session-excel-numbering refs=key.topic.work-round key.topic.work-sequence key.topic.document-authoring -->
+- 결정: 하위 세션 suffix는 Excel column과 같은 bijective base-26 대문자 영문 번호를 사용한다.
+  순서는 `A → Z → AA → AZ → BA → … → ZZ → AAA`이며 숫자, 영문·숫자 혼합과 의미 문자열을
+  suffix에 사용하지 않는다. 같은 직전 parent 안에서 suffix는 중복하거나 재사용하지 않는다.
+<!-- key: id=key.claim.r017.child-session-legacy-compatibility refs=key.topic.work-round key.topic.work-recovery key.boundary.scope-control -->
+- 결정: R011에서 수락된 `R010-a` 단일 소문자 child Round와 관련 fixture는 historical
+  compatibility 입력으로 계속 읽되 새 식별자 생성에는 사용하지 않는다. 기존 식별자는 이동·
+  대소문자 변경·재번호화하지 않으며 27개 이상이면 개편하던 제한은 폐기한다. `DEC-WORKS-030`의
+  parent→direct child 2단계 제한과 `DEC-WORKS-031`의 parent/child 권위는 그대로 유지한다.
+- 이유: Round 생성 요청이 예상하지 않은 코드 실행으로 확대되는 위험과 기준서·구현 drift를
+  막으면서도 작업 성격에 필요한 실행 자율성을 보존하고, 상위 숫자 번호와 하위 세션 번호를
+  시각적으로 구분하면서 Z 이후에도 별도 의미 기반 ordering 없이 확장하기 위해서다.

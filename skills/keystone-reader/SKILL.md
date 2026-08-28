@@ -214,35 +214,42 @@ context-readiness entry point, not the cache owner.
    request, select the lowest-numbered executable active Step using dependency evaluations and
    `work_gates`. If the lowest-numbered Step is blocked, explain the blocker and select the next
    executable Step. Do not change Step status or priority through this session choice.
-7. Read the selected Work order first. When its document-level `key.worktree.path` is present, confirm
+7. If the trusted project's `.codex/config.toml` configures `tui.terminal_title` with `thread-title`,
+   propose one exact user command after Round focus is known:
+   `/rename 프로그래스 {Round ref}:{대표 문구}`. Derive the representative phrase from the selected
+   current Work or Step, keep it at five Korean characters or fewer (truncation is acceptable), and
+   show the concrete command rather than the template. Do not propose it before focus, execute a slash
+   command, or claim the rename succeeded. This is read-only session guidance and is never persisted as
+   Round priority or project state.
+8. Read the selected Work order first. When its document-level `key.worktree.path` is present, confirm
    that the exact path exists, is accessible, and belongs to the same Git common directory as the current
    repository. Restrict subsequent selected-Work navigation to that exact path. When the field is absent,
    use the current worktree. A missing, inaccessible, or different-common-directory value is `stale` or
    `mismatch`: report it and stop targeted navigation. Never enumerate registered worktrees or traverse
    sibling directories as fallback.
-8. After resolving the execution location, read the selected Work order, Progress, applicable standards, and feature documents
+9. After resolving the execution location, read the selected Work order, Progress, applicable standards, and feature documents
    before artifact discovery. Do not treat initial orientation as an artifact-context trigger.
-9. Request permissionless Linker readiness only when selected-Work artifact context, owner/ref resolution,
+10. Request permissionless Linker readiness only when selected-Work artifact context, owner/ref resolution,
    implementation/test candidates, graph-relevant impact, or an explicit graph audit is needed. Anchor
    the bounded scope at the selected Work or document ID and pass the worktree identity, sorted path set,
    and each file's raw-byte SHA-256 digest. Use a full graph only for an explicit graph audit, release
    verification, or scope conflict.
-10. Request a lazy repository scope only when code/config/schema/test artifact context is actually needed.
+11. Request a lazy repository scope only when code/config/schema/test artifact context is actually needed.
    If bounded search finds no linked implementation, report `implementation unavailable` or `possibly
    unimplemented`. Report a metadata gap only when a code candidate exists but its relation is missing.
-11. Reuse a fresh external index. If it is missing, stale, corrupt, or cannot be locked or written, fall
+12. Reuse a fresh external index. If it is missing, stale, corrupt, or cannot be locked or written, fall
    back fail-soft to source discovery; a cache problem is not a user decision.
-12. Include the freshness token, discovery scope, source citations, and unresolved gaps in the internal
+13. Include the freshness token, discovery scope, source citations, and unresolved gaps in the internal
    context brief. Downstream skills may reuse a fresh token; after a source write they invalidate the
    affected discovery scope.
-13. Request `include_source_views` only when the selected context needs criterion verification,
+14. Request `include_source_views` only when the selected context needs criterion verification,
    effective Decision, or Work output/test summaries. This is a source-bound, session-only projection
    from Linker's same reconstructed `GraphSnapshot`; request repository scope when output/test targets
    are needed. Preserve its `source_generation` and unresolved diagnostics, and never treat a
    `verified` view as automatic acceptance. Default readiness remains the lighter owner/ref result.
-14. Pass a serialized recursion guard with `initiator: reader`. The called Linker must not call Reader
+15. Pass a serialized recursion guard with `initiator: reader`. The called Linker must not call Reader
    again in the same chain; a Linker-initiated Reader chain applies the inverse rule.
-15. Keep raw readiness and index payloads agent-facing and hidden from the user by default.
+16. Keep raw readiness and index payloads agent-facing and hidden from the user by default.
 
 ## Result Contract
 
@@ -377,3 +384,5 @@ Check that Reader:
     for explicit audit, release verification, or scope conflict.
 17. Uses a selected Work's recorded exact worktree path before artifact discovery, falls back only to the
     current worktree when the field is absent, and reports stale/mismatch without global worktree search.
+18. Proposes one concrete five-character-or-shorter Round rename only after focus when project-local
+    terminal-title configuration enables thread titles, without executing it or persisting selection.

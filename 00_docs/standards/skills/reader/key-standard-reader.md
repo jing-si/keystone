@@ -1,7 +1,7 @@
 ---
 doc_type: standard
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-25", accepted_by: main}
+approval: {state: accepted, accepted_at: "2026-08-28", accepted_by: user}
 key:
   id: key.standard.skill.reader
   refs:
@@ -221,6 +221,10 @@ key:
    별도 사용자 지정이 없으면 dependency와 `work_gates`를 만족하는 active Step 중 번호가 가장
    낮은 Step을 기본 대상으로 삼는다. 가장 낮은 Step이 blocked이면 그 이유와 다음 실행 가능
    Step을 알리며 상태나 priority를 자동 변경하지 않는다.
+6. `Keystone 세션 제목 표시`가 구성된 프로젝트에서는 focus가 정해진 뒤 current Work/Step을
+   구분하는 5자 이내 대표 문구를 만들고 `/rename 프로그래스 {Round ref}:{대표 문구}`를 정확한
+   사용자 명령으로 한 번 제안한다. Reader는 명령을 실행하거나 rename 성공을 주장하지 않으며
+   focus 선택 전에는 제안하지 않는다.
 
 <!-- key: id=key.standard.skill.reader.mode-contract refs=key.role.reader key.contract.output key.topic.work-preparation -->
 ## Mode contract

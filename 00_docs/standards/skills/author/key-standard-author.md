@@ -4,7 +4,7 @@ created_at: "2026-06-10"
 document_lifecycle: active
 approval:
   state: accepted
-  accepted_at: "2026-08-25"
+  accepted_at: "2026-08-26"
   accepted_by: main
 key:
   id: key.standard.skill.author
@@ -75,7 +75,8 @@ key:
    `STD-KEYSTONE-020`, `STD-KEYSTONE-021`, `STD-KEYSTONE-022`,
    `STD-KEYSTONE-023`, `STD-KEYSTONE-024`, `STD-KEYSTONE-025`,
    `STD-KEYSTONE-027`, `STD-KEYSTONE-030`, `STD-KEYSTONE-032`, `STD-KEYSTONE-042`,
-   `STD-KEYSTONE-043`, `STD-KEYSTONE-045`, `STD-KEYSTONE-052`, `STD-KEYSTONE-060`
+   `STD-KEYSTONE-043`, `STD-KEYSTONE-045`, `STD-KEYSTONE-052`, `STD-KEYSTONE-060`,
+   `STD-KEYSTONE-062`
 3. 관련 기준서: `../../subagents/key-standard-subagents.md`
 4. 관련 결정(6): `00_docs/works/key-decisions.md`
 5. 충돌 처리: 이 기준서와 parent 기준서가 충돌하면 충돌을 보고하고 사용자 또는 main의
@@ -432,6 +433,49 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
 7. Context Pack Seed는 main이 필요한 문서만 추출할 수 있게 작성한다.
 8. Review points는 reviewer focus로 변환할 수 있어야 한다.
 
+<!-- key: id=key.standard.skill.author.round-creation-execution-boundary kind=claim refs=key.role.author key.topic.work-creation key.topic.work-round key.topic.work-sequence key.topic.verification key.boundary.scope-control key.work.decisions.dec-works-034 -->
+## Round 생성과 실행 경계
+
+1. 사용자-facing 설명은 `Round 생성`과 `Step 구성`을 우선한다. Work Order는 그 실행 계약을
+   보존하는 원천 문서를 가리킬 때만 사용한다.
+2. Round 생성 요청만 있으면 Round Index, Work Order, Progress와 필요한 navigation source를
+   `planned / pending`, Active Step 없음으로 작성하고 결과를 보고한 뒤 중단한다.
+3. 계획 승인, Round 내용 수용, 단순한 긍정, 생성 결과 확인과 생성 뒤 추가 문서 수정은 실행
+   승인이 아니다. 추가 문서 수정 요청은 승인된 문서 범위만 수정한다.
+4. 같은 요청에 `작업서 생성 이후 작업을 바로 진행해주세요`, `만들고 바로 진행해 주세요`가
+   포함되거나 후속 메시지에서 Round·Step·구현 진행이 명시되면 생성 뒤 첫 실행 가능 Step을
+   이어서 진행할 수 있다.
+5. 실행 승인 의미가 불명확하면 구현으로 확대하지 않고 Round를 planned 상태로 유지한다.
+6. Round에 유지될 production code, config, schema, API, generated/codegen 또는 skill source
+   구현이 있으면 첫 production 구현 Step보다 앞에 기준서 정합화 Step을 구성한다.
+7. 기준서 정합화는 intended behavior, scope, boundary, verification expectation과 기존 accepted
+   기준서의 충분성을 확인한다. 의미가 부족하면 기준서를 수정하고, 이미 충분하면 의미 없는
+   수정 대신 `no_change`와 근거를 기록한다.
+8. Round 완료 전 accepted 기준서 의미, 실제 구현과 필요한 verification evidence의 정합성을
+   확인한다.
+9. 위 세 핵심 제약을 만족하면 Step 이름·개수, 구현·검증 분할, 독립 Step 병행과
+   production·문서·조사 Round topology는 Goal에 맞게 구성한다. 하나의 고정 pipeline을 강제하지
+   않는다.
+10. 문서 전용 Round에는 구현 Step을 만들지 않는다. 조사·실험 Round가 production 구현을
+    수락하지 않으면 조사와 사용자 판단 대기 구조를 사용할 수 있다.
+
+<!-- key: id=key.standard.skill.author.child-session-naming kind=claim refs=key.role.author key.topic.work-creation key.topic.work-round key.topic.work-sequence key.boundary.scope-control key.work.decisions.dec-works-034 -->
+## 하위 세션 식별자 생성
+
+1. `-`는 직전 Round 또는 Step의 직접 하위 세션 경계로만 사용한다.
+2. 새 child Round는 `R015-A`, 새 child Step은 `R015/S01-A` 형식으로 만든다. Child Round의
+   Step `R015-A/S01`에 직접 child Step이 필요하면 `R015-A/S01-A`로 표기한다.
+3. Suffix는 Excel column과 같은 bijective base-26 대문자 영문 번호를 사용한다. 증가 순서는
+   `A → Z → AA → AZ → BA → … → ZZ → AAA`다.
+4. 새 suffix에 숫자, 영문·숫자 혼합 또는 의미 문자열을 사용하지 않는다. 의미는 title과
+   Goal에 기록한다.
+5. 같은 직전 parent 안에서 suffix를 중복·재사용하지 않고 기존 ID를 재번호화하지 않는다.
+6. 새 child Round directory는 ref suffix의 대소문자를 보존해 parent folder 아래 `r015-AA/`로
+   만든다. Parent Index의 `child_rounds`에 membership를 기록한다.
+7. 기존 `R010-a`와 단일 소문자 directory는 historical compatibility로만 읽으며 rename하거나
+   대문자로 migration하지 않는다. 새 식별자 생성에는 사용하지 않는다.
+8. Parent→direct child의 2단계 Round 제한과 parent/child 상태·수락 권위는 변경하지 않는다.
+
 <!-- key: id=key.standard.skill.author.work-order-creation-standard refs=key.role.author key.topic.work-creation key.topic.document-system -->
 ## 작업서 생성 표준
 
@@ -455,6 +499,9 @@ Progress Update Mode는 문서 작업의 진행 기록(5)을 갱신한다.
 12. 새 결정에는 `결정일: YYYY-MM-DD`를 기록하며 날짜만으로 결정 우선순위를 판단하지 않는다.
 13. 작업서 생성 후 context map, root works index, round index의 link와 status drift를
     확인한다.
+14. Round 생성과 실행 승인, production standards-first, closure verification와 topology 자율성은
+    `Round 생성과 실행 경계`를 따른다.
+15. 하위 Round·Step ref와 directory 생성은 `하위 세션 식별자 생성`을 따른다.
 
 <!-- key: id=key.standard.skill.author.acceptance-finalization refs=key.role.author key.topic.acceptance key.topic.progress-update key.topic.verification -->
 ## Acceptance finalization

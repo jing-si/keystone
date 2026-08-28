@@ -1,6 +1,6 @@
 ---
 name: keystone-init
-description: "Inspect, initialize, or repair Keystone in a project that has no usable Keystone foundation or has a partial/conflicted setup. Use for direct initialization requests and Init handoffs from other Keystone skills; inspect is read-only, while initialize/repair create only the bounded bootstrap scaffold and R000 before handing project meaning to Author."
+description: "Inspect, initialize, repair, or configure a bounded optional Keystone integration. Use for direct initialization requests, Init handoffs, and explicit requests to enable Keystone session title display in one ready project; inspect is read-only, initialize/repair own the fixed scaffold and R000, and configure may change only its named project-local integration."
 ---
 
 <!-- keystone: id=key.skill.init kind=output_artifact artifact_kind=skill_source -->
@@ -17,6 +17,8 @@ Make a project recoverable by creating or repairing Keystone's minimum document 
 - `inspect`: detect and report state without writing.
 - `initialize`: create the fixed scaffold for an uninitialized project.
 - `repair`: fill only missing, non-conflicting scaffold in a partial project.
+- `configure`: apply one explicitly requested optional Keystone integration in a ready project without
+  changing bootstrap state.
 
 This installed contract is self-contained. Never require a project standard, Context Map, work order, progress record, Artifact Graph, or project-local Init/Author/Clarify standard as a prerequisite. Never create `standards/skills/**` in a consuming project.
 
@@ -26,7 +28,7 @@ A direct Init request includes consent to initialize within its stated scope; do
 
 Use:
 
-1. Mode: `inspect`, `initialize`, or `repair`.
+1. Mode: `inspect`, `initialize`, `repair`, or `configure`.
 2. Repository root and current instructions.
 3. User request and any handoff/resume context.
 4. Existing `.keystone` settings, document conventions, files, and workspace risks.
@@ -60,7 +62,7 @@ Apply safe explicit/default settings without unnecessary questions. Init may dir
 
 Use Clarify only for one actual semantic decision at a time: choosing between conflicting authoritative roots, adopting/moving/replacing existing documents, project purpose/scope/policy/terminology/authority, sensitive storage, destructive migration, or external publication. Resume Init after the answer. Do not send default metadata, filenames, indexes, routing, or skill behavior to Clarify.
 
-## Fixed Write Authority
+## Fixed Bootstrap Write Authority
 
 `initialize` and `repair` may create only:
 
@@ -82,19 +84,54 @@ Scaffold templates may use stable section or item metadata where the fixed templ
 
 Give every newly created Markdown scaffold document an immutable `created_at: "YYYY-MM-DD"` using the actual creation date. Keep draft/pending approval free of `accepted_at`; Author records it only after Main or an authorized user accepts the current meaning. If Init records an actual decision, include `결정일: YYYY-MM-DD`. Do not add a general `updated_at`.
 
+## Optional Codex Project Integration
+
+`Keystone 세션 제목 표시` is opt-in and separate from the fixed bootstrap scaffold.
+
+1. During `initialize` or `repair`, ask exactly once:
+   `IntelliJ·터미널 탭에 Keystone 작업 세션 제목을 표시할까요? (yes/no)`
+2. On `yes`, the only additional write authority is the repository root's
+   `.codex/config.toml` key `tui.terminal_title`. On `no`, do not create or modify that config and
+   continue initialization or repair.
+3. In a ready project, an explicit natural-language request such as `Keystone 세션 제목 표시를 켜줘`
+   selects `configure` and is itself consent for the same bounded write. Do not ask the yes/no question
+   again.
+4. Set the value in this order:
+
+   ```toml
+   [tui]
+   terminal_title = ["activity", "thread-title", "task-progress"]
+   ```
+
+5. If `.codex/config.toml` does not exist, create `.codex/` and the smallest valid file containing the
+   table above. If it exists, re-read current bytes, parse it as TOML, and create or replace only
+   `tui.terminal_title`; preserve every other table, key, comment, and ordering as far as the target-line
+   patch allows. Never reserialize the whole file merely to apply this setting.
+6. If TOML is invalid, `[tui]` is duplicated or structurally conflicting, the key is duplicated, or a
+   safe minimal patch cannot be determined, write nothing and report the conflict. Do not guess or
+   replace the file.
+7. Never edit `~/.codex/config.toml`, another project, or any profile, provider, authentication,
+   permission, notification, telemetry, IntelliJ, or unrelated Codex key. Do not introduce a plugin,
+   hook, daemon, watcher, App Server, or network dependency.
+8. Report that Codex loads a project-local config only for a trusted project. This host condition does
+   not change Keystone's initialization or ready state.
+
 ## Workflow
 
 1. Inspect repository state, settings, root candidates, scaffold, and existing-change risk.
 2. Return a no-write state report immediately in `inspect` mode.
 3. Resolve safe built-in settings or ask Init's own concise setup question when needed.
-4. Handoff one semantic conflict or User Decision topic to Clarify only when necessary, then resume.
-5. For `uninitialized`, create only missing fixed scaffold files and R000 templates.
-6. For `partial`, preserve all existing files and dates, and repair only missing non-conflicting scaffold. Never replace `created_at` with the repair date or infer a missing legacy date.
-7. Record verified repository facts and user instructions as R000 evidence; Main performs ordinary pre-Keystone code/README/config inspection.
-8. Handoff project-standard drafting to Author with evidence and accepted decisions.
-9. After Author returns, Main verifies and accepts the project standard when no User Decision remains.
-10. Validate actual files, links, statuses, document root, R000 recovery, and project-standard acceptance before reporting `ready`.
-11. Resume the original skill, request, and exact interrupted step automatically.
+4. During `initialize` or `repair`, ask the optional session-title question once and apply or skip it
+   according to the answer. In `configure`, apply only the explicitly requested optional integration
+   and do not scaffold or repair Keystone sources.
+5. Handoff one semantic conflict or User Decision topic to Clarify only when necessary, then resume.
+6. For `uninitialized`, create only missing fixed scaffold files and R000 templates.
+7. For `partial`, preserve all existing files and dates, and repair only missing non-conflicting scaffold. Never replace `created_at` with the repair date or infer a missing legacy date.
+8. Record verified repository facts and user instructions as R000 evidence; Main performs ordinary pre-Keystone code/README/config inspection.
+9. Handoff project-standard drafting to Author with evidence and accepted decisions.
+10. After Author returns, Main verifies and accepts the project standard when no User Decision remains.
+11. Validate actual files, links, statuses, document root, R000 recovery, and project-standard acceptance before reporting `ready`.
+12. Resume the original skill, request, and exact interrupted step automatically.
 
 Initialization and repair are idempotent: never overwrite an existing file unconditionally, duplicate valid scaffold, move existing documents, perform broad normalization, or migrate document, section, item, or claim metadata automatically. Preserve user and other-agent changes.
 
@@ -163,7 +200,8 @@ Stop before writing when:
 2. Progress requires overwriting, moving, or destructively normalizing existing content.
 3. User instructions conflict with settings.
 4. A required semantic User Decision is unresolved.
-5. Work would exceed the fixed bootstrap authority.
+5. Work would exceed the fixed bootstrap authority or the explicitly selected optional integration
+   authority.
 6. Sensitive storage, external publication, or another high-risk action lacks authority.
 
 ## Verification
@@ -180,3 +218,5 @@ Verify that:
 8. The original request and caller resume automatically after initialization.
 9. Missing document-item or claim metadata did not change initialization state, and no exhaustive item metadata was invented or migrated.
 10. Project-specific dependencies and gates were not inferred or created, and dependency gaps did not mutate initialization state.
+11. Session-title `yes` or explicit `configure` changed only the project-local target key; `no`, invalid
+    or conflicting TOML, and every global path remained no-write.

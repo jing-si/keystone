@@ -91,6 +91,9 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
 | R014 Reader Progressive Context Loading | `00_docs/works/r014-reader-progressive-context-loading/00_key-index.md` | accepted | progressive orientation, selected-Work bounded Linker와 contract parity 구현·검증 완료 |
 | R015 Keystone Consumer Goal Effectiveness Review | `00_docs/works/r015-keystone-consumer-goal-effectiveness-review/00_key-index.md` | active | Uptendo 소비 프로젝트 evidence로 Keystone 목표 달성 효과·운영 비용을 검토하고 개선 Work Order 최종본을 작성 중 |
 | R016 Worktree Locator and Targeted Work Discovery | `00_docs/works/r016-worktree-locator-navigation/00_key-index.md` | accepted | Worktree 선택 시 canonical Work Order에 exact path를 기록하고 locator 기반으로 대상 worktree만 탐색하는 계약을 구현·검증함 |
+| R017 Standards-First Round Construction | `00_docs/works/r017-standards-first-round-construction/00_key-index.md` | accepted | Round 생성·실행 경계와 standards-first 제약, Excel column 방식 하위 Round·Step 작명을 구현·검증함 |
+| R018 Keymeta-First Bounded Discovery | `00_docs/works/r018-keymeta-bounded-discovery/00_key-index.md` | planned | 키메타 anchor 중심 source expansion과 routine preparation의 no-full-scan 계약을 계획함 |
+| R019 Keystone Session Title Display | `00_docs/works/r019-keystone-session-title/00_key-index.md` | accepted | 프로젝트 로컬 Codex terminal title opt-in과 Round 기반 thread rename 제안을 구현·검증함 |
 | Document Tree Setup | `00_docs/works/r001-bootstrap-keystone/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
 | Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | accepted | 전체 공통 기준서 |
 | Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서 |
@@ -194,6 +197,12 @@ history와 작업 목적을 위한 사람이 작성한 기록이다.
 R015 Keystone Consumer Goal Effectiveness Review는 Uptendo 실제 운영 검토를 Keystone 제품 목표,
 문제 소유권과 후속 개선 기준으로 재구성하는 `active / in_progress` Work다. 현재 `R015/S01`에서
 Work Order 초안을 검토·교정하며 Keystone 구현과 Uptendo repair는 시작하지 않았다.
+R017 Standards-First Round Construction은 사용자와의 계획·검토 뒤 Round를 생성할 때 기본적으로
+작업 문서까지만 만들되 같은 요청의 명시적 즉시 진행도 허용하고, production 구현 전 기준서
+정합화와 Round 종료 전 검증만 고정하도록 Project·Author 기준과 Author skill contract를
+정렬했다. S01~S03 accepted 이력을 보존하면서 S04~S05에서 `-` 하위 세션 경계, 대문자 Excel
+column suffix, legacy 소문자 읽기 호환을 기준서·runtime·test에 보정하고 `complete / accepted`로
+닫았다. R015 상태와 우선순위는 변경하지 않았다.
 R016 Worktree Locator and Targeted Work Discovery는 Coordinator가 선택한 linked worktree를
 canonical Work Order의 `key.worktree.path`로 기록하고 Reader·실행자가 그 경로만 직접 탐색하는
 계약을 standards, skill runtime, metadata parser와 regression에 구현·검증하고 `complete + accepted`로

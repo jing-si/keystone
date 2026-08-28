@@ -232,6 +232,23 @@ key: {id: key.work.round.r010-b.index}
     return sources
 
 
+def uppercase_hierarchical_sources():
+    replacements = (
+        ("R010-a/S01", "R010-AA/S01-AA"),
+        ("R010-a", "R010-AA"),
+        ("R010-b", "R010-AAA"),
+        ("r010-a", "r010-AA"),
+        ("r010-b", "r010-AAA"),
+    )
+    transformed = {}
+    for path, raw in hierarchical_sources().items():
+        for old, new in replacements:
+            path = path.replace(old, new)
+            raw = raw.replace(old.encode("utf-8"), new.encode("utf-8"))
+        transformed[path] = raw
+    return transformed
+
+
 def r008_unresolved_r010_active_sources():
     sources = base_sources()
     legacy_state = """global_state:
@@ -533,6 +550,21 @@ class WorkStateRuntimeTest(unittest.TestCase):
             [item["status"] for item in hierarchy["R010"]["child_rounds"]],
         )
 
+    def test_uppercase_excel_child_round_and_step_suffixes_are_canonical(self):
+        result = RUNTIME.derive_work_state(uppercase_hierarchical_sources())
+
+        self.assertEqual("pass", result["status"], result["diagnostics"])
+        self.assertEqual(["R010-AA"], result["state"]["active_child_rounds"])
+        self.assertEqual(["R010-AA/S01-AA"], result["state"]["active_steps"])
+        hierarchy = next(
+            item for item in result["state"]["round_hierarchy"]
+            if item["round_ref"] == "R010"
+        )
+        self.assertEqual(
+            ["R010-AA", "R010-AAA"],
+            [item["round_ref"] for item in hierarchy["child_rounds"]],
+        )
+
     def test_planned_child_can_be_added_without_renumbering_existing_children(self):
         sources = hierarchical_sources()
         parent_path = "00_docs/works/r010-active/00_key-index.md"
@@ -691,6 +723,20 @@ key: {id: key.work.round.r010-a-a.index}
         suffix_result = RUNTIME.derive_work_state(suffix_sources)
         self.assertIn(
             "work_state_child_round_ref_invalid", self.codes(suffix_result)
+        )
+
+        mixed_suffix_sources = hierarchical_sources()
+        mixed_suffix_sources[
+            "00_docs/works/r010-active/r010-A1/00_key-index.md"
+        ] = frontmatter("""
+doc_type: work_round
+round_status: planned
+key: {id: key.work.round.r010-A1.index}
+""")
+        mixed_suffix_result = RUNTIME.derive_work_state(mixed_suffix_sources)
+        self.assertIn(
+            "work_state_child_round_ref_invalid",
+            self.codes(mixed_suffix_result),
         )
 
         mismatch_sources = hierarchical_sources()
@@ -1197,6 +1243,14 @@ key: {id: key.work.future.index}
         self.assertEqual("R010", active_match.group(1))
         self.assertIsNone(
             finalization_global.STEP_PATTERN.fullmatch("R010-a/S01")
+        )
+        uppercase_match = finalization_global.ACTIVE_STEP_PATTERN.fullmatch(
+            "R010-AA/S01-AA"
+        )
+        self.assertIsNotNone(uppercase_match)
+        self.assertEqual("R010", uppercase_match.group(1))
+        self.assertIsNone(
+            finalization_global.ACTIVE_STEP_PATTERN.fullmatch("R010-A1/S01")
         )
 
     def test_finalization_can_close_one_round_while_another_remains_active(self):

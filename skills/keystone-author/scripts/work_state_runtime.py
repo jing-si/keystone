@@ -15,7 +15,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 SCHEMA_VERSION = 1
 STATE_SCHEMA_VERSION = 5
-POLICY_VERSION = "keystone-work-state-v5"
+POLICY_VERSION = "keystone-work-state-v6"
 ACCEPTANCE_EVENT_PATH = "00_docs/works/key-acceptance-events.json"
 ACTIVE_WORK_STATUSES = frozenset({"in_progress", "blocked"})
 TERMINAL_RESIDUAL_STATUSES = frozenset({"planned", "in_progress", "blocked"})
@@ -33,14 +33,14 @@ PUBLIC_API = (
 )
 _ROUND_DIRECTORY = re.compile(r"^r(?P<number>\d+)(?:-.+)?$")
 _CHILD_ROUND_DIRECTORY = re.compile(
-    r"^r(?P<number>\d{3,})-(?P<suffix>[a-z])$"
+    r"^r(?P<number>\d{3,})-(?P<suffix>(?:[a-z]|[A-Z]+))$"
 )
 _ROUND_REF = re.compile(r"^R(?P<number>\d+)$")
 _CHILD_ROUND_REF = re.compile(
-    r"^(?P<parent>R(?P<number>\d{3,}))-(?P<suffix>[a-z])$"
+    r"^(?P<parent>R(?P<number>\d{3,}))-(?P<suffix>(?:[a-z]|[A-Z]+))$"
 )
 _STEP_REF = re.compile(
-    r"^(?P<round>(?:R\d+|R\d{3,}-[a-z]))/S\d+(?:-[A-Z0-9]+)*$"
+    r"^(?P<round>(?:R\d+|R\d{3,}-(?:[a-z]|[A-Z]+)))/S\d+(?:-[A-Z]+)?$"
 )
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 _WORK_INDEX = re.compile(r"^00_docs/works/r\d+(?:-[^/]+)?/[^/]+/00_key-index\.md$")
@@ -51,25 +51,25 @@ _STEP_PROGRESS = re.compile(
 )
 _WORK_ORDER = re.compile(r"^00_docs/works/r\d+(?:-[^/]+)?/[^/]+/key-work-[^/]+\.md$")
 _CHILD_ROUND_INDEX = re.compile(
-    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]/00_key-index\.md$"
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-(?:[a-z]|[A-Z]+)/00_key-index\.md$"
 )
 _CHILD_WORK_INDEX = re.compile(
-    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]/[^/]+/00_key-index\.md$"
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-(?:[a-z]|[A-Z]+)/[^/]+/00_key-index\.md$"
 )
 _CHILD_PROGRESS = re.compile(
-    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]/[^/]+/key-progress\.md$"
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-(?:[a-z]|[A-Z]+)/[^/]+/key-progress\.md$"
 )
 _CHILD_STEP_PROGRESS = re.compile(
-    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]/[^/]+/key-progress-[^/]+\.md$"
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-(?:[a-z]|[A-Z]+)/[^/]+/key-progress-[^/]+\.md$"
 )
 _CHILD_WORK_ORDER = re.compile(
-    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]/[^/]+/key-work-[^/]+\.md$"
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-(?:[a-z]|[A-Z]+)/[^/]+/key-work-[^/]+\.md$"
 )
 _ROUND_DEPTH_OVERFLOW = re.compile(
-    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]/r\d{3,}-[a-z](?:/|$)"
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-(?:[a-z]|[A-Z]+)/r\d{3,}-(?:[a-z]|[A-Z]+)(?:/|$)"
 )
 _INVALID_CHILD_ROUND_INDEX = re.compile(
-    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-[a-z]-.+/00_key-index\.md$"
+    r"^00_docs/works/r\d+(?:-[^/]+)?/r\d{3,}-(?!(?:[a-z]|[A-Z]+)/)[^/]+/00_key-index\.md$"
 )
 _FINALIZATION_MANIFEST = re.compile(
     r"^00_docs/works/r\d+(?:-[^/]+)?/key-finalization-manifest\.json$"
@@ -140,7 +140,7 @@ def policy_digest() -> str:
         "active_round_derivation": "parent-global-active-work-and-step-union-v3",
         "active_round_compatibility": "zero-none-one-ref-multiple-null",
         "round_hierarchy": "parent-declared-ordered-child-membership-depth-two-v1",
-        "child_round_identity": "nested-single-lowercase-suffix-rddd-plus-v1",
+        "child_round_identity": "uppercase-excel-suffix-with-legacy-lowercase-read-v2",
         "child_acceptance": "local-only-parent-all-children-accepted-gate-v1",
         "active_step_resolution": "resolved-or-unresolved-with-source-candidates",
         "progress_ownership": "aggregate-progress-authority-with-legacy-work-index-projection-v2",
@@ -450,7 +450,8 @@ def _records_from_sources(
             if invalid_shape_frontmatter.get("doc_type") == "work_round":
                 diagnostics.append(_diagnostic(
                     "work_state_child_round_ref_invalid",
-                    "Child Round refs allow exactly one lower-case ASCII suffix.",
+                    "Child Round refs allow an uppercase Excel-style suffix; one lower-case "
+                    "ASCII suffix remains readable for historical compatibility.",
                     path,
                 ))
                 continue

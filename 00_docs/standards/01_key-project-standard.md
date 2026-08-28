@@ -2,7 +2,7 @@
 doc_type: standard
 created_at: "2026-05-31"
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-25", accepted_by: main}
+approval: {state: accepted, accepted_at: "2026-08-28", accepted_by: user}
 key:
   id: key.standard.project
   refs:
@@ -861,6 +861,20 @@ Subagent report status 값과 의미는 `standards/subagents/key-standard-subage
     child가 없을 때만 Main 수락 후 accepted로 전이할 수 있다. Child local acceptance는
     parent gate evidence이며 자체로 전역 acceptance event나 새 historical closure 산출물을
     만들지 않는다.
+20. `-`는 직전 Round 또는 Step의 직접 하위 세션 경계다. 새 child Round ref는 `R015-A`, 새
+    child Step ref는 `R015/S01-A` 형식을 사용한다. Child Round의 Step `R015-A/S01`에도 같은
+    규칙으로 직접 child Step `R015-A/S01-A`를 둘 수 있다.
+21. 하위 세션 suffix는 Excel column과 같은 bijective base-26 대문자 영문 번호다. 순서는
+    `A → Z → AA → AZ → BA → … → ZZ → AAA`이며 숫자, 영문·숫자 혼합과 의미 문자열을 섞지
+    않는다.
+22. 같은 직전 parent 안에서 suffix는 중복·재사용하지 않고 이미 할당한 ID를 재번호화하지
+    않는다. 의미 있는 이름은 식별자 suffix가 아니라 title과 Goal에 기록한다.
+23. 새 child Round `R015-AA`의 index directory는 parent Round folder 아래 `r015-AA/`로
+    mapping한다. Parent Index의 `child_rounds`는 membership와 명시적 실행 구성을 보존하되
+    suffix의 번호 순서는 이 규칙으로 결정한다.
+24. 기존 `R010-a` 단일 소문자 child Round와 과거 Step ref는 historical compatibility 입력으로
+    읽고 이동·대소문자 변경·재번호화하지 않는다. 새 생성에는 대문자 영문 suffix만 사용한다.
+    Parent→direct child의 2단계 제한과 parent/child 상태·수락 권위는 유지한다.
 
 <!-- key: id=key.standard.project.std-keystone-027 refs=key.doc.work key.topic.work-round key.topic.artifact-graph key.topic.impact-review key.topic.verification key.topic.acceptance -->
 ### STD-KEYSTONE-027: Change Set은 artifact 변경과 impact propagation을 묶는다
@@ -1402,6 +1416,52 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
 7. 이 locator는 operational navigation metadata이며 atomic claim, lock, shared registry 또는
    중복 실행 방지를 보장하지 않는다. 기록되지 않은 별도 worktree 누락은 사용자 기억에 의존하는
    residual risk다.
+
+<!-- key: id=key.standard.project.std-keystone-062 kind=claim refs=key.topic.work-round key.topic.work-sequence key.topic.document-authoring key.topic.verification key.role.author key.boundary.scope-control key.work.decisions.dec-works-034 -->
+### STD-KEYSTONE-062: Round 생성과 실행을 분리하고 production 구현을 standards-first로 구성한다
+
+1. 사용자-facing 작업 단위는 Round와 Step을 우선한다. Work Order는 Round와 Step의 Goal, Scope,
+   completion criteria와 verification을 보존하는 원천 문서이며 별도 사용자 실행 단계가 아니다.
+2. Round 생성만 요청되면 Author는 필요한 원천 문서를 `planned / pending`, Active Step 없음으로
+   만들고 중단한다. 계획 승인, 생성 결과 확인, 추가 문서 수정과 단순한 긍정을 실행 승인으로
+   추론하지 않는다.
+3. 같은 요청에 `작업서 생성 이후 작업을 바로 진행해주세요`처럼 생성과 실행이 함께 명시되거나
+   이후 명시적 Round/Step 진행 요청이 오면 생성 뒤 첫 실행 가능 Step을 이어서 진행할 수 있다.
+4. Round에 유지될 production code/config/schema/API/generated/codegen/skill-source 구현이 있으면
+   첫 production 구현 전에 기준서 정합화를 수행한다. Accepted 기준서가 이미 충분하면 의미 없는
+   수정 대신 근거 있는 `no_change`를 기록한다.
+5. Round 완료 전 accepted 기준서 의미, 실제 구현과 필요한 verification evidence의 정합성을
+   확인한다.
+6. 공통 제약은 생성-실행 분리, production standards-first와 closure verification로 제한한다.
+   이를 만족하면 Step 이름·개수, 구현·검증 분할, 독립 Step 병행과 production·문서·조사 Round의
+   topology는 Goal에 맞게 구성하며 하나의 고정 pipeline을 강제하지 않는다.
+7. 문서 전용 Round에는 구현 Step을 만들지 않는다. 조사·실험 Round가 production 구현을
+   수락하지 않으면 조사와 사용자 판단 대기 구조를 사용할 수 있다.
+8. 하위 Round·Step 식별자는 `STD-KEYSTONE-026`의 `-` 경계와 Excel column 방식 대문자 영문
+   번호를 따른다. Goal별 topology 자율성은 숫자·혼합·의미 문자열 suffix를 허용하지 않는다.
+
+<!-- key: id=key.standard.project.std-keystone-063 kind=claim refs=key.topic.initialization key.topic.skill-contract key.topic.work-round key.role.init key.role.reader key.boundary.scope-control -->
+### STD-KEYSTONE-063: Keystone 세션 제목 표시는 project-local opt-in으로 구성한다
+
+1. `Keystone 세션 제목 표시`는 Codex를 사용하는 소비 프로젝트의 선택적 integration이다.
+   Keystone 초기화의 성공 조건이나 다른 host의 runtime 선행 조건으로 만들지 않는다.
+2. 초기화 중에는 Init이 `IntelliJ·터미널 탭에 Keystone 작업 세션 제목을 표시할까요? (yes/no)`를
+   한 번 묻는다. `yes`만 project-local config write를 허용하고 `no`는 config를 만들거나 수정하지
+   않는다.
+3. Ready 프로젝트에서 사용자가 자연어로 기능 활성화를 명시하면 그 요청 자체를 같은 bounded
+   write 동의로 사용하고 yes/no를 다시 묻지 않는다.
+4. 허용된 target은 repository root의 `.codex/config.toml`과 `tui.terminal_title` 하나다. 값은
+   `["activity", "thread-title", "task-progress"]` 순서이며 다른 Codex key와 사용자 전역
+   `~/.codex/config.toml`은 변경하지 않는다.
+5. 기존 project config가 있으면 target key의 최소 create/replace만 수행하고 다른 table, key와
+   comment를 보존한다. Invalid TOML, duplicate/conflicting table 또는 안전한 최소 edit가 불가능한
+   구조는 no-write conflict로 보고한다.
+6. Reader가 active parent Round 하나를 사용하거나 focus 선택을 완료하면
+   `/rename 프로그래스 {Round ref}:{대표 문구}`를 정확한 사용자 명령으로 한 번 제안할 수 있다.
+   대표 문구는 current Work/Step을 구분하는 5자 이내 문구다.
+7. Reader는 slash command를 실행하거나 rename 성공을 주장하지 않는다. Round focus가 정해지기
+   전에는 rename을 제안하지 않으며 project title만 보이는 host 기본 상태를 방해하지 않는다.
+8. 이 기능을 위해 plugin, hook, daemon, watcher, App Server 또는 외부 service를 요구하지 않는다.
 
 <!-- key: id=key.standard.project.active-work refs=key.topic.document-system key.topic.work-round -->
 ## 관련 active work

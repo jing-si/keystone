@@ -59,7 +59,7 @@ class LeanCoreIntegrationTest(unittest.TestCase):
         )
         self.assertIn("round_hierarchy", reader)
         self.assertIn("active_child_rounds", reader)
-        self.assertIn("R010-a-a", author)
+        self.assertIn("R010-A-A", author)
         self.assertIn("work_order_restructure", author)
         self.assertIn("work_order_restructure", coordinator)
         self.assertIn("Parent/child recovery", coordinator)

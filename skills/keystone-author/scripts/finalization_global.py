@@ -18,9 +18,9 @@ GLOBAL_SOURCE_CATEGORIES = {
     "work_index", "round_index", "root_index", "context_map",
 }
 ROUND_PATTERN = re.compile(r"^R\d+$")
-STEP_PATTERN = re.compile(r"^(R\d+)/S\d+(?:-[A-Z0-9]+)*$")
+STEP_PATTERN = re.compile(r"^(R\d+)/S\d+(?:-[A-Z]+)?$")
 ACTIVE_STEP_PATTERN = re.compile(
-    r"^(R\d+)(?:-[a-z])?/S\d+(?:-[A-Z0-9]+)*$"
+    r"^(R\d+)(?:-(?:[a-z]|[A-Z]+))?/S\d+(?:-[A-Z]+)?$"
 )
 ACTIVE_WORK_STATUSES = {"planned", "in_progress", "blocked"}
 V5_SOURCE_TYPES = {

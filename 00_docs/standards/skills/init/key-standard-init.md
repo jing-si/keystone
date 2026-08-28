@@ -4,8 +4,8 @@ created_at: "2026-07-20"
 document_lifecycle: active
 approval:
   state: accepted
-  accepted_at: "2026-08-06"
-  accepted_by: main
+  accepted_at: "2026-08-28"
+  accepted_by: user
 key:
   id: key.standard.skill.init
   refs:
@@ -34,14 +34,17 @@ Keystone 문서 없이 실행 계약이 완결되어야 한다.
 1. `inspect`: 실제 파일과 설정을 읽어 초기화 상태만 판정한다.
 2. `initialize`: 미초기화 프로젝트에 고정 scaffold와 R000을 만든다.
 3. `repair`: partial scaffold를 보존적으로 보완한다.
-4. 초기 설정 질문, Author/Clarify handoff, 검증과 원래 요청 resume context를 준비한다.
+4. `configure`: ready 프로젝트에서 사용자가 명시한 선택적 Keystone integration만 bounded하게
+   설정한다.
+5. 초기 설정 질문, Author/Clarify handoff, 검증과 원래 요청 resume context를 준비한다.
 
 <!-- key: id=key.standard.skill.init.out-of-scope refs=key.role.init key.role.author key.topic.implementation -->
 ## 적용하지 않는 범위
 
 1. 프로젝트 의미를 담은 기준서 내용을 직접 작성하거나 승인하기
 2. 기존 문서 이동, 대규모 정규화, metadata 일괄 migration
-3. Code, config, schema, API, test 또는 skill source 구현
+3. 아래 `Codex project integration write authority` 밖의 code, config, schema, API, test 또는
+   skill source 구현
 4. Artifact relation 확정과 worker orchestration
 5. 소비 프로젝트의 `standards/skills/**` 생성
 
@@ -60,7 +63,7 @@ Graph를 선행 조건으로 요구하지 않는다. 이 저장소의 `key-stand
 2. repository root와 현재 instruction context
 3. 현재 사용자 지시, 존재하는 `.keystone` 설정과 문서 관례
 4. 현재 workspace state와 기존 파일 변경 위험
-5. mode: `inspect`, `initialize`, `repair`
+5. mode: `inspect`, `initialize`, `repair`, 또는 `configure`
 
 직접 Init 요청은 초기화 동의를 포함한다. 다른 file-changing skill에서 넘어온 경우에는 같은
 대화와 범위에서 한 번 받은 초기화 동의를 보존한다.
@@ -98,6 +101,26 @@ Init이 새로 생성하는 scaffold 문서에는 생성 당일의 `created_at: 
 Draft/pending 문서에는 `approval.accepted_at`을 만들지 않으며, 새 결정이 실제로 기록되면
 결정이 확정된 `결정일`을 사용한다.
 
+<!-- key: id=key.standard.skill.init.codex-session-title kind=claim refs=key.role.init key.topic.initialization key.boundary.bounded-edit key.standard.project.std-keystone-063 -->
+## Codex project integration write authority
+
+`Keystone 세션 제목 표시`는 fixed bootstrap scaffold와 분리된 optional integration이다.
+
+1. Initialize/repair 중에는 `IntelliJ·터미널 탭에 Keystone 작업 세션 제목을 표시할까요? (yes/no)`를
+   한 번 묻는다. `yes`만 아래 write를 허용하며 `no`는 config write 없이 bootstrap을 계속한다.
+2. Ready 프로젝트에서 사용자가 자연어로 기능을 켜 달라고 명시하면 `configure`로 처리하고 같은
+   질문을 반복하지 않는다.
+3. Target은 repository root의 `.codex/config.toml`과 `tui.terminal_title` 하나다. 값은
+   `["activity", "thread-title", "task-progress"]` 순서를 사용한다.
+4. 파일이 없으면 `.codex/`와 최소 config를 만들 수 있다. 파일이 있으면 다른 table, key와
+   comment를 보존하고 target key만 create 또는 replace한다.
+5. Invalid TOML, duplicate/conflicting `[tui]` 구조 또는 current bytes에서 안전한 최소 patch를
+   만들 수 없으면 쓰지 않고 conflict를 보고한다.
+6. 사용자 전역 `~/.codex/config.toml`, 다른 project, profile/provider/auth/permission/notification/
+   telemetry key와 IntelliJ 자체 설정은 권한 밖이다.
+7. 이 integration은 프로젝트가 Codex에 의해 trusted일 때만 host에 적용될 수 있음을 보고하며
+   Keystone initialized/ready 판정과 분리한다.
+
 
 <!-- key: id=key.standard.skill.init.workflow refs=key.role.init key.role.author key.role.clarify key.topic.initialization -->
 ## Workflow
@@ -105,16 +128,20 @@ Draft/pending 문서에는 `approval.accepted_at`을 만들지 않으며, 새 �
 1. 상태와 document root 후보를 inspect한다.
 2. 현재 지시와 우선순위로 안전하게 결정되는 초기 설정은 질문 없이 적용한다.
 3. Document root 등 내장 초기 설정에 실제 선택지가 있으면 Init이 사용자에게 직접 묻는다.
-4. 복수의 유효한 문서 채택·이동·대체 선택이나 프로젝트 의미 결정은 Clarify에 한 topic씩
+4. Initialize/repair에서는 `Keystone 세션 제목 표시` opt-in을 한 번 묻고 답에 따라 optional
+   project config write를 수행하거나 건너뛴다.
+5. `configure`에서는 명시적으로 요청한 optional integration만 처리하고 bootstrap state를
+   변경하거나 scaffold를 보완하지 않는다.
+6. 복수의 유효한 문서 채택·이동·대체 선택이나 프로젝트 의미 결정은 Clarify에 한 topic씩
    handoff한다.
-5. `uninitialized`이면 고정 scaffold와 R000을 만든다.
-6. `partial`이면 기존 파일을 보존하고 누락 scaffold만 repair한다.
-7. Main의 일반 repository 조사에서 얻은 사실과 사용자 지시를 R000의 Author input evidence로
+7. `uninitialized`이면 고정 scaffold와 R000을 만든다.
+8. `partial`이면 기존 파일을 보존하고 누락 scaffold만 repair한다.
+9. Main의 일반 repository 조사에서 얻은 사실과 사용자 지시를 R000의 Author input evidence로
    연결한다.
-8. Author가 프로젝트 기준서를 draft로 작성하게 handoff한다.
-9. 필요한 User Decision이 해결되고 Author 문서가 검증되면 Main이 수락한다.
-10. R000과 전체 최소 구조를 검증해 `ready`를 판정한다.
-11. Init을 요구한 원래 skill과 요청, 중단 단계로 resume한다.
+10. Author가 프로젝트 기준서를 draft로 작성하게 handoff한다.
+11. 필요한 User Decision이 해결되고 Author 문서가 검증되면 Main이 수락한다.
+12. R000과 전체 최소 구조를 검증해 `ready`를 판정한다.
+13. Init을 요구한 원래 skill과 요청, 중단 단계로 resume한다.
 
 질문 수집을 특정 호스트의 내부 mode로 규정하지 않는다. 사용할 수 있는 호스트 질문 기능은
 자연스럽게 활용하되, skill이 실행 mode를 전환하거나 활성화했다고 주장하지 않는다.
@@ -131,6 +158,8 @@ Draft/pending 문서에는 `approval.accepted_at`을 만들지 않으며, 새 �
 7. 사용자 초기화 거부 시 파일을 생성하지 않는다.
 8. Repair 중 기존 문서의 `created_at`을 현재 실행일로 덮어쓰거나 근거 없이 과거 날짜를
    추정하지 않는다.
+9. Codex project integration은 explicit yes/request 없이 쓰지 않고 target key 밖의 config를
+   보존한다.
 
 <!-- key: id=key.standard.skill.init.clarify-boundary refs=key.role.init key.role.clarify key.topic.user-decision -->
 ## Clarify 경계
@@ -180,6 +209,14 @@ payload는 Clarify topic이 아니다.
    - Reader, Author, Clarify, Linker, Coordinator, Init이 설치된 계약으로 정상 동작
 9. 사용자 초기화 거부
    - 파일을 생성하지 않고 가능한 partial 결과, 현재 제한, 후속 Init 방법만 안내
+10. 세션 제목 표시 opt-in
+   - yes는 project-local target key만 create/replace하고 no는 config를 변경하지 않은 채
+     initialization을 계속함
+11. Ready 프로젝트의 명시적 configure
+   - 자연어 활성화 요청을 동의로 사용해 같은 bounded write를 수행하고 bootstrap source와 상태는
+     변경하지 않음
+12. Invalid 또는 conflicting Codex project config
+   - 파일을 덮어쓰거나 전체 재직렬화하지 않고 no-write conflict와 후속 수동 확인을 보고함
 
 <!-- key: id=key.standard.skill.init.stop-condition refs=key.role.init key.topic.initialization key.boundary.stop-condition -->
 ## Stop condition
@@ -204,11 +241,13 @@ repair 후 Reader/Author/Main이 복구할 risk로 보고한다.
 1. `inspect`, `initialize`, `repair`의 쓰기 권한 차이가 명확해야 한다.
 2. 같은 상태에서 재실행해도 기존 파일 의미가 보존되어야 한다.
 3. 고정 scaffold와 Author project standard 책임이 분리되어야 한다.
-4. 아홉 통합 시나리오의 기대 동작을 이 계약만으로 설명할 수 있어야 한다.
+4. 열두 통합 시나리오의 기대 동작을 이 계약만으로 설명할 수 있어야 한다.
 5. Init 이후 원래 요청, skill과 resume 단계가 복구되어야 한다.
 6. 소비 프로젝트 로컬 Init 기준서를 required input으로 요구하지 않아야 한다.
 7. 새 scaffold의 `created_at`, pending approval과 결정일이 Bootstrap temporal metadata 기준과
    일치해야 하며, repair가 기존 날짜를 바꾸지 않아야 한다.
+8. Codex integration은 project-local target key만 수정하고 no, invalid/conflict와 global path에서
+   no-write여야 한다.
 
 <!-- key: id=key.standard.skill.init.context-readiness-boundary refs=key.role.init key.role.reader key.role.linker key.topic.work-recovery -->
 ## Context readiness 경계

@@ -6,7 +6,7 @@ description: "Create or revise Keystone source documents, standards, work orders
 <!-- keystone: id=key.skill.author kind=output_artifact artifact_kind=skill_source -->
 <!-- keystone: produced_from=key.work.skill-runtime-implementation.order -->
 <!-- keystone: governed_by=key.standard.project key.standard.skill.author -->
-<!-- keystone: derived_from=key.work.decisions.dec-works-020 -->
+<!-- keystone: derived_from=key.work.decisions.dec-works-020 key.work.decisions.dec-works-034 -->
 
 # keystone-author
 
@@ -86,6 +86,42 @@ a prerequisite for a small explicit document edit.
 6. Check actual impact on standards, Work/Progress, decisions, indexes, Context Map, and Change Set.
 7. Use Linker for graph interpretation; hand repository-output edits to Main or a permitted Coordinator.
 8. Run verification proportional to the changed surface and report residual risk.
+
+## Round Creation and Execution Boundary
+
+Use Round and Step as the primary user-facing execution terms. A Work Order is the source document
+that preserves a Round's Goal, Scope, completion criteria, and verification; do not present Work Order
+creation as a separate execution phase.
+
+Keep these three constraints invariant while allowing the Round topology to fit its Goal:
+
+1. **Separate creation from execution.** When the user asks only to create a Round or Work Order,
+   create the Round Index, Work Order, Progress, and required navigation sources as
+   `planned / pending` with no Active Step. Report the created Round and stop.
+2. **Use standards-first for durable production implementation.** If the Round will leave production
+   code, config, schema, API, generated/codegen, or skill-source changes in the repository, place a
+   standards-alignment Step before the first production implementation Step. Check intended behavior,
+   scope, boundaries, verification expectations, and the accepted standard baseline. When the accepted
+   standards already express the agreed meaning, record a reasoned `no_change` instead of forcing a
+   meaningless edit.
+3. **Verify before closure.** Before completing the Round, verify alignment among accepted standard
+   meaning, the resulting implementation, and the necessary verification evidence.
+
+Creation and execution may be authorized together. For example, `작업서 생성 이후 작업을 바로
+진행해주세요` or “create the Round and proceed immediately” authorizes Author to create the Round and
+then continue from its first executable Step. A later explicit request to proceed with the Round,
+Step, or implementation has the same effect.
+
+Do not infer execution authority from plan approval, acceptance of the Round's contents, a simple
+positive response, confirmation that creation succeeded, or a request to revise the newly created
+documents. For a document-revision request, edit only the approved document scope and keep the Round
+planned unless execution is also explicit. If the intent is ambiguous, stop after creation.
+
+The three constraints above do not impose one fixed pipeline. Step names and counts, implementation
+and verification splits, and parallel independent Steps may vary by Goal. A document-only Round needs
+no implementation Step. An investigation or experiment Round may end with findings and a user decision
+when it does not accept durable production implementation. Any durable production implementation still
+requires standards alignment before implementation and verification before closure.
 
 ## Worktree Locator Metadata
 
@@ -248,10 +284,16 @@ does not trigger a new producer run or external-folder permission request.
 - Start ordinary rounds at `R001` and every round's steps at `S01`; reserve `R000` for Project
   Foundation.
 - A hierarchical plan uses one parent plus one direct child level only. Parent refs remain
-  `R[0-9]{3,}`; child refs use one lower-case suffix such as `R010-a`, and the child index lives at
-  `works/r010-parent/r010-a/00_key-index.md`. The parent owns ordered `child_rounds` and umbrella scope;
+  `R[0-9]{3,}`. A `-` introduces a direct child session, whose suffix uses uppercase Excel-column
+  numbering: `A` through `Z`, then `AA`, `AB`, ... `AZ`, `BA`, ... `ZZ`, `AAA`. Thus a child Round is
+  `R010-A`, a child Step is `R010/S01-A`, a Step inside that child Round is `R010-A/S01`, and its child
+  Step is `R010-A/S01-A`. The matching child index lives at
+  `works/r010-parent/r010-A/00_key-index.md`. The parent owns ordered `child_rounds` and umbrella scope;
   each child owns its local status, Work, Step, and Progress.
-- Do not create `R010-a-a`, a child below a child, or a sibling-root substitute for a declared child.
+- For new child sessions, do not use digits, letter-number mixtures, lower-case letters, or semantic
+  labels as suffixes. Existing one-letter lower-case child Round refs such as `R010-a` are historical
+  compatibility inputs only: read them without renaming them, but never emit them for new work.
+- Do not create `R010-A-A`, a child below a child, or a sibling-root substitute for a declared child.
   When a third level appears necessary, stop with `NEEDS_SCOPE_CHANGE / work_order_restructure` and ask
   Main to simplify, split sibling children, or create a separate parent Round.
 - Keep `document_lifecycle`, `work_status`, `approval.state`, and optional finalization substate
@@ -339,3 +381,6 @@ Verify that:
     separates lightweight per-answer append from one source-document application per completed group.
 11. A linked-worktree handoff writes only the exact canonical Work Order path before implementation and
     returns it for fresh Coordinator/Main confirmation without taking execution ownership.
+12. Round creation stops at `planned / pending` with no Active Step unless execution is explicit, accepts
+    combined create-and-proceed requests, applies standards-first only to durable production
+    implementation, verifies before closure, and preserves Goal-specific Step topology.
