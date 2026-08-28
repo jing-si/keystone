@@ -21,7 +21,7 @@ def normalized(text):
 
 
 class ReaderRoundSessionFocusContractTest(unittest.TestCase):
-    def test_reader_selects_parent_round_before_candidate_deep_readiness(self):
+    def test_reader_collects_assignment_or_freeform_before_deep_readiness(self):
         readiness = normalized(section(
             read("skills/keystone-reader/SKILL.md"),
             "## Session Context Readiness",
@@ -40,26 +40,40 @@ class ReaderRoundSessionFocusContractTest(unittest.TestCase):
         self.assertLess(work_state, focus_gate)
         self.assertLess(focus_gate, linker_readiness)
         for phrase in (
-            "two or more active parent Rounds",
-            "active Step refs or unresolved reason",
-            "해당 세션에서 어떤 라운드를 작업할까요?",
-            "Do not read every candidate Round's Work order or Progress",
-            "Do not start conditional Linker readiness",
+            "explicit existing-Round assignment",
+            "free-form review/status request",
+            "Do not infer selection merely because one active Round exists",
+            "non-terminal parent and child Rounds",
+            "never auto-select a sole candidate",
+            "Exclude `complete`, `accepted`, and `cancelled`",
+            "project's preferred language",
+            "one line per Round",
+            "`Keystone ready · 미완료 Round N개`",
+            "open-left selection box",
+            "`╭─ Round 선택`",
+            "`└─`",
+            "no right border",
+            "blank `│` line",
+            "`╰─ 어느 Round에 집중할까요?`",
+            "Never emit a terminal parent as a grouping header",
+            "full local ref",
+            "Work Order creation, writing, revision, or amendment",
+            "next Excel-column suffix",
             "non-authoritative session context",
         ):
             self.assertIn(phrase, readiness)
         self.assertNotIn("which Work to handle in this session", readiness)
 
-    def test_reader_skips_round_question_when_scope_is_already_clear(self):
+    def test_reader_preserves_non_assignment_requests(self):
         readiness = normalized(section(
             read("skills/keystone-reader/SKILL.md"),
             "## Session Context Readiness",
         ))
 
         for phrase in (
-            "zero or one active parent Round",
-            "explicitly identifies a parent Round",
-            "all active parent Rounds or a cross-Round comparison",
+            "review, investigation, confirmation, status",
+            "all active Rounds",
+            "cross-Round comparison",
             "resume automatically with the selected Round",
             "never persist the selection",
         ):

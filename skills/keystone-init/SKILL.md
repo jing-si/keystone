@@ -90,9 +90,9 @@ Give every newly created Markdown scaffold document an immutable `created_at: "Y
 
 1. During `initialize` or `repair`, ask exactly once:
    `IntelliJ·터미널 탭에 Keystone 작업 세션 제목을 표시할까요? (yes/no)`
-2. On `yes`, the only additional write authority is the repository root's
-   `.codex/config.toml` key `tui.terminal_title`. On `no`, do not create or modify that config and
-   continue initialization or repair.
+2. On `yes`, the only additional write authority is the repository root's `.codex/config.toml`, limited
+   to `tui.terminal_title` and the Keystone Reader `hooks.UserPromptSubmit` command shown below. On `no`,
+   do not create or modify that config and continue initialization or repair.
 3. In a ready project, an explicit natural-language request such as `Keystone 세션 제목 표시를 켜줘`
    selects `configure` and is itself consent for the same bounded write. Do not ask the yes/no question
    again.
@@ -101,20 +101,30 @@ Give every newly created Markdown scaffold document an immutable `created_at: "Y
    ```toml
    [tui]
    terminal_title = ["activity", "thread-title", "task-progress"]
+
+   [[hooks.UserPromptSubmit]]
+   [[hooks.UserPromptSubmit.hooks]]
+   type = "command"
+   command = '"$HOME/.codex/skills/keystone-reader/scripts/keystone_session_title.py" --hook'
    ```
 
+   The TOML single-quoted value must contain the path's double quotes directly. Do not prefix those
+   double quotes with backslashes; a literal backslash can make the shell treat the quote as part of
+   the executable name and return exit code 127.
+
 5. If `.codex/config.toml` does not exist, create `.codex/` and the smallest valid file containing the
-   table above. If it exists, re-read current bytes, parse it as TOML, and create or replace only
-   `tui.terminal_title`; preserve every other table, key, comment, and ordering as far as the target-line
+   tables above. If it exists, re-read current bytes, parse it as TOML, and create or replace only the
+   two named targets; preserve every other table, key, comment, and ordering as far as the target-line
    patch allows. Never reserialize the whole file merely to apply this setting.
 6. If TOML is invalid, `[tui]` is duplicated or structurally conflicting, the key is duplicated, or a
    safe minimal patch cannot be determined, write nothing and report the conflict. Do not guess or
    replace the file.
 7. Never edit `~/.codex/config.toml`, another project, or any profile, provider, authentication,
    permission, notification, telemetry, IntelliJ, or unrelated Codex key. Do not introduce a plugin,
-   hook, daemon, watcher, App Server, or network dependency.
-8. Report that Codex loads a project-local config only for a trusted project. This host condition does
-   not change Keystone's initialization or ready state.
+   daemon, watcher, App Server, or network dependency.
+8. Report that Codex loads a project-local config and command hook only for a trusted project. Codex may
+   ask the user to trust the project hook once. This host condition does not change Keystone's
+   initialization or ready state.
 
 ## Workflow
 

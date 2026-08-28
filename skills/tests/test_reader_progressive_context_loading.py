@@ -76,24 +76,24 @@ class ReaderProgressiveContextLoadingTest(unittest.TestCase):
     def test_active_round_zero_one_and_multi_boundaries_are_preserved(self):
         for phrase in (
             "Active parent Round가 없으면",
-            "하나이면 해당 Round를 세션 focus로 사용하고",
-            "둘 이상이면 current Step 요약까지만",
+            "하나뿐이어도 자동으로",
+            "자유로운 검토·조사·확인",
         ):
             self.assertIn(phrase, self.project)
 
         for phrase in (
             "Active parent Round가 0개이면",
-            "하나이면 해당 Round를 사용하며",
-            "active parent Round가 둘 이상",
-            "해당 세션에서 어떤 라운드를 작업할까요?",
+            "후보가 하나여도 자동 선택하지 않는다",
+            "자유로운 검토 범위",
         ):
             self.assertIn(phrase, self.standard)
 
         for phrase in (
-            "zero active parent Rounds",
-            "With one, use that Round as session focus",
-            "two or more active parent Rounds",
-            "해당 세션에서 어떤 라운드를 작업할까요?",
+            "no incomplete Rounds",
+            "A sole active Round is reported but never selected automatically",
+            "non-terminal parent and child Rounds",
+            "complete`, `accepted`, and `cancelled",
+            "Free-form follow-up",
         ):
             self.assertIn(phrase, self.skill)
 

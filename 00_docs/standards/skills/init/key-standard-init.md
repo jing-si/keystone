@@ -110,16 +110,24 @@ Draft/pending 문서에는 `approval.accepted_at`을 만들지 않으며, 새 �
    한 번 묻는다. `yes`만 아래 write를 허용하며 `no`는 config write 없이 bootstrap을 계속한다.
 2. Ready 프로젝트에서 사용자가 자연어로 기능을 켜 달라고 명시하면 `configure`로 처리하고 같은
    질문을 반복하지 않는다.
-3. Target은 repository root의 `.codex/config.toml`과 `tui.terminal_title` 하나다. 값은
+3. Target은 repository root의 `.codex/config.toml` 안 `tui.terminal_title`과 Keystone Reader 전용
+   `hooks.UserPromptSubmit` command다. Title 값은
    `["activity", "thread-title", "task-progress"]` 순서를 사용한다.
+   Hook command는 다음 TOML literal string을 사용한다. 경로를 감싸는 큰따옴표 앞에 literal
+   backslash를 넣지 않는다. Backslash가 들어가면 shell이 따옴표를 command name 일부로 해석해
+   exit code 127을 반환할 수 있다.
+
+   ```toml
+   command = '"$HOME/.codex/skills/keystone-reader/scripts/keystone_session_title.py" --hook'
+   ```
 4. 파일이 없으면 `.codex/`와 최소 config를 만들 수 있다. 파일이 있으면 다른 table, key와
-   comment를 보존하고 target key만 create 또는 replace한다.
+   comment를 보존하고 두 target만 create 또는 replace한다.
 5. Invalid TOML, duplicate/conflicting `[tui]` 구조 또는 current bytes에서 안전한 최소 patch를
    만들 수 없으면 쓰지 않고 conflict를 보고한다.
 6. 사용자 전역 `~/.codex/config.toml`, 다른 project, profile/provider/auth/permission/notification/
    telemetry key와 IntelliJ 자체 설정은 권한 밖이다.
-7. 이 integration은 프로젝트가 Codex에 의해 trusted일 때만 host에 적용될 수 있음을 보고하며
-   Keystone initialized/ready 판정과 분리한다.
+7. 이 integration은 프로젝트가 Codex에 의해 trusted일 때만 host에 적용될 수 있고 command hook에
+   대한 일회성 신뢰 확인이 나타날 수 있음을 보고하며 Keystone initialized/ready 판정과 분리한다.
 
 
 <!-- key: id=key.standard.skill.init.workflow refs=key.role.init key.role.author key.role.clarify key.topic.initialization -->

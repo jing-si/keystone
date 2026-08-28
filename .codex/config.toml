@@ -1,0 +1,7 @@
+[tui]
+terminal_title = ["activity", "thread-title", "task-progress"]
+
+[[hooks.UserPromptSubmit]]
+[[hooks.UserPromptSubmit.hooks]]
+type = "command"
+command = '"$HOME/.codex/skills/keystone-reader/scripts/keystone_session_title.py" --hook'

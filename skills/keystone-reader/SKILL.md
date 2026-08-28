@@ -149,12 +149,12 @@ Reader may return one read-only resume candidate.
 4. Follow a child-standard index only for a concrete gap in project purpose, scope, document structure,
    or authority. Do not load the child tree for completeness.
 5. Prepare `project_brief` with purpose, scope, document structure, authority, and important unknowns.
-6. Run the package-local Work State runtime and use its passing projection to identify active parent
-   Rounds, active children, Works, and Steps. Apply the multi-active Round session-focus gate before
-   opening the Work order/Progress for every candidate Round. After focus is known, follow the selected
-   Round's ordered `child_rounds`, active Work orders, and Progress unless the request explicitly needs
-   a cross-Round view. A flat parent without `child_rounds` keeps the existing direct-Work flow. Treat a
-   singular `current_step` claim as stale/conflicting evidence, not authority.
+6. Run the package-local Work State runtime and use its passing projection to identify incomplete parent
+   and child Rounds, active Works, and Steps. When the project-local session-title hook has already
+   collected an explicit existing-Round assignment, follow that selected Round. Otherwise keep Reader
+   in orientation, review, investigation, or status mode without silently selecting a sole active Round.
+   A flat parent without `child_rounds` keeps the existing direct-Work flow. Treat a singular
+   `current_step` claim as stale/conflicting evidence, not authority.
 7. Use Work State schema v5 `round_hierarchy` and `active_child_rounds` for child navigation. Keep
    `active_rounds` and `accepted_rounds` parent-only. Treat singular `active_round` and historical
    acceptance data as compatibility context that cannot select current work or reinterpret a child
@@ -196,60 +196,84 @@ context-readiness entry point, not the cache owner.
    replace a failed or incomplete envelope with manual pointer agreement. Use the cited
    parent/child/work indexes and active Progress for narrative context after the canonical projection
    succeeds.
-3. Apply the session focus gate immediately after a passing Work State projection. When there are two
-   or more active parent Rounds and the user's request does not identify one parent Round or ask for a
-   cross-Round view, show only a compact candidate list: parent Round ref, status, and active Step refs
-   or unresolved reason derived from `round_hierarchy` and `active_works`. Ask exactly once
-   `해당 세션에서 어떤 라운드를 작업할까요?` Do not read every candidate Round's Work order or Progress
-   before the answer. Do not start conditional Linker readiness before the answer.
+3. Apply the session focus gate immediately after a passing Work State projection. In an opted-in trusted
+   project, the project-local `UserPromptSubmit` hook may already have collected either an explicit
+   existing-Round assignment or a free-form review/status request before Reader starts. Honor that
+   context without asking again. Do not infer selection merely because one active Round exists.
 4. Treat the selection as non-authoritative session context. When the user answers, resume automatically
    with the selected Round. Keep unselected Rounds unchanged and never persist the selection in project
    source, a cache, or a canonical pointer.
-5. Skip the focus question when there are zero or one active parent Round, the request explicitly
-   identifies a parent Round, or the request asks for all active parent Rounds or a cross-Round
-   comparison. With zero active parent Rounds, report the empty set and next actor without detailed Work
-   reading or Linker. With one, use that Round as session focus.
+5. Skip the focus question when there are no incomplete Rounds or the request asks for review,
+   investigation, confirmation, status, all active Rounds, or a cross-Round comparison. With no active
+   parent Rounds, report the empty set and next actor without detailed Work reading or Linker. A sole
+   active Round is reported but never selected automatically.
 6. After the Round focus gate is resolved or skipped, inform the user of the current in-progress Steps
-   in the selected or sole active Round. Do not ask the user to choose a Step. Without an explicit Step
+   in the explicitly selected Round. Do not ask the user to choose a Step. Without an explicit Step
    request, select the lowest-numbered executable active Step using dependency evaluations and
    `work_gates`. If the lowest-numbered Step is blocked, explain the blocker and select the next
    executable Step. Do not change Step status or priority through this session choice.
-7. If the trusted project's `.codex/config.toml` configures `tui.terminal_title` with `thread-title`,
-   propose one exact user command after Round focus is known:
-   `/rename 프로그래스 {Round ref}:{대표 문구}`. Derive the representative phrase from the selected
-   current Work or Step, keep it at five Korean characters or fewer (truncation is acceptable), and
-   show the concrete command rather than the template. Do not propose it before focus, execute a slash
-   command, or claim the rename succeeded. This is read-only session guidance and is never persisted as
-   Round priority or project state.
-8. Read the selected Work order first. When its document-level `key.worktree.path` is present, confirm
+7. When `.codex/config.toml` opts in, its project-local `UserPromptSubmit` hook runs the package-local
+   `scripts/keystone_session_title.py --hook` before the first Reader request is accepted. A bare Reader
+   request lists non-terminal parent and child Rounds in ascending parent number order, nesting each
+   child immediately below its parent in Excel-column suffix order. Exclude `complete`, `accepted`, and
+   `cancelled`. Show at most twenty Round entries in total and summarize the remainder as `외 N개`; never
+   auto-select a sole candidate. Never emit a terminal parent as a grouping header. If only its child
+   remains, render that child as a numbered entry with its full local ref.
+8. Whether the candidate list comes from the hook or Reader's own fail-open response, start with
+   `Keystone ready · 미완료 Round N개` and render an open-left selection box headed by
+   `╭─ Round 선택`. Use one line per Round in the stable form
+   `{Round ref} · {status} · {title}`, number parent or standalone entries, and prefix a nested child
+   with `└─`. Separate parent groups with a blank `│` line, use no right border or width padding, and
+   close with `╰─ 어느 Round에 집중할까요?`. Do not add separate Step, gate, baseline, source, or
+   rationale lines to the candidate list. The pre-model hook uses the concise canonical source title.
+   When Reader itself renders a fail-open list, render the title in the project's preferred language;
+   if needed, translate only the title instead of adding an explanation.
+9. When the user explicitly assigns an incomplete existing Round with execution language such as
+   proceed, start, continue, switch, undertake, or execute, the hook uses `codex queue` to place an
+   equivalent marked request back into the same session. Its title hint is `{local Round ref}:{phrase}`
+   without a `프로그래스` prefix, and the phrase describes the work in the user's primary language using
+   five characters or fewer.
+10. Treat an explicit start of Work Order creation, writing, revision, or amendment as assignment too.
+   For an existing Round, use its exact local ref. For a new child, derive the next Excel-column suffix
+   from every declared child of the named parent, including terminal children. For a new parent, derive
+   the next number from every declared parent. The derived ref is a non-authoritative provisional value,
+   is never reserved in project source, and must be rechecked by Author immediately before the write.
+11. A Round mention in dependency completion, review, investigation, confirmation, or status context is
+   not assignment and receives no Keystone title hint. Free-form follow-up is queued with the original
+   Reader request.
+12. The hook must fail open: if Work State evaluation, temporary state, or `codex queue` is unavailable,
+   allow the original Reader request to continue. Reader must never propose `/rename` or claim that a
+   title changed without native confirmation. Never edit Codex SQLite, rollout, or config state directly,
+   and never persist Round priority or rename another thread or project.
+13. Read the selected Work order first. When its document-level `key.worktree.path` is present, confirm
    that the exact path exists, is accessible, and belongs to the same Git common directory as the current
    repository. Restrict subsequent selected-Work navigation to that exact path. When the field is absent,
    use the current worktree. A missing, inaccessible, or different-common-directory value is `stale` or
    `mismatch`: report it and stop targeted navigation. Never enumerate registered worktrees or traverse
    sibling directories as fallback.
-9. After resolving the execution location, read the selected Work order, Progress, applicable standards, and feature documents
+14. After resolving the execution location, read the selected Work order, Progress, applicable standards, and feature documents
    before artifact discovery. Do not treat initial orientation as an artifact-context trigger.
-10. Request permissionless Linker readiness only when selected-Work artifact context, owner/ref resolution,
+15. Request permissionless Linker readiness only when selected-Work artifact context, owner/ref resolution,
    implementation/test candidates, graph-relevant impact, or an explicit graph audit is needed. Anchor
    the bounded scope at the selected Work or document ID and pass the worktree identity, sorted path set,
    and each file's raw-byte SHA-256 digest. Use a full graph only for an explicit graph audit, release
    verification, or scope conflict.
-11. Request a lazy repository scope only when code/config/schema/test artifact context is actually needed.
+16. Request a lazy repository scope only when code/config/schema/test artifact context is actually needed.
    If bounded search finds no linked implementation, report `implementation unavailable` or `possibly
    unimplemented`. Report a metadata gap only when a code candidate exists but its relation is missing.
-12. Reuse a fresh external index. If it is missing, stale, corrupt, or cannot be locked or written, fall
+17. Reuse a fresh external index. If it is missing, stale, corrupt, or cannot be locked or written, fall
    back fail-soft to source discovery; a cache problem is not a user decision.
-13. Include the freshness token, discovery scope, source citations, and unresolved gaps in the internal
+18. Include the freshness token, discovery scope, source citations, and unresolved gaps in the internal
    context brief. Downstream skills may reuse a fresh token; after a source write they invalidate the
    affected discovery scope.
-14. Request `include_source_views` only when the selected context needs criterion verification,
+19. Request `include_source_views` only when the selected context needs criterion verification,
    effective Decision, or Work output/test summaries. This is a source-bound, session-only projection
    from Linker's same reconstructed `GraphSnapshot`; request repository scope when output/test targets
    are needed. Preserve its `source_generation` and unresolved diagnostics, and never treat a
    `verified` view as automatic acceptance. Default readiness remains the lighter owner/ref result.
-15. Pass a serialized recursion guard with `initiator: reader`. The called Linker must not call Reader
+20. Pass a serialized recursion guard with `initiator: reader`. The called Linker must not call Reader
    again in the same chain; a Linker-initiated Reader chain applies the inverse rule.
-16. Keep raw readiness and index payloads agent-facing and hidden from the user by default.
+21. Keep raw readiness and index payloads agent-facing and hidden from the user by default.
 
 ## Result Contract
 
@@ -374,8 +398,8 @@ Check that Reader:
     prevents Reader-Linker recursion in one call chain; Reader itself remains source read-only.
 12. Keeps global Round identity on the parent while preserving child-local status, Work ownership,
     active Steps, declared order, and unresolved child evidence from Work State schema v5.
-13. Asks exactly one non-authoritative parent-Round focus question before multi-Round deep reading,
-    skips it for an explicit or cross-Round request, and never persists the selected Round.
+13. Lists incomplete parent and child Rounds before a bare Reader turn, never auto-selects a sole
+    candidate, and preserves free-form review, investigation, confirmation, and status requests.
 14. Informs the user of in-progress Steps, selects the lowest executable Step without asking, and
     explains a blocked-lowest fallback without changing Step status or priority.
 15. Defers Linker during initial orientation, invokes bounded permissionless readiness only from a
@@ -384,5 +408,6 @@ Check that Reader:
     for explicit audit, release verification, or scope conflict.
 17. Uses a selected Work's recorded exact worktree path before artifact discovery, falls back only to the
     current worktree when the field is absent, and reports stale/mismatch without global worktree search.
-18. Proposes one concrete five-character-or-shorter Round rename only after focus when project-local
-    terminal-title configuration enables thread titles, without executing it or persisting selection.
+18. Adds one prefix-free, five-character-or-shorter native title hint only for explicit execution of an
+    incomplete existing Round or actual Work Order authoring, derives but never reserves a new Round ref,
+    limits the candidate list to ten, and never persists selection or proposes a manual rename fallback.

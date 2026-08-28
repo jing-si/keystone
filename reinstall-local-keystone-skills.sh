@@ -38,9 +38,20 @@ run_python_help() {
   python3 "${PYTHON_ISOLATED_ARGS[@]}" "$1" --help >/dev/null
 }
 
+run_direct_help() {
+  "$1" --help >/dev/null
+}
+
 require_file() {
   if [ ! -f "$1" ]; then
     echo "Missing Keystone package file: $1" >&2
+    exit 1
+  fi
+}
+
+require_executable() {
+  if [ ! -x "$1" ]; then
+    echo "Keystone package file is not executable: $1" >&2
     exit 1
   fi
 }
@@ -71,6 +82,8 @@ verify_package_tree() {
     require_file "$base/$skill/SKILL.md"
   done
 
+  require_executable "$base/keystone-reader/scripts/keystone_session_title.py"
+
   require_file "$base/keystone-author/scripts/validate_finalization.py"
   require_file "$base/keystone-author/scripts/run_finalization_validation.py"
   require_file "$base/keystone-author/scripts/check_finalization_hook.sh"
@@ -100,6 +113,7 @@ verify_package_tree() {
 
 verify_python_entrypoints() {
   local base="$1"
+  run_direct_help "$base/keystone-reader/scripts/keystone_session_title.py"
   run_python_help "$base/keystone-author/scripts/validate_finalization.py"
   run_python_help "$base/keystone-author/scripts/run_finalization_validation.py"
   bash -n "$base/keystone-author/scripts/check_finalization_hook.sh"

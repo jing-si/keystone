@@ -69,6 +69,7 @@ class R008SelfHostE2ETest(unittest.TestCase):
             "key.code.linker.source-views",
             "key.code.linker.graph-transaction-validator",
             "key.code.author.finalization-validator",
+            "key.code.reader.keystone-session-title",
         }
         expected_tests = {
             "key.test.linker.metadata-parser-contract",
@@ -86,6 +87,7 @@ class R008SelfHostE2ETest(unittest.TestCase):
             "key.test.r016.worktree-locator-contract",
             "key.test.r017.standards-first-round-contract",
             "key.test.r019.keystone-session-title-contract",
+            "key.test.r020.keystone-session-title-runtime",
             "key.test.linker.graph-transaction-wire-contract",
             "key.test.author.finalization-validator-contract",
         }
@@ -140,6 +142,10 @@ class R008SelfHostE2ETest(unittest.TestCase):
                 ("key.test.r019.keystone-session-title-contract",
                  "key.standard.skill.init.codex-session-title"),
                 ("key.test.r019.keystone-session-title-contract",
+                 "key.standard.skill.reader.round-session-focus"),
+                ("key.test.r020.keystone-session-title-runtime",
+                 "key.standard.project.std-keystone-063"),
+                ("key.test.r020.keystone-session-title-runtime",
                  "key.standard.skill.reader.round-session-focus"),
                 ("key.test.linker.graph-transaction-wire-contract",
                  "key.code.linker.graph-transaction-validator"),

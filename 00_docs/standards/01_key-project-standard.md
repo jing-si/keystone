@@ -972,10 +972,11 @@ work preparation, context brief 생성을 지원한다. Reader는 아티팩트 �
 미해결 사항을 담은 간결한 project brief를 먼저 만들고, 그 다음 canonical Work State를 결합한다.
 
 Active parent Round가 없으면 빈 상태와 다음 actor만 보고하고 상세 Work 문서나 Linker를 확장하지
-않는다. 하나이면 해당 Round를 세션 focus로 사용하고, 둘 이상이면 current Step 요약까지만 보여준
-뒤 기존 Round focus gate를 적용한다. 선택된 Work를 준비할 때는 Work Order, Progress, 적용 기준서와
-feature 문서를 먼저 읽는다. Artifact context, owner/ref, 구현·테스트 후보가 실제로 필요할 때만
-선택된 Work 또는 문서 ID를 anchor로 `keystone-linker`에 bounded handoff한다.
+않는다. 하나 이상이면 미완료 parent·child Round와 current Step을 안내하되 하나뿐이어도 자동으로
+세션 focus를 선택하지 않는다. 사용자가 기존 Round 수행을 명시하거나 자유로운 검토·조사·확인
+범위를 제시한 뒤에만 그 문맥으로 진행한다. 선택된 Work를 준비할 때는 Work Order, Progress, 적용
+기준서와 feature 문서를 먼저 읽는다. Artifact context, owner/ref, 구현·테스트 후보가 실제로 필요할
+때만 선택된 Work 또는 문서 ID를 anchor로 `keystone-linker`에 bounded handoff한다.
 
 Reader의 mode, workflow, output field, stop condition의 상세 계약은
 `skills/reader/key-standard-reader.md`를 따른다.
@@ -1450,18 +1451,48 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
    않는다.
 3. Ready 프로젝트에서 사용자가 자연어로 기능 활성화를 명시하면 그 요청 자체를 같은 bounded
    write 동의로 사용하고 yes/no를 다시 묻지 않는다.
-4. 허용된 target은 repository root의 `.codex/config.toml`과 `tui.terminal_title` 하나다. 값은
+4. 허용된 target은 repository root의 `.codex/config.toml` 안 `tui.terminal_title`과 Keystone
+   Reader 전용 `hooks.UserPromptSubmit` command다. Title 값은
    `["activity", "thread-title", "task-progress"]` 순서이며 다른 Codex key와 사용자 전역
    `~/.codex/config.toml`은 변경하지 않는다.
 5. 기존 project config가 있으면 target key의 최소 create/replace만 수행하고 다른 table, key와
    comment를 보존한다. Invalid TOML, duplicate/conflicting table 또는 안전한 최소 edit가 불가능한
    구조는 no-write conflict로 보고한다.
-6. Reader가 active parent Round 하나를 사용하거나 focus 선택을 완료하면
-   `/rename 프로그래스 {Round ref}:{대표 문구}`를 정확한 사용자 명령으로 한 번 제안할 수 있다.
-   대표 문구는 current Work/Step을 구분하는 5자 이내 문구다.
-7. Reader는 slash command를 실행하거나 rename 성공을 주장하지 않는다. Round focus가 정해지기
-   전에는 rename을 제안하지 않으며 project title만 보이는 host 기본 상태를 방해하지 않는다.
-8. 이 기능을 위해 plugin, hook, daemon, watcher, App Server 또는 외부 service를 요구하지 않는다.
+6. Thread title hint는 최초 Reader gate에서 다음 중 하나가 명확할 때 적용한다.
+   - 사용자가 `accepted`, `cancelled`가 아닌 기존 parent 또는 child Round ref와 `진행`, `시작`,
+     `계속`, `전환`, `착수`, `수행` 같은 수행 의미를 결합한다.
+   - 사용자가 작업서 생성·작성·수정·개정을 실제로 시작하며 신규 또는 기존 Round 범위를
+     명시한다.
+   제목은 `R015-AE:{대표 문구}` 형식이며 대표 문구는 어떤 작업인지 사용자의 주 언어로
+   `5자 이내`에 설명하고 `프로그래스` prefix를 넣지 않는다. 단순 Round 언급, 완료·dependency 확인,
+   작업서 검토·확인·조사와 상태 조회는 할당이 아니다.
+7. Work-authoring title에서 명시된 ref가 기존 Round이면 exact ref를 사용한다. 신규 child면 명시된
+   parent의 선언된 모든 child 상태를 포함해 다음 Excel-column suffix를 계산하고, 신규 parent면
+   선언된 모든 parent 다음 숫자를 계산한다. 계산값은 비권위 예정 ref이며 source에 예약하지
+   않는다. Same-session 요청은 Author가 write 직전에 ref 충돌을 재검증하도록 명시한다. 충돌 시
+   Author는 실제 source ref를 조정할 수 있지만 이미 생성된 native title의 retitle은 보장하지 않는다.
+8. Bare `$keystone-reader`가 들어오면 trusted project의 `UserPromptSubmit` hook은 accepted Reader
+   turn 전에 Work State의 `complete`, `accepted`, `cancelled`가 아닌 parent·child Round를 안내한다.
+   Parent 번호 오름차순으로 정렬하고 각 parent 바로 아래에 child suffix를 Excel-column 오름차순으로
+   들여써서 묶는다. Parent와 child를 합해 최대 20개만 표시하며 초과분은 `외 N개`로 축약한다.
+   후보가 하나여도 자동 선택하지 않는다. Hook fail-open으로 Reader가 직접 안내할 때도 같은 집합,
+   정렬과 제한을 사용한다. 첫 줄은 `Keystone ready · 미완료 Round N개`이며, 후보는
+   `╭─ Round 선택`으로 시작하는 오른쪽 테두리 없는 열린 박스에 표시한다. 각 항목은
+   `{Round ref} · {status} · {제목}` 한 줄이다. Parent 또는 독립 항목에는 번호를 붙이고 child는
+   parent 아래에서 `└─`로 연결하며 parent 그룹 사이는 빈 `│` 줄로 나눈다. 폭 맞춤용 공백은 넣지
+   않고 `╰─ 어느 Round에 집중할까요?`로 닫는다. Pre-model hook은 canonical source 제목을 사용하고,
+   Reader가 fail-open 목록을 직접 만들 때는 프로젝트 선호 언어로 제목만 짧게 번역한다. 후보
+   목록에 Step, Gate, 기준선, 출처와 상태 근거를 별도 줄로 붙이지 않는다. 종료된 parent는
+   grouping header로 다시 표시하지 않고, 그 child만 남으면 full local ref의 독립 번호 항목으로
+   표시한다.
+9. 사용자는 안내 뒤 기존 Round 수행, 작업서 authoring 착수 또는 자유로운 검토·조사·확인·상태
+   조회를 입력할 수 있다. 앞의 두 경우는 title hint와 함께, 후자는 Keystone title hint 없이 원 Reader 요청과 결합해
+   같은 session에 `codex queue`한다. 선택·후속 요청은 session ID별 OS 임시 파일에만 보관하고
+   resume 성공 즉시 삭제한다. 미완료 Round가 없으면 원 요청을 즉시 통과시킨다.
+10. Hook은 fail-open이다. Work State, 임시 상태 또는 `codex queue` 실패 시 원래 Reader 요청을 계속
+   진행하며 `/rename`을 제안하지 않는다. 재진입 marker는 queue된 요청의 반복 차단을 방지한다.
+   Codex SQLite, rollout, global config를 직접 수정하거나 plugin, MCP, daemon, watcher, App Server,
+   외부 network service를 요구하지 않는다.
 
 <!-- key: id=key.standard.project.active-work refs=key.topic.document-system key.topic.work-round -->
 ## 관련 active work

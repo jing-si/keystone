@@ -1,6 +1,7 @@
 # keystone: id=key.test.r019.keystone-session-title-contract kind=output_artifact artifact_kind=test verifies=key.standard.project.std-keystone-063 key.standard.skill.init.codex-session-title key.standard.skill.reader.round-session-focus
 import unittest
 from pathlib import Path
+import stat
 
 try:
     import tomllib
@@ -25,7 +26,8 @@ class KeystoneSessionTitleContractTest(unittest.TestCase):
             ".codex/config.toml",
             "`~/.codex/config.toml`은 변경하지 않는다",
             '["activity", "thread-title", "task-progress"]',
-            "/rename 프로그래스 {Round ref}:{대표 문구}",
+            "UserPromptSubmit",
+            "codex queue",
             "5자 이내",
         ):
             self.assertIn(phrase, text)
@@ -44,30 +46,63 @@ class KeystoneSessionTitleContractTest(unittest.TestCase):
         ):
             self.assertIn(phrase, text)
 
-    def test_recommended_terminal_title_is_valid_toml(self):
+    def test_init_hook_command_quotes_path_without_literal_escape_characters(self):
+        text = read("skills/keystone-init/SKILL.md")
+        command = (
+            "command = '\"$HOME/.codex/skills/keystone-reader/scripts/"
+            "keystone_session_title.py\" --hook'"
+        )
+
+        self.assertIn(command, text)
+        self.assertNotIn("command = '\\\"$HOME/", text)
+
+    def test_recommended_project_integration_is_valid_toml(self):
         if tomllib is None:
             self.skipTest("tomllib is available in Python 3.11+")
-        parsed = tomllib.loads(
-            '[tui]\nterminal_title = ["activity", "thread-title", "task-progress"]\n'
-        )
+        parsed = tomllib.loads(read(".codex/config.toml"))
 
         self.assertEqual(
             parsed["tui"]["terminal_title"],
             ["activity", "thread-title", "task-progress"],
         )
+        hook = parsed["hooks"]["UserPromptSubmit"][0]["hooks"][0]
+        self.assertEqual("command", hook["type"])
+        self.assertIn("keystone_session_title.py", hook["command"])
+        self.assertIn("--hook", hook["command"])
 
-    def test_reader_proposes_but_never_claims_to_execute_rename(self):
+    def test_reader_uses_native_first_prompt_title_generation(self):
         text = " ".join(read("skills/keystone-reader/SKILL.md").split())
 
         for phrase in (
-            "after Round focus is known",
-            "/rename 프로그래스 {Round ref}:{대표 문구}",
-            "five Korean characters or fewer",
-            "Do not propose it before focus",
-            "execute a slash command",
-            "claim the rename succeeded",
+            "scripts/keystone_session_title.py",
+            "UserPromptSubmit",
+            "codex queue",
+            "non-terminal parent and child Rounds",
+            "{local Round ref}:{phrase}",
+            "user's primary language",
+            "without a `프로그래스` prefix",
+            "Work Order creation, writing, revision, or amendment",
+            "non-authoritative provisional value",
+            "rechecked by Author immediately before the write",
+            "fail open",
+            "Never edit Codex SQLite, rollout, or config state directly",
+            "never propose `/rename`",
         ):
             self.assertIn(phrase, text)
+
+    def test_session_title_helper_is_a_narrow_installer_verified_executable(self):
+        helper = ROOT / "skills/keystone-reader/scripts/keystone_session_title.py"
+        installer = read("reinstall-local-keystone-skills.sh")
+
+        self.assertTrue(helper.stat().st_mode & stat.S_IXUSR)
+        self.assertIn(
+            'require_executable "$base/keystone-reader/scripts/keystone_session_title.py"',
+            installer,
+        )
+        self.assertIn(
+            'run_direct_help "$base/keystone-reader/scripts/keystone_session_title.py"',
+            installer,
+        )
 
 
 if __name__ == "__main__":

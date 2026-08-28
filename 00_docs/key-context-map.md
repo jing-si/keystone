@@ -94,6 +94,10 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
 | R017 Standards-First Round Construction | `00_docs/works/r017-standards-first-round-construction/00_key-index.md` | accepted | Round 생성·실행 경계와 standards-first 제약, Excel column 방식 하위 Round·Step 작명을 구현·검증함 |
 | R018 Keymeta-First Bounded Discovery | `00_docs/works/r018-keymeta-bounded-discovery/00_key-index.md` | planned | 키메타 anchor 중심 source expansion과 routine preparation의 no-full-scan 계약을 계획함 |
 | R019 Keystone Session Title Display | `00_docs/works/r019-keystone-session-title/00_key-index.md` | accepted | 프로젝트 로컬 Codex terminal title opt-in과 Round 기반 thread rename 제안을 구현·검증함 |
+| R020 Keystone Session Title Automation | `00_docs/works/r020-keystone-session-title-automation/00_key-index.md` | accepted | Python helper로 current Round focus를 현재 Codex thread 이름에 자동 반영하도록 구현·검증함 |
+| R021 Session Title Permission Hardening | `00_docs/works/r021-session-title-permission-hardening/00_key-index.md` | accepted | exact helper executable 권한 승인과 installer 검증으로 sandbox 자동 rename을 보강함 |
+| R022 Session Title Assignment Gate | `00_docs/works/r022-session-title-assignment-gate/00_key-index.md` | accepted | 비종료 라운드를 안내하고 명시적 기존 라운드 수행에만 native title hint를 제공하도록 구현·검증함 |
+| R023 Session Title Work Authoring Gate | `00_docs/works/r023-session-title-work-authoring-gate/00_key-index.md` | accepted | 작업서 생성·수정 착수를 예정 또는 기존 Round ref의 native title로 연결하도록 구현·검증함 |
 | Document Tree Setup | `00_docs/works/r001-bootstrap-keystone/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
 | Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | accepted | 전체 공통 기준서 |
 | Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서 |

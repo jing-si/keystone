@@ -40,6 +40,10 @@ key:
 | R017 | Standards-First Round Construction | `r017-standards-first-round-construction/00_key-index.md` | accepted | Round 생성·실행 경계와 standards-first 제약, Excel column 방식 하위 세션 작명을 구현·검증했다 |
 | R018 | Keymeta-First Bounded Discovery | `r018-keymeta-bounded-discovery/00_key-index.md` | planned | 키메타 anchor에서 필요한 source만 확장하고 routine Work 준비의 repository-wide reconstruction을 제거한다 |
 | R019 | Keystone Session Title Display | `r019-keystone-session-title/00_key-index.md` | accepted | 프로젝트 로컬 Codex terminal title opt-in과 Round 기반 thread rename 제안을 구현·검증했다 |
+| R020 | Keystone Session Title Automation | `r020-keystone-session-title-automation/00_key-index.md` | accepted | current Round focus를 Python helper로 현재 Codex thread 이름에 자동 반영한다 |
+| R021 | Session Title Permission Hardening | `r021-session-title-permission-hardening/00_key-index.md` | accepted | exact helper executable 권한 승인으로 sandbox 환경의 자동 rename을 보강했다 |
+| R022 | Session Title Assignment Gate | `r022-session-title-assignment-gate/00_key-index.md` | accepted | 명시적 기존 라운드 수행에만 native title hint를 적용하고 비종료 라운드 선택 문맥을 구현·검증했다 |
+| R023 | Session Title Work Authoring Gate | `r023-session-title-work-authoring-gate/00_key-index.md` | accepted | 작업서 생성·수정 착수도 예정 또는 기존 Round ref로 native title을 준비하도록 구현·검증했다 |
 
 <!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work key.topic.work-round -->
 ## 공통 결정
@@ -72,6 +76,14 @@ key:
     `r018-keymeta-bounded-discovery/00_key-index.md`, Work Order와 Progress에서 확인한다.
 13. R019의 프로젝트 로컬 세션 제목 표시 구현과 진행 상태는
     `r019-keystone-session-title/00_key-index.md`, Work Order와 Progress에서 확인한다.
+14. R020의 current-thread 자동 rename 구현과 진행 상태는
+    `r020-keystone-session-title-automation/00_key-index.md`, Work Order와 Progress에서 확인한다.
+15. R021의 session-title helper 권한 보강과 진행 상태는
+    `r021-session-title-permission-hardening/00_key-index.md`, Work Order와 Progress에서 확인한다.
+16. R022의 session-title assignment gate와 진행 상태는
+    `r022-session-title-assignment-gate/00_key-index.md`, Work Order와 Progress에서 확인한다.
+17. R023의 work-authoring title gate와 진행 상태는
+    `r023-session-title-work-authoring-gate/00_key-index.md`, Work Order와 Progress에서 확인한다.
 
 <!-- key: id=key.work.index.round-creation-rules refs=key.doc.work key.topic.document-system key.topic.work-round -->
 ## Work round 생성 규칙

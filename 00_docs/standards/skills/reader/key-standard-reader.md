@@ -139,11 +139,11 @@ Reader는 mode와 무관하게 다음 순서를 따른다.
    `project_brief`를 만든다.
 6. Installed Reader package의 Work State runtime을 실행하고 passing envelope를 root/round/work
    index와 active Progress narrative에 결합해 active parent Round 집합을 찾는다.
-7. Active parent Round가 둘 이상이면 Work State 요약의 Round별 진행 중 Step까지만 확인하고
-   아래 Round session focus gate를 적용한다.
+7. Accepted가 아닌 parent·child Round가 있으면 Work State 요약의 Round별 진행 중 Step까지만
+   확인하고 아래 Round session focus gate를 적용한다. 후보가 하나여도 자동 선택하지 않는다.
 8. Active parent Round가 0개이면 빈 상태와 다음 actor를 보고하고 상세 Work 문서, repository 또는
-   Linker 범위로 확장하지 않는다. 하나이면 해당 Round를 사용하며, focus가 선택되거나 gate가 필요
-   없을 때 선택된 Round의 index와 active Work node index, 작업서(4), 진행 기록(5)을 읽어
+   Linker 범위로 확장하지 않는다. 기존 Round 수행이 명시되거나 자유로운 검토 범위가 주어져 gate가
+   해소되면 선택된 Round의 index와 active Work node index, 작업서(4), 진행 기록(5)을 읽어
    `round_id`, `work_id`, `active_steps`, `early_work`와 실행 가능 Step 후보를 함께 복구한다.
    전체/cross-Round 요청일 때만 필요한 여러 Round와 Work를 읽는다.
 9. 선택된 Work를 준비할 때는 Work Order, Progress, 적용 기준서와 feature 문서를 먼저 읽는다.
@@ -207,24 +207,46 @@ key:
 -->
 ## Multi-active Round session focus
 
-1. Passing Work State에 active parent Round가 둘 이상이고 요청이 특정 Round를 지목하지 않으면
-   Reader는 각 parent Round ref, status, 현재 진행 중인 Step 또는 unresolved reason만 후보 목록으로
-   보여준 뒤 사용자에게 정확히 한 번 `해당 세션에서 어떤 라운드를 작업할까요?`라고 묻는다.
+1. Passing Work State에 `complete`, `accepted`, `cancelled`가 아닌 parent 또는 child Round가 있으면 session-title integration의
+   pre-submit hook은 bare Reader 요청 전에 각 local Round ref, status, Work와 현재 Step을 간결히
+   안내한다. Parent 번호와 child Excel suffix 오름차순으로 묶어 최대 20개를 표시하고 초과분은
+   줄인다.
+   Hook이 fail-open되어 Reader가 직접 후보를 보여줄 때도 같은 집합과 정렬을 사용한다.
+   첫 줄은 `Keystone ready · 미완료 Round N개`로 전체 후보 수를 알리고, 후보는
+   `╭─ Round 선택`으로 시작하는 오른쪽 테두리 없는 열린 박스 안에 표시한다. 각 항목은
+   `{Round ref} · {status} · {제목}` 한 줄로 제한한다. Parent 또는 독립 항목에는 번호를 붙이고,
+   child는 parent 아래에서 `└─`로 연결하며 parent 그룹 사이는 빈 `│` 줄로 나눈다. 폭 맞춤용
+   공백은 넣지 않고 `╰─ 어느 Round에 집중할까요?`로 닫는다. Pre-model hook은 canonical source
+   제목을 사용한다. Reader가 fail-open 목록을 직접 만들 때는 프로젝트 선호 언어로 제목만 짧게
+   번역한다. Step, Gate, 기준선, 출처와 상태 근거는 후보 목록 안에 별도 줄로 설명하지 않는다.
+   종료된 parent는 grouping header로 다시 출력하지 않으며 남은 child는 full local ref를 가진
+   번호 항목으로 표시한다.
 2. 사용자가 선택하기 전에는 각 후보 Round의 Work Order와 Progress 본문을 상세 탐색하지 않는다.
    조건부 Linker handoff를 시작하지 않는다.
-3. Active parent Round가 0개 또는 1개이거나, 요청이 특정 Round를 명시하거나, 전체 active Round
-   상태 또는 cross-Round 비교를 요구하면 질문을 생략한다.
-4. 선택은 비권위 세션 문맥이다. 선택된 Round로 같은 요청을 자동 resume하되 선택되지 않은
-   Round·Work·Step의 상태·우선순위를 변경하지 않는다. 선택을 canonical pointer, cache 또는
-   project source에 기록하지 않는다.
+3. 후보가 하나여도 자동 선택하지 않는다. 후보가 없거나 요청에 자유로운 검토·조사·확인·상태
+   조회 의도가 이미 포함되면 특정 Round 선택 없이 Reader를 진행한다.
+4. 기존 Round 수행 선택은 비권위 세션 문맥이다. 선택된 Round로 같은 요청을 자동 resume하되
+   선택되지 않은 Round·Work·Step의 상태·우선순위를 변경하지 않는다. 선택을 canonical pointer,
+   cache 또는 project source에 기록하지 않는다.
 5. Round 선택 뒤에는 현재 진행 중인 Step 목록을 사용자에게 알리되 Step 선택을 질문하지 않는다.
    별도 사용자 지정이 없으면 dependency와 `work_gates`를 만족하는 active Step 중 번호가 가장
    낮은 Step을 기본 대상으로 삼는다. 가장 낮은 Step이 blocked이면 그 이유와 다음 실행 가능
    Step을 알리며 상태나 priority를 자동 변경하지 않는다.
-6. `Keystone 세션 제목 표시`가 구성된 프로젝트에서는 focus가 정해진 뒤 current Work/Step을
-   구분하는 5자 이내 대표 문구를 만들고 `/rename 프로그래스 {Round ref}:{대표 문구}`를 정확한
-   사용자 명령으로 한 번 제안한다. Reader는 명령을 실행하거나 rename 성공을 주장하지 않으며
-   focus 선택 전에는 제안하지 않는다.
+6. `Keystone 세션 제목 표시`가 구성된 trusted project에서는 `accepted`, `cancelled`가 아닌 기존
+   Round 수행 또는 작업서 생성·수정 착수 의도가 명확할 때 Work/Step이 어떤 작업인지 사용자의
+   주 언어로 설명하는 5자 이내 대표 문구를 만든다. Child 실행은 `R015-AE:{대표 문구}`처럼 local
+   ref를 사용하고 `프로그래스` prefix를 넣지 않는다.
+   신규 child authoring은 명시된 parent의 모든 선언 child 다음 Excel suffix를, 신규 parent
+   authoring은 모든 선언 parent 다음 숫자를 비권위 예정 ref로 사용한다. 예정 ref는 source 예약이
+   아니며 Author가 write 직전에 충돌을 재검증한다.
+7. Project-local `UserPromptSubmit` hook은 최초 Reader 요청 전에 package-local helper를 실행한다.
+   Helper는 bare Reader 요청이면 미완료 후보와 자유 입력 경로를 먼저 안내하고, 명시적 기존 Round
+   수행 또는 작업서 authoring 착수이면 title hint와 재진입 marker를 붙인 동등한 요청을 같은
+   session에 `codex queue`한다. 신규 예정 ref를 queue할 때는 Author의 write 직전 충돌 재검증도
+   요청한다. 작업서 검토·조사·확인·상태 조회에는 Keystone title hint를 붙이지 않는다.
+8. Hook은 선택 대기 상태를 OS 임시 session state에만 보관하며 실패 시 원 요청을 계속하는
+   fail-open이다. `/rename`을 제안하지 않으며 Reader와 helper는 Codex SQLite, rollout 또는 config를
+   직접 수정하지 않는다.
 
 <!-- key: id=key.standard.skill.reader.mode-contract refs=key.role.reader key.contract.output key.topic.work-preparation -->
 ## Mode contract
@@ -543,11 +565,10 @@ Reader 기준은 다음 방법으로 검증한다.
    복구한 뒤 root/round/work index와 active Progress를 narrative context로 읽는다. Acceptance-event와
    `latest_accepted_round`은 current passing 조건이나 필수 context field가 아니다. Runtime failure나
    incomplete generation을 서로 같은 pointer claim으로 대체하지 않는다.
-3. Passing envelope에 active parent Round가 둘 이상이고 요청이 특정 Round 또는
-   전체/cross-Round 범위를 명시하지 않으면 `Multi-active Round session focus`를 먼저 적용한다.
-   Focus 선택 전에는 candidate Round별 현재 진행 중 Step만 요약하고 Work Order와 Progress 본문을
-   상세 탐색하거나 조건부 Linker handoff를 시작하지 않는다. Active Round가 0이면 빈 상태와 다음
-   actor를 보고하고, 하나이면 해당 Round를 사용한다.
+3. Passing envelope에 `accepted`, `cancelled`가 아닌 parent·child Round가 있으면 `Multi-active Round session
+   focus`를 먼저 적용한다. Focus 선택 전에는 candidate Round별 현재 진행 중 Step만 요약하고 Work
+   Order와 Progress 본문을 상세 탐색하거나 조건부 Linker handoff를 시작하지 않는다. Active Round가
+   0이면 빈 상태와 다음 actor를 보고하고, 후보가 하나여도 해당 Round를 자동 사용하지 않는다.
 4. Focus가 선택되거나 gate가 필요 없으면 selected Work의 Work Order, Progress, 적용 기준서와
    feature 문서를 먼저 읽는다. Artifact context, owner/ref, 구현·테스트 후보가 필요한 경우에만
    Work 또는 문서 ID를 anchor로 permissionless Linker readiness를 bounded scope로 요청한다.
