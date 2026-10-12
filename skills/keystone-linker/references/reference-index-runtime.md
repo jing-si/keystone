@@ -71,3 +71,32 @@ Legacy-only work dependencies become non-start-blocking work-completion candidat
 not mutate progress, assign work, cancel work, or grant acceptance. Flat `depends_on` metadata on a
 non-Work artifact remains a typed semantic relation and never creates a legacy work-completion
 candidate.
+
+
+## R018 bounded request and v4 response
+
+New routine calls explicitly select `discovery_mode: targeted`. Anchors carry an `id` and optional
+repository-relative `path` and raw-byte `digest`; confirmed `source_paths` and `owner_paths` provide
+additional locators. Expansion follows only caller-selected `relation_types` and `follow_refs`, within
+`max_depth` (default 1, maximum 8), `max_files` (default 128), and `max_total_bytes` (default 50 MiB).
+No known anchor/path returns `anchor_required` rather than an implicit scan. Supplying anchor/path
+inputs without a mode also selects targeted behavior.
+
+`lookup` requires exact anchor IDs and explicit `lookup_roots`. It returns admitted matching owners,
+search roots, searched file/byte counts and a raw-byte `search_digest` that also binds negative search
+evidence. It does not reconstruct a typed graph. `audit` retains full selected-scope inspection for an
+explicit audit, release check or scope conflict. For explicit modes, include patterns with a literal
+path prefix are root-anchored and prune disjoint subtrees before traversal. Mode-less legacy calls
+preserve their existing suffix-glob behavior and v2/v3 wire; they are not the routine preparation path.
+
+All explicit modes emit schema v4 with `discovery.mode`, `coverage_kind` (`bounded` or `scope`),
+`complete`, and search cost evidence. Bounded completeness does not imply repository completeness.
+Unresolved owners, stale anchors and omitted paths remain diagnostic; `status: pass` alone is not a
+complete result. Targeted preparation uses current source bytes without accessing the external cache,
+so missing/stale/corrupt/busy cache cannot enlarge its scope. Supplied owner hints are revalidated from
+source. Legacy cache reuse and recovery remain available to existing v2/v3 callers and explicit audit.
+
+SourceUnit preserves its original adapter and carries a request-local prepared lexical result.
+Scanner parse results are keyed by exact source and companion bytes. Owner/ref and requested source
+views reuse those results; reconstruction checks their raw-byte binding before reuse. No prepared
+parse, graph view or discovery result becomes source authority.

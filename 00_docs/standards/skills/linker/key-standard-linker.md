@@ -788,3 +788,11 @@ Owner/ref Index Readiness는 Linker의 permissionless internal mode다. User-fac
    mutation 또는 patch 중 하나가 달라야 한다. Verified transient failure는 동일 patch retry를 허용한다.
 5. Transaction scope validation은 current work omission을 gate한다. Repository scope validation은
    전체 coverage debt를 보고하되 current transaction 밖 gap만으로 current work를 block하지 않는다.
+
+
+### 키메타 중심 제한 탐색 (R018)
+
+R018의 수락된 탐색 계약은 `../../01_key-project-standard.md`의
+「키메타 중심 제한 탐색 (R018)」을 따른다. 이 pending 기준서 전체를 수락된 권위로 승격하지
+않는다. 일반 준비는 명시적 `targeted`, owner 검색은 `lookup`, 전체 검사는 `audit`로 구분한다.
+Cache fallback은 확인된 bounded source set 안에서 수행하며 자동 full scan을 하지 않는다.

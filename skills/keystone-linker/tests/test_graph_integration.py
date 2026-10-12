@@ -129,6 +129,27 @@ class GraphValidationIntegrationTest(unittest.TestCase):
             installed = Path(temporary) / "skills"
             self.assertEqual(0, process.returncode, process.stderr)
             self.assertTrue((installed / "keystone-linker/scripts/validate_graph.py").is_file())
+            runtime = Path("keystone-linker/scripts/graph_runtime")
+            for relative in ("bounded_discovery.py", "scanner.py", "adapters.py", "readiness.py"):
+                self.assertEqual((ROOT / "skills" / runtime / relative).read_bytes(),
+                                 (installed / runtime / relative).read_bytes())
+            request = json.dumps({
+                "repository_root": str(self.root), "initiator": "reader",
+                "artifact_context": True, "discovery_mode": "targeted",
+                "anchors": [{"id": "key.doc", "path": "source.md"}],
+            })
+            isolated = subprocess.run(
+                [sys.executable, "-m", "graph_runtime.readiness_cli", "--request-json", request],
+                cwd=temporary,
+                env=dict(os.environ, PYTHONPATH=str(installed / "keystone-linker/scripts"),
+                         PYTHONDONTWRITEBYTECODE="1"),
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(0, isolated.returncode, isolated.stderr)
+            payload = json.loads(isolated.stdout)
+            self.assertEqual(4, payload["schema_version"])
+            self.assertEqual("targeted", payload["discovery"]["mode"])
+            self.assertEqual(["key.doc"], [owner["id"] for owner in payload["owners"]])
             self.assertFalse((installed / "keystone-author/scripts/run_owned_surface_apply.py").exists())
             self.assertFalse((installed / "keystone-coordinator/scripts/capture_assignment_snapshot.py").exists())
 

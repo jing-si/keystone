@@ -91,8 +91,9 @@ class ReaderProgressiveContextLoadingTest(unittest.TestCase):
         for phrase in (
             "no incomplete Rounds",
             "A sole active Round is reported but never selected automatically",
-            "non-terminal parent and child Rounds",
-            "complete`, `accepted`, and `cancelled",
+            "unaccepted parent and child Rounds",
+            "complete / pending · 수용 대기",
+            "Exclude only `accepted` and `cancelled`",
             "Free-form follow-up",
         ):
             self.assertIn(phrase, self.skill)

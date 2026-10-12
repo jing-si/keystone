@@ -32,7 +32,9 @@ def _read_request(value):
     allowed = {
         "repository_root", "cache_path", "initiator", "artifact_context",
         "include_typed_graph", "include_source_views", "trace", "document_root",
-        "includes", "excludes",
+        "includes", "excludes", "discovery_mode", "anchors", "source_paths",
+        "owner_paths", "relation_types", "follow_refs", "max_depth", "lookup_roots",
+        "max_files", "max_total_bytes",
     }
     if not isinstance(request, dict) or set(request) - allowed:
         raise ValueError("request must be an object containing only supported fields")
@@ -124,6 +126,12 @@ def _response(readiness):
     if result.source_views is not None:
         payload["schema_version"] = 3
         payload["source_views"] = source_views_wire(result.source_views)
+    if readiness.discovery is not None:
+        from dataclasses import asdict
+        payload["schema_version"] = 4
+        payload["discovery"] = asdict(readiness.discovery)
+        payload["discovery"]["search_roots"] = list(readiness.discovery.search_roots)
+        payload["complete"] = readiness.discovery.complete
     return payload
 
 
@@ -136,7 +144,7 @@ def main():
         result = context_readiness(repository_root, cache_path, **request)
         payload = _response(result)
         exit_code = 1 if payload["summary"]["errors"] else 0
-    except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as error:
+    except (OSError, UnicodeError, TypeError, ValueError, json.JSONDecodeError) as error:
         payload = {
             "schema_version": 2, "status": "error",
             "diagnostics": [{"code": "readiness_execution_failed", "message": str(error),

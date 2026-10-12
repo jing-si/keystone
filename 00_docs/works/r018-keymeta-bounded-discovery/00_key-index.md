@@ -2,8 +2,8 @@
 doc_type: work_round
 created_at: "2026-08-26"
 document_lifecycle: active
-approval: {state: pending}
-round_status: planned
+approval: {state: accepted, accepted_at: "2026-10-12", accepted_by: main}
+round_status: accepted
 key:
   id: key.work.round.r018-keymeta-bounded-discovery.index
   refs:
@@ -30,18 +30,17 @@ Routine Work 준비는 필요한 source set에서 끝나야 하며, full reposit
 추가로 찾아야 할 때는 exact-ID lookup을 별도 비용 단계로 노출하고 targeted request를 조용히
 repository audit으로 확장하지 않는다.
 
-이 Round는 생성만 완료된 `planned / pending` 상태다. 사용자의 별도 진행 요청 전에는 어떤
-Step도 시작하지 않으며 기준서, runtime, skill source와 test를 수정하지 않는다.
+이 Round는 2026-10-12 사용자 진행 지시로 시작했으며 S01~S04를 구현·검증하고 Main이 수락했다.
 
 <!-- key: id=key.work.round.r018.execution-order refs=key.topic.work-sequence key.topic.context-readiness -->
 ## 실행 순서
 
 | 순서 | Step | 상태 | 목적 |
 |---|---|---|---|
-| S01 | Keymeta-Bounded Discovery Contract | planned | 키메타 anchor, source expansion, cold-start fallback와 full-scan 경계를 기준서·결정에 정합화한다 |
-| S02 | Keymeta-Seeded Discovery Runtime | planned | routine readiness가 anchor와 bounded path set으로 owner/ref를 복구하도록 scanner·index·query 흐름을 구현한다 |
-| S03 | Parser and Projection Hot-Path Optimization | planned | source admission 의미를 유지하면서 반복 lexical scan·재파싱·불필요한 projection 비용을 제거한다 |
-| S04 | Consumer-Scale Verification and Closure | planned | 대형 Kotlin source와 대규모 ignored tree에서 정확성·범위·성능 기준을 검증하고 Round를 닫는다 |
+| S01 | Keymeta-Bounded Discovery Contract | complete / accepted | 키메타 anchor, source expansion, cold-start fallback와 full-scan 경계를 기준서·결정에 정합화한다 |
+| S02 | Keymeta-Seeded Discovery Runtime | complete / accepted | routine readiness가 anchor와 bounded path set으로 owner/ref를 복구하도록 scanner·index·query 흐름을 구현한다 |
+| S03 | Parser and Projection Hot-Path Optimization | complete / accepted | source admission 의미를 유지하면서 반복 lexical scan·재파싱·불필요한 projection 비용을 제거한다 |
+| S04 | Consumer-Scale Verification and Closure | complete / accepted | 대형 Kotlin source와 대규모 ignored tree에서 정확성·범위·성능 기준을 검증하고 Round를 닫는다 |
 
 - Active Step: 없음
 
@@ -70,4 +69,4 @@ aggregate Progress에서 확인한다.
 1. R018 목표와 Step 상태는 이 Index에서 확인한다.
 2. intended behavior, scope, acceptance와 stop condition은 Work Order를 읽는다.
 3. 실제 실행 상태, 검증 evidence와 resume point는 Progress를 읽는다.
-4. 현재는 planned 상태이며 후속 진행 요청 전에는 S01을 시작하지 않는다.
+4. R018은 완료·수락됐으며 활성 Step은 없다.

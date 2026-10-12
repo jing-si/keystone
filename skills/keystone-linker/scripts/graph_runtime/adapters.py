@@ -5,6 +5,16 @@ from dataclasses import dataclass
 from typing import Iterable, Optional, Protocol, Tuple
 
 
+_CPP_RAW_OPEN = re.compile(r'R"([^ ()\\\t\v\f\r\n]{0,16})\(')
+_RUST_RAW_OPEN = re.compile(r'(?:b)?r(#{0,255})"')
+_SQL_DOLLAR_OPEN = re.compile(r"\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$")
+_SWIFT_RAW_OPEN = re.compile(r'(#+)("""|")')
+_TRIPLE_QUOTE_OPEN = re.compile(r'("{3,}|\'{3,})')
+_RUST_LIFETIME = re.compile(r"'[A-Za-z_][A-Za-z0-9_]*")
+_JS_IDENTIFIER = re.compile(r"[A-Za-z_$][A-Za-z0-9_$]*")
+_JS_NUMBER = re.compile(r"[0-9A-Fa-f_xXoObBeE.+-]+")
+
+
 class Adapter(Protocol):
     surface: str
 
@@ -195,41 +205,38 @@ def _line_comment_metadata(
             index += 2
             continue
 
-        cpp_raw = re.match(r'R"([^ ()\\\t\v\f\r\n]{0,16})\(', text[index:])
+        cpp_raw = _CPP_RAW_OPEN.match(text, index)
         if cpp_raw:
             state = "raw"
             closer = ")%s\"" % cpp_raw.group(1)
             line_has_token = True
             ambiguous_in_state = False
-            index += cpp_raw.end()
+            index = cpp_raw.end()
             continue
-        rust_raw = re.match(r'(?:b)?r(#{0,255})"', text[index:])
+        rust_raw = _RUST_RAW_OPEN.match(text, index)
         if rust_raw:
             state = "raw"
             closer = '"' + rust_raw.group(1)
             line_has_token = True
             ambiguous_in_state = False
-            index += rust_raw.end()
+            index = rust_raw.end()
             continue
         if allow_dollar_strings:
-            dollar_string = re.match(
-                r"\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$",
-                text[index:],
-            )
+            dollar_string = _SQL_DOLLAR_OPEN.match(text, index)
             if dollar_string:
                 state = "raw"
                 closer = dollar_string.group(0)
                 line_has_token = True
                 ambiguous_in_state = False
-                index += dollar_string.end()
+                index = dollar_string.end()
                 continue
-        swift_raw = re.match(r'(#+)("""|")', text[index:])
+        swift_raw = _SWIFT_RAW_OPEN.match(text, index)
         if swift_raw:
             state = "raw"
             closer = swift_raw.group(2) + swift_raw.group(1)
             line_has_token = True
             ambiguous_in_state = False
-            index += swift_raw.end()
+            index = swift_raw.end()
             continue
         if text.startswith('@"', index):
             state = "verbatim"
@@ -238,19 +245,22 @@ def _line_comment_metadata(
             ambiguous_in_state = False
             index += 2
             continue
-        quote_run = re.match(r'("{3,}|\'{3,})', text[index:])
+        quote_run = _TRIPLE_QUOTE_OPEN.match(text, index)
         if quote_run:
             state = "triple"
             closer = quote_run.group(1)
             line_has_token = True
             ambiguous_in_state = False
-            index += quote_run.end()
+            index = quote_run.end()
             continue
         if character == "'" and rust_lifetimes:
-            lifetime = re.match(r"'[A-Za-z_][A-Za-z0-9_]*", text[index:])
+            lifetime = _RUST_LIFETIME.match(text, index)
             if lifetime:
-                following = index + lifetime.end()
-                previous = text[:index].rstrip()[-1:] or None
+                following = lifetime.end()
+                previous_index = index - 1
+                while previous_index >= 0 and text[previous_index].isspace():
+                    previous_index -= 1
+                previous = text[previous_index] if previous_index >= 0 else None
                 if (
                     (following >= len(text) or text[following] != "'")
                     and previous in {"<", "&", ",", "+", ":"}
@@ -627,7 +637,7 @@ def _mask_js_template_literals(text: str, ambiguities=None) -> str:
                     return len(text), False
                 expect_operand = False
                 continue
-            identifier = re.match(r"[A-Za-z_$][A-Za-z0-9_$]*", text[index:])
+            identifier = _JS_IDENTIFIER.match(text, index)
             if identifier:
                 word = identifier.group(0)
                 index += len(word)
@@ -638,7 +648,7 @@ def _mask_js_template_literals(text: str, ambiguities=None) -> str:
                 } or pending_control
                 continue
             if character.isdigit():
-                number = re.match(r"[0-9A-Fa-f_xXoObBeE.+-]+", text[index:])
+                number = _JS_NUMBER.match(text, index)
                 index += len(number.group(0)) if number else 1
                 expect_operand = False
                 pending_control = False
@@ -1069,11 +1079,15 @@ class GenericLineCommentAdapter:
         ))
         return blocks, tuple(dict.fromkeys(ambiguities))
 
+    def scan_metadata(self, text: str):
+        """Return blocks and lexical diagnostics from one scan."""
+        return self._scan(text)
+
     def metadata_blocks(self, text: str):
-        yield from self._scan(text)[0]
+        yield from self.scan_metadata(text)[0]
 
     def metadata_diagnostics(self, text: str):
-        return self._scan(text)[1]
+        return self.scan_metadata(text)[1]
 
 
 @dataclass(frozen=True)
@@ -1184,3 +1198,35 @@ def adapter_for_path(path: str) -> Optional[Adapter]:
             preserve_escaped_newline_token=True,
         )
     return None
+
+
+@dataclass(frozen=True)
+class PreparedAdapter:
+    """Request-local immutable lexical result shared by admission and parsing."""
+    surface: str
+    blocks: tuple
+    diagnostics: tuple = ()
+    contextual_blocks: tuple = ()
+
+    def metadata_blocks(self, text: str):
+        return iter(self.blocks)
+
+    def metadata_diagnostics(self, text: str):
+        return self.diagnostics
+
+    def metadata_blocks_with_context(self, text: str):
+        return iter(self.contextual_blocks or self.blocks)
+
+
+def prepare_adapter(adapter: Adapter, text: str) -> PreparedAdapter:
+    if isinstance(adapter, PreparedAdapter):
+        return adapter
+    if hasattr(adapter, "scan_metadata"):
+        blocks, diagnostics = adapter.scan_metadata(text)
+        return PreparedAdapter(adapter.surface, tuple(blocks), tuple(diagnostics))
+    if (adapter.surface == "document_metadata"
+            and hasattr(adapter, "metadata_blocks_with_context")):
+        contextual = tuple(adapter.metadata_blocks_with_context(text))
+        blocks = tuple((block.text, block.construct, block.label) for block in contextual)
+        return PreparedAdapter(adapter.surface, blocks, contextual_blocks=contextual)
+    return PreparedAdapter(adapter.surface, tuple(adapter.metadata_blocks(text)))

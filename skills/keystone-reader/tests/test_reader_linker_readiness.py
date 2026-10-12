@@ -53,7 +53,8 @@ class ReaderLinkerReadinessTests(unittest.TestCase):
 
     # keystone: id=key.test.reader.linker-readiness-contract kind=output_artifact artifact_kind=test verifies=key.code.linker.context-readiness locator.test_name=test_selected_work_artifact_trigger_records_one_way_linker_handoff
     def test_selected_work_artifact_trigger_records_one_way_linker_handoff(self):
-        readiness = context_readiness(self.root, self.cache, initiator="reader")
+        readiness = context_readiness(self.root, self.cache, initiator="reader", discovery_mode="targeted",
+                                      anchors=[{"id": "key.context", "path": "00_docs/context.md"}])
 
         self.assertEqual(("reader", "linker"), tuple(item.lane for item in readiness.trace.entries))
         self.assertEqual("docs", readiness.result.scope.value)
@@ -62,7 +63,8 @@ class ReaderLinkerReadinessTests(unittest.TestCase):
         trace = CallTrace().enter("linker", "artifact_lookup")
 
         readiness = context_readiness(
-            self.root, self.cache, initiator="linker", trace=trace)
+            self.root, self.cache, initiator="linker", trace=trace, discovery_mode="targeted",
+            anchors=[{"id": "key.context", "path": "00_docs/context.md"}])
 
         self.assertEqual(("linker",), tuple(item.lane for item in readiness.trace.entries))
         self.assertEqual({"key.context"}, {item.id for item in readiness.result.owners})

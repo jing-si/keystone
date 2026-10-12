@@ -133,10 +133,10 @@ class KeystoneSessionTitleRuntimeTest(unittest.TestCase):
         self.assertEqual([], self.queued)
         self.assertEqual(["R015"], self.pending.load(self.thread_id)["candidates"])
 
-    def test_incomplete_rounds_include_children_and_exclude_terminal_statuses(self):
+    def test_incomplete_rounds_include_unaccepted_complete_and_exclude_closed_statuses(self):
         result = self.run_hook(state_with_rounds([
             ("R010", "accepted", [("R010-AE", "planned")]),
-            ("R015", "active"),
+            ("R015", "active", [("R015-AE", "complete")]),
             ("R018", "planned"),
             ("R020", "cancelled"),
             ("R021", "complete"),
@@ -148,10 +148,11 @@ class KeystoneSessionTitleRuntimeTest(unittest.TestCase):
         self.assertIn("R010-AE", reason)
         self.assertIn("R015", reason)
         self.assertIn("R018", reason)
+        self.assertIn("└─ R015-AE · complete / pending · 수용 대기", reason)
+        self.assertIn("R021 · complete / pending · 수용 대기", reason)
         self.assertNotIn("R020", reason)
-        self.assertNotIn("R021", reason)
 
-    def test_candidates_are_round_ascending_and_limited_to_twenty(self):
+    def test_all_candidates_are_shown_in_round_ascending_order(self):
         rounds = [("R{:03d}".format(number), "planned") for number in range(30, 52)]
         rounds.append(("R015", "active"))
 
@@ -161,9 +162,27 @@ class KeystoneSessionTitleRuntimeTest(unittest.TestCase):
             if re.match(r"│  \d+\. R", line)
         ]
 
-        self.assertEqual(20, len(lines))
-        self.assertTrue(lines[0].startswith("│  1. R015"))
-        self.assertIn("외 3개", result["reason"])
+        expected_refs = ["R015"] + ["R{:03d}".format(number) for number in range(30, 52)]
+        self.assertEqual(expected_refs, [re.search(r"R\d+", line).group() for line in lines])
+        self.assertIn("미완료 Round 23개", result["reason"])
+        self.assertNotIn("외 ", result["reason"])
+
+    def test_all_children_are_shown_beyond_the_former_limit(self):
+        child_refs = ["R015-" + chr(letter) for letter in range(ord("A"), ord("Z") + 1)]
+        child_refs.extend(["R015-AA", "R015-AB"])
+        result = self.run_hook(state_with_rounds([
+            ("R015", "active", [(ref, "planned") for ref in reversed(child_refs)]),
+            ("R016", "complete"),
+        ]))
+
+        lines = result["reason"].splitlines()
+        displayed_children = [
+            re.search(r"R\d+-[A-Z]+", line).group() for line in lines if "└─" in line
+        ]
+        self.assertEqual(child_refs, displayed_children)
+        self.assertIn("미완료 Round 30개", result["reason"])
+        self.assertIn("│  2. R016 · complete / pending · 수용 대기", result["reason"])
+        self.assertNotIn("외 ", result["reason"])
 
     def test_children_are_nested_below_parent_in_excel_suffix_order(self):
         result = self.run_hook(state_with_rounds([
@@ -225,6 +244,25 @@ class KeystoneSessionTitleRuntimeTest(unittest.TestCase):
         self.assertEqual("block", result["decision"])
         self.assertIn("`R022:{대표문구}`", self.queued[0][1])
         self.assertNotIn("`R015:{대표문구}`", self.queued[0][1])
+
+    def test_child_assignment_does_not_collapse_to_parent_prefix(self):
+        current_state = state_with_rounds([
+            ("R015", "active", [
+                ("R015-A", "active"),
+                ("R015-AE", "active"),
+            ]),
+        ])
+        self.run_hook(current_state)
+        self.payload["prompt"] = "R015-AE를 진행해 주세요"
+
+        result = self.run_hook(current_state)
+
+        self.assertEqual("block", result["decision"])
+        message = self.queued[0][1]
+        self.assertIn("`R015-AE:{대표문구}`", message)
+        self.assertIn("선택 라운드: R015-AE", message)
+        self.assertNotIn("`R015:{대표문구}`", message)
+        self.assertNotIn("`R015-A:{대표문구}`", message)
 
     def test_direct_reader_assignment_queues_title_hint(self):
         self.payload["prompt"] = "$keystone-reader R015 작업을 시작해 주세요"

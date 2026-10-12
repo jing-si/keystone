@@ -191,3 +191,25 @@ Verify that:
 5. Linker never edits source or grants acceptance.
 6. Graph synchronization is conditional on graph relevance.
 7. Output stays bounded to evidence, candidates, handoffs, and residual risk.
+
+## Keymeta-First Bounded Discovery (R018)
+
+Routine context readiness explicitly uses `discovery_mode: targeted`. Its internal request accepts
+`anchors` (`id`, optional repository-relative `path` and raw-byte `digest`), confirmed `source_paths`,
+ID-to-path `owner_paths`, selected `relation_types`, `follow_refs` and `max_depth` (0–8). Paths are
+locator hints, not authority: re-read current source and verify owner admission. Unknown locators return
+`owner_unresolved`; omitted or stale evidence makes bounded coverage incomplete.
+
+Use `lookup` only with explicit `lookup_roots` and exact owner IDs. Report searched files and bytes;
+byte matches are candidates that must pass canonical metadata admission. Do not build a typed graph
+for lookup. Use `audit` for explicit full graph audit, release verification or scope conflict only.
+Cache failure never promotes a targeted request to lookup or audit. The bounded source path works
+without opening or creating a persistent cache; fresh locator evidence can be passed through
+`owner_paths`, and all admitted files are rebound to current raw bytes.
+
+The bounded default budgets are 128 files and 50 MiB, adjustable within the scanner hard limits using
+`max_files` and `max_total_bytes`. Return v4 mode, scope, bounded completeness, diagnostics and freshness;
+never claim repository completeness from a bounded result. Mode-less v2/v3 requests retain their
+legacy scan and wire behavior for compatibility, but new routine callers must use explicit targeted
+requests. Removing that compatibility path requires a separate migration check. Lexical admission,
+owner/ref parsing and requested source views reuse one request-local parsed source snapshot.

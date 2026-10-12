@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Tuple
 
-from .adapters import Adapter, adapter_for_path
+from .adapters import Adapter, adapter_for_path, prepare_adapter
 from .model import Diagnostic
 
 
@@ -24,6 +24,11 @@ class SourceUnit:
     companion_bytes: Optional[bytes]
     surface: Optional[SourceSurface]
     diagnostics: Tuple[Diagnostic, ...] = ()
+    prepared_adapter: Optional[Adapter] = None
+
+    @property
+    def parsing_adapter(self) -> Optional[Adapter]:
+        return self.prepared_adapter or self.adapter
 
     @property
     def companion_path(self) -> str:
@@ -106,9 +111,10 @@ def resolve_source_unit(
                 path=path,
             ),),
         )
+    prepared = prepare_adapter(adapter, text)
     lexical_findings = (
-        adapter.metadata_diagnostics(text)
-        if hasattr(adapter, "metadata_diagnostics")
+        prepared.metadata_diagnostics(text)
+        if hasattr(prepared, "metadata_diagnostics")
         else ()
     )
     if lexical_findings:
@@ -124,9 +130,10 @@ def resolve_source_unit(
             ),
         )
     if companion_bytes is None:
-        return SourceUnit(path, adapter, source_bytes, None, SourceSurface.INLINE)
+        return SourceUnit(path, adapter, source_bytes, None, SourceSurface.INLINE,
+                          prepared_adapter=prepared)
 
-    has_inline_declarations = any(adapter.metadata_blocks(text))
+    has_inline_declarations = any(prepared.metadata_blocks(text))
     if has_inline_declarations:
         return SourceUnit(
             path,

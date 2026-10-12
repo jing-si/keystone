@@ -2,8 +2,8 @@
 doc_type: work_order
 created_at: "2026-08-26"
 document_lifecycle: active
-approval: {state: pending}
-work_status: planned
+approval: {state: accepted, accepted_at: "2026-10-12", accepted_by: main}
+work_status: complete
 key:
   id: key.work.keymeta-bounded-discovery.order
   refs:
@@ -29,9 +29,7 @@ key:
 
 ## 문서 상태
 
-이 문서는 키메타 중심 bounded discovery를 위한 `planned / pending` Work Order다. Round 생성만
-승인됐으며 사용자의 별도 진행 요청 전에는 기준서·runtime·skill source·test 구현을 시작하지
-않는다.
+2026-10-12 사용자 진행 지시에 따라 S01~S04를 수행하고 검증·수락했다.
 
 <!-- key: id=key.work.keymeta-bounded-discovery.order.goal refs=key.section.goal key.topic.context-readiness key.topic.keystone-metadata -->
 ## Goal
@@ -141,37 +139,37 @@ Exclude:
 
 | Step | 상태 | 변경 범위 | 완료 경계 |
 |---|---|---|---|
-| R018/S01 | planned | Project·Artifact Graph·Linker 기준, 필요한 결정과 R018 source | `targeted / lookup / audit`, no-implicit-full-scan, bounded completeness와 correctness 하한이 accepted 의미로 정렬된다 |
-| R018/S02 | planned | Linker scanner/index/query/readiness와 Reader·Linker skill contract | routine readiness가 anchor에서 bounded source set을 만들며 cache miss만으로 full scan하지 않는다 |
-| R018/S03 | planned | language adapter, metadata parse, source view projection과 focused tests | 동일 의미를 유지하면서 substring copy, 반복 lexical scan과 snapshot 재구성 중복이 제거된다 |
-| R018/S04 | planned | affected suites, self-host fixture와 read-only consumer-scale benchmark | bounded/full mode 분리, correctness parity, 성능 기준과 accepted standard↔implementation 정합성이 검증된다 |
+| R018/S01 | complete / accepted | Project·Artifact Graph·Linker 기준, 필요한 결정과 R018 source | `targeted / lookup / audit`, no-implicit-full-scan, bounded completeness와 correctness 하한이 accepted 의미로 정렬된다 |
+| R018/S02 | complete / accepted | Linker scanner/index/query/readiness와 Reader·Linker skill contract | routine readiness가 anchor에서 bounded source set을 만들며 cache miss만으로 full scan하지 않는다 |
+| R018/S03 | complete / accepted | language adapter, metadata parse, source view projection과 focused tests | 동일 의미를 유지하면서 substring copy, 반복 lexical scan과 snapshot 재구성 중복이 제거된다 |
+| R018/S04 | complete / accepted | affected suites, self-host fixture와 read-only consumer-scale benchmark | bounded/full mode 분리, correctness parity, 성능 기준과 accepted standard↔implementation 정합성이 검증된다 |
 
 <!-- key: id=key.work.keymeta-bounded-discovery.order.completion refs=key.topic.verification key.boundary.stop-condition -->
 ## Completion Criteria
 
-- [ ] `targeted` Work 또는 문서 anchor 요청이 full repository enumeration·parse 없이 bounded
+- [x] `targeted` Work 또는 문서 anchor 요청이 full repository enumeration·parse 없이 bounded
       source set과 freshness evidence를 만든다.
-- [ ] Keymeta ID, refs, typed relations와 locator가 실제 discovery seed·expansion evidence로 사용된다.
-- [ ] `targeted` 결과는 bounded completeness만 주장하고 unresolved owner·source omission을 stable
+- [x] Keymeta ID, refs, typed relations와 locator가 실제 discovery seed·expansion evidence로 사용된다.
+- [x] `targeted` 결과는 bounded completeness만 주장하고 unresolved owner·source omission을 stable
       diagnostic으로 반환한다.
-- [ ] Exact-ID `lookup`은 검색 범위를 노출하고 full graph reconstruction 없이 owner 후보를
+- [x] Exact-ID `lookup`은 검색 범위를 노출하고 full graph reconstruction 없이 owner 후보를
       반환하거나 unresolved로 끝난다.
-- [ ] Cache miss·stale·unavailable 상태가 routine request를 자동 repository-wide scan으로 확장하지
+- [x] Cache miss·stale·unavailable 상태가 routine request를 자동 repository-wide scan으로 확장하지
       않으며 불완전성은 stable diagnostic으로 보고된다.
-- [ ] Full repository scan은 명시적 `audit`·release·scope-conflict mode에서 계속 사용할 수 있다.
-- [ ] Ignored directory와 include root는 하위 tree 방문 전에 prune되며 symlink·root escape 경계가
+- [x] Full repository scan은 명시적 `audit`·release·scope-conflict mode에서 계속 사용할 수 있다.
+- [x] Ignored directory와 include root는 하위 tree 방문 전에 prune되며 symlink·root escape 경계가
       유지된다.
-- [ ] Supported source의 canonical node/ref/relation/diagnostic 결과가 최적화 전후 characterization
+- [x] Supported source의 canonical node/ref/relation/diagnostic 결과가 최적화 전후 characterization
       fixture에서 동일하다.
-- [ ] 하나의 source는 routine projection chain에서 한 번 lexical parse되고, source views는 같은
+- [x] 하나의 source는 routine projection chain에서 한 번 lexical parse되고, source views는 같은
       immutable snapshot을 재사용한다.
-- [ ] 300KB급 Kotlin anchor fixture의 lexical scan은 현재 기록된 약 9.5초 대비 같은 환경에서
+- [x] 300KB급 Kotlin anchor fixture의 lexical scan은 현재 기록된 약 9.5초 대비 같은 환경에서
       10배 이상 개선된다.
-- [ ] 대규모 ignored tree가 있는 소비 저장소의 selected-Work bounded readiness는 명시된 source
+- [x] 대규모 ignored tree가 있는 소비 저장소의 selected-Work bounded readiness는 명시된 source
       set과 residual gap을 10초 이내에 반환한다.
-- [ ] Repository-local skill/runtime, installed package parity와 관련 focused·package·contract test가
+- [x] Repository-local skill/runtime, installed package parity와 관련 focused·package·contract test가
       통과한다.
-- [ ] R018 문서, 기준서, 구현과 verification evidence가 일치하고 Main acceptance 전 상태를
+- [x] R018 문서, 기준서, 구현과 verification evidence가 일치하고 Main acceptance 전 상태를
       완료로 표시하지 않는다.
 
 <!-- key: id=key.work.keymeta-bounded-discovery.order.verification refs=key.topic.verification key.topic.context-readiness -->
@@ -207,5 +205,5 @@ Exclude:
 
 ## 다음 단계
 
-사용자가 R018 진행을 명시하면 S01에서 accepted 기준과 실제 discovery semantics의 차이를 정리하고,
-필요한 정책 결정을 먼저 수락 가능한 상태로 만든다.
+R018은 완료·수락됐다. 검증 수치와 호환 경계는 `key-progress-verification.md`를 따른다.
+Global install은 제외 범위를 유지했고 installed-package parity는 임시 격리 설치에서 검증했다.

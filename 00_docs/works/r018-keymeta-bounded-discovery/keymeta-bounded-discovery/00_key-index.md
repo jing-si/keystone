@@ -2,8 +2,8 @@
 doc_type: work
 created_at: "2026-08-26"
 document_lifecycle: active
-approval: {state: pending}
-work_status: planned
+approval: {state: accepted, accepted_at: "2026-10-12", accepted_by: main}
+work_status: complete
 key:
   id: key.work.keymeta-bounded-discovery.index
   refs:
@@ -34,21 +34,22 @@ risk_level: high
 
 - 작업서 및 Change Set: `key-work-keymeta-bounded-discovery.md`
 - 진행 기록: `key-progress.md`
+- Step 결과: `key-progress-contract.md`, `key-progress-runtime.md`, `key-progress-parser.md`,
+  `key-progress-verification.md`
 
 ## 현재 상태
 
 - Round: `R018`
-- Work status: `planned`
-- Approval state: `pending`
+- Work status: `complete`
+- Approval state: `accepted`
 - Active Step: 없음
-- Accepted Steps: []
-- Planned Steps: [`R018/S01`, `R018/S02`, `R018/S03`, `R018/S04`]
-- Next action: 사용자가 R018 진행을 명시하면 S01에서 discovery contract와 기준서 정합화를
-  시작한다.
+- Accepted Steps: [`R018/S01`, `R018/S02`, `R018/S03`, `R018/S04`]
+- Planned Steps: []
+- Next action: 없음. R018 구현·검증을 완료하고 수락했다.
 
 ## 복구 순서
 
 1. Progress에서 R018의 현재 상태와 resume point를 확인한다.
 2. Work Order에서 키메타 anchor, bounded expansion, full-scan 경계와 수용 기준을 읽는다.
-3. 사용자의 명시적 진행 요청이 있는 경우에만 S01을 시작한다.
-4. S01이 accepted 의미를 확정하기 전에는 production runtime과 skill source를 수정하지 않는다.
+3. S01~S04 결과와 검증 한계는 개별 Step Progress에서 확인한다.
+4. 후속 변경은 새 사용자 요청 범위에서 판단한다.

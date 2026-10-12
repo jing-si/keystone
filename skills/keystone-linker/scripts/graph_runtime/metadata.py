@@ -4,7 +4,7 @@ import re
 import shlex
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
-from .adapters import Adapter
+from .adapters import Adapter, prepare_adapter
 from .companion import parse_companion
 from .dependency import DependencySource
 from .lifecycle_policy import node_lifecycle_domain
@@ -271,6 +271,7 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
                 source_exists=companion_source_exists,
                 source_bytes=companion_source_bytes,
             )
+        adapter = unit.parsing_adapter
     if adapter is None:
         if companion_text is None:
             diagnostic = Diagnostic("unsupported_surface", "no mechanically safe adapter or companion", path=path)
@@ -278,6 +279,7 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
         return parse_companion(companion_text, companion_path or path + ".keystone.json", path,
                                source_exists=companion_source_exists, source_bytes=companion_source_bytes)
 
+    adapter = prepare_adapter(adapter, text)
     nodes: Dict[str, Node] = {}
     relations: Dict[Tuple[str, str, str], Relation] = {}
     diagnostics: List[Diagnostic] = [

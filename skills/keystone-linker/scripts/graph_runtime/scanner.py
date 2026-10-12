@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Sequence, Tuple
@@ -17,6 +18,7 @@ from .index_model import (
 from .metadata import parse_reference_declaration, parse_source
 from .source_unit import COMPANION_SUFFIX, SourceSurface, resolve_source_unit
 from .yaml_subset import MetadataError
+from .model import ParseResult
 
 
 @dataclass(frozen=True)
@@ -31,6 +33,7 @@ class Discovery:
     sources: Tuple[SourceSnapshot, ...]
     freshness: FreshnessToken
     diagnostics: Tuple[IndexDiagnostic, ...] = ()
+    bounded: bool = False
 
 
 _IGNORED_DIRS = frozenset({
@@ -79,7 +82,7 @@ class ReferenceScanner:
                  includes: Sequence[str] = (), excludes: Sequence[str] = (),
                  max_file_bytes: int = 5 * 1024 * 1024,
                  max_total_bytes: int = 50 * 1024 * 1024,
-                 max_files: int = 50000):
+                 max_files: int = 50000, anchored_includes: bool = False):
         self.root = Path(repository_root).resolve()
         declared_root = Path(document_root)
         if declared_root.is_absolute() or ".." in declared_root.parts:
@@ -92,18 +95,26 @@ class ReferenceScanner:
         self.document_root = declared_root.as_posix()
         self._document_root_path = resolved_document_root
         self.includes = tuple(includes)
+        self.anchored_includes = anchored_includes
         self.excludes = tuple(excludes)
         self.max_file_bytes = max_file_bytes
         self.max_total_bytes = max_total_bytes
         self.max_files = max_files
+        self._parsed_sources = {}
+        self._discovery_diagnostics = []
 
     def discover(self, scope: ScanScope) -> Discovery:
         scope = ScanScope(scope)
         base = self._document_root_path if scope == ScanScope.DOCS else self.root
         paths = tuple(sorted(self._paths(base, scope), key=lambda item: item.as_posix()))
+        return self.discover_paths(scope, paths)
+
+    def discover_paths(self, scope: ScanScope, paths: Sequence[Path]) -> Discovery:
+        """Read an exact admitted path set; never enumerate a directory here."""
+        paths = tuple(sorted(set(paths), key=lambda path: path.as_posix()))
         discovered_paths = tuple(self._relative(path) for path in paths)
         sources = []
-        diagnostics = []
+        diagnostics = list(self._discovery_diagnostics)
         total_bytes = 0
         for path in paths:
             relative = self._relative(path)
@@ -170,6 +181,7 @@ class ReferenceScanner:
         edges = []
         diagnostics = list(discovery.diagnostics)
         dependency_sources = []
+        parsed_results = {}
         raw_by_path = {source.relative: source.raw_bytes for source in discovery.sources}
         logical_paths = {
             (path[:-len(COMPANION_SUFFIX)]
@@ -178,48 +190,58 @@ class ReferenceScanner:
         }
         for relative in sorted(logical_paths):
             companion_relative = relative + COMPANION_SUFFIX
-            try:
-                unit = resolve_source_unit(
-                    relative,
-                    raw_by_path.get(relative),
-                    raw_by_path.get(companion_relative),
-                )
-            except UnicodeDecodeError:
-                diagnostics.append(IndexDiagnostic(
-                    "unsupported_encoding", "source is not UTF-8", relative
-                ))
-                continue
-            diagnostics.extend(IndexDiagnostic(item.code, item.message, item.path)
-                               for item in unit.diagnostics)
-            if unit.surface is None:
-                continue
-            if unit.surface == SourceSurface.COMPANION:
-                try:
-                    companion_text = unit.companion_bytes.decode("utf-8")
-                except UnicodeDecodeError:
-                    diagnostics.append(IndexDiagnostic(
-                        "unsupported_encoding", "companion is not UTF-8",
-                        companion_relative,
-                    ))
-                    continue
-                parsed = parse_source(
-                    "",
-                    relative,
-                    None,
-                    companion_text=companion_text,
-                    companion_path=companion_relative,
-                    companion_source_exists=unit.source_bytes is not None,
-                    companion_source_bytes=unit.source_bytes,
-                )
+            cache_key = (relative, raw_by_path.get(relative), raw_by_path.get(companion_relative))
+            if cache_key in self._parsed_sources:
+                unit, parsed, text = self._parsed_sources[cache_key]
             else:
+                text = ""
                 try:
-                    text = unit.source_bytes.decode("utf-8")
+                    unit = resolve_source_unit(
+                        relative,
+                        raw_by_path.get(relative),
+                        raw_by_path.get(companion_relative),
+                    )
                 except UnicodeDecodeError:
                     diagnostics.append(IndexDiagnostic(
                         "unsupported_encoding", "source is not UTF-8", relative
                     ))
                     continue
-                parsed = parse_source(text, relative, unit.adapter)
+                if unit.surface is None:
+                    parsed = ParseResult()
+                elif unit.surface == SourceSurface.COMPANION:
+                    try:
+                        companion_text = unit.companion_bytes.decode("utf-8")
+                    except UnicodeDecodeError:
+                        diagnostics.append(IndexDiagnostic(
+                            "unsupported_encoding", "companion is not UTF-8",
+                            companion_relative,
+                        ))
+                        continue
+                    parsed = parse_source(
+                        "",
+                        relative,
+                        None,
+                        companion_text=companion_text,
+                        companion_path=companion_relative,
+                        companion_source_exists=unit.source_bytes is not None,
+                        companion_source_bytes=unit.source_bytes,
+                    )
+                else:
+                    try:
+                        text = unit.source_bytes.decode("utf-8")
+                    except UnicodeDecodeError:
+                        diagnostics.append(IndexDiagnostic(
+                            "unsupported_encoding", "source is not UTF-8", relative
+                        ))
+                        continue
+                    parsed = parse_source(text, relative, unit.parsing_adapter)
+                self._parsed_sources[cache_key] = (unit, parsed, text)
+            diagnostics.extend(IndexDiagnostic(item.code, item.message, item.path)
+                               for item in unit.diagnostics)
+            if unit.surface is None and not unit.diagnostics and discovery.bounded:
+                diagnostics.append(IndexDiagnostic(
+                    "unsupported_surface", "no canonical metadata surface", relative))
+            parsed_results[relative] = (unit, parsed)
             diagnostics.extend(IndexDiagnostic(item.code, item.message, item.path)
                                for item in parsed.diagnostics)
             dependency_sources.extend(parsed.dependency_sources)
@@ -237,7 +259,7 @@ class ReferenceScanner:
                         "locator_gap", "owner has no machine-checkable locator: %s" % node.id,
                         relative, "warning"))
             if unit.surface == SourceSurface.INLINE:
-                for block, _construct, label in unit.adapter.metadata_blocks(text):
+                for block, _construct, label in unit.parsing_adapter.metadata_blocks(text):
                     try:
                         declaration = parse_reference_declaration(block)
                         if declaration is None:
@@ -269,7 +291,8 @@ class ReferenceScanner:
                 ))
                 continue
             diagnostics.append(IndexDiagnostic(
-                "dangling_ref", "ref target has no owner: %s" % ref.target_id, ref.path))
+                "owner_unresolved" if discovery.bounded else "dangling_ref", "ref target has no owner: %s" % ref.target_id, ref.path,
+                "warning" if discovery.bounded else "error"))
         ordered_owners = tuple(sorted(owners, key=lambda item: (item.id, item.path, item.locator or "")))
         ordered_refs = tuple(sorted(set(refs), key=lambda item: (item.target_id, item.source_id, item.path)))
         ordered_diagnostics = tuple(sorted(diagnostics, key=lambda item: (item.code, item.path or "", item.message)))
@@ -284,6 +307,7 @@ class ReferenceScanner:
                 self.root,
                 tuple(sorted(logical_paths)),
                 raw_by_path,
+                parsed_results=parsed_results,
             )
             existing_diagnostics = {
                 (item.code, item.message, item.path) for item in diagnostics
@@ -308,11 +332,15 @@ class ReferenceScanner:
                            ordered_diagnostics, graph, dependency_result.evaluations,
                            source_views)
 
+    def lookup_paths(self, base: Path, scope: ScanScope) -> Iterable[Path]:
+        """Enumerate an explicitly selected lookup root using scan admission."""
+        return self._paths(base, scope)
+
     def _paths(self, base: Path, scope: ScanScope) -> Iterable[Path]:
         if not base.is_dir():
             return ()
         found = set()
-        for path in base.rglob("*"):
+        for path in self._walk(base):
             if path.is_symlink() or not path.is_file():
                 continue
             relative = self._relative(path)
@@ -337,13 +365,98 @@ class ReferenceScanner:
                     found.add(companion_source)
         return found
 
+    def _walk(self, base: Path) -> Iterable[Path]:
+        if base.is_symlink():
+            return
+        def report_error(error):
+            self._discovery_diagnostics.append(IndexDiagnostic(
+                "source_unreadable", str(error), str(error.filename), "warning"))
+
+        for directory, dirs, files in os.walk(base, followlinks=False, onerror=report_error):
+            parent = Path(directory)
+            dirs[:] = sorted(name for name in dirs
+                             if self._descend(parent / name))
+            for name in sorted(files):
+                yield parent / name
+
+    def _descend(self, path: Path) -> bool:
+        relative = path.relative_to(self.root).as_posix()
+        if path.is_symlink() or any(part in _IGNORED_DIRS for part in path.parts):
+            return False
+        for pattern in self.excludes:
+            if (Path(relative).match(pattern)
+                    or (pattern.endswith('/**')
+                        and Path(relative).match(pattern[:-3]))):
+                return False
+        if not self.includes or not self.anchored_includes:
+            return True
+        # Only prune rooted patterns whose literal prefix proves disjointness.
+        for pattern in self.includes:
+            parts = Path(pattern).parts
+            if len(parts) == 1 or any(c in parts[0] for c in '*?['):
+                return True
+            prefix = []
+            for part in parts:
+                if any(c in part for c in '*?['):
+                    break
+                prefix.append(part)
+            fixed = '/'.join(prefix)
+            if (relative == fixed or fixed.startswith(relative + '/')
+                    or relative.startswith(fixed + '/')):
+                return True
+        return False
+
+    def exact_paths(self, paths: Sequence[str], scope: ScanScope) -> Tuple[Path, ...]:
+        """Validate explicit relative files and admit adjacent companion pairs."""
+        found = set()
+        for relative in paths:
+            value = Path(relative)
+            if value.is_absolute() or '..' in value.parts:
+                raise ValueError('source path must be repository-relative')
+            path = self.root / value
+            if any(part.is_symlink() for part in (path, *path.parents) if part != self.root):
+                continue
+            path.resolve().relative_to(self.root)
+            if scope == ScanScope.DOCS:
+                try:
+                    path.relative_to(self._document_root_path)
+                except ValueError:
+                    continue
+            if not self._admitted(relative):
+                continue
+            source = (Path(str(path)[:-len(COMPANION_SUFFIX)])
+                      if str(path).endswith(COMPANION_SUFFIX) else path)
+            companion = Path(str(source) + COMPANION_SUFFIX)
+            if source.is_symlink() or not self._admitted(source.relative_to(self.root).as_posix()):
+                continue
+            for pair in (source, companion):
+                if (pair.is_file() and not pair.is_symlink()
+                        and self._admitted(pair.relative_to(self.root).as_posix())):
+                    found.add(pair)
+        return tuple(sorted(found))
+
     def _admitted(self, relative: str) -> bool:
         parts = Path(relative).parts
         if any(part in _IGNORED_DIRS for part in parts):
             return False
         if self.excludes and any(Path(relative).match(pattern) for pattern in self.excludes):
             return False
-        return not self.includes or any(Path(relative).match(pattern) for pattern in self.includes)
+        if not self.includes:
+            return True
+        for pattern in self.includes:
+            if not Path(relative).match(pattern):
+                continue
+            if not self.anchored_includes or '/' not in pattern:
+                return True
+            parts = Path(pattern).parts
+            prefix = []
+            for part in parts:
+                if any(character in part for character in '*?['):
+                    break
+                prefix.append(part)
+            if not prefix or Path(relative).parts[:len(prefix)] == tuple(prefix):
+                return True
+        return False
 
     def _relative(self, path: Path) -> str:
         return path.resolve().relative_to(self.root).as_posix()

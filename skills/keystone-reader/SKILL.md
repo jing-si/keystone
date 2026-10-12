@@ -214,20 +214,25 @@ context-readiness entry point, not the cache owner.
    executable Step. Do not change Step status or priority through this session choice.
 7. When `.codex/config.toml` opts in, its project-local `UserPromptSubmit` hook runs the package-local
    `scripts/keystone_session_title.py --hook` before the first Reader request is accepted. A bare Reader
-   request lists non-terminal parent and child Rounds in ascending parent number order, nesting each
-   child immediately below its parent in Excel-column suffix order. Exclude `complete`, `accepted`, and
-   `cancelled`. Show at most twenty Round entries in total and summarize the remainder as `외 N개`; never
-   auto-select a sole candidate. Never emit a terminal parent as a grouping header. If only its child
-   remains, render that child as a numbered entry with its full local ref.
+   request lists unaccepted parent and child Rounds in ascending parent number order, nesting each child
+   immediately below its parent in Excel-column suffix order. Include `complete` as
+   `complete / pending · 수용 대기`, because completed implementation still needs explicit acceptance.
+   Exclude only `accepted` and `cancelled`. Show every remaining Round entry without a count limit or
+   an `외 N개` omission summary; never auto-select a sole candidate. Never emit an excluded parent as a grouping
+   header. If only its child remains, render that child as a numbered entry with its full local ref.
 8. Whether the candidate list comes from the hook or Reader's own fail-open response, start with
    `Keystone ready · 미완료 Round N개` and render an open-left selection box headed by
    `╭─ Round 선택`. Use one line per Round in the stable form
    `{Round ref} · {status} · {title}`, number parent or standalone entries, and prefix a nested child
    with `└─`. Separate parent groups with a blank `│` line, use no right border or width padding, and
    close with `╰─ 어느 Round에 집중할까요?`. Do not add separate Step, gate, baseline, source, or
-   rationale lines to the candidate list. The pre-model hook uses the concise canonical source title.
-   When Reader itself renders a fail-open list, render the title in the project's preferred language;
-   if needed, translate only the title instead of adding an explanation.
+   rationale lines to the candidate list. The pre-model hook uses the concise canonical source title
+   because it has no translation model. Whenever Reader itself renders, repeats, or summarizes the
+   candidate list, it MUST translate every displayed title into the project's preferred language; the
+   source-title language is never display authority. Preserve identifiers and necessary proper nouns,
+   but do not leave ordinary source-title wording in another language or mix display languages merely
+   because the source title is written that way. Translate only the title instead of adding an
+   explanation.
 9. When the user explicitly assigns an incomplete existing Round with execution language such as
    proceed, start, continue, switch, undertake, or execute, the hook uses `codex queue` to place an
    equivalent marked request back into the same session. Its title hint is `{local Round ref}:{phrase}`
@@ -398,8 +403,9 @@ Check that Reader:
     prevents Reader-Linker recursion in one call chain; Reader itself remains source read-only.
 12. Keeps global Round identity on the parent while preserving child-local status, Work ownership,
     active Steps, declared order, and unresolved child evidence from Work State schema v5.
-13. Lists incomplete parent and child Rounds before a bare Reader turn, never auto-selects a sole
-    candidate, and preserves free-form review, investigation, confirmation, and status requests.
+13. Lists unaccepted parent and child Rounds before a bare Reader turn, including complete/pending
+    acceptance work, never auto-selects a sole candidate, and preserves free-form review,
+    investigation, confirmation, and status requests.
 14. Informs the user of in-progress Steps, selects the lowest executable Step without asking, and
     explains a blocked-lowest fallback without changing Step status or priority.
 15. Defers Linker during initial orientation, invokes bounded permissionless readiness only from a
@@ -410,4 +416,19 @@ Check that Reader:
     current worktree when the field is absent, and reports stale/mismatch without global worktree search.
 18. Adds one prefix-free, five-character-or-shorter native title hint only for explicit execution of an
     incomplete existing Round or actual Work Order authoring, derives but never reserves a new Round ref,
-    limits the candidate list to ten, and never persists selection or proposes a manual rename fallback.
+    shows every candidate without truncation, and never persists selection or proposes a manual rename fallback.
+
+## Bounded Discovery Request (R018)
+
+For routine selected-Work context, explicitly send `discovery_mode: targeted` to Linker. Supply
+`anchors` with stable `id`, known repository-relative `path` and raw-byte `digest`, plus only the
+confirmed `source_paths` and `owner_paths` needed by the request. Select `relation_types`, `follow_refs`
+and `max_depth` for the actual question. Do not enumerate the repository to populate these inputs.
+If a target has no known locator, report `owner_unresolved` or request a separate `lookup` with explicit
+`lookup_roots`. Never convert missing, stale, corrupt or busy cache into `audit`. Only an explicit graph
+audit, release verification or scope conflict permits `discovery_mode: audit`.
+
+Read the v4 response's `discovery.mode`, `coverage_kind`, `complete`, searched files/bytes and source
+freshness together. Bounded completeness never means repository completeness. Legacy mode-less v2/v3
+requests remain a compatibility path and must not be used for new routine preparation. Source views
+reuse the same parsed snapshot; do not request a second reconstruction merely to obtain those views.

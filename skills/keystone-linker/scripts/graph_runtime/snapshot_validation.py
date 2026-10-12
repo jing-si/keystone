@@ -21,9 +21,10 @@ from .model import (
     Node,
     Relation,
     RelationType,
+    ParseResult,
 )
 from .relation_policy import relation_direction_allowed
-from .source_unit import COMPANION_SUFFIX, SourceSurface, resolve_source_unit
+from .source_unit import COMPANION_SUFFIX, SourceSurface, SourceUnit, resolve_source_unit
 from .validation_support import diagnostic, safe_path
 
 
@@ -57,6 +58,7 @@ def reconstruct(
     root: Path,
     sources: Sequence[str],
     source_bytes: Optional[Mapping[str, bytes]] = None,
+    *, parsed_results: Optional[Mapping[str, Tuple[SourceUnit, ParseResult]]] = None,
 ) -> Tuple[GraphSnapshot, Tuple[Diagnostic, ...]]:
     """Reconstruct deterministically from source surfaces, never from a cache."""
     nodes: List[Node] = []
@@ -74,30 +76,43 @@ def reconstruct(
             raw_companion = (
                 companion_path.read_bytes() if companion_path.is_file() else None
             )
-        unit = resolve_source_unit(relative, raw_source, raw_companion)
-        findings.extend(unit.diagnostics)
-        if unit.surface is None:
-            if unit.diagnostics:
-                continue
-            raise FileNotFoundError(relative)
-        if unit.surface == SourceSurface.INLINE:
-            result = parse_source(
-                unit.source_bytes.decode("utf-8"), relative, unit.adapter
-            )
+        cached = parsed_results.get(relative) if parsed_results is not None else None
+        if (cached is not None and cached[0].path == relative
+                and cached[0].source_bytes == raw_source
+                and cached[0].companion_bytes == raw_companion):
+            cached_unit, result = cached
+            findings.extend(cached_unit.diagnostics)
+            if cached_unit.surface == SourceSurface.COMPANION:
+                try:
+                    companion_text = raw_companion.decode("utf-8")
+                except UnicodeDecodeError:
+                    companion_text = ""
+                findings.extend(_companion_relation_vocabulary(companion_text, companion_relative))
         else:
-            companion_text = raw_companion.decode("utf-8")
-            findings.extend(_companion_relation_vocabulary(
-                companion_text, companion_relative
-            ))
-            result = parse_source(
-                "",
-                relative,
-                None,
-                companion_text=companion_text,
-                companion_path=companion_relative,
-                companion_source_exists=raw_source is not None,
-                companion_source_bytes=raw_source,
-            )
+            unit = resolve_source_unit(relative, raw_source, raw_companion)
+            findings.extend(unit.diagnostics)
+            if unit.surface is None:
+                if unit.diagnostics:
+                    continue
+                raise FileNotFoundError(relative)
+            if unit.surface == SourceSurface.INLINE:
+                result = parse_source(
+                    unit.source_bytes.decode("utf-8"), relative, unit.parsing_adapter
+                )
+            else:
+                companion_text = raw_companion.decode("utf-8")
+                findings.extend(_companion_relation_vocabulary(
+                    companion_text, companion_relative
+                ))
+                result = parse_source(
+                    "",
+                    relative,
+                    None,
+                    companion_text=companion_text,
+                    companion_path=companion_relative,
+                    companion_source_exists=raw_source is not None,
+                    companion_source_bytes=raw_source,
+                )
         nodes.extend(result.snapshot.nodes)
         for relation in result.snapshot.relations:
             identity = (relation.source, relation.relation, relation.target)

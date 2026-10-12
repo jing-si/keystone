@@ -207,20 +207,23 @@ key:
 -->
 ## Multi-active Round session focus
 
-1. Passing Work State에 `complete`, `accepted`, `cancelled`가 아닌 parent 또는 child Round가 있으면 session-title integration의
+1. Passing Work State에 `accepted`, `cancelled`가 아닌 parent 또는 child Round가 있으면 session-title integration의
    pre-submit hook은 bare Reader 요청 전에 각 local Round ref, status, Work와 현재 Step을 간결히
-   안내한다. Parent 번호와 child Excel suffix 오름차순으로 묶어 최대 20개를 표시하고 초과분은
-   줄인다.
+   안내한다. Parent 번호와 child Excel suffix 오름차순으로 묶어 개수 제한 없이 모두 표시하고
+   `외 N개`로 생략하지 않는다.
    Hook이 fail-open되어 Reader가 직접 후보를 보여줄 때도 같은 집합과 정렬을 사용한다.
    첫 줄은 `Keystone ready · 미완료 Round N개`로 전체 후보 수를 알리고, 후보는
    `╭─ Round 선택`으로 시작하는 오른쪽 테두리 없는 열린 박스 안에 표시한다. 각 항목은
-   `{Round ref} · {status} · {제목}` 한 줄로 제한한다. Parent 또는 독립 항목에는 번호를 붙이고,
+   `{Round ref} · {status} · {제목}` 한 줄로 제한한다. `complete` Round는 구현·검증 완료 뒤에도
+   명시적 수용이 남아 있으므로 `complete / pending · 수용 대기`로 표시한다. Parent 또는 독립
+   항목에는 번호를 붙이고,
    child는 parent 아래에서 `└─`로 연결하며 parent 그룹 사이는 빈 `│` 줄로 나눈다. 폭 맞춤용
    공백은 넣지 않고 `╰─ 어느 Round에 집중할까요?`로 닫는다. Pre-model hook은 canonical source
-   제목을 사용한다. Reader가 fail-open 목록을 직접 만들 때는 프로젝트 선호 언어로 제목만 짧게
-   번역한다. Step, Gate, 기준선, 출처와 상태 근거는 후보 목록 안에 별도 줄로 설명하지 않는다.
-   종료된 parent는 grouping header로 다시 출력하지 않으며 남은 child는 full local ref를 가진
-   번호 항목으로 표시한다.
+   제목을 사용한다. Reader가 후보 목록을 직접 표시·반복·요약할 때는 모든 제목을 프로젝트 선호
+   언어로 반드시 번역한다. 원천 제목의 언어는 표시 언어 권위가 아니며 식별자와 필요한 고유명사를
+   제외한 일반 표현을 다른 언어로 남기거나 언어를 섞지 않는다. Step, Gate, 기준선, 출처와 상태
+   근거는 후보 목록 안에 별도 줄로 설명하지 않는다. 제외된 parent는 grouping header로 다시
+   출력하지 않으며 남은 child는 full local ref를 가진 번호 항목으로 표시한다.
 2. 사용자가 선택하기 전에는 각 후보 Round의 Work Order와 Progress 본문을 상세 탐색하지 않는다.
    조건부 Linker handoff를 시작하지 않는다.
 3. 후보가 하나여도 자동 선택하지 않는다. 후보가 없거나 요청에 자유로운 검토·조사·확인·상태

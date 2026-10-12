@@ -228,7 +228,7 @@ def _incomplete_rounds(state: Mapping[str, Any]) -> Sequence[Mapping[str, str]]:
             status = entry.get("status")
             if not isinstance(round_ref, str) or not isinstance(status, str):
                 continue
-            if status in {"complete", "accepted", "cancelled"}:
+            if status in {"accepted", "cancelled"}:
                 continue
             values.append({
                 "round_ref": round_ref.upper(),
@@ -306,31 +306,31 @@ def _selection_reason(
     state: Mapping[str, Any],
     candidates: Sequence[Mapping[str, str]],
 ) -> str:
-    visible = candidates[:20]
-    visible_refs = {candidate["round_ref"] for candidate in visible}
+    visible_refs = {candidate["round_ref"] for candidate in candidates}
     groups = []
     parent_groups = {}
     group_number = 0
-    for candidate in visible:
+    for candidate in candidates:
         round_ref = candidate["round_ref"]
         parent_ref = candidate.get("parent_round_ref", round_ref)
         status = candidate["status"]
+        status_label = (
+            "complete / pending · 수용 대기"
+            if status == "complete"
+            else status
+        )
         label = _round_label(project_root, state, candidate)
         if round_ref == parent_ref or parent_ref not in visible_refs:
             group_number += 1
             group = ["│  {}. {} · {} · {}".format(
-                group_number, round_ref, status, label
+                group_number, round_ref, status_label, label
             )]
             groups.append(group)
             parent_groups[round_ref] = group
         else:
             parent_groups[parent_ref].append("│     └─ {} · {} · {}".format(
-                round_ref, status, label
+                round_ref, status_label, label
             ))
-    remaining = len(candidates) - len(visible)
-    if remaining:
-        groups.append(["│  외 {}개".format(remaining)])
-
     lines = [
         "Keystone ready · 미완료 Round {}개".format(len(candidates)),
         "",
@@ -350,14 +350,15 @@ def _assigned_round(prompt: str, candidates: Sequence[str], pending: bool) -> Op
     assignment_term = "(?:{})".format(ASSIGNMENT_TERM.pattern)
     for round_ref in candidates:
         escaped = re.escape(round_ref)
+        round_token = "{}(?![A-Za-z0-9-])".format(escaped)
         exact_selection = re.fullmatch(
-            r"\s*{}(?:\s*(?:으로|로|을|를))?\s*(?:하겠습니다|할게요?|진행)?\s*[.!]?\s*".format(escaped),
+            r"\s*{}(?:\s*(?:으로|로|을|를))?\s*(?:하겠습니다|할게요?|진행)?\s*[.!]?\s*".format(round_token),
             prompt,
             re.IGNORECASE,
         )
         nearby = re.search(
             r"(?:{}.{{0,28}}{}|{}.{{0,20}}{})".format(
-                escaped, assignment_term, assignment_term, escaped
+                round_token, assignment_term, assignment_term, round_token
             ),
             prompt,
             re.IGNORECASE,

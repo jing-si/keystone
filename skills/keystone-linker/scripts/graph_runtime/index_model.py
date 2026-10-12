@@ -3,10 +3,13 @@
 import json
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 from .dependency import DependencyEvaluation
 from .source_views import SourceViews
+
+if TYPE_CHECKING:
+    from .bounded_discovery import DiscoverySummary
 
 
 class ScanScope(str, Enum):
@@ -97,6 +100,7 @@ class ReadinessResult:
     cache_status: str
     diagnostics: Tuple[IndexDiagnostic, ...] = ()
     trace: "CallTrace" = field(default_factory=lambda: CallTrace())
+    discovery: Optional["DiscoverySummary"] = None
 
 
 @dataclass(frozen=True)

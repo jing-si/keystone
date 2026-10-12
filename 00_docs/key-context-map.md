@@ -92,12 +92,15 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
 | R015 Keystone Consumer Goal Effectiveness Review | `00_docs/works/r015-keystone-consumer-goal-effectiveness-review/00_key-index.md` | active | Uptendo 소비 프로젝트 evidence로 Keystone 목표 달성 효과·운영 비용을 검토하고 개선 Work Order 최종본을 작성 중 |
 | R016 Worktree Locator and Targeted Work Discovery | `00_docs/works/r016-worktree-locator-navigation/00_key-index.md` | accepted | Worktree 선택 시 canonical Work Order에 exact path를 기록하고 locator 기반으로 대상 worktree만 탐색하는 계약을 구현·검증함 |
 | R017 Standards-First Round Construction | `00_docs/works/r017-standards-first-round-construction/00_key-index.md` | accepted | Round 생성·실행 경계와 standards-first 제약, Excel column 방식 하위 Round·Step 작명을 구현·검증함 |
-| R018 Keymeta-First Bounded Discovery | `00_docs/works/r018-keymeta-bounded-discovery/00_key-index.md` | planned | 키메타 anchor 중심 source expansion과 routine preparation의 no-full-scan 계약을 계획함 |
+| R018 Keymeta-First Bounded Discovery | `00_docs/works/r018-keymeta-bounded-discovery/00_key-index.md` | accepted | 키메타 제한 탐색·파싱 최적화와 소비 규모 검증을 완료·수락함 |
 | R019 Keystone Session Title Display | `00_docs/works/r019-keystone-session-title/00_key-index.md` | accepted | 프로젝트 로컬 Codex terminal title opt-in과 Round 기반 thread rename 제안을 구현·검증함 |
 | R020 Keystone Session Title Automation | `00_docs/works/r020-keystone-session-title-automation/00_key-index.md` | accepted | Python helper로 current Round focus를 현재 Codex thread 이름에 자동 반영하도록 구현·검증함 |
 | R021 Session Title Permission Hardening | `00_docs/works/r021-session-title-permission-hardening/00_key-index.md` | accepted | exact helper executable 권한 승인과 installer 검증으로 sandbox 자동 rename을 보강함 |
 | R022 Session Title Assignment Gate | `00_docs/works/r022-session-title-assignment-gate/00_key-index.md` | accepted | 비종료 라운드를 안내하고 명시적 기존 라운드 수행에만 native title hint를 제공하도록 구현·검증함 |
 | R023 Session Title Work Authoring Gate | `00_docs/works/r023-session-title-work-authoring-gate/00_key-index.md` | accepted | 작업서 생성·수정 착수를 예정 또는 기존 Round ref의 native title로 연결하도록 구현·검증함 |
+| R024 상태 통합 관리 | `00_docs/works/r024-unified-state-management/00_key-index.md` | planned | 상태 기록·갱신 비용을 조사하고 생성 후 질답으로 통합 관리 방식을 구체화함 |
+| R025 작업 계층 정의 | `00_docs/works/r025-work-hierarchy-definition/00_key-index.md` | planned | Round·Work·Step·Task 정의와 책임, 필수·선택 여부 및 문서 경계를 명확히 함 |
+| R026 아이디어 노트 | `00_docs/works/r026-idea-notes/00_key-index.md` | planned | 단일 파일·고정 ID 기반 아이디어 기록과 단계적 검색, CRUD 스킬을 계획함 |
 | Document Tree Setup | `00_docs/works/r001-bootstrap-keystone/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
 | Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | accepted | 전체 공통 기준서 |
 | Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서 |

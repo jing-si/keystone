@@ -1040,3 +1040,11 @@ Artifact Graph 기준은 다음 방법으로 검증한다.
     검증 범위를 적용하고 repository-wide 검증을 일반 작업의 기본값으로 요구하지 않아야 한다.
 18. Disposable cache가 없거나 외부 경로를 사용할 수 없어도 권한 요청 없이 source scan으로
     readiness와 impact context를 복구할 수 있어야 한다.
+
+
+### 키메타 중심 제한 탐색 (R018)
+
+R018의 수락된 탐색 계약은 `../01_key-project-standard.md`의
+「키메타 중심 제한 탐색 (R018)」을 따른다. 이 pending 기준서 전체를 수락된 권위로 승격하지
+않는다. 일반 준비는 명시적 `targeted`, owner 검색은 `lookup`, 전체 검사는 `audit`로 구분한다.
+Cache fallback은 확인된 bounded source set 안에서 수행하며 자동 full scan을 하지 않는다.

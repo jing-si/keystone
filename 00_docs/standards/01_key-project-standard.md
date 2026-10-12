@@ -2,7 +2,7 @@
 doc_type: standard
 created_at: "2026-05-31"
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-28", accepted_by: user}
+approval: {state: accepted, accepted_at: "2026-10-12", accepted_by: main}
 key:
   id: key.standard.project
   refs:
@@ -1472,17 +1472,21 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
    않는다. Same-session 요청은 Author가 write 직전에 ref 충돌을 재검증하도록 명시한다. 충돌 시
    Author는 실제 source ref를 조정할 수 있지만 이미 생성된 native title의 retitle은 보장하지 않는다.
 8. Bare `$keystone-reader`가 들어오면 trusted project의 `UserPromptSubmit` hook은 accepted Reader
-   turn 전에 Work State의 `complete`, `accepted`, `cancelled`가 아닌 parent·child Round를 안내한다.
+   turn 전에 Work State의 `accepted`, `cancelled`가 아닌 parent·child Round를 안내한다.
    Parent 번호 오름차순으로 정렬하고 각 parent 바로 아래에 child suffix를 Excel-column 오름차순으로
-   들여써서 묶는다. Parent와 child를 합해 최대 20개만 표시하며 초과분은 `외 N개`로 축약한다.
+   들여써서 묶는다. 미수용 parent와 child를 개수 제한 없이 모두 표시하며 `외 N개`로 생략하지 않는다.
    후보가 하나여도 자동 선택하지 않는다. Hook fail-open으로 Reader가 직접 안내할 때도 같은 집합,
-   정렬과 제한을 사용한다. 첫 줄은 `Keystone ready · 미완료 Round N개`이며, 후보는
+   정렬과 전체 표시 규칙을 사용한다. 첫 줄은 `Keystone ready · 미완료 Round N개`이며, 후보는
    `╭─ Round 선택`으로 시작하는 오른쪽 테두리 없는 열린 박스에 표시한다. 각 항목은
-   `{Round ref} · {status} · {제목}` 한 줄이다. Parent 또는 독립 항목에는 번호를 붙이고 child는
+   `{Round ref} · {status} · {제목}` 한 줄이다. `complete` Round는 구현·검증 완료 뒤 명시적 수용이
+   남은 상태이므로 `complete / pending · 수용 대기`로 표시한다. Parent 또는 독립 항목에는 번호를
+   붙이고 child는
    parent 아래에서 `└─`로 연결하며 parent 그룹 사이는 빈 `│` 줄로 나눈다. 폭 맞춤용 공백은 넣지
    않고 `╰─ 어느 Round에 집중할까요?`로 닫는다. Pre-model hook은 canonical source 제목을 사용하고,
-   Reader가 fail-open 목록을 직접 만들 때는 프로젝트 선호 언어로 제목만 짧게 번역한다. 후보
-   목록에 Step, Gate, 기준선, 출처와 상태 근거를 별도 줄로 붙이지 않는다. 종료된 parent는
+   Reader가 후보 목록을 직접 표시·반복·요약할 때는 모든 제목을 프로젝트 선호 언어로 반드시
+   번역한다. 원천 제목의 언어는 표시 언어 권위가 아니며 식별자와 필요한 고유명사를 제외한 일반
+   표현을 다른 언어로 남기거나 언어를 섞지 않는다. 후보 목록에 Step, Gate, 기준선, 출처와 상태
+   근거를 별도 줄로 붙이지 않는다. 제외된 parent는
    grouping header로 다시 표시하지 않고, 그 child만 남으면 full local ref의 독립 번호 항목으로
    표시한다.
 9. 사용자는 안내 뒤 기존 Round 수행, 작업서 authoring 착수 또는 자유로운 검토·조사·확인·상태
@@ -1512,3 +1516,24 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
 - `00_docs/standards/skills/coordinator/key-standard-coordinator.md`
 - `00_docs/standards/skills/init/key-standard-init.md`
 - `00_docs/standards/artifacts/key-standard-artifact-graph.md`
+
+
+### 키메타 중심 제한 탐색 (R018)
+
+1. 일반 작업 준비는 `targeted`를 명시한다. Anchor의 stable ID, 알려진 source path와 raw-byte
+   digest, 명시적 source path set에서 시작하며 repository 전체를 열거하지 않는다.
+2. Caller가 선택한 refs·relation 종류와 depth/file/byte budget 안에서만 확장한다. Owner locator는
+   비권위 후보이며 해당 source의 현재 ID와 digest를 확인한다. 경로가 없는 ID는 추측하지 않는다.
+3. `lookup`은 명시된 검색 root 안의 exact-ID owner 검색이다. 방문 source 수, byte 수와 검색 범위를
+   보고하며 metadata admission으로 실제 owner를 확인한다. 문자열 출현만으로 owner로 인정하지 않는다.
+4. `audit`만 전체 scope의 owner/ref/duplicate/coverage를 검사한다. 명시적 graph audit, release
+   verification 또는 scope conflict가 있어야 사용하며 cache miss·stale·busy가 audit을 유발하지 않는다.
+5. `targeted`·`lookup`은 repository completeness를 주장하지 않는다. 누락·budget 초과·unresolved
+   owner·stale locator는 stable diagnostic과 bounded completeness로 반환하고 자동 mode 승격하지 않는다.
+6. 기존 mode 없는 v2/v3 readiness 입력은 호환 경로로 보존한다. 신규 routine caller는 반드시
+   `discovery_mode: targeted`를 사용하고 mode/anchor가 포함된 응답은 v4로 구분한다. 기존 전체 검사
+   호출의 묵시적 의미를 바꾸거나 호환 경로를 제거하려면 별도 migration 검증이 필요하다.
+7. Ignore directory, include root와 root/symlink 경계는 traversal 전에 적용한다. Source bytes는
+   한 요청에서 한 번 lexical scan하고 owner/ref/graph/source view가 같은 parse 결과를 재사용한다.
+8. Freshness는 worktree identity, 확인한 sorted source path set과 raw-byte SHA-256에 결속한다.
+   Source view는 동일 immutable snapshot을 사용하며 cache/index는 폐기 가능한 비권위 locator다.
