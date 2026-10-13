@@ -14,7 +14,9 @@ description: "Inspect, initialize, repair, or configure a bounded optional Keyst
 
 At initialization, after explaining the fixed work hierarchy, let the user select general or sprint
 review timing. Read `references/management-review.md` and output
-`references/work-structure-and-review-mode.ko.md` verbatim. This explicit choice also authorizes the
+`references/work-structure-and-review-mode.ko.md` verbatim in a normal assistant message before any
+selection UI. Keep the selection UI limited to a short question and general/sprint choices, as specified
+in `references/management-review.md`. This explicit choice also authorizes the
 bounded review configuration in the single managed state file; it does not authorize corpus migration.
 Use the package-local state helper under the referenced contract. Never reconfigure from inspect alone.
 

@@ -7,9 +7,14 @@ context; do not perform full review at every implementation step.
 ## Configuration and creation
 
 - At Init or the first policy-relevant Round creation/closure, if review mode is unset, output
-  `references/work-structure-and-review-mode.ko.md` verbatim as ordinary Markdown. Preserve wording,
+  `references/work-structure-and-review-mode.ko.md` verbatim as ordinary Markdown in a normal assistant
+  message before opening any selection UI. Preserve wording,
   line breaks, tree, emphasis, and question. Do not add a box, code fence, colors, or translate/rewrite
   the approved Korean copy. For other languages explain that the approved fixed copy is Korean.
+- Keep the guidance body out of selection-tool question, description, and option fields. If using a
+  selection tool after the message, include only a short mode question and the choices `일반형` and
+  `스프린트형`, with at most one short sentence per option. If no selection tool is available, accept
+  the user's mode name or number in an ordinary reply.
 - Save the user's general/sprint choice with the package-local managed state CLI's `review configure`
   operation, using `mode` in payload JSON and the current singleton digest. Reconfiguration preserves
   both lists. Ordinary Reader orientation never prompts or changes mode.
