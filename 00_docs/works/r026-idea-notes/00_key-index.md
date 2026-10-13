@@ -2,8 +2,8 @@
 doc_type: work_round
 created_at: "2026-10-12"
 document_lifecycle: active
-approval: {state: pending}
-round_status: planned
+approval: {state: accepted, accepted_at: "2026-10-12", accepted_by: main}
+round_status: accepted
 key:
   id: key.work.round.r026-idea-notes.index
   refs:
@@ -32,5 +32,5 @@ key:
 - 청사진·작업서: `idea-notes/key-work-idea-notes.md`
 - 진행 기록: `idea-notes/key-progress.md`
 
-현재는 청사진 생성만 승인된 `planned / pending` 계획이며 Active Step은 없다.
-실행·스킬 생성·설치는 별도 명시적 실행 요청 이후에 진행한다.
+2026-10-12 명시적 구현 요청에 따라 S01~S03을 완료·수락했다. Active Step은 없다.
+전역 설치·publish는 실행 범위에 포함하지 않는다.

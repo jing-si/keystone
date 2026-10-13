@@ -2,7 +2,7 @@
 doc_type: standard
 created_at: "2026-05-31"
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-10-12", accepted_by: main}
+approval: {state: accepted, accepted_at: "2026-10-13", accepted_by: main}
 key:
   id: key.standard.project
   refs:
@@ -45,6 +45,7 @@ worker가 같은 의도와 경계 안에서 작업하도록 context를 제공한
    report를 Keystone workflow로 회수한다.
 6. `keystone-init`: 새 프로젝트에 R000과 최소 문서 기반을 만들고 프로젝트 기준서 작성
    흐름을 시작한다.
+7. `keystone-ideas`: 현재 작업 밖의 아이디어를 가벼운 메모로 기록·조회·수정·삭제한다.
 
 이 구현 저장소의 현재 기준서(3)와 작업서(4)는 최종 Keystone 스킬이 이미 존재한다고
 가정했을 때 만들어졌을 문서 구조와 계약을 사람이 먼저 작성한 부트스트랩 기준 corpus(10)다.
@@ -105,8 +106,8 @@ worker가 같은 의도와 경계 안에서 작업하도록 context를 제공한
 
 - 의미: AI 작업의 구체적 goal, execution unit, completion criteria, stop condition,
   verification path를 담는 원천 문서
-- 사용 규칙: 작업 round(13) 안의 work node와 step으로 작성하며, coordinator가 Current Step
-  Brief와 Context Pack을 복구할 수 있게 작성한다.
+- 사용 규칙: Round와 필수 Step의 실행 계약을 보존하며 필요한 경우 선택적 Work를 구분한다.
+  Work라는 논리 단위와 작업서라는 문서 종류는 다르다. Work 없이도 작업서는 존재한다.
 
 (5) 진행 기록(progress record): 활성 step들과 workflow 상태를 복구하는 문서
 
@@ -170,7 +171,9 @@ worker가 같은 의도와 경계 안에서 작업하도록 context를 제공한
 
 (13) 작업 round(work round): 특정 시점의 기준서와 목표를 바탕으로 진행하는 작업 차수
 
-- 의미: 기준서 개정, 기능 추가, 기능 변경, 검증처럼 하나의 목적을 가진 작업 묶음이다.
+- 의미: 기준서 개정, 기능 추가, 기능 변경, 검증처럼 사용자가 인지하고 구획하는 작업 묶음이다.
+  부모·하위 Round 모두 사용자가 생성을 결정한다. AI는 필요하면 이유·범위를 제시해 권유하고
+  사용자 결정을 기다린다. 작업 크기나 분할 필요만으로 자동 생성하지 않는다.
 - 사용 규칙: folder는 `r{number}-{slug}` 형식을 사용한다. `r`은 round를 뜻한다. 각 round
   안에서는 작업 step을 `S01`부터 다시 번호 매긴다. `R000`은 최초 기준서가 아직 없는
   Project Foundation round를 나타내기 위해 예약한다.
@@ -229,13 +232,30 @@ runtime output
   document sync need, metadata sync need, residual risk를 담는 실행 결과 보고다.
 - 사용 규칙: progress status나 Main acceptance를 대체하지 않는다.
 
-(21) 명확화 로그(clarification log): 하나의 큰 검토 주제에서 실제로 진행한 질문과 답변을
-Work node에 보존하는 기억 복구용 attachment
+(21) 명확화 로그(clarification log): 하나의 검토 주제의 질문 계획과 실제 질문·답변을
+작업서가 있는 위치에 보존하는 기억 복구용 attachment
 
 - 의미: AI가 대화 맥락을 잃어도 대주제, 수정 범위별 그룹과 실제 질문·답변을 다시 찾기 위한
   추적 가능한 Markdown log
 - 사용 규칙: 원천 문서(2), 결정(6), 진행 기록(5), 평가 자료 또는 completion evidence가 아니다.
   내용이 원천 문서와 충돌하면 원천 문서가 우선한다.
+
+(22) 과제(Work): Round 범위 안에서 선택적으로 구분하는 독립 과제
+
+- 의미: 하나의 목표·범위·완료 조건으로 구분할 실익이 있는 Step 묶음이다.
+- 사용 규칙: 사용자가 지정하거나 AI가 맡겨진 범위 안에서 생성 후 안내할 수 있다.
+  별도 파일·별도 Round·별도 실행 승인을 뜻하지 않는다.
+
+(23) 단계(Step): Goal·Scope·완료 조건·검증을 갖춘 필수 실행 단위
+
+- 의미: Round에 직접 속하거나 선택적 Work에 속해 목표 달성의 단계를 표현한다.
+- 사용 규칙: 사용자가 지정할 수 있으며 필수 계약은 STD-KEYSTONE-022를 따른다.
+
+(24) 실행 항목(Task): AI가 Step 수행에 필요할 때 구성하는 선택적 세부 항목
+
+- 의미: Step 목표 안에서 변경·분해·생략할 수 있는 실행 계획이다.
+- 사용 규칙: 재개에 필요한 내용만 Step 기록에 남긴다. 독립 상태·수락·필수 식별자·전수
+  기록을 요구하지 않으며 Task 완료 표시가 Step 검증·수락을 대신하지 않는다.
 
 <!-- key: id=key.standard.project.core-rules refs=key.doc.source key.topic.document-system key.topic.skill-contract key.topic.key-prefix key.topic.bootstrap -->
 ## 핵심 규칙
@@ -395,7 +415,8 @@ persistent Keystone setting이 아니다.
 3. 기준서 tree는 전체 공통 node에서 시작해 필요한 경우 스킬별 child node로 내려간다.
 4. 작업서 tree는 최상위 work round 색인에서 시작해 각 작업 round(13)로 내려간다.
 5. 각 작업 round(13)는 round 내부 실행 순서를 관리하는 `00_key-index.md`를 가진다.
-6. 작업 round(13) 안의 각 work node도 node별 index file을 가진다.
+6. Work는 기본적으로 Round 작업서의 section으로 구분한다. 별도 폴더로 분리한 Work node에만
+   node index를 둔다. Work 생성만으로 폴더·색인·작업서를 추가하지 않는다.
 7. Tree 깊이는 필요에 따라 확장할 수 있다.
 8. Final node는 하위 node가 없는 node다.
 9. Keystone-managed index file은 문서 순서를 정해야 하면 `00_key-index.md`처럼 숫자와
@@ -509,10 +530,10 @@ verification을 준비할 때 키메타(9), 코드 앵커(18), repository eviden
 
 1. `key-context-map.md`가 있으면 먼저 읽어 active standards와 active work를 찾는다.
 2. 기준서(3)는 최상위 기준서에서 시작해 필요한 child 기준서로 내려간다.
-3. 작업서(4)는 최상위 work index에서 시작해 active work round와 active work node 또는
-   명시된 work node로 내려간다.
-4. Active work node 안에서는 node index, 작업서(4), 진행 기록(5)을 함께 읽어 0개 이상의
-   `active_steps`와 실행 범위를 복구한다.
+3. 작업서(4)는 최상위 work index에서 선택 Round로 내려가며 Work가 있으면 해당 section이나
+   분리 문서로 좁힌다. Work 없는 Round에 탐색용 Work를 만들지 않는다.
+4. 선택 Round 또는 Work의 작업서와 실제 상태 소유 기록을 읽어 `active_steps`와 실행 범위를
+   복구한다. 기존 Work node 기반 저장은 STD-KEYSTONE-026의 적용 경계를 따른다.
 5. 결정(6) 기록, 범위 문서(7), 파생 에이전트 문서(8), 키메타와 코드 앵커로 발견한 후보는 위
    순서를 보강하는 추가 evidence로 읽는다.
 6. Capability(16)는 문서와 code를 직접 1:1로 묶기보다 기준서가 govern하고 code가 provide/use
@@ -694,6 +715,9 @@ Step 일부가 먼저 처리되면 대상 Step에 `early_work`로 원인, 처리
 <!-- key: id=key.standard.project.derived-work-state-projection kind=claim refs=key.doc.progress key.topic.work-recovery key.topic.document-system key.topic.verification key.claim.r012.current-round-authority -->
 #### Source-derived Work State projection
 
+아래 Work Index·Aggregate Progress 결합은 기존 corpus의 복구 계약이다. 선택적 Work의 목표
+계약은 STD-KEYSTONE-026을 따르며 실제 저장·runtime 전환 전에는 기존 복구를 유지한다.
+
 1. Work 전체의 현재 실행·승인 상태는 `key-progress.md`의 aggregate Progress authority가 소유하고,
    Step 상태는 compatible combined Progress 또는 `key-progress-{step-slug}.md`가 소유한다.
 2. Work Index의 `work_status`·`approval`과 Context Map·Index의 `global_state`는
@@ -752,7 +776,7 @@ Step 일부가 먼저 처리되면 대상 Step에 `early_work`로 원인, 처리
 6. 전체 프로젝트를 다시 읽지 않고도 작업할 수 있게 하는 기준서 reference
 
 <!-- key: id=key.standard.project.std-keystone-022 refs=key.topic.document-system key.topic.skill-contract -->
-### STD-KEYSTONE-022: Work step은 Goal unit이다
+### STD-KEYSTONE-022: Step은 Goal unit이다
 
 작업서 step은 assignable Goal unit으로 작성해야 한다. 필수 필드는 다음과 같다.
 
@@ -825,8 +849,10 @@ Subagent report status 값과 의미는 `standards/subagents/key-standard-subage
 3. `r`은 round를 뜻하며, version이나 revision 번호가 아니라 작업 차수 번호다.
 4. 각 작업 round(13)는 자기 `00_key-index.md`를 가지고, round 안의 실행 순서를 `S01`부터
    다시 시작한다.
-5. Work node는 작업 round(13) 안에 두며, 기본적으로 `00_key-index.md`,
-   `key-work-{slug}.md`, `key-progress.md`를 가진다.
+5. 기본 구조는 Round→Step이며 필요할 때 Round→Work→Step을 사용한다. 작업서는 Round
+   안에 두고 Work를 section으로 구분한다. 내용이 크거나 독립적인 편집·참조가 필요할 때만
+   별도 Work 작업서로 분리한다. Step도 별도 파일을 강제하지 않는다. 기존 Work node의
+   `00_key-index.md`, `key-work-{slug}.md`, `key-progress.md` 구성은 호환 입력으로 보존한다.
 6. 여러 round에 영향을 주는 결정(6)은 `works/key-decisions.md`에 둔다.
 7. 특정 round 안에서만 유효한 결정(6)은 해당 round의 `key-decisions.md` 또는 관련 work node의
    `key-decisions.md`에 둔다.
@@ -851,10 +877,10 @@ Subagent report status 값과 의미는 `standards/subagents/key-standard-subage
     `round_status`를 소유한다. Work State의 current `active_rounds`와 historical
     `accepted_rounds`에는 parent ref만 쓴다. Root Works Index와 Context Map은 이를 찾기 위한
     navigation source일 수 있지만 별도 current pointer를 소유하지 않는다.
-17. Child Round Index는 local `round_status`, Work nodes, Step과 Progress를 소유한다.
+17. Child Round Index는 local `round_status`, 선택적 Work, Step과 관련 진행 기록을 소유한다.
     Child ref는 `active_steps`, active Work의 local Round 소유권과 child 집계에는 나타나지만
     parent-only `active_rounds`를 별도 전역 Round로 늘리지 않는다.
-18. Child를 선언한 parent는 같은 상세 Work를 직접 중복 소유하지 않는다. Work State는
+18. Child를 선언한 parent는 같은 상세 Work·Step을 직접 중복 소유하지 않는다. Work State는
     parent-child 관계, child local status와 unresolved child를 파생하지만 parent 상태를
     자동 전이하거나 작업 권한을 만들지 않는다.
 19. Parent Round는 선언한 모든 child가 accepted이고 active, blocked, planned 또는 unresolved
@@ -875,6 +901,41 @@ Subagent report status 값과 의미는 `standards/subagents/key-standard-subage
 24. 기존 `R010-a` 단일 소문자 child Round와 과거 Step ref는 historical compatibility 입력으로
     읽고 이동·대소문자 변경·재번호화하지 않는다. 새 생성에는 대문자 영문 suffix만 사용한다.
     Parent→direct child의 2단계 제한과 parent/child 상태·수락 권위는 유지한다.
+
+#### 선택적 Work·Task의 생성과 책임
+
+1. Round는 사용자 결정으로 생성한다. 기존 Round 안의 Work는 사용자 지정 또는 AI 판단으로
+   생성할 수 있다. AI는 생성 후 분할 기준·이유, 각 Work의 목표·범위 및 Round·Work·Step
+   관계와 실제 의존성을 안내한다. 사전 Work 생성 승인을 별도 의무로 만들지 않는다.
+2. 서로 다른 결과·완료 조건·담당 범위·의존성을 독립적으로 관리할 실익이 있으면 Work로
+   나눈다. 단순 수행 순서는 Step, Step 안의 세부 실행 항목은 Task로 표현할 수 있다.
+   작업량·파일 수·worker 수만으로 Work를 강제하지 않는다.
+3. Work가 없으면 Round 작업서가 전체 목표·범위·완료 조건과 Step 소속을 직접 보존한다.
+   Work가 있으면 해당 과제의 목표·범위·완료 조건·Step 소속을 Work section 또는 작업서에
+   기록하고 Round는 전체 구성을 보존한다. 같은 Step의 논리적 소유자를 중복 지정하지 않는다.
+4. Work 없는 경우에도 Round와 Step의 실행·승인·최종 정리 책임은 남는다. 이를 표현하려고
+   숨은 기본 Work를 생성하지 않는다. 상태 저장 위치·전환은 관리 상태 계약을 따른다.
+5. 각 local Round 안에서 새 Step은 S01부터 중복 없이 식별하며 Work별로 다시 S01을 만들지
+   않는다. Work는 제목·범위와 필요한 stable ID로 구분한다. 별도 W/T 번호 체계는 강제하지 않는다.
+   기존 ID·Step 번호·수락 이력은 보존하며 모호한 legacy 참조는 정확한 source path로 좁힌다.
+6. AI는 상위 목표·범위 안에서 Work·Task 구성을 조정할 수 있지만 완료 조건을 약화하거나
+   범위를 넓히지 않는다. 사용자가 명시한 구분과 충돌하면 사용자 판단을 받는다. 수락된 결과를
+   삭제·재판정하거나 새 Round를 Work라는 이름으로 우회 생성하지 않는다.
+7. Task는 Work 유무와 독립적으로 필요할 때만 만든다. 재개에 필요한 남은 항목·처리 결과·
+   제약만 기존 Step 기록에 남기며 독립 상태·수락·필수 고유 ID·별도 파일·전수 이력을 만들지
+   않는다. 사용자에게 Task 관리 의무를 부과하지 않는다. Task 목록이 없어도 Step을 수행하고
+   수락할 수 있으며, 목록 완료만으로 Step의 완료 조건·검증이 충족됐다고 보지 않는다.
+8. Round·Work의 전체 완료는 각 단위의 완료 조건과 명시적 gate로 검증한다. Task 또는 하위
+   항목의 완료가 상위 수락을 자동 전이하지 않는다. Step의 기존 Goal unit 책임을 유지한다.
+
+#### R025 정의와 구현 적용 경계
+
+이 정의는 수락된 목표 계약이다. R025는 기준 정합화만 수행하며 설치된 스킬·runtime·schema와
+기존 corpus를 자동 전환하지 않는다. 기존 Work node 기반 복구와 R024의 저장 wire는 후속
+구현·검증·명시적 전환 전까지 유지한다. Work 없는 Round, 한 작업서의 복수 Work와 정확한
+Step 소속·locator를 처리하지 못하는 runtime에 새 형식을 기계적으로 적용하지 않는다.
+해당 구현 지원이 필요하면 후속 범위를 사용자에게 제시한다. 이를 위해 AI가 새 Round를
+자동 생성하지 않는다. 기존 문서 이동·재번호화·전체 상태 이전은 별도 승인 범위다.
 
 <!-- key: id=key.standard.project.std-keystone-027 refs=key.doc.work key.topic.work-round key.topic.artifact-graph key.topic.impact-review key.topic.verification key.topic.acceptance -->
 ### STD-KEYSTONE-027: Change Set은 artifact 변경과 impact propagation을 묶는다
@@ -1370,23 +1431,35 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
    lane은 initiating lane을 다시 호출하지 않는다.
 
 <!-- key: id=key.standard.project.std-keystone-060 kind=claim refs=key.role.clarify key.role.author key.topic.question-flow key.topic.document-authoring key.topic.work-recovery -->
-### STD-KEYSTONE-060: Clarification log는 대주제별 기억 복구용 Work attachment다
+### STD-KEYSTONE-060: Clarification log는 대주제별 기억 복구용 작업 attachment다
 
-1. 큰 검토에서 나온 여러 수정 후보를 Clarify로 순차 처리하고 Work node가 존재하거나 함께
-   생성되는 경우에만 명확화 로그(21)를 사용한다. 로그 자체를 만들기 위해 Work를 새로 만들지
-   않는다.
-2. 파일은 그룹별이 아니라 대주제별로 하나만 만들며 Work node 아래
+1. 정책·범위·문서 권위 등 중요한 결정이나 후속 작업의 근거를 보존해야 하는 질답은 최초
+   시작 시, 첫 질문을 제시하기 전에 명확화 로그(21)를 생성한다. 질문 개수나 그룹 완료 여부로
+   기록을 미루지 않는다. 중요성이 낮고 후속 근거가 필요 없는 일반 질답은 문서 없이 진행하며
+   Clarify를 강제하지 않는다. 중요해진 시점부터 필요한 기존 맥락만 보존하고 기록을 시작한다.
+   Round 또는 Work 작업서가 존재하거나 함께 생성되는 경우 그 위치를 사용한다. 연결할 작업서나
+   별도로 승인된 기록 위치가 없으면 caller에 기록 위치·권한 미해결을 반환한다. 자동으로 위치를
+   만들거나 기록 없는 중요 질답으로 우회하지 않으며 로그 자체를 위해 Work를 만들지 않는다.
+2. 파일은 그룹별이 아니라 대주제별로 하나만 만들며 해당 작업서가 있는 위치 아래
    `clarify/{YYYYMMDDTHHmmssZ}-{topic-slug}.md`에 둔다. Timestamp는 UTC, topic slug는 lower-case
    kebab-case를 사용한다. 이 파일은 원천 문서가 아니므로 key prefix(11)를 붙이지 않는다.
 3. 파일의 `#` heading은 대주제, `## G01 - {수정 범위}`는 함께 반영할 문서 수정 범위,
-   `### Q01 - {질문 요약}`은 실제로 한 번에 진행한 질문을 나타낸다. Group과 question 번호는
-   파일 안에서 출현 순서대로 증가한다.
-4. 각 질문에는 `질문`, `답변`, `답변일시`만 기본 기록한다. 답변을 받으면 caller가 Author의
-   lightweight log append를 사용해 해당 답변과 시간을 기록한다. 빈 답변은 미응답을 뜻하므로
-   별도 remaining-question 목록을 만들지 않는다.
+   `### Q01 - {질문 요약}`은 질문을 나타낸다. 현재 질문과 이미 알려진 예정 질문을 기록할 수
+   있으나 미래 질문 전부를 미리 만들 필요는 없다. Group과 기본 질문 번호는 파일 내에서
+   유일하게 증가하며 기존 번호는 유지한다. 파생 질문은 `Q01-A`, `Q01-B`, … `Q01-Z`,
+   `Q01-AA`처럼 대문자 Excel-column suffix를 쓴다. 재파생도 기본 Q01 아래 다음 suffix로
+   추가하고 직접 원인을 본문에 연결한다. 같은 그룹에서는 원 질문 가까이에 배치하고 다른
+   적용 그룹이면 그 그룹에 두고 링크한다. 번호 인접성은 적용 그룹을 결정하지 않는다.
+4. 각 질문에는 `질문`, `답변`, `답변일시`를 기본 기록한다. 예·아니요나 명확한 선택은 재확인
+   없이 저장한다. 대화의 요약·추리·분석으로 답변을 재구성해야 하면 `답변`에 `[확인 대기]`
+   해석을 먼저 저장하고 그 해석이 맞는지 하나만 묻는다. 확인·명확한 교정 뒤 같은 질문의
+   답변을 확정한다. 확인 자체를 별도 파생 질문으로 만들지 않는다. 확인 전 해석은 결정이 아니다.
+   빈 답변은 미응답을 뜻하며 별도 remaining-question 목록을 만들지 않는다.
 5. 로그에는 `Group Decision`, `Author Application`, 질문 충분성, 평가, 점수, 그룹 완료나 작업
    상태를 기록하지 않는다. 로그 내용이나 날짜로 decision, priority, acceptance 또는 completion을
-   판단하지 않는다.
+   판단하지 않는다. 답변 안의 `[확인 대기]`와 `[폐기]`는 기록 구분만 위한 제한적 표시이며
+   Work/Step 상태·충분성·수락을 나타내지 않는다. 확정 답변도 현재 topic을 해결하기에 부족하면
+   필요한 후속 질문은 추가할 수 있다.
 6. 실제 원천 문서에 영향을 준 질문은 heading 바로 앞에 선택적 키메타(9)를 둘 수 있다. 이는
    탐색용 relation evidence일 뿐 source authority, edit permission 또는 평가 근거가 아니다.
 7. 작업서(4)는 해당 Q&A가 scope·criterion·결정에 실질적으로 영향을 준 경우에만 로그를
@@ -1395,6 +1468,21 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
    그 그룹의 통합 edit plan을 Author에 한 번 적용하고 다음 그룹으로 이동한다.
 9. 답변별 log append는 대상 파일과 질문 entry 확인으로 닫는다. 이것만으로 Work State, graph
    reconstruction, package/repository 검증 또는 source-document application을 실행하지 않는다.
+10. Caller는 매 답변마다 Author를 통해 저장하고 해당 entry를 다시 읽어 확인한 뒤 다음
+    질문으로 진행한다. 저장 실패·충돌 시 다음 질문과 의존하는 원문 적용을 멈추고 같은 entry의
+    저장을 재개한다. 이미 저장된 답변을 중복 추가하거나 사용자에게 다시 설명하게 하지 않는다.
+11. 질문 구조 변경은 폐기와 추가만 사용한다. 기존 질문의 삭제·덮어쓰기·재번호화는 하지 않는다.
+    미응답 또는 확인 대기 질문은 답변에 `[폐기] 원인 질문 ID와 이유`를 남기며 대기 해석도
+    필요한 맥락으로 보존한다. 이미 확정한 답변은 유지하고 새 질문·답변으로 변경 의도를
+    연결한다. 단순 파생 추가는 기존 질문을 폐기하지 않는다. 파생이 전체 주제·승인 범위를
+    벗어나면 별도 진행 범위를 확인하고, 원문 적용 후 결정 변경은 해당 영향 범위를 재검토한다.
+12. `답변일시`는 실제 사용자 답변 시각을 사용하고 해석 확인으로 확정하면 확인 시각을 사용한다.
+    정확한 과거 시각을 모르면 `미상`으로 두며 현재 저장 시각으로 꾸미지 않는다. AI의 폐기
+    처리를 사용자 답변으로 기록하지 않는다. 이전 답변이 없으면 폐기 항목의 답변일시는 비워 둔다.
+13. 새 세션 시작이나 일반 진행 상태 조회마다 로그를 읽지 않는다. 중단된 질답의 맥락 복구,
+    현재 대화에 없는 과거 결정·답변 확인 또는 사용자 요청에 필요한 관련 부분만 읽는다.
+    복구 시 확정 답변을 반복 질문하지 않고 확인 대기는 해석 확인부터 이어가며 폐기를 미응답으로
+    취급하지 않는다. 기록 편집 전후의 대상 entry 확인은 이 선택적 의미 복구와 별개다.
 
 <!-- key: id=key.standard.project.std-keystone-061 kind=claim refs=key.topic.work-execution key.topic.work-recovery key.topic.keystone-metadata key.role.coordinator key.role.author key.role.reader -->
 ### STD-KEYSTONE-061: 선택된 linked worktree는 Work Order locator로 먼저 고정한다
@@ -1418,7 +1506,7 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
    중복 실행 방지를 보장하지 않는다. 기록되지 않은 별도 worktree 누락은 사용자 기억에 의존하는
    residual risk다.
 
-<!-- key: id=key.standard.project.std-keystone-062 kind=claim refs=key.topic.work-round key.topic.work-sequence key.topic.document-authoring key.topic.verification key.role.author key.boundary.scope-control key.work.decisions.dec-works-034 -->
+<!-- key: id=key.standard.project.std-keystone-062 kind=claim refs=key.topic.work-round key.topic.work-sequence key.topic.document-authoring key.topic.verification key.role.author key.boundary.scope-control key.work.decisions.dec-works-034 key.work.decisions.dec-works-036 -->
 ### STD-KEYSTONE-062: Round 생성과 실행을 분리하고 production 구현을 standards-first로 구성한다
 
 1. 사용자-facing 작업 단위는 Round와 Step을 우선한다. Work Order는 Round와 Step의 Goal, Scope,
@@ -1440,6 +1528,19 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
    수락하지 않으면 조사와 사용자 판단 대기 구조를 사용할 수 있다.
 8. 하위 Round·Step 식별자는 `STD-KEYSTONE-026`의 `-` 경계와 Excel column 방식 대문자 영문
    번호를 따른다. Goal별 topology 자율성은 숫자·혼합·의미 문자열 suffix를 허용하지 않는다.
+9. 구현 중 작업서의 목표·범위·동작·완료 조건이 바뀌거나 기준과 구현 또는 기준 간 충돌이
+   발견되면 관련 기준을 재검토한다. 최초 정합화 Step의 완료는 당시 검토 범위의 결과이며,
+   이후 변경까지 검토됐다는 근거로 사용하지 않는다.
+10. 기준서 변경이 필요하면 작업서에 추가 기준서 정합화 Step을 만들고, 영향을 받는 구현을
+    보류한다. 해당 Step의 기준서·작업서 정합화, 검증과 수락이 끝난 뒤 관련 구현을 재개한다.
+    실행 순서와 선행 조건을 명시해 추가 Step이 관련 구현보다 먼저 실행되도록 구성하며,
+    기존 Step 식별자와 완료·수락 이력은 보존한다. 영향 없는 독립 작업까지 일괄 중단하지 않는다.
+11. 기준서 변경이 불필요하면 검토한 기준과 이유를 해당 작업 기록에 남기고 별도 정합화 Step은
+    만들지 않는다. 유효한 기준을 어긴 구현 결함은 구현에서 수정하며, 충돌을 없애기 위해
+    기준서를 현재 구현에 맞춰 임의로 바꾸지 않는다. 미해결 정책·범위 결정은 Main/User에게 돌린다.
+12. 정합화 Step과 수행 기록에는 발생 원인·변경 이유, 대상 기준서·조항, 변경 전후 의미,
+    영향받는 작업서·구현 Step, 검증·수락 근거와 구현 재개 조건을 복구할 수 있게 남긴다.
+    사용자 보고는 이 기록의 요약이며, 채팅의 수정 완료 문구만으로 기록을 대신하지 않는다.
 
 <!-- key: id=key.standard.project.std-keystone-063 kind=claim refs=key.topic.initialization key.topic.skill-contract key.topic.work-round key.role.init key.role.reader key.boundary.scope-control -->
 ### STD-KEYSTONE-063: Keystone 세션 제목 표시는 project-local opt-in으로 구성한다
@@ -1497,6 +1598,21 @@ repo-local skill source이며, publish/install은 별도 요청이 있을 때만
    진행하며 `/rename`을 제안하지 않는다. 재진입 marker는 queue된 요청의 반복 차단을 방지한다.
    Codex SQLite, rollout, global config를 직접 수정하거나 plugin, MCP, daemon, watcher, App Server,
    외부 network service를 요구하지 않는다.
+
+<!-- key: id=key.standard.project.std-keystone-064 refs=key.standard.skill.ideas key.work.idea-notes.order -->
+### STD-KEYSTONE-064: 아이디어 노트는 가벼운 비규범적 메모다
+
+1. `keystone-ideas`는 설정된 document root의 `ideas/key-ideas*.md`에 아이디어를 기록·조회·수정·삭제한다.
+   상세 계약은 `skills/ideas/key-standard-ideas.md`를 따른다. 최초 저장은 단일 파일이며 주제 분할은 선택적이다.
+2. Ideas는 해당 메모에 한해 직접 쓰기를 소유한다. `key-` prefix가 있어도 노트는 기준서·결정·작업
+   승인이나 graph source가 아니며 frontmatter, keymeta, index, Work State를 요구하지 않는다.
+   기존 Author source ownership 및 STD-KEYSTONE-013~015의 원천 문서 계약을 메모에 강제하지 않는다.
+3. 기본 기록은 현재 최댓값+1 ID, 제목, 필요했던 이유, 최초 기록일이며 추가 내용은 선택적이다.
+   중간 빈 번호는 채우지 않고 마지막 삭제 번호는 재사용할 수 있다. 삭제는 실제 제거다.
+4. CRUD와 유사 후보 안내는 `ID | 제목 | 필요했던 이유 | 기록일` 표를 공통 사용한다.
+   유사 후보가 있으면 사용자에게 기존 항목 추가 또는 별도 등록을 물은 뒤 쓴다.
+5. Reader는 선택된 작업의 관련 노트만 참고한다. Author는 명시적 요청으로 작업을 구체화하며
+   노트의 재사용 가능한 ID를 영구 관계 키로 삼지 않는다. 아이디어만으로 실행을 승인하지 않는다.
 
 <!-- key: id=key.standard.project.active-work refs=key.topic.document-system key.topic.work-round -->
 ## 관련 active work

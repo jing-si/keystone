@@ -10,6 +10,14 @@ description: "Use for read-only orientation and work recovery from existing Keys
 
 # keystone-reader
 
+## Management Review Context
+
+For an explicit connection review or policy-relevant execution, use `references/management-review.md`.
+For ordinary orientation do not ask mode questions or run a review. Read meaning in the affected plan,
+standards and current code connections; Linker checks declared structure. Missing definition metadata
+is unidentified, not proof a Step is absent. Review current snapshot sources instead of historical
+execution worktree locators; actual execution recovery retains Worktree Targeted Navigation.
+
 ## Purpose
 
 Read existing Keystone source documents to orient the main agent, prepare a concise project brief,
@@ -37,6 +45,30 @@ metadata-gap interpretation belongs to Linker.
 
 ## Operating Emphasis
 
+Run bundled `work_state_runtime.py --root ROOT`. A valid `state/manifest.json` containing
+`{"schema_version":1,"mode":"managed"}` selects schema v6 automatically. Without that marker,
+legacy schema v5 remains the compatibility path; `--managed` explicitly verifies a prepared new tree.
+An invalid marker/tree fails; never substitute legacy Progress or index statuses for managed state.
+In managed mode, the current-state authority and selection rules in this paragraph replace legacy
+Progress/Round-index ownership and acceptance-based candidate exclusion described below.
+
+The single `state/current.json` facade groups entries by execution state (`states: {state: [...]}`,
+wire v2), never by Round file. Closed entries are absent; work orders retain dated change logs.
+Present the current list as state → Round/Work/Step. The facade owns separate `execution`, `approval`, and `finalization` values. List every registered
+Round, including complete/accepted or cancelled work still needing management; only closure removes
+it. Use `step_execution` for each Work's lowest executable active Step and explain `blocked_steps`.
+Require a passing envelope, `execution_ready: true`, and `dependency_coverage: evaluated`; these mean
+recovery succeeded, not that every gate is satisfied or that Main accepted the work. Honor individual
+Step and work-completion gates. A Step with execution `blocked` is never auto-selected.
+
+Execution recovery reads open Work plans and only exact referenced closed dependencies. Empty
+`accepted_rounds` with historical status `not_loaded` is not an absence-of-history claim.
+Use `managed_work_state.py list` for a state-only listing, or `inspect --ref REF --order-path PATH`
+for exact history. Absence alone never means complete. Finalization resume uses the state's separate
+field and the work order's recorded blocker/evidence; do not recreate mutable Progress state.
+For new Round/child numbering only, consult retained navigation/directory identities as well as open
+state so closed IDs are never reused; Author must recheck the proposed ID before writing.
+
 Choose one emphasis from the request without requiring the caller to name it:
 
 - **Orientation**: report initialization, project meaning, active state, conflicts, and the next actor.
@@ -47,6 +79,16 @@ Choose one emphasis from the request without requiring the caller to name it:
 When no parent Round is active, report the empty active set. Read accepted history from parent Round
 sources only when the request needs it. Do not invent a next Round, priority, or Work merely to keep
 the workflow moving.
+
+## Related Idea Notes
+
+During preparation for a selected Work, search only relevant `ideas/key-ideas*.md` notes under the
+resolved document root. Reuse `keystone-ideas` in read-only mode when available; otherwise use bounded
+literal search and inspect candidate bodies, expanding related expressions when needed. Do not read
+all notes during initial orientation. Missing notes are normal; unreadable notes limit this optional
+context, not authoritative Work recovery. Notes never override accepted policy or grant execution.
+Present any candidates, even one, as `ID | 제목 | 필요했던 이유 | 기록일` tables. Put optional details
+below the table. Do not create, update, delete, merge, or promote notes during read-only preparation.
 
 ## Inputs and Authority
 
@@ -180,6 +222,12 @@ each dependency as `satisfied`, `waiting`, `unresolvable`, `invalid`, or `unknow
 condition evidence, and blocking scope. Treat missing, cancelled, superseded, conflicting, or
 insufficiently evidenced targets as fail-soft risks; never mutate work status or assign work from the
 evaluation.
+
+Clarification logs are optional recovery evidence, not a routine session/status input. Read only relevant
+entries when interrupted Q&A lacks context, a past answer or rationale is needed, or the user requests
+it. With enough current conversation context, skip the read. Report pending interpretations and withdrawn
+questions distinctly so the caller can confirm the pending interpretation without re-asking finalized
+answers or reviving withdrawn questions. A log is not work-status or source-acceptance authority.
 
 ## Session Context Readiness
 

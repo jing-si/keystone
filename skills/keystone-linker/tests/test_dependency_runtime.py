@@ -222,6 +222,7 @@ work_status: in_progress
 approval: {state: pending}
 key:
   id: key.work.source
+  defined_steps: [S01]
   kind: work_order
   depends_on: [key.work.target]
   relations:
@@ -264,6 +265,7 @@ key: {id: key.work.target, kind: work_order}
 doc_type: work_order
 key:
   id: key.work.source
+  defined_steps: [S01]
   kind: work_order
   relations:
     depends_on: [key.work.target]

@@ -19,13 +19,14 @@ Keystone separates long-lived project meaning from task execution details:
 
 ## Skills
 
-Keystone consists of six independent, cooperating Codex skills:
+Keystone consists of seven independent, cooperating Codex skills:
 
 | Skill | Responsibility |
 |---|---|
 | `keystone-init` | Inspect, initialize, or safely repair the minimum Keystone foundation and R000 work recovery scaffold. |
 | `keystone-author` | Create and revise project standards, work orders, progress records, decisions, indexes, and Change Sets. |
 | `keystone-reader` | Read existing Keystone documents, recover active work, and prepare a focused context brief. |
+| `keystone-ideas` | Keep lightweight idea notes; search and manage them with a consistent ID, title, reason, and recording-date table. |
 | `keystone-clarify` | Resolve one actual high-impact user decision at a time, then return control to the caller. |
 | `keystone-linker` | Reconstruct current graph context without editing source surfaces, decide canonical graph mutations, and validate owner-applied results. |
 | `keystone-coordinator` | With scoped user permission, execute directly or orchestrate a selected external-skill worker, then supervise proportional verification and durable Keystone closure. |
@@ -37,14 +38,14 @@ specifications for Keystone itself.
 
 ## Local Installation
 
-Install or refresh all six skills from this checkout:
+Install or refresh all seven skills from this checkout:
 
 ```bash
 bash ./reinstall-local-keystone-skills.sh
 ```
 
 The script installs into `${CODEX_HOME}/skills` when `CODEX_HOME` is set and
-otherwise uses `~/.codex/skills`. It validates all six packages in a temporary
+otherwise uses `~/.codex/skills`. It validates all seven packages in a temporary
 staging directory before replacing the same-named Keystone skill directories,
 keeps replaced packages under `.keystone-backups`, records the source revision
 and package version from [`VERSION`](VERSION) in `.keystone-install.json`, and

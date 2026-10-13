@@ -1,7 +1,7 @@
 ---
 doc_type: standard
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-17", accepted_by: main}
+approval: {state: accepted, accepted_at: "2026-10-13", accepted_by: main}
 key:
   id: key.standard.skill.clarify
   refs:
@@ -146,7 +146,8 @@ Clarify는 대주제 안의 여러 수정 후보를 처리할 수 있지만 질�
 high-impact decision topic만 다룬다.
 
 1. 대주제는 "Keystone 개선 사항 검토"처럼 하나의 검토 요청과 그 결과로 나온 수정 후보 전체를
-   뜻한다. 대주제 하나는 명확화 로그(21) 파일 하나에 대응한다.
+   뜻한다. 기록 대상 대주제 하나는 명확화 로그(21) 파일 하나에 대응한다. 단일 중요 질문도
+   기록하며, 중요성 낮은 일반 질답을 이 그룹 workflow로 끌어들이지 않는다.
 2. 그룹은 질문 묶음이나 별도 결정이 아니라, 답변 뒤 한 번에 반영할 원천 문서 수정 범위다.
    Group에는 `G01`, `G02`처럼 파일 안의 순서 식별자와 짧은 수정 범위 제목만 둔다.
 3. 질문을 시작하기 전에 AI가 수정 후보를 그룹화한다. 같은 원천 문서·section을 바꾸는지,
@@ -230,8 +231,12 @@ modularization_question:
 
 1. 한 번에 하나의 focused decision topic을 묻는다.
 2. 선택지가 있으면 실제 영향과 tradeoff를 짧게 설명한다.
-3. 사용자가 답하면 해당 답이 현재 topic을 결정하기에 충분한지 판단한다.
-4. 충분하지 않으면 같은 topic에 대해서만 targeted follow-up을 묻는다.
+3. 사용자가 답하면 의미가 명확한 답변과 해석이 필요한 답변을 구분한다. 예·아니요나 명확한
+   선택은 바로 기록한다. 요약·추리·분석하여 새 문장으로 구성해야 하면 `[확인 대기]` 해석을
+   먼저 기록하고 사용자에게 의도를 확인한다. 확인 또는 명확한 교정은 같은 질문의 답변을
+   확정하며, 이미 명확한 확인을 재확인하거나 확인 자체에 새 질문 번호를 부여하지 않는다.
+4. 답변 의미의 확정과 topic의 충분성은 구분한다. 매 답변을 저장한 뒤에도 충분하지 않으면
+   같은 topic에 대해서만 targeted follow-up을 새 파생 질문으로 추가한다.
 5. 사용자가 AI에 판단을 위임했고 수락된 기준, repository evidence 또는 안전한 default가 있으면
    그 근거로 진행할 수 있다.
 6. 답이 충분하지 않으면 `author_edit_ready: false`, unresolved `open_questions`, Author-ready
@@ -239,12 +244,41 @@ modularization_question:
 7. 충분하면 decision summary, working assumptions, `decision_completeness_check`,
    `decision_recording_hint`, Author handoff용 edit plan을 만든다.
 8. Clarify는 원천 문서(2)를 직접 수정하지 않는다.
-9. 답변을 받을 때마다 현재 질문, 답변과 답변일시를 caller에 전달한다. Caller는 Author의
-   lightweight log append로 대주제별 명확화 로그(21)에 기록한 뒤 사용자 재호출을 요구하지 않고
-   같은 그룹 질문을 계속한다.
+9. 기록 대상이면 첫 질문 전 로그와 질문 entry를 생성하도록 caller에 요청한다. 매 답변의
+   질문, 답변 또는 확인 대기 해석, 실제 답변일시와 locator를 전달한다. Caller는 Author의
+   lightweight log append로 저장하고 해당 entry 재읽기로 성공을 확인한 뒤 같은 그룹 질문을
+   계속한다. 전달만으로 저장이 끝났다고 보지 않는다. 실패 시 다음 질문·의존 원문 적용을
+   멈추고 같은 entry 저장을 재개하며 이미 받은 답변을 다시 설명하도록 요구하지 않는다.
 10. 답변별 log handoff에는 평가, 질문 충분성, `Group Decision`, `Author Application` 또는 작업
-    상태를 넣지 않는다. 원천 문서용 edit plan은 현재 그룹의 material question이 모두 끝날 때만
-    통합한다.
+    상태를 넣지 않는다. 답변 내 `[확인 대기]`·`[폐기]` 표시는 기록 구분이며 평가가 아니다.
+    원천 문서용 edit plan은 현재 그룹의 material question이 모두 끝날 때만 통합한다.
+
+<!-- key: id=key.standard.skill.clarify.question-recording kind=claim refs=key.standard.project.std-keystone-060 key.role.clarify key.role.author key.topic.work-recovery -->
+## 기록 선택, 질문 변경과 필요 시 복구
+
+1. 기록 여부는 질문 수가 아니라 결정 중요성과 후속 근거 필요성으로 판단한다. 중요성이 낮고
+   후속 근거가 필요 없는 대화는 일반 질답으로 처리하며 문서를 강제하지 않는다. 기록 대상이면
+   최초 시작 시 생성하고, 도중 중요해졌으면 필요한 이전 맥락만 가져와 기록을 시작한다.
+2. 작업서가 있으면 그 위치의 `clarify/`를 사용한다. 작업서나 별도로 승인된 기록 위치가 없으면
+   caller에 위치·권한 미해결을 반환한다. 임의 위치·Round/Work 자동 생성이나 기록 생략으로
+   해결하지 않는다. 사용자의 명시적 기록 금지는 지키되 필요한 결정 근거의 한계를 알린다.
+3. 기본 번호는 파일 전체에서 `Q01`, `Q02`로 증가한다. 파생은 `Q01-A`, `Q01-B`, … `Q01-AA`
+   등 대문자 Excel-column suffix를 사용한다. 재파생은 같은 기본 질문의 다음 suffix로 추가하고
+   직접 원인 질문을 본문에 남긴다. 같은 적용 그룹에서는 관련 질문 가까이에 두고 다른 그룹에는
+   원인 링크를 둔다. 기존 번호를 다시 매기거나 중간의 빈 번호를 재사용하지 않는다.
+4. 질문 구조 변경은 폐기와 추가다. 미응답·확인 대기 질문을 폐기하면 답변에 `[폐기]`와
+   원인 질문·이유를 남기고 대기 해석은 필요한 맥락으로 보존한다. 변경 질문은 별도 번호로
+   추가하여 원인과 대체 대상을 연결한다. 단순 파생은 원 질문을 폐기하지 않는다.
+5. 확정 답변의 변경은 이전 기록을 보존하고 새 질문·답변에서 변경 의도와 원 질문을 연결한다.
+   기존 원문에 이미 반영했다면 영향을 재검토하며 과거 그룹 적용을 무조건 되풀이하지 않는다.
+   AI의 폐기 설명을 사용자 발언으로 기록하거나 과거 답변시각을 추정하지 않는다.
+6. 원 질문 밖이지만 대주제 안의 파생 질문은 생성 이유를 설명하고 독립 질문으로 진행한다.
+   대주제 또는 승인 범위를 벗어나면 진행 범위를 먼저 확인한다. 연결 번호가 범위 확장 권한이나
+   동일 적용 그룹을 뜻하지 않는다.
+7. 질답 로그는 작업 기록이며 새 세션·일반 진행 상태 확인의 필수 입력이 아니다. 현재 맥락이
+   부족한 질답 복구, 과거 답변·근거 확인, 사용자 요청에 필요한 부분만 읽는다. 확정 답변을
+   재질문하지 않고 확인 대기는 해석 확인부터 이어가며 폐기 질문은 미응답으로 복구하지 않는다.
+   현재 대화에 충분한 맥락이 있으면 다시 읽지 않는다.
 
 <!-- key: id=key.standard.skill.clarify.handoff-resume refs=key.role.clarify key.output.edit-plan key.topic.handoff -->
 ## Handoff와 resume
@@ -255,7 +289,7 @@ modularization_question:
    stop condition을 포함한다.
 4. 문서 반영은 Author가, 구현 또는 위임은 Main이나 허락된 Coordinator가 담당한다.
 5. Clarify result는 edit authority나 acceptance를 자동으로 만들지 않는다.
-6. 답변별 handoff는 명확화 로그(21) append만 요청한다. Source-document handoff는 현재 그룹의
+6. 답변별 handoff는 명확화 로그(21)의 생성·질문별 저장만 요청한다. Source-document handoff는 현재 그룹의
    질문이 모두 끝난 뒤 한 번만 만들고, caller가 적용 결과를 확인한 뒤 다음 그룹으로 이동한다.
 7. 모든 그룹이 끝나면 caller는 별도 사용자 재호출 없이 Clarify 이전의 원래 task와 resume point로
    돌아간다.
@@ -541,12 +575,17 @@ Clarify 기준은 다음 방법으로 검증한다.
     제공할 수 있어야 한다.
 13. 큰 검토 결과를 질문 전에 관련성 기반 수정 그룹으로 나누고, 그룹 안에서도 한 번에 하나의
     질문만 진행해야 한다.
-14. 명확화 로그(21)는 대주제별 파일 하나, `G01`/`Q01`, 질문·답변·답변일시의 최소 구조를
-    사용하고 decision·evaluation·status authority를 만들지 않아야 한다.
+14. 명확화 로그(21)는 기록 대상 대주제별 파일 하나, `G01`/`Q01`과 파생 suffix,
+    질문·답변·답변일시의 최소 구조를 사용한다. 확인 대기·폐기 표시는 기록만 구분하고
+    decision·evaluation·status authority를 만들지 않아야 한다.
 15. 답변별 log append와 그룹 종료별 source-document application이 분리되고, log 기록만으로
     Work State, graph 또는 package-wide verification을 실행하지 않아야 한다.
 16. 현재 그룹 적용 뒤 다음 그룹으로, 모든 그룹 뒤 원래 작업으로 사용자 재호출 없이 resume할
     수 있어야 한다.
+17. 명확한 답변은 즉시 저장하고 해석 확인 전 중단·교정·확정과 저장 실패 뒤 재개를 구분한다.
+    로그 전달만으로 다음 질문을 시작하지 않는다.
+18. 폐기·대체·단순 파생·재파생·확정 답변 번복에서 질문 ID와 원인 관계를 보존한다.
+19. 현재 맥락 충분 여부·필요한 근거에 따라 로그 읽기와 문서 없는 일반 질답을 구분한다.
 
 <!-- key: id=key.standard.skill.clarify.internal-management-boundary refs=key.role.clarify key.role.linker key.topic.question-flow key.boundary.scope-control -->
 ## 내부 index/graph 관리와 사용자 결정 경계

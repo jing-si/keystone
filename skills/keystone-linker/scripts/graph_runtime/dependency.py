@@ -84,6 +84,7 @@ class DependencySource:
     legacy_dependencies: Tuple[str, ...] = ()
     gates: Tuple[WorkGate, ...] = ()
     is_work: bool = False
+    defined_steps: Optional[Tuple[str, ...]] = None
 
 
 def parse_work_gates(raw, declared_dependencies: Sequence[str], source_id: str):
@@ -242,6 +243,7 @@ def evaluate_dependency_graph(
     targets: Mapping[str, DependencyTargetState],
     *,
     source_steps: Mapping[str, Sequence[str]],
+    unidentified_step_sources: Sequence[str] = (),
     legacy_dependencies: Optional[Mapping[str, Sequence[str]]] = None,
     structured_dependencies: Optional[Mapping[str, Sequence[str]]] = None,
 ) -> DependencyGraphResult:
@@ -291,10 +293,12 @@ def evaluate_dependency_graph(
             known_steps = set(source_steps[gate.source_id])
             for step in gate.steps:
                 if step not in known_steps:
-                    invalid_codes.add("work_gate_step_invalid")
+                    code = ("work_gate_step_unidentified" if gate.source_id in unidentified_step_sources
+                            else "work_gate_step_invalid")
+                    invalid_codes.add(code)
                     diagnostics.append(DependencyDiagnostic(
-                        "work_gate_step_invalid",
-                        "work gate source step does not exist: %s/%s" % (gate.source_id, step),
+                        code,
+                        "work gate step needs definition verification: %s/%s" % (gate.source_id, step),
                         gate.gate_id,
                     ))
         validated.append(replace(gate, invalid_codes=tuple(sorted(invalid_codes))))
@@ -395,13 +399,6 @@ def _dependency_target_states(
 def evaluate_dependency_sources(sources: Sequence[DependencySource]) -> DependencyGraphResult:
     """Build the document-backed Work/Step registry and evaluate every recovered gate."""
     ordered = tuple(sorted(sources, key=lambda item: (item.path, item.source_id)))
-    steps_by_directory: Dict[str, Set[str]] = {}
-    for source in ordered:
-        if source.step_ref:
-            directory = source.path.rpartition("/")[0]
-            steps_by_directory.setdefault(directory, set()).add(
-                source.step_ref.rsplit("/", 1)[-1]
-            )
 
     source_steps: Dict[str, Tuple[str, ...]] = {}
     targets, state_diagnostics = _dependency_target_states(ordered)
@@ -411,7 +408,7 @@ def evaluate_dependency_sources(sources: Sequence[DependencySource]) -> Dependen
     for source in ordered:
         directory = source.path.rpartition("/")[0]
         if source.is_work:
-            source_steps[source.source_id] = tuple(sorted(steps_by_directory.get(directory, ())))
+            source_steps[source.source_id] = source.defined_steps or ()
         if source.is_work and source.legacy_dependencies:
             legacy_dependencies[source.source_id] = source.legacy_dependencies
         if source.structured_dependencies:
@@ -421,6 +418,8 @@ def evaluate_dependency_sources(sources: Sequence[DependencySource]) -> Dependen
         gates,
         targets,
         source_steps=source_steps,
+        unidentified_step_sources=tuple(source.source_id for source in ordered
+                                        if source.is_work and source.defined_steps is None),
         legacy_dependencies=legacy_dependencies,
         structured_dependencies=structured_dependencies,
     )
@@ -433,7 +432,8 @@ def evaluate_dependency_sources(sources: Sequence[DependencySource]) -> Dependen
 
 def _evaluate_gate(gate: WorkGate, target: DependencyTargetState) -> DependencyEvaluation:
     if gate.invalid_codes:
-        status = DependencyStatus.INVALID
+        status = (DependencyStatus.UNKNOWN if set(gate.invalid_codes) == {"work_gate_step_unidentified"}
+                  else DependencyStatus.INVALID)
         reason = "invalid gate: %s" % ", ".join(gate.invalid_codes)
     elif target is None or not target.exists:
         status = DependencyStatus.UNRESOLVABLE

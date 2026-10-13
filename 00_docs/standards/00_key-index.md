@@ -19,6 +19,11 @@ key:
 <!-- key: id=key.standard.index.current-standard refs=key.topic.document-system key.doc.standard key.topic.skill-contract key.standard.subagent key.standard.artifact -->
 ## 현재 기준서
 
+- 관리 흐름·연결 점검: [기준](key-standard-management-review.md), R015-A 구현 계약.
+
+- 관리 중인 작업의 상태 저장: `key-standard-managed-work-state.md`. R024 새 저장 모드의
+  현재 상태·작업서 사건 분리와 종료·재개·부분 반영 복구 계약이며 기존 corpus 이전은 별도다.
+
 1. 전체 공통 기준서: `01_key-project-standard.md`
    - Keystone의 원천 문서(2), 기준서(3), 작업서(4), 진행 기록(5), 결정(6), 파생
      에이전트 문서(8), owner/ref-first 탐색, 선택적 아티팩트 그래프(14), context readiness,

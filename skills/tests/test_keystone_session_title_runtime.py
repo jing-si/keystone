@@ -76,6 +76,12 @@ class FakePendingStore:
 
 
 class KeystoneSessionTitleRuntimeTest(unittest.TestCase):
+    def test_managed_cancellation_stays_visible_until_management_ends(self):
+        state = state_with_rounds([("R024", "cancelled")])["state"]
+        self.assertEqual((), SESSION_TITLE._incomplete_rounds(state))
+        state["round_hierarchy"][0]["management"] = "open"
+        self.assertEqual("R024", SESSION_TITLE._incomplete_rounds(state)[0]["round_ref"])
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
@@ -420,6 +426,30 @@ class KeystoneSessionTitleRuntimeTest(unittest.TestCase):
     def test_main_emits_one_valid_json_document(self):
         output = SESSION_TITLE.serialize_hook_output({"decision": "block", "reason": "x"})
         self.assertEqual({"decision": "block", "reason": "x"}, json.loads(output))
+
+
+class ManagedTitleIdentityTest(unittest.TestCase):
+    def test_authoring_counts_archived_directories_without_reading_history(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archived = root / "00_docs/works/r030-archived"
+            (archived / "r030-Z").mkdir(parents=True)
+            (archived / "key-work-archive.md").write_bytes(b"\xff")
+            state = {"mode": "managed_state", "round_hierarchy": []}
+            identities = SESSION_TITLE._authoring_identity_state(root, state)
+            self.assertEqual("R031", SESSION_TITLE._next_parent_round_ref(identities))
+            self.assertEqual("R030-AA", SESSION_TITLE._next_child_round_ref(identities, "R030"))
+            self.assertEqual([], state["round_hierarchy"])
+
+    def test_accepted_managed_round_is_not_labeled_awaiting_acceptance(self):
+        state = state_with_rounds([("R024", "complete")])["state"]
+        state["round_hierarchy"][0].update(management="open", approval="accepted")
+        candidates = SESSION_TITLE._incomplete_rounds(state)
+        self.assertEqual("accepted", candidates[0]["approval"])
+        with tempfile.TemporaryDirectory() as directory:
+            message = SESSION_TITLE._selection_reason(Path(directory), state, candidates)
+        self.assertIn("complete / accepted · 관리 중", message)
+        self.assertNotIn("수용 대기", message)
 
 
 if __name__ == "__main__":

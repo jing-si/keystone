@@ -24,6 +24,7 @@ SKILL_NAMES = (
     "keystone-clarify",
     "keystone-linker",
     "keystone-coordinator",
+    "keystone-ideas",
 )
 
 
@@ -188,7 +189,7 @@ def _compileall_check(root: Path) -> CommandResult:
                 str(root / "scripts"), quiet=1, force=True,
                 legacy=False, optimize=0, workers=1,
             )
-            for package in ("keystone-author", "keystone-coordinator", "keystone-linker"):
+            for package in ("keystone-author", "keystone-coordinator", "keystone-linker", "keystone-ideas"):
                 ok = compileall.compile_dir(
                     str(root / "skills" / package / "scripts"), quiet=1,
                     force=True, legacy=False, optimize=0, workers=1,
@@ -311,6 +312,7 @@ def build_plan(root: Path, *, profile: str = "production") -> Tuple[ReleaseStep,
         ReleaseStep("author_package_tests", "command", (python, "-m", "unittest", "discover", "-s", "skills/keystone-author/tests", "-p", "test_*.py")),
         ReleaseStep("coordinator_package_tests", "command", (python, "-m", "unittest", "discover", "-s", "skills/keystone-coordinator/tests", "-p", "test_*.py")),
         ReleaseStep("linker_package_tests", "command", (python, "-m", "unittest", "discover", "-s", "skills/keystone-linker/tests", "-p", "test_*.py")),
+        ReleaseStep("ideas_package_tests", "command", (python, "-m", "unittest", "discover", "-s", "skills/keystone-ideas/tests", "-p", "test_*.py")),
         ReleaseStep("shared_skills_tests", "command", (python, "-m", "unittest", "discover", "-s", "skills/tests", "-p", "test_*.py")),
         ReleaseStep("compileall", "compileall", ("<internal>", "compileall")),
         ReleaseStep("docs_readiness", "docs_readiness", ("<internal>", "readiness", "docs")),

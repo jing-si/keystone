@@ -75,6 +75,7 @@ class ReleaseGateSecurityTest(unittest.TestCase):
             "author_package_tests",
             "coordinator_package_tests",
             "linker_package_tests",
+            "ideas_package_tests",
             "shared_skills_tests",
             "compileall",
             "docs_readiness",

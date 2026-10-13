@@ -10,6 +10,15 @@ description: "Create or revise Keystone source documents, standards, work orders
 
 # keystone-author
 
+## Review Policy and Step Definitions
+
+For policy-relevant creation/closure, follow `references/management-review.md`. If mode is unset,
+use the fixed package guidance, then preserve the selection. Plan a visible Round-scope connection
+review Step, or full review at the top-level sprint termination. Record local Step definitions with
+`key.defined_steps`; do not treat Progress step_ref as the definition or annotate unrelated old files.
+Main accepts review results; Author records them and updates only processed occurrences via the state
+API. Retain R027's question-by-question recording and selective-read boundaries.
+
 ## Purpose
 
 Create and revise human-readable Keystone source documents within the user's request and accepted
@@ -19,6 +28,14 @@ indexes, Change Sets, and approved Work-attached clarification logs. Main verifi
 Use this installed package as the complete Author runtime contract. Do not require a consuming project
 to contain a project-local Author standard. Project documents define project meaning, while this
 package defines Author behavior.
+
+## Idea Notes Boundary
+
+`keystone-ideas` owns direct CRUD of non-normative `ideas/key-ideas*.md` notes. Do not route
+routine note edits through Author or require initialization, Work State, or graph checks for them.
+For an explicit request to turn an idea into work, preserve the relevant meaning, title and recording
+date in the Work Order. IDEA numbers can be reused after deletion: they are not stable graph IDs.
+A note or a link to work does not authorize execution or establish completion.
 
 ## Initialization Gate
 
@@ -52,8 +69,8 @@ Select the smallest mode that fits the approved document change:
 - `create`: create a new source document and its required index entry.
 - `revise`: change existing accepted or pending meaning without rewriting unrelated history.
 - `clarify_apply`: record one resolved Clarify decision and resume the interrupted document task.
-- `clarify_log_append`: record one actual Clarify question, answer, and answer timestamp without source
-  application or workflow-state interpretation.
+- `clarify_log_append`: create the needed log or persist a question/answer, pending interpretation, or
+  withdrawal without source application or workflow-state interpretation.
 - `normalize`: align structure or metadata while preserving current meaning and authority.
 - `progress_update`: record actual execution, evidence, blocker, or resume-point changes.
 - `acceptance_finalize`: synchronize only the state and aggregate sources changed by Main acceptance.
@@ -84,6 +101,8 @@ a prerequisite for a small explicit document edit.
 4. Use an Author Edit Contract only for a large or ambiguous multi-document change.
 5. Edit the approved source documents.
 6. Check actual impact on standards, Work/Progress, decisions, indexes, Context Map, and Change Set.
+   For a changed implementation plan or a standards conflict, apply Standards Realignment During
+   Implementation below before handing the affected implementation back to its executor.
 7. Use Linker for graph interpretation; hand repository-output edits to Main or a permitted Coordinator.
 8. Run verification proportional to the changed surface and report residual risk.
 
@@ -122,6 +141,36 @@ and verification splits, and parallel independent Steps may vary by Goal. A docu
 no implementation Step. An investigation or experiment Round may end with findings and a user decision
 when it does not accept durable production implementation. Any durable production implementation still
 requires standards alignment before implementation and verification before closure.
+
+## Standards Realignment During Implementation
+
+Reassess applicable standards when an implementation plan changes its goal, scope, behavior, or
+completion criteria, or when standards conflict with each other or the implementation. A completed
+initial alignment Step covers only the requirements reviewed then, not later changes.
+
+1. Identify the changed requirement or conflict and the affected standard clauses and implementation
+   Steps. Distinguish a defect against a valid standard from a needed policy change. Do not rewrite a
+   standard merely to legitimize the current implementation; return unresolved policy or scope choices
+   to Main/User before applying them.
+2. When standards need revision, add a standards-alignment Step to the existing authorized Work Order.
+   Give it the normal Goal, Scope, Source Context, Completion Criteria, Stop Conditions, Verification,
+   and Expected Output. Explicitly sequence it before the affected implementation resumes and record
+   that implementation's blocking prerequisite. Preserve existing Step IDs and completed/accepted
+   history; adding a higher-numbered Step alone does not establish execution precedence.
+3. Keep the affected implementation on hold until the additional Step's standards and Work Order
+   alignment, verification, and Main acceptance are complete. Unaffected independent work may continue
+   within its approved scope. Register the new Step and any actual hold/resume transitions through the
+   project's existing state owner; do not introduce another status store or reopen the completed
+   initial alignment Step just to represent the new change.
+4. Preserve the trigger and reason, target documents/clauses, before/after meaning, affected Steps,
+   verification and acceptance evidence, and resume conditions in the Work Order and its durable work
+   records. In managed mode, use Work Order history and the existing state API; in legacy mode use
+   the applicable Progress ownership rules. Return exact record/Step references to the executor.
+5. If no standard revision is needed, record the reviewed clauses and the reason in the affected work
+   record without adding an alignment Step. A valid-standard implementation defect stays an
+   implementation repair. A sequencing-only edit need not create another alignment Step.
+6. Tell the user which additional Step was added or why standards remain unchanged, and whether the
+   affected implementation is held or can resume. A chat-only completion summary is not durable evidence.
 
 ## Worktree Locator Metadata
 
@@ -192,27 +241,59 @@ Run a bounded terminal reconciliation only after `work_status`, `approval.state`
 
 Treat per-answer log persistence and per-group source application as separate write boundaries.
 
-1. For an existing or concurrently approved Work node, create the first broad-subject log at
-   `<work-node>/clarify/{YYYYMMDDTHHmmssZ}-{topic-slug}.md`. Use UTC and lower-case kebab-case. Reuse the
-   same file for every group in that broad subject.
+1. For recording-required Q&A, create the log and first question entry before that question is asked.
+   An important decision or later evidence need warrants a log even for one question; low-importance
+   ordinary Q&A need not have one. If it becomes important later, preserve the relevant earlier context
+   without inventing timestamps. For an existing or concurrently approved Round/Work order, use
+   `<work-order-directory>/clarify/{YYYYMMDDTHHmmssZ}-{topic-slug}.md`, UTC and lower-case kebab-case.
+   Reuse the same file for every group in that broad subject. With neither an order location nor a
+   separately approved path, return unresolved location/authority to the caller; do not invent a path,
+   create a Work, or silently skip required recording. Respect explicit user no-write instructions.
 2. Treat the log as a tracked, non-authoritative Work attachment. It needs no key prefix, lifecycle,
    approval, decision, work-status, or completion metadata.
-3. Use `# {broad subject}`, `## G01 - {edit scope}`, and `### Q01 - {question summary}`. Record only
-   `질문`, `답변`, and `답변일시`; a blank answer means unanswered.
-4. On each answer, recheck the current file and group/question locator, then append or fill only that
-   question, answer, and timestamp. Do not duplicate answers or add a remaining-question section.
+3. Use `# {broad subject}`, `## G01 - {edit scope}`, and `### Q01 - {question summary}`. Base fields are
+   `질문`, `답변`, and `답변일시`; a blank answer means unanswered. Known planned questions may be present;
+   do not require a complete future questionnaire. Inside the answer, `[확인 대기]` identifies an
+   interpretation awaiting confirmation and `[폐기]` a withdrawn question with its cause and reason.
+   These are record distinctions, not workflow status or evaluation.
+4. On each answer, recheck current bytes and the exact group/question locator and save that entry.
+   Clear yes/no or explicit choices need no reconfirmation. If the caller must interpret the conversation,
+   save its interpretation as pending before it asks for confirmation. A confirmation or unambiguous
+   correction finalizes the same entry; do not number confirmation as a derived question. Do not invent
+   intent, duplicate an answer, or add a remaining-question section.
 5. Add optional question-level key metadata only when the answer actually affects a source document.
    Treat it as navigation evidence, never source authority, edit permission, evaluation, or acceptance.
 6. Do not add `Group Decision`, `Author Application`, sufficiency, evaluation, score, group-completion,
    or work-status fields. Link the log from a Work Order only when it materially informs scope,
    criteria, or a recorded decision.
-7. Close `clarify_log_append` by rereading the target entry. Do not run Progress updates, Work State,
-   graph reconstruction, package/repository tests, or source-document application for the append alone.
+7. Close `clarify_log_append` by rereading the target entry and return successful persistence before the
+   caller asks its next question. On failure or conflicting bytes, preserve the received content/locator
+   and stop further questions and dependent source application until retry succeeds. Recheck the entry
+   on retry: if already applied, return success without duplicating it. Never ask the user to reconstruct
+   an available answer. Do not run Progress updates, Work State, graph reconstruction, package/repository
+   tests, or source-document application for the append alone.
 8. Apply source documents only after all material questions in the current group are resolved and the
    consolidated handoff is Author-ready. Apply that group's affected source scope exactly once; do not
    include another group or a future edit plan.
 9. Return the apply result to the caller so it can continue the next group or resume the original task.
    Clarify never writes either the log or source documents, and the user need not reinvoke either skill.
+10. Keep base question IDs unique across the file. Use uppercase Excel-column suffixes for derived
+    questions (`Q01-A`, `Q01-B`, ... `Q01-Z`, `Q01-AA`). Further derivation uses the next unused suffix
+    under the base question and names the direct cause, not Q01-A-A. Never renumber or reuse IDs. Place
+    related questions nearby in the same group; if application scopes differ, use the correct group and
+    a causal link. Number adjacency does not define source-application scope.
+11. Question-structure changes are withdraw and add. Preserve original questions. For unanswered or
+    pending entries, write `[폐기]` plus causal question and reason in the answer and retain relevant
+    pending text. Add replacements with new IDs linking both cause and replaced question; simple derived
+    additions do not withdraw the original. Preserve finalized answers and record a later change of mind
+    in a new linked question/answer. Return already-applied source impact to the caller for review.
+12. Use the actual user-answer time, or confirmation time for an interpretation that becomes final.
+    Unknown historical timestamps are `미상`; never substitute current save time. An AI withdrawal note
+    is not a user answer, so leave its timestamp blank when no previous user answer exists.
+13. Before/after-write entry checks are required, but a new session or routine status query does not
+    require reading logs. Read relevant records only for missing Q&A context, past-answer evidence, or a
+    user request. Do not re-ask finalized answers or recover withdrawn questions as unanswered. Logs
+    never replace source/progress authority.
 
 ## Resumable Finalization
 
@@ -233,6 +314,59 @@ Treat per-answer log persistence and per-group source application as separate wr
    durable resume point only when its actual evidence or next action changed.
 
 ## Work/Step Progress Ownership
+
+In managed projects, this contract overrides the legacy Current Acceptance, Terminal Reconciliation,
+Resumable Finalization, and numbered Progress ownership rules below. Those rules apply only when
+`state/manifest.json` is absent. Standard/decision document approval and lifecycle remain source-owned;
+work execution, work approval, and finalization belong only to `state/current.json`.
+This is one file, wire v2: `{"schema_version":2,"states":{"planned":[...],"in_progress":[...]}}`.
+Group by execution state, then list Round/Work/Step entries; omit `execution` from persisted rows.
+Never split current state by Round or store closed entries. An empty facade remains `states: {}`.
+
+Use bundled `managed_work_state.py --root ROOT [--document-root DOCS] create|update|close|reopen`
+with `--entry-json FILE --expected-digest TOKEN` (`none` only for an absent current.json).
+The exact entry fields are `ref`, `kind` (`round|work|step`), `parent`, `order_path`, `execution`,
+`approval`, and `finalization`. Round parent is null; Work parent is the Round; Step parent is its Work.
+Paths are repository-relative Work Orders. Execution is `planned|in_progress|blocked|complete|cancelled|superseded`,
+approval is `pending|accepted|rejected`, finalization is null or `pending|in_progress|complete|waived`.
+Use `inspect --ref REF --order-path PATH` for the expected whole-file digest and exact history.
+
+- Register parent Round, Work, and mandatory Steps at creation as planned/pending with null finalization.
+  Keep static `key.id`, `doc_type: work_order`, and `### R024/S01` plan headings in the Work Order.
+  Events require `--at` (ISO date or timezone timestamp) and a meaningful `--note`.
+- `update --at DATE --note REASON` moves the entry to its execution group and atomically appends
+  an `updated` event with before/result snapshots to its Work Order. Approval/finalization changes also
+  log an event; unchanged updates add none. Main acceptance updates approval explicitly; implementation
+  completion never implies acceptance. Record important evidence/blockers in the Work Order as history.
+  Do not copy current status into indexes, Context Map, Work Orders, or Progress.
+- `close --reason complete|skipped|cancelled|superseded` appends a dated closure with its result and removes
+  the entry. Complete closure requires complete execution, accepted approval, settled finalization,
+  and satisfied required Work-completion gates. Close children before parents. Explain skip/cancellation.
+- `reopen` preserves all old facts and appends a reopen event with the new registered state. There is no
+  mutable open/closed field. A missing item without closure evidence is missing/unknown, never complete.
+- Read plans' existing `key.relations.depends_on` and `work_gates`. When a dependency may close, preserve
+  an exact navigation locator in Work Order frontmatter `work_state_targets`, mapping its stable ID to
+  `{ref: R001/work-slug, order_path: 00_docs/works/.../key-work-....md}`. This records identity, not status.
+  Missing locator yields an unresolved gate; never scan all archived work to guess it.
+- Pending partial transitions require explicit `recover`; external edits are conflicts. A busy writer
+  lock is not permission to delete another writer's lock. Keep historical dates factual.
+
+Migration is an explicitly authorized document task, not part of skill installation. Prepare state and
+creation/state-change/closure/reopen evidence, preserve history, remove old current-state copies and align affected
+text, then verify `work_state_runtime.py --managed`. Finally add `state/manifest.json` with exactly
+`{"schema_version":1,"mode":"managed"}`. Do not infer a switch merely from a state directory. After
+activation ordinary runtime calls use v6 and errors never fall back to old status owners. The marker is
+mode configuration, not another current-state record. Nonempty v1 `state/rounds/` is rejected with
+`state_layout_legacy`; explicitly convert and validate old data before removing the old layout. New projects can use the same activation sequence.
+
+Ordinary finalization needs current Work State, scoped verification, historical evidence and Main review,
+not a new manifest. If an existing automation explicitly needs one, optional finalization v7 has exactly
+`schema_version: 7`, `document_root`, `acceptance_ref`, `accepted_refs: [{ref, order_path}]`, and
+`work_state_runtime: {policy_digest, result_digest, source_generation, path_set_digest, complete}`.
+Copy binding values from the fresh runtime envelope. `validate_finalization.py` verifies targets against
+current state or exact complete-closure history; v1-v6 manifests remain legacy-only. Passing is not Main acceptance.
+
+Legacy ownership (only without the activation marker):
 
 1. Aggregate Work Progress `key-progress.md` owns the Work-level `work_status`, `approval.state`,
    optional `finalization.state`, actual evidence, and resume point as the `aggregate Progress
@@ -377,8 +511,9 @@ Verify that:
    completion creates a new historical finalization or acceptance-event artifact.
 9. Terminal reconciliation runs only on an actual state transition, preserves absent optional and
    historical projections, and cannot close over a stale current/navigation projection.
-10. Clarification logging uses one minimal file per broad subject, preserves the one-question flow, and
-    separates lightweight per-answer append from one source-document application per completed group.
+10. Clarification logging starts before the first recording-required question, saves and rereads every
+    answer before the next question, confirms only interpretations, preserves withdrawal/derivation and
+    answer-change history, and separates persistence from source application per completed group.
 11. A linked-worktree handoff writes only the exact canonical Work Order path before implementation and
     returns it for fresh Coordinator/Main confirmation without taking execution ownership.
 12. Round creation stops at `planned / pending` with no Active Step unless execution is explicit, accepts

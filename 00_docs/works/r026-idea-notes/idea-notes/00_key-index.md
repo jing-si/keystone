@@ -2,7 +2,7 @@
 doc_type: work
 created_at: "2026-10-12"
 document_lifecycle: active
-approval: {state: pending}
+approval: {state: accepted, accepted_at: "2026-10-12", accepted_by: main}
 key:
   id: key.work.idea-notes.index
   refs:

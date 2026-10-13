@@ -2,7 +2,7 @@
 doc_type: work
 created_at: "2026-09-14"
 document_lifecycle: active
-approval: {state: pending}
+approval: {state: accepted, accepted_at: "2026-10-13", accepted_by: user}
 key:
   id: key.work.unified-state-management.index
   refs:

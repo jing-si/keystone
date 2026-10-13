@@ -35,7 +35,7 @@ key:
 | R012 | Current Work State and Session Focus Simplification | `r012-current-work-state-simplification/00_key-index.md` | accepted | active parent Round 집합 중심 Work State, Round session focus와 실행자 Step 선택을 단순화하고 production gate로 검증했다 |
 | R013 | Author Terminal Status Reconciliation | `r013-author-terminal-status-reconciliation/00_key-index.md` | accepted | 상태 전이별 bounded projection 대조와 Clarify 그룹 종료별 문서 적용·Q&A log 경계를 구현·검증했다 |
 | R014 | Reader Progressive Context Loading | `r014-reader-progressive-context-loading/00_key-index.md` | accepted | progressive orientation, selected-Work bounded Linker와 contract parity를 구현·검증하고 닫았다 |
-| R015 | Keystone Consumer Goal Effectiveness Review | `r015-keystone-consumer-goal-effectiveness-review/00_key-index.md` | active | Uptendo 소비 프로젝트 evidence로 Keystone 목표 달성 효과와 비용을 검토하고 개선 Work Order 최종본을 작성한다 |
+| R015 | Keystone Consumer Goal Effectiveness Review | `r015-keystone-consumer-goal-effectiveness-review/00_key-index.md` | complete / pending | 수용된 개선 정책을 보존하고 R015-A 관리 흐름 구현을 총괄한다 |
 | R016 | Worktree Locator and Targeted Work Discovery | `r016-worktree-locator-navigation/00_key-index.md` | accepted | Worktree 선택 시 canonical Work Order에 exact locator를 기록하고 대상 경로만 탐색하는 계약을 구현·검증했다 |
 | R017 | Standards-First Round Construction | `r017-standards-first-round-construction/00_key-index.md` | accepted | Round 생성·실행 경계와 standards-first 제약, Excel column 방식 하위 세션 작명을 구현·검증했다 |
 | R018 | Keymeta-First Bounded Discovery | `r018-keymeta-bounded-discovery/00_key-index.md` | accepted | 키메타 제한 탐색·파싱 최적화와 소비 규모 검증을 완료·수락했다 |
@@ -44,9 +44,10 @@ key:
 | R021 | Session Title Permission Hardening | `r021-session-title-permission-hardening/00_key-index.md` | accepted | exact helper executable 권한 승인으로 sandbox 환경의 자동 rename을 보강했다 |
 | R022 | Session Title Assignment Gate | `r022-session-title-assignment-gate/00_key-index.md` | accepted | 명시적 기존 라운드 수행에만 native title hint를 적용하고 비종료 라운드 선택 문맥을 구현·검증했다 |
 | R023 | Session Title Work Authoring Gate | `r023-session-title-work-authoring-gate/00_key-index.md` | accepted | 작업서 생성·수정 착수도 예정 또는 기존 Round ref로 native title을 준비하도록 구현·검증했다 |
-| R024 | 상태 통합 관리 | `r024-unified-state-management/00_key-index.md` | planned | 상태 기록·갱신 비용을 조사하고 질답으로 통합 관리 방식을 구체화한다 |
-| R025 | 작업 계층 정의 | `r025-work-hierarchy-definition/00_key-index.md` | planned | Round·Work·Step·Task 정의와 책임, 필수·선택 여부 및 문서 경계를 명확히 한다 |
-| R026 | 아이디어 노트 | `r026-idea-notes/00_key-index.md` | planned | 가벼운 아이디어 기록과 단계적 검색, keystone-ideas CRUD 스킬을 설계·구현·검증한다 |
+| R024 | 상태 통합 관리 | `r024-unified-state-management/00_key-index.md` | accepted | 2026-10-13 S05 단일 상태 파일 정정 수락·관리 종료; 설치와 corpus 개편은 후속 |
+| R025 | 작업 계층 정의 | `r025-work-hierarchy-definition/00_key-index.md` | accepted | 선택적 Work·Task와 사용자 Round 생성 권한의 정의·기준·사례 검증 완료; runtime 적용은 후속 |
+| R026 | 아이디어 노트 | `r026-idea-notes/00_key-index.md` | accepted | 가벼운 아이디어 기록·단계적 검색·공통 표와 keystone-ideas CRUD 스킬을 구현·검증했다 |
+| R027 | 질답 기록과 질문 변경 규칙 | `r027-clarify-question-recording/00_key-index.md` | accepted | 2026-10-13 사용자 수락·클로즈; 질답 기록 계약 구현·검증 완료, 스킬 교체는 전체 작업 후 별도 진행 |
 
 <!-- key: id=key.work.index.common-decisions refs=key.doc.decision key.doc.work key.topic.work-round -->
 ## 공통 결정
@@ -68,7 +69,7 @@ key:
    Work Order와 Progress에서 확인한다.
 8. R014의 수락된 범위와 실행 이력은 `r014-reader-progressive-context-loading/00_key-index.md`,
    Work Order와 Progress에서 확인한다.
-9. R015의 작성 중인 개선 Work Order와 review resume point는
+9. R015의 수용된 정책 근거와 R015-A 구현 계획은
    `r015-keystone-consumer-goal-effectiveness-review/00_key-index.md`, Work Order와 Progress에서
    확인한다.
 10. R016의 수락된 worktree locator 계약과 검증 이력은

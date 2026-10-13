@@ -100,15 +100,24 @@ return it as unresolved rather than inventing project meaning or an Author-ready
 
 1. Reduce the issue to one decision whose alternatives have distinct practical effects.
 2. Present only the evidence necessary to understand that decision.
-3. Ask one focused question and briefly explain the meaningful tradeoffs.
-4. Judge whether the answer is sufficient for this topic.
-5. If not, ask only a targeted follow-up about the same topic.
+3. For a recording-required topic, have the caller create the log and question entry through Author
+   before asking the first question. Ask one focused question and explain the meaningful tradeoffs.
+4. Persist a clear answer, including yes/no or an explicit choice, immediately without reconfirmation.
+   When summarizing, inferring, or analyzing the conversation requires a newly interpreted answer,
+   first persist that interpretation as `[확인 대기]`, then ask only whether it matches the user's intent.
+   Confirmation or an unambiguous correction finalizes the same entry; do not number the confirmation
+   as another question or confirm a clear confirmation again. An unconfirmed interpretation is not a decision.
+5. After the caller confirms the entry was saved and reread, judge topic sufficiency. A faithfully
+   recorded answer can still be insufficient: add only a targeted follow-up about the same topic.
 6. If the user delegates judgment and accepted standards, repository evidence, or a safe default support
    one choice, make the bounded recommendation and state its basis.
 7. Once sufficient, summarize the decision, rationale, assumptions, affected documents/artifacts, and
    any recording or edit handoff.
-8. After every user answer, give the caller only the actual question, answer, answer timestamp, and
-   group/question locator needed for a lightweight Author log append. Do not add evaluation or status.
+8. After every user answer, hand the caller the question, answer or pending interpretation, actual answer
+   time and group/question locator for Author persistence. Wait for successful save and entry readback
+   before the next question or dependent source application. On failure or conflict, return the unsaved
+   content and locator so the caller can retry that entry; never treat a handoff as a successful save or
+   ask the user to reconstruct an answer already available. Keep evaluation and work status out of the log.
 9. Return to the caller so the interrupted work resumes.
 
 Do not combine unrelated decisions merely to shorten the conversation. Finish reflection and handoff for
@@ -135,13 +144,59 @@ When the caller supplies several findings from one broad review, organize them b
 8. Let the caller invoke Author once for that group's source changes, then continue with the next group.
    After every group is handled, resume the task that originally requested Clarify.
 
-The caller owns persistence. For a known Work node, have it create or update
-`clarify/{YYYYMMDDTHHmmssZ}-{topic-slug}.md` through Author. Keep all groups for the broad subject in that
-one file using `# {broad subject}`, `## G01 - {edit scope}`, and `### Q01 - {question summary}`. Record only
-`질문`, `답변`, and `답변일시`. A blank answer already means unanswered; do not add a remaining-question
-section. Do not put `Group Decision`, `Author Application`, sufficiency, evaluation, score, group status,
-or work status in the log. Add optional question-level key metadata only when the answer actually affects
-a source document; it remains a navigation hint, not authority or evaluation evidence.
+The caller owns persistence through Author. Use the recording and recovery rules below even for a
+single important question. Per-answer persistence does not wait for a group to finish; source application
+still waits until that group's material questions are resolved.
+
+## Recording and Question Changes
+
+Record when decisions about meaning, policy, scope, authority, or later work need a durable basis.
+Question count is not the criterion. Low-importance conversation with no later evidence need may remain
+ordinary Q&A without a document or a forced Clarify workflow. If it becomes important, create the log at
+that point and preserve only the relevant earlier context, without inventing past timestamps.
+
+For an existing or concurrently approved Round/Work order, use
+`<work-order-directory>/clarify/{YYYYMMDDTHHmmssZ}-{topic-slug}.md` (UTC, lower-case kebab-case).
+Reuse one log per broad subject. With neither a work-order location nor a separately approved log path,
+return the unresolved recording location/authority to the caller. Do not create a Work, choose an
+arbitrary location, or silently continue important Q&A without its required record. Respect an explicit
+user instruction not to write and report any resulting evidence limitation.
+
+Keep `# {broad subject}`, `## G01 - {edit scope}`, and `### Q01 - {question summary}` with the base fields
+`질문`, `답변`, and `답변일시`. The current question and known planned questions may be included; a complete
+future questionnaire is not required. A blank answer means unanswered. Use `[확인 대기]` inside the answer
+for an interpretation awaiting confirmation and `[폐기]` for a withdrawn question. These distinguish
+records, not work status, sufficiency, evaluation, or acceptance. Do not add a remaining-question section,
+`Group Decision`, `Author Application`, scores, or group/work status. Optional question-level key metadata
+is only a navigation hint when an answer actually affects a source document.
+
+- Keep base IDs unique across the file (`Q01`, `Q02`, ...). Derived questions use uppercase Excel-column
+  suffixes (`Q01-A`, `Q01-B`, ... `Q01-Z`, `Q01-AA`). Deriving from Q01-A allocates the next unused suffix
+  under Q01 and names Q01-A as the direct cause; do not grow Q01-A-A. Never renumber or reuse an existing ID.
+  Place related questions together within their application group. If their source-application groups
+  differ, keep each in its own group and link the cause; numbering cannot define the group.
+- Question-structure operations are **withdraw and add**. Preserve the original question. For an unanswered
+  or pending question made obsolete, put `[폐기]`, the causal question ID and reason in its answer; retain
+  any pending interpretation needed to explain the history. Add the replacement with a new ID and links
+  to both cause and replaced question. A simple derived addition leaves the original question intact.
+- Preserve finalized answers. A later change of mind gets a new linked question/answer, not a rewritten
+  old answer or an administrative withdrawal of an accepted decision. Review affected source meaning if
+  the old answer has already been applied; do not replay an entire previously applied group blindly.
+- Explain why a question derives from an earlier answer. A new topic inside the broad subject can be
+  asked separately; one outside the broad subject or delegated scope needs a scope decision before work.
+- Use the actual user-answer time, or the confirmation time when an interpretation becomes final.
+  Use `미상` for an unknown historical time, not the current save time. An AI withdrawal note is not a user
+  answer: leave the timestamp blank if there was no earlier answer. Confirmation updates the same entry.
+
+## Read Records Only When Needed
+
+Do not read clarification logs merely because a new session starts or someone checks work status.
+Read only the relevant entries when context is missing for interrupted Q&A, a past answer or rationale
+is needed, or the user asks to inspect it. Skip the read when current conversation context is sufficient.
+On recovery, do not re-ask finalized answers; continue a pending interpretation with intent confirmation
+and never treat a withdrawn question as unanswered. A saved answer is not proof that the whole topic is
+sufficient or that source changes were applied. Use the appropriate source/progress records for that.
+Author's targeted before/after-write readback is separate from this optional semantic recovery.
 
 ## Modularization Decision
 
@@ -271,5 +326,10 @@ Check that Clarify:
    exactly-one-question invariant.
 10. Separates per-answer lightweight log handoff from per-group source-document application and resumes
     the original task after all groups.
-11. Keeps one minimal, non-authoritative clarification log per broad subject without decision,
-    evaluation, or status fields.
+11. Creates one minimal, non-authoritative log per recording-required broad subject before its first
+    question, without decision, evaluation, or work-status fields.
+12. Saves and rereads each clear answer immediately; confirms only interpretations, saving pending text
+    before confirmation and stopping further questions on persistence failure.
+13. Preserves IDs, causal links and finalized answers across withdrawal, replacement, derived questions
+    and changes of mind; confirmation is an update to the same entry.
+14. Reads relevant records only when needed and never infers source acceptance from a log entry.

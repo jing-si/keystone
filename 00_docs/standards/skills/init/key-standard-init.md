@@ -267,3 +267,8 @@ repair 후 Reader/Author/Main이 복구할 risk로 보고한다.
    않는다. Source documents와 recovery invariants만 initialization state를 결정한다.
 4. Initialize/repair 뒤 필요한 첫 orientation은 Reader handoff로 남긴다. Repository artifact scan은
    해당 후속 요청에 필요할 때만 lazy하게 수행한다.
+
+## R015-A 관리 흐름 연결
+
+[관리 흐름·연결 점검](../../key-standard-management-review.md)의 역할·시점·상태 반영 계약을 따른다.
+기존 질답 기록·사용자 결정·읽기 전용 경계는 유지한다.

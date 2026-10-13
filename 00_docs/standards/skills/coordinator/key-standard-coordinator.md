@@ -18,6 +18,22 @@ key:
 
 # keystone-coordinator 기준서
 
+## R025 작업 분해 경계
+
+이 절은 수락된 Project STD-KEYSTONE-026을 이 개발 명세의 작업 분해 경계에 적용한다.
+본 문서 전체의 기존 pending 상태와 다른 미수락 변경을 승인하는 의미는 아니다.
+
+1. 부모·하위 Round 생성은 사용자 결정이다. AI는 필요하면 권유하고 기다린다.
+2. 허락된 Round 범위 안의 Work는 사용자 지정 또는 AI 판단으로 구성하고 생성 후 기준·이유·
+   목표·범위·Round 및 Step과의 관계를 안내한다. Work 생성으로 실행 권한을 확대하지 않는다.
+3. Work는 선택 사항이며 기본적으로 Round 작업서 안에 둔다. Work 없이도 Step을 실행할 수
+   있는 목표 계약을 사용하고 Task는 Step 내부의 선택적 실행 항목으로만 다룬다.
+4. Task는 재개에 필요한 내용만 Step 기록에 남긴다. 외부 workflow의 Task 상태는 독립
+   Keystone 상태·수락이 아니며 Task 완료만으로 Step·Work·Round를 수락하지 않는다.
+5. Work 생성은 worker 위임·추가 스킬·병렬 실행 허가가 아니다. 기존 사용자 허락 경계를 따른다.
+6. 실제 runtime·skill source 적용과 기존 corpus 이전은 Project STD-KEYSTONE-026의 구현
+   적용 경계를 따른다. 이 문서 개정만으로 새 형식 실행 지원이 완료된 것으로 보지 않는다.
+
 <!-- key: id=key.standard.skill.coordinator.purpose refs=key.role.coordinator key.role.subagent key.topic.work-execution key.topic.formal-workflow -->
 ## 목적
 
@@ -986,3 +1002,8 @@ Coordinator 기준은 다음 방법으로 검증한다.
    요구한다.
 6. Transaction retry는 conflict reason별 변경 조건과 새 transaction ID/attempt history를 검증한다.
    Repository coverage debt는 current transaction omission과 분리해 assignment scope를 자동 넓히지 않는다.
+
+## R015-A 관리 흐름 연결
+
+[관리 흐름·연결 점검](../../key-standard-management-review.md)의 역할·시점·상태 반영 계약을 따른다.
+기존 질답 기록·사용자 결정·읽기 전용 경계는 유지한다.

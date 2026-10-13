@@ -2,8 +2,8 @@
 doc_type: work_round
 created_at: "2026-10-12"
 document_lifecycle: active
-approval: {state: pending}
-round_status: planned
+approval: {state: accepted, accepted_at: "2026-10-12", accepted_by: main}
+round_status: accepted
 key:
   id: key.work.round.r025-work-hierarchy-definition.index
   refs:
@@ -16,7 +16,9 @@ key:
 # R025 작업 계층 정의
 
 Round·Work·Step·Task의 의미, 포함 관계, 사용자와 AI의 책임 및 문서 분리 기준을 명확히 한다.
-기존 Work를 제거하는 것을 전제로 삼지 않고, 필수 Step과 AI가 필요할 때만 만드는 Task를 구분한다.
+Round·Step을 기본 틀로 두고 Work·Task는 선택적으로 사용한다. 부모·하위 Round 생성은
+사용자가 결정하며, Work는 사용자 지정 또는 AI 판단으로 Round 범위 안에서 구성한다.
+AI가 Work를 생성하면 이유·범위·Round 및 Step과의 관계를 안내한다.
 
 ## 계획
 
@@ -32,5 +34,7 @@ Round·Work·Step·Task의 의미, 포함 관계, 사용자와 AI의 책임 및 
 - 작업서: `work-hierarchy-definition/key-work-work-hierarchy-definition.md`
 - 진행 기록: `work-hierarchy-definition/key-progress.md`
 
-현재는 작업서 생성만 승인된 `planned / pending` 계획이며 Active Step은 없다.
-생성 후에는 R024 상태 통합 관리 질답으로 돌아간다. R025 실행을 자동으로 시작하지 않는다.
+2026-10-12 사용자 실행 요청과 두 질답을 바탕으로 S01~S03의 조사·정의·기준 정합화·사례
+검증을 완료했다. Main이 R025 문서 범위를 수락해 Round는 `accepted`, Work는
+`complete / accepted`, active_steps는 `[]`다. 새 구조의 runtime·skill source 적용과 설치·
+기존 corpus 이전은 S03에 명시한 후속 범위이며 이번 완료에 포함하지 않는다.

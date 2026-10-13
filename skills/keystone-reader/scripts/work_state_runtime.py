@@ -4,6 +4,7 @@
 import argparse
 from dataclasses import dataclass
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -1676,8 +1677,25 @@ def _discover_sources(root: Path, document_root: str) -> Tuple[Dict[str, bytes],
 def evaluate_repository(
     repository_root: Path, document_root: str = "00_docs", *,
     prerequisite_closures: Any = None,
+    managed: bool = False,
 ) -> Dict[str, Any]:
     """Discover repository sources and return one canonical work-state envelope."""
+    marker = Path(repository_root) / document_root / "state/manifest.json"
+    if managed or marker.exists() or marker.is_symlink():
+        module_path = Path(__file__).with_name("managed_work_integration.py")
+        spec = importlib.util.spec_from_file_location("keystone_managed_work_state", module_path)
+        if spec is None or spec.loader is None:
+            raise WorkStateError("Package-local managed Work State runtime is unavailable.")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        try:
+            if prerequisite_closures is not None:
+                raise module.state.StateError("managed_legacy_gate_input", "Legacy closure inputs need legacy mode.")
+            return module.execution_projection(repository_root, document_root, parse_frontmatter)
+        except (module.state.StateError, OSError) as error:
+            return {"schema_version": 1, "status": "fail",
+                    "diagnostics": [_diagnostic(getattr(error, "code", "state_io_error"), str(error))],
+                    "summary": {"errors": 1, "warnings": 0}}
     sources, complete, diagnostics = _discover_sources(
         Path(repository_root), document_root
     )
@@ -1691,9 +1709,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", required=True, type=Path)
     parser.add_argument("--document-root", default="00_docs")
+    parser.add_argument("--managed", action="store_true", help="Recover managed state and gates (v6), with exact dependency history.")
     args = parser.parse_args(argv)
     try:
-        result = evaluate_repository(args.root, args.document_root)
+        result = evaluate_repository(args.root, args.document_root, managed=args.managed)
     except (OSError, WorkStateError, ValueError) as error:
         result = {
             "schema_version": SCHEMA_VERSION,

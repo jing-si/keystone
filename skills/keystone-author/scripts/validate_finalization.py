@@ -94,6 +94,13 @@ def validate_manifest(root: Path, manifest: Dict[str, Any]) -> List[Dict[str, st
     findings: List[Dict[str, str]] = []
 
     schema_version = manifest.get("schema_version")
+    if type(schema_version) is int and schema_version == 7:
+        from finalization_managed import validate_managed_finalization
+        return validate_managed_finalization(root, manifest)
+    marker = root / "00_docs/state/manifest.json"
+    if marker.exists() or marker.is_symlink():
+        return [diagnostic("managed_finalization_legacy_manifest",
+                           "v1-v6 manifests are legacy-only; use managed state checks or optional v7.")]
     if type(schema_version) is not int or schema_version not in {1, 2, 3, 4, 5, 6}:
         findings.append(diagnostic(
             "schema_version_unsupported",

@@ -18,6 +18,7 @@ SKILLS=(
   keystone-clarify
   keystone-linker
   keystone-coordinator
+  keystone-ideas
 )
 
 echo "Repository: $REPO_ROOT"
@@ -82,6 +83,8 @@ verify_package_tree() {
     require_file "$base/$skill/SKILL.md"
   done
 
+  require_file "$base/keystone-ideas/scripts/ideas.py"
+
   require_executable "$base/keystone-reader/scripts/keystone_session_title.py"
 
   require_file "$base/keystone-author/scripts/validate_finalization.py"
@@ -113,6 +116,7 @@ verify_package_tree() {
 
 verify_python_entrypoints() {
   local base="$1"
+  run_python_help "$base/keystone-ideas/scripts/ideas.py"
   run_direct_help "$base/keystone-reader/scripts/keystone_session_title.py"
   run_python_help "$base/keystone-author/scripts/validate_finalization.py"
   run_python_help "$base/keystone-author/scripts/run_finalization_validation.py"
@@ -178,7 +182,7 @@ if [ -z "$SOURCE_REVISION" ]; then
 elif [ -n "$(git -C "$REPO_ROOT" status --porcelain 2>/dev/null || true)" ]; then
   SOURCE_DIRTY=true
 fi
-printf '{"schema_version":1,"package_version":"%s","source_commit":"%s","source_dirty":%s,"skills":["keystone-init","keystone-reader","keystone-author","keystone-clarify","keystone-linker","keystone-coordinator"]}\n' \
+printf '{"schema_version":1,"package_version":"%s","source_commit":"%s","source_dirty":%s,"skills":["keystone-init","keystone-reader","keystone-author","keystone-clarify","keystone-linker","keystone-coordinator","keystone-ideas"]}\n' \
   "$PACKAGE_VERSION" "$SOURCE_REVISION" "$SOURCE_DIRTY" > "$STAGED_SKILLS/.keystone-install.json"
 
 BACKUP_ROOT="$DEST_ROOT/.keystone-backups/$(date -u +%Y%m%dT%H%M%SZ)-$$"

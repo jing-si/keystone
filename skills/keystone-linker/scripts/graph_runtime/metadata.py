@@ -191,7 +191,7 @@ def _artifact_kind(value: Any, kind: NodeKind, surface: str) -> ArtifactKind:
 
 
 _KNOWN_METADATA = {
-    "id", "kind", "artifact_kind", "refs", "lifecycle", "produced_from", "governed_by",
+    "defined_steps", "id", "kind", "artifact_kind", "refs", "lifecycle", "produced_from", "governed_by",
     "legacy_terms", "aliases", "locator", "worktree", "_document_lifecycle", "_approval_state",
     "_source_authority", "_work_gates", "_relation_conflicts", "_doc_type",
     "_work_status", "_step_ref", "_work_ref", "_legacy_dependencies",
@@ -319,6 +319,13 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
             if not node_id:
                 raise MetadataError("metadata id is required")
             _validate_worktree(data, construct)
+            definitions = data.get("defined_steps")
+            if "defined_steps" in data:
+                if (construct != "document" or data.get("_doc_type") != "work_order"
+                        or not isinstance(definitions, list)
+                        or any(not isinstance(step, str) or not re.fullmatch(r"S[0-9]{2,}(?:-[A-Z]+)?", step)
+                               for step in definitions) or len(set(definitions)) != len(definitions)):
+                    raise MetadataError("key.defined_steps must be unique local Step IDs on a Work Order")
             kind = _kind(data.get("kind"), construct, markdown)
             locator, locator_diagnostics = _declared_locator(data, path, construct, label)
             diagnostics.extend(locator_diagnostics)
@@ -384,6 +391,7 @@ def parse_source(text: str, path: str, adapter: Optional[Adapter], *,
                     work_status=str(data.get("_work_status", "")),
                     approval_state=str(data.get("_approval_state", "")),
                     step_ref=str(data.get("_step_ref", "")),
+                    defined_steps=tuple(definitions) if definitions is not None else None,
                     work_ref=str(data.get("_work_ref", "")),
                     structured_dependencies=tuple(data.get("_structured_dependencies", ())),
                     legacy_dependencies=tuple(data.get("_legacy_dependencies", ())),

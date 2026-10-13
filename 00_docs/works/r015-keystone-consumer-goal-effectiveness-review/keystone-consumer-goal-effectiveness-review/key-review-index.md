@@ -1,9 +1,9 @@
 ---
-doc_type: work
+doc_type: index
 created_at: "2026-08-24"
 document_lifecycle: active
-approval: {state: pending}
-work_status: in_progress
+approval: {state: accepted, accepted_at: "2026-10-13", accepted_by: user}
+work_status: complete
 key:
   id: key.work.keystone-consumer-goal-effectiveness-review.index
   refs:
@@ -30,22 +30,14 @@ risk_level: medium
 
 - 작업서 초안: `key-work-keystone-consumer-goal-effectiveness-review.md`
 - 진행 기록: `key-progress.md`
+- 고정 출력 템플릿: [작업 구성·운영 방식 안내](templates/work-structure-and-review-mode.ko.md)
 
-## 현재 상태
+## 검토 결과와 후속 실행
 
-- Round: `R015`
-- Document lifecycle: `draft` (Work Order)
-- Work status: `in_progress`
-- Approval state: `pending`
-- Active Step: `R015/S01`
-- Planned Step: `R015/S02`
-- Next action: 사용자가 목표 달성 효과성·비용 효율성의 대분류와 소분류, 현재 판정, 문제
-  소유권과 후보 개선 우선순위를 검토하고 초안을 수정한다.
+2026-10-13 사용자가 최종 개선 정책·고정 안내문·후속 구현 범위를 수용했다.
+이 색인은 부모의 직접 실행 Work가 아니라 검토 근거를 탐색하는 참고 색인이다.
+기존 ID와 작업서·진행 기록·안내문 경로는 유지한다.
 
-## 복구 순서
-
-1. Progress에서 현재 작성 상태와 검증 결과를 확인한다.
-2. Work Order의 Keystone 제품 목표와 Uptendo 사례 판정을 먼저 검토한다.
-3. 각 간극이 Keystone core, 제품 기본값·가이드, 소비 프로젝트 repair 중 어디에 속하는지
-   확인한다.
-4. 사용자 최종 수용 전에는 개선 구현이나 Work 완료 상태로 전환하지 않는다.
+- 검토 결과: complete / accepted
+- 구현: [R015-A](../r015-A/00_key-index.md), complete / pending
+- R015-A/S01~S05 구현·검증을 마쳤으며 사용자 수용을 기다린다.

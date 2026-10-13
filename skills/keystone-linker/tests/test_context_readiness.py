@@ -433,6 +433,7 @@ work_status: in_progress
 approval: {state: pending}
 key:
   id: key.work.source
+  defined_steps: [S01]
   kind: work_order
   relations:
     depends_on:

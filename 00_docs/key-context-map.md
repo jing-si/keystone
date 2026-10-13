@@ -44,6 +44,8 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
    external-skill `orchestration`을 선택하고, bounded Keystone context와 worker report를
    Linker/Author document·metadata·graph·finalization closure supervision으로 회수한다.
 
+7. `keystone-ideas`: 현재 작업 밖의 아이디어를 짧게 기록하고 공통 표로 검색·조회·수정·삭제한다.
+
 설치된 skill package는 고유 runtime 계약을 자체 포함한다. 이 저장소의
 `00_docs/standards/skills/**`는 개발·검수 명세이며 소비 프로젝트의 runtime 선행 문서가 아니다.
 
@@ -67,6 +69,7 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
 | Author | `00_docs/standards/skills/author/key-standard-author.md` | `keystone-author`의 문서 작성, clarification log, 그룹별 application과 progress update boundary를 확인할 때 읽는다 |
 | Clarify | `00_docs/standards/skills/clarify/key-standard-clarify.md` | `keystone-clarify`의 수정 그룹, one-question flow, Q&A log와 Author handoff를 확인할 때 읽는다 |
 | Linker | `00_docs/standards/skills/linker/key-standard-linker.md` | permissionless owner/ref index readiness, optional graph interpretation, validation과 source surface handoff를 확인할 때 읽는다 |
+| Ideas | `00_docs/standards/skills/ideas/key-standard-ideas.md` | 아이디어 노트의 저장·CRUD·검색·공통 출력 계약을 확인할 때 읽는다 |
 | Coordinator | `00_docs/standards/skills/coordinator/key-standard-coordinator.md` | `keystone-coordinator`의 worker assignment/report, bounded worker routing, report, review, verification, acceptance flow를 확인할 때 읽는다 |
 
 <!-- key: id=key.context-map.work-order refs=key.topic.document-system key.doc.source key.topic.work-sequence key.topic.work-round -->
@@ -89,7 +92,7 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
 | R012 Current Work State and Session Focus Simplification | `00_docs/works/r012-current-work-state-simplification/00_key-index.md` | accepted | active parent Round 중심 Work State, Round session focus와 실행자 Step 선택 계약을 구현·검증하고 닫음 |
 | R013 Author Terminal Status Reconciliation | `00_docs/works/r013-author-terminal-status-reconciliation/00_key-index.md` | accepted | 상태 전이별 bounded projection 대조와 Clarify 그룹 종료별 문서 적용·Q&A log 경계를 구현·검증함 |
 | R014 Reader Progressive Context Loading | `00_docs/works/r014-reader-progressive-context-loading/00_key-index.md` | accepted | progressive orientation, selected-Work bounded Linker와 contract parity 구현·검증 완료 |
-| R015 Keystone Consumer Goal Effectiveness Review | `00_docs/works/r015-keystone-consumer-goal-effectiveness-review/00_key-index.md` | active | Uptendo 소비 프로젝트 evidence로 Keystone 목표 달성 효과·운영 비용을 검토하고 개선 Work Order 최종본을 작성 중 |
+| R015 Keystone Consumer Goal Effectiveness Review | `00_docs/works/r015-keystone-consumer-goal-effectiveness-review/00_key-index.md` | complete / pending | 수용된 개선 정책과 R015-A 관리 흐름 구현을 총괄 |
 | R016 Worktree Locator and Targeted Work Discovery | `00_docs/works/r016-worktree-locator-navigation/00_key-index.md` | accepted | Worktree 선택 시 canonical Work Order에 exact path를 기록하고 locator 기반으로 대상 worktree만 탐색하는 계약을 구현·검증함 |
 | R017 Standards-First Round Construction | `00_docs/works/r017-standards-first-round-construction/00_key-index.md` | accepted | Round 생성·실행 경계와 standards-first 제약, Excel column 방식 하위 Round·Step 작명을 구현·검증함 |
 | R018 Keymeta-First Bounded Discovery | `00_docs/works/r018-keymeta-bounded-discovery/00_key-index.md` | accepted | 키메타 제한 탐색·파싱 최적화와 소비 규모 검증을 완료·수락함 |
@@ -98,9 +101,10 @@ bounded worker 실행 결과를 worker assignment/report로 연결하는 독립 
 | R021 Session Title Permission Hardening | `00_docs/works/r021-session-title-permission-hardening/00_key-index.md` | accepted | exact helper executable 권한 승인과 installer 검증으로 sandbox 자동 rename을 보강함 |
 | R022 Session Title Assignment Gate | `00_docs/works/r022-session-title-assignment-gate/00_key-index.md` | accepted | 비종료 라운드를 안내하고 명시적 기존 라운드 수행에만 native title hint를 제공하도록 구현·검증함 |
 | R023 Session Title Work Authoring Gate | `00_docs/works/r023-session-title-work-authoring-gate/00_key-index.md` | accepted | 작업서 생성·수정 착수를 예정 또는 기존 Round ref의 native title로 연결하도록 구현·검증함 |
-| R024 상태 통합 관리 | `00_docs/works/r024-unified-state-management/00_key-index.md` | planned | 상태 기록·갱신 비용을 조사하고 생성 후 질답으로 통합 관리 방식을 구체화함 |
-| R025 작업 계층 정의 | `00_docs/works/r025-work-hierarchy-definition/00_key-index.md` | planned | Round·Work·Step·Task 정의와 책임, 필수·선택 여부 및 문서 경계를 명확히 함 |
-| R026 아이디어 노트 | `00_docs/works/r026-idea-notes/00_key-index.md` | planned | 단일 파일·고정 ID 기반 아이디어 기록과 단계적 검색, CRUD 스킬을 계획함 |
+| R024 상태 통합 관리 | `00_docs/works/r024-unified-state-management/00_key-index.md` | accepted | 2026-10-13 S05 단일 상태 파일 정정 수락·관리 종료; 설치와 corpus 개편은 후속 |
+| R025 작업 계층 정의 | `00_docs/works/r025-work-hierarchy-definition/00_key-index.md` | accepted | 선택적 Work·Task와 사용자 Round 생성 권한의 정의·기준·사례 검증 완료; runtime 적용은 후속 |
+| R026 아이디어 노트 | `00_docs/works/r026-idea-notes/00_key-index.md` | accepted | 아이디어 노트·공통 표·CRUD 스킬과 제한적 검색을 구현·검증함 |
+| R027 질답 기록과 질문 변경 규칙 | `00_docs/works/r027-clarify-question-recording/00_key-index.md` | accepted | 2026-10-13 사용자 수락·클로즈; 질답 기록 계약 완료, 스킬 교체는 전체 작업 후 별도 진행 |
 | Document Tree Setup | `00_docs/works/r001-bootstrap-keystone/document-tree-setup/00_key-index.md` | accepted | `works/` tree 재정비 |
 | Project Standard | `00_docs/works/r001-bootstrap-keystone/project-standard/00_key-index.md` | accepted | 전체 공통 기준서 |
 | Reader Standard | `00_docs/works/r001-bootstrap-keystone/reader-standard/00_key-index.md` | accepted | `keystone-reader` 기준서 |
@@ -201,9 +205,9 @@ index는 active round를 관리하고, round 내부 실행 순서는 해당 roun
 `active_steps`에서 복구한다. Accepted Round history는 각 Round source에서 확인하며
 `latest_accepted_round`은 current pointer 권위를 갖지 않는다. 이 section의 나머지 설명은 accepted
 history와 작업 목적을 위한 사람이 작성한 기록이다.
-R015 Keystone Consumer Goal Effectiveness Review는 Uptendo 실제 운영 검토를 Keystone 제품 목표,
-문제 소유권과 후속 개선 기준으로 재구성하는 `active / in_progress` Work다. 현재 `R015/S01`에서
-Work Order 초안을 검토·교정하며 Keystone 구현과 Uptendo repair는 시작하지 않았다.
+R015는 수용된 소비 프로젝트 검토 정책과 하위 구현을 총괄하며 현재 complete/pending으로 최종 수용을 기다리는 부모 Round다.
+기존 검토 결과는 complete/accepted로 보존하고 R015-A 구현·검증을 complete/pending으로 정리했다.
+R015-A/S01~S05를 완료했으며 Active Step은 없다. 설치·Uptendo 이전은 수행하지 않았다.
 R017 Standards-First Round Construction은 사용자와의 계획·검토 뒤 Round를 생성할 때 기본적으로
 작업 문서까지만 만들되 같은 요청의 명시적 즉시 진행도 허용하고, production 구현 전 기준서
 정합화와 Round 종료 전 검증만 고정하도록 Project·Author 기준과 Author skill contract를

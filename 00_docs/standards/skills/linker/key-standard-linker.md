@@ -796,3 +796,8 @@ R018의 수락된 탐색 계약은 `../../01_key-project-standard.md`의
 「키메타 중심 제한 탐색 (R018)」을 따른다. 이 pending 기준서 전체를 수락된 권위로 승격하지
 않는다. 일반 준비는 명시적 `targeted`, owner 검색은 `lookup`, 전체 검사는 `audit`로 구분한다.
 Cache fallback은 확인된 bounded source set 안에서 수행하며 자동 full scan을 하지 않는다.
+
+## R015-A 관리 흐름 연결
+
+[관리 흐름·연결 점검](../../key-standard-management-review.md)의 역할·시점·상태 반영 계약을 따른다.
+기존 질답 기록·사용자 결정·읽기 전용 경계는 유지한다.

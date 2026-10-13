@@ -1,7 +1,7 @@
 ---
 doc_type: standard
 document_lifecycle: active
-approval: {state: accepted, accepted_at: "2026-08-28", accepted_by: user}
+approval: {state: accepted, accepted_at: "2026-10-13", accepted_by: main}
 key:
   id: key.standard.skill.reader
   refs:
@@ -207,6 +207,14 @@ key:
 -->
 ## Multi-active Round session focus
 
+선택적 Work·Task의 목표 계약은 Project STD-KEYSTONE-026을 따른다. Reader는 Round 선택 뒤
+Work가 있으면 해당 section 또는 분리 작업서로 좁히고, 없으면 Round의 Step을 직접 읽는다.
+사용자가 Work를 지정해도 Round 소유권을 바꾸지 않는다. Task는 독립 상태·선택·수락 목록이
+아니며 Step 기록의 재개 단서로만 사용한다. Reader가 복구 편의를 위해 Work·Task를 생성하거나
+새 Round를 자동 생성하지 않는다. Round가 필요하면 사용자에게 권유할 수 있다.
+새 source 형식을 처리하는 실제 runtime이 준비되기 전에는 기존 Work node 기반 복구를 유지하고
+지원 한계를 보고한다. 이 기준 개정만으로 설치된 runtime이 새 형식을 지원한다고 주장하지 않는다.
+
 1. Passing Work State에 `accepted`, `cancelled`가 아닌 parent 또는 child Round가 있으면 session-title integration의
    pre-submit hook은 bare Reader 요청 전에 각 local Round ref, status, Work와 현재 Step을 간결히
    안내한다. Parent 번호와 child Excel suffix 오름차순으로 묶어 개수 제한 없이 모두 표시하고
@@ -370,6 +378,10 @@ Work Prep Mode는 main이 다음 작업을 실행하거나 subagent handoff를 �
 4. `final_handoff_ready`는 Reader output에서는 기본적으로 `false`다. Final worker assignment는
    Coordinator가 별도로 확정한다.
 5. 금지: subagent assignment 확정, progress status 변경, implementation 시작
+6. 질답 로그는 필요할 때 읽는 작업 기록이다. 새 세션이나 일반 진행 상태 조회만으로 로그를
+   열지 않는다. 중단된 질답의 맥락이 부족하거나 과거 답변·결정 근거 확인 또는 사용자 요청에
+   필요할 때 관련 질문만 읽는다. 현재 대화에 충분한 맥락이 있으면 생략한다. 확인 대기·폐기를
+   구분해 caller에 전달하고 확정 답변을 다시 묻지 않도록 한다. 로그는 진행 상태 권위가 아니다.
 
 <!-- key: id=key.standard.skill.reader.mismatch-handling refs=key.role.reader key.topic.document-navigation key.topic.artifact-graph key.boundary.read-only -->
 ## Mismatch handling
@@ -601,3 +613,15 @@ Reader 기준은 다음 방법으로 검증한다.
    `source_generation`과 unresolved diagnostic을 함께 보존한다.
 13. Output/test target이 필요하면 lazy repository scope를 사용한다. `verified` view를 automatic
    acceptance나 approval로 해석하지 않고, default readiness에는 가벼운 owner/ref 결과만 유지한다.
+
+## 아이디어 노트 연결 (R026)
+
+선택된 작업을 준비할 때 `ideas/key-ideas*.md`의 관련 노트를 제한적으로 조회한다.
+`keystone-ideas`가 있으면 read-only 검색 계약을 재사용한다. 노트가 없으면 계속 진행하며
+초기 orientation에서 전체 노트를 읽지 않는다. 후보는 `ID | 제목 | 필요했던 이유 | 기록일`
+표로 제시하고 선택 내용은 표 아래에 둔다. 노트는 참고이며 정책·실행 권한이 아니다.
+
+## R015-A 관리 흐름 연결
+
+[관리 흐름·연결 점검](../../key-standard-management-review.md)의 역할·시점·상태 반영 계약을 따른다.
+기존 질답 기록·사용자 결정·읽기 전용 경계는 유지한다.

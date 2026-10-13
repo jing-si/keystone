@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Iterable, Sequence, Tuple
 
 from .adapters import adapter_for_path
-from .dependency import evaluate_dependency_sources
+from .dependency import DependencyGraphResult, evaluate_dependency_sources
+from .managed_state import bind_managed_result, is_managed
 from .snapshot_validation import reconstruct
 from .source_views import source_views_from_snapshot
 from .index_model import (
@@ -298,8 +299,10 @@ class ReferenceScanner:
         ordered_diagnostics = tuple(sorted(diagnostics, key=lambda item: (item.code, item.path or "", item.message)))
         graph = (TypedGraph(tuple(sorted(set(edges), key=lambda item: (
             item.source_id, item.relation, item.target_id)))) if include_typed_graph else None)
-        dependency_result = evaluate_dependency_sources(dependency_sources)
-        diagnostics.extend(IndexDiagnostic(item.code, item.message)
+        dependency_result = (DependencyGraphResult() if is_managed(self.root, self.document_root)
+                             else evaluate_dependency_sources(dependency_sources))
+        diagnostics.extend(IndexDiagnostic(item.code, item.message,
+                            severity="warning" if item.code == "work_gate_step_unidentified" else "error")
                            for item in dependency_result.diagnostics)
         source_views = None
         if include_source_views:
@@ -328,9 +331,10 @@ class ReferenceScanner:
             )
         ordered_diagnostics = tuple(sorted(diagnostics, key=lambda item: (
             item.code, item.path or "", item.message)))
-        return IndexResult(discovery.scope, discovery.freshness, ordered_owners, ordered_refs,
+        result = IndexResult(discovery.scope, discovery.freshness, ordered_owners, ordered_refs,
                            ordered_diagnostics, graph, dependency_result.evaluations,
                            source_views)
+        return bind_managed_result(self.root, self.document_root, result)
 
     def lookup_paths(self, base: Path, scope: ScanScope) -> Iterable[Path]:
         """Enumerate an explicitly selected lookup root using scan admission."""

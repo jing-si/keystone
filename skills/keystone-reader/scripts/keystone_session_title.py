@@ -228,11 +228,14 @@ def _incomplete_rounds(state: Mapping[str, Any]) -> Sequence[Mapping[str, str]]:
             status = entry.get("status")
             if not isinstance(round_ref, str) or not isinstance(status, str):
                 continue
-            if status in {"accepted", "cancelled"}:
+            if entry.get("management") == "not_loaded":
+                continue
+            if entry.get("management") != "open" and status in {"accepted", "cancelled"}:
                 continue
             values.append({
                 "round_ref": round_ref.upper(),
                 "status": status,
+                "approval": str(entry.get("approval") or "pending"),
                 "path": str(entry.get("path") or ""),
                 "parent_round_ref": str(owning_parent_ref or round_ref).upper(),
             })
@@ -315,9 +318,12 @@ def _selection_reason(
         parent_ref = candidate.get("parent_round_ref", round_ref)
         status = candidate["status"]
         status_label = (
-            "complete / pending · 수용 대기"
-            if status == "complete"
-            else status
+            "complete / accepted · 관리 중"
+            if status == "complete" and candidate.get("approval") == "accepted"
+            else "complete / rejected · 관리 중"
+            if status == "complete" and candidate.get("approval") == "rejected"
+            else "complete / pending · 수용 대기"
+            if status == "complete" else status
         )
         label = _round_label(project_root, state, candidate)
         if round_ref == parent_ref or parent_ref not in visible_refs:
@@ -411,11 +417,40 @@ def _near_work_order_refs(prompt: str, round_refs: Sequence[str]) -> Sequence[st
     return tuple(values)
 
 
+def _authoring_identity_state(project_root: Path, state: Mapping[str, Any]) -> Mapping[str, Any]:
+    """For new IDs only, include archived directory identities without reading their status."""
+    hierarchy = {item["round_ref"]: dict(item) for item in _round_hierarchy(state)}
+    document_root = Path(str(state.get("document_root", "00_docs")))
+    if document_root.is_absolute() or ".." in document_root.parts:
+        raise ValueError("Unsafe document root")
+    works = project_root / document_root / "works"
+    if works.is_symlink():
+        raise ValueError("Unsafe work identity directory")
+    if not works.exists():
+        return state
+    for directory in sorted(works.iterdir()):
+        match = re.fullmatch(r"r([0-9]{3,})-[a-z0-9-]+", directory.name)
+        if not match or not directory.is_dir() or directory.is_symlink():
+            continue
+        ref = "R" + match.group(1)
+        parent = hierarchy.setdefault(ref, {"round_ref": ref, "child_rounds": []})
+        children = {item["round_ref"]: dict(item) for item in parent.get("child_rounds", [])}
+        for child in sorted(directory.iterdir()):
+            match = re.fullmatch(re.escape(ref.lower()) + r"-([A-Z]+|[a-z])", child.name)
+            if match and child.is_dir() and not child.is_symlink():
+                child_ref = ref + "-" + match.group(1).upper()
+                children.setdefault(child_ref, {"round_ref": child_ref})
+        parent["child_rounds"] = list(children.values())
+    return dict(state, round_hierarchy=list(hierarchy.values()))
+
+
 def _work_authoring_round(
-    prompt: str, state: Mapping[str, Any]
+    prompt: str, state: Mapping[str, Any], project_root: Optional[Path] = None
 ) -> Optional[Mapping[str, Any]]:
     if not _has_work_authoring_intent(prompt):
         return None
+    if project_root is not None and state.get("mode") == "managed_state":
+        state = _authoring_identity_state(project_root, state)
     all_refs = tuple(_all_round_refs(state))
     parent_refs = tuple(ref for ref in all_refs if "-" not in ref)
     mentioned_refs = tuple(_round_refs(prompt))
@@ -628,7 +663,7 @@ def handle_user_prompt_submit(
             original = pending.get("original_prompt")
             if not isinstance(original, str):
                 original = "$keystone-reader"
-            authoring = _work_authoring_round(prompt, state)
+            authoring = _work_authoring_round(prompt, state, project_root)
             if authoring is not None:
                 return _queue_authoring_result(
                     thread_id,
@@ -654,7 +689,7 @@ def handle_user_prompt_submit(
                 store,
             )
 
-        authoring = _work_authoring_round(prompt, state)
+        authoring = _work_authoring_round(prompt, state, project_root)
         if authoring is not None:
             return _queue_authoring_result(
                 thread_id,

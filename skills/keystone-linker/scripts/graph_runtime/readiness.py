@@ -7,6 +7,7 @@ from .bounded_discovery import DiscoverySummary, bounded_discovery
 from .index_model import CallTrace, IndexDiagnostic, ReadinessResult
 from .index_store import CacheBusy, CacheCorrupt, SQLiteIndexStore, StoreUnavailable
 from .scanner import ReferenceScanner, ScanScope
+from .managed_state import is_managed
 
 
 # keystone: id=key.code.linker.context-readiness kind=output_artifact artifact_kind=code refs=key.standard.skill.linker.reference-index-readiness locator.symbol=context_readiness
@@ -71,6 +72,10 @@ def context_readiness(repository_root, cache_path, *, initiator, artifact_contex
 
 def _cached_readiness(scanner, discovery, cache_path, repository_root,
                       materialize_graph, include_source_views, current):
+    if is_managed(scanner.root, scanner.document_root):
+        result = scanner.scan_discovery(discovery, include_typed_graph=materialize_graph,
+                                        include_source_views=include_source_views)
+        return ReadinessResult(result, "managed_source", (), current)
     if include_source_views:
         result = scanner.scan_discovery(
             discovery,

@@ -10,6 +10,15 @@ description: "Use for Artifact Graph interpretation and graph-relevant document 
 
 # keystone-linker
 
+## Step Definition Evidence
+
+A Work Order may declare `key.defined_steps: [S01, S02, ...]`. Validate local unique Step IDs there.
+A Progress step_ref is a state reference, not a definition. Without declared definitions report
+work_gate_step_unidentified and request bounded Reader/AI source interpretation; do not infer absence.
+With an explicit definition list, a missing target is work_gate_step_invalid. This does not authorize
+full-text semantic parsing, corpus annotation, status changes, or acceptance. Follow the management
+review workflow for source-snapshot boundaries and input expansion to required counterpart documents.
+
 ## Purpose
 
 Interpret the canonical Artifact Graph reconstructed from current repository source. Provide bounded
@@ -32,6 +41,25 @@ Use Linker for:
 
 Do not use Linker to edit files, decide user intent, accept a result, initialize Keystone, assign a
 worker, or require external verification artifacts for ordinary work.
+
+## Managed Work State
+
+With `{document_root}/state/manifest.json` set to `{"schema_version":1,"mode":"managed"}`, packaged
+Work State schema v6 is the only current Round/Work/Step state authority.
+The only current-status source is `state/current.json` (wire v2, `states: {execution: [entries]}`);
+closed entries are removed and dated changes stay in Work Orders. Never create per-Round state files.
+ Dependency readiness uses
+that same evaluator as Reader/Coordinator and binds the result to state/plan/history raw-byte digests.
+It bypasses the legacy dependency cache so state-only edits cannot reuse stale gate results. It never
+falls back to Aggregate Progress or Work Index statuses on errors. Existing legacy dependency ownership
+instructions apply only without this marker; standard/decision document lifecycle and approval remain
+source metadata. Do not infer work acceptance from inherited document approval.
+
+Only registered plans and exact `work_state_targets` dependency locators may supply execution context.
+A closed dependency satisfies a required gate only with a matching `closed:complete` event and complete,
+accepted result; cancelled/skipped/superseded or missing evidence does not satisfy it. State evidence is
+added to freshness without widening the caller's artifact graph owner scope. A graph scan of a historical
+closed Work is historical artifact context, not permission to resurrect its execution gates.
 
 ## Operating Modes
 

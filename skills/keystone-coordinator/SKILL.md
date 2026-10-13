@@ -10,6 +10,14 @@ description: "Provide bounded Keystone context, execute directly when no externa
 
 # keystone-coordinator
 
+## Management Review Execution
+
+Follow `references/management-review.md` for Round checks and full review. Main owns writer coordination,
+Git snapshot/worktree setup, semantic judgment and current-space integration; the state helper only
+records explicit decisions and protects list occurrences. Report partial coverage honestly, preserve
+parallel changes and apply the sprint-close/finish sequence. Do not call the state finish operation
+until results are applied and recorded. This does not add application-behavior tests to connection review.
+
 ## Purpose
 
 Coordinate one bounded Keystone implementation from relevant source context through verified current
@@ -29,6 +37,26 @@ Do not use Coordinator for read-only orientation, unresolved product or policy d
 document authoring, repository initialization, or broad release work that the user did not request.
 
 ## Inputs
+
+Bundled Work State automatically uses managed schema v6 when `state/manifest.json` declares
+`{"schema_version":1,"mode":"managed"}`; otherwise it keeps legacy compatibility. `--managed` verifies
+an explicitly prepared tree before cutover.
+The only current-status source is `state/current.json` (wire v2, `states: {execution: [entries]}`);
+closed entries are removed and dated changes stay in Work Orders. Never create per-Round state files.
+In managed mode, state JSON is the only current authority;
+legacy Progress/index status instructions elsewhere in this contract do not apply. Work Orders own
+plans, important evidence, and creation/state-change/closure/reopen history. Standard-document approval stays separate.
+
+Require a passing envelope, `execution_ready: true` and evaluated dependency coverage. Use per-Work
+`step_execution` and its selected executable Step; report blocked lower Steps without changing them.
+Check work-completion gates separately before closure. Completion, acceptance and finalization remain
+separate state fields; never interpret absence as completion or an empty unloaded history as no history.
+After implementation pass exact state changes and evidence to Author; update state once, record important
+history in its Work Order, and omit state copies in navigation documents. Close only after no management
+remains; leave complete work registered while approval/finalization is pending. Installation and corpus
+migration are separate tasks and must not be silently performed as implementation closure.
+The lean closure report's existing `progress` evidence field may cite those Work Order history updates;
+it does not require recreating mutable Progress status fields in managed projects.
 
 Use the smallest reliable input set:
 
@@ -99,6 +127,32 @@ check, verification, source conflicts, document/graph synchronization needs, and
 Treat worker `DONE`, review-clean, commit-ready, or branch-ready as report evidence only. They never
 change Work status, approval, finalization, or Main acceptance by themselves.
 
+## Standards Realignment During Implementation
+
+For production implementation in a Round, confirm the initial standards-alignment Step's accepted
+result, including a reasoned `no_change` when applicable. Reassess that result when the plan's goal,
+scope, behavior, or completion criteria changes, or when a standards/implementation or
+standards/standards conflict appears.
+A previously completed alignment Step does not cover requirements changed after its review.
+
+- Pause affected direct execution or delegated implementation while the conflict or standards impact
+  is unresolved. Distinguish implementation defects from policy changes; never make the standard fit
+  defective code. Escalate unresolved policy/scope choices to Main/User. Unaffected independent work
+  may continue within its approved scope.
+- If standards need revision, hand Author the trigger/reason, affected clauses and implementation
+  Steps. Require an additional alignment Step with an explicit prerequisite before affected
+  implementation resumes. Preserve existing Step IDs and accepted history; a new Step at the end of
+  the list is not sufficient ordering. Have Author record actual state changes using the current
+  managed or legacy state owner.
+- Resume only after fresh source confirms standards/Work Order alignment, verification, and Main
+  acceptance of the additional Step, and the affected implementation's prerequisites are satisfied.
+  Rebuild the affected Context Pack from the current standards and plan before resuming direct work
+  or handing it back to a worker. Recheck any earlier implementation or tests affected by the revision.
+- If no standard revision is needed, have Author preserve the reviewed clauses and reason in the
+  affected durable work record; no additional alignment Step is required. Repair implementation
+  defects against the valid standard. Retain change reasons, before/after meaning, verification and
+  acceptance evidence, and resume conditions in durable records, not only in the user-facing summary.
+
 ## Worktree Setup and Locator Gate
 
 Keystone does not require a worktree strategy. When Coordinator or an external implementation skill
@@ -128,6 +182,8 @@ does create or select a linked worktree, complete this setup gate before impleme
 4. Ask Linker for impact context only when graph or cross-surface reasoning is relevant.
 5. Evaluate Step gates separately from Work-completion gates, then choose direct execution or one
    bounded worker assignment.
+   Apply Standards Realignment During Implementation before starting or resuming affected work and
+   whenever a plan change or standards conflict is discovered during execution.
 6. Build the Context Pack. When a linked worktree is selected, complete the Worktree Setup and Locator
    Gate before applying the smallest effective change without overwriting unrelated work.
 7. Re-read the changed surfaces, inspect the current diff, and normalize the execution result.
@@ -169,6 +225,8 @@ Before returning an acceptance candidate, confirm:
 - changed files are inside the approved scope;
 - excluded and user-owned unrelated changes remain untouched;
 - the current diff implements the accepted requirement;
+- any required additional standards-alignment Step is verified and accepted, its change rationale is
+  recoverable, and affected implementation was checked against the revised standards;
 - directly related verification passed, or failures and environmental limits are explicit;
 - graph reconstruction ran when metadata, relations, or canonical multi-surface meaning changed;
 - Progress records only actual work, evidence, residual risk, and the resume point;

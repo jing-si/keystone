@@ -13,10 +13,15 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_RUNTIME = REPOSITORY_ROOT / "scripts" / "work_state_runtime.py"
 CANONICAL_MANIFEST = REPOSITORY_ROOT / "scripts" / "work_state_runtime_manifest.json"
+MANAGED_RUNTIME = REPOSITORY_ROOT / "scripts" / "managed_work_state.py"
+INTEGRATION = REPOSITORY_ROOT / "scripts" / "managed_work_integration.py"
+DEPENDENCY = REPOSITORY_ROOT / "skills/keystone-linker/scripts/graph_runtime/dependency.py"
 PACKAGE_DIRECTORIES = (
+    REPOSITORY_ROOT / "skills" / "keystone-init" / "scripts",
     REPOSITORY_ROOT / "skills" / "keystone-reader" / "scripts",
     REPOSITORY_ROOT / "skills" / "keystone-coordinator" / "scripts",
     REPOSITORY_ROOT / "skills" / "keystone-author" / "scripts",
+    REPOSITORY_ROOT / "skills" / "keystone-linker" / "scripts",
 )
 
 
@@ -54,6 +59,9 @@ def _manifest(runtime_bytes: bytes) -> Dict[str, Any]:
         "public_api": list(runtime.PUBLIC_API),
         "public_api_digest": runtime.public_api_digest(),
         "runtime_digest": _digest(runtime_bytes),
+        "managed_runtime_digest": _digest(MANAGED_RUNTIME.read_bytes()),
+        "managed_integration_digest": _digest(INTEGRATION.read_bytes()),
+        "dependency_policy_digest": _digest(DEPENDENCY.read_bytes()),
     }
 
 
@@ -80,6 +88,17 @@ def generate(*, check: bool) -> int:
         for runtime_path, manifest_path in _targets()
         for output in ((runtime_path, runtime_bytes), (manifest_path, manifest_bytes))
     )
+    outputs += tuple((directory / "managed_work_state.py", MANAGED_RUNTIME.read_bytes())
+                     for directory in PACKAGE_DIRECTORIES)
+    outputs += tuple((directory / "managed_work_integration.py", INTEGRATION.read_bytes())
+                     for directory in PACKAGE_DIRECTORIES)
+    outputs += tuple((directory / "work_dependency_policy.py", DEPENDENCY.read_bytes())
+                     for directory in (REPOSITORY_ROOT / "scripts",) + PACKAGE_DIRECTORIES)
+    body = (REPOSITORY_ROOT / "skills/keystone-init/references/work-structure-and-review-mode.ko.md").read_bytes()
+    workflow = (REPOSITORY_ROOT / "skills/keystone-coordinator/references/management-review.md").read_bytes()
+    outputs += tuple(output for directory in PACKAGE_DIRECTORIES for output in (
+        (directory.parent / "references/work-structure-and-review-mode.ko.md", body),
+        (directory.parent / "references/management-review.md", workflow)))
     for target, expected in outputs:
         if target.exists() and not _regular_single_link(target):
             raise OSError("generated output must be a single-link regular file: %s" % target)

@@ -81,7 +81,7 @@ class ClarifyGroupApplicationContractTest(unittest.TestCase):
 
         for phrase in (
             "답변별 log append와 그룹 종료별 원천 문서 적용",
-            "질문, 답변, 답변일시만",
+            "`답변`, `답변일시`다",
             "Work State, graph reconstruction",
             "그 그룹의 affected source document 범위만 한 번 적용",
         ):
@@ -89,7 +89,7 @@ class ClarifyGroupApplicationContractTest(unittest.TestCase):
 
         for phrase in (
             "per-answer log persistence and per-group source application",
-            "Record only `질문`, `답변`, and `답변일시`",
+            "Base fields are `질문`, `답변`, and `답변일시`",
             "Do not run Progress updates, Work State, graph reconstruction",
             "Apply that group's affected source scope exactly once",
         ):
